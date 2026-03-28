@@ -1,7 +1,11 @@
 # Plate.hk
 
+![Plate.hk repository cover](docs/repo-cover-home.png)
+
 香港車牌拍賣結果搜尋與資料整理專案。  
 這個 repo 會把運輸署歷年拍賣資料整理成可搜尋、可驗證、可部署的靜態資料網站與 Cloudflare Worker API。
+
+Open source search and data pipeline for Hong Kong plate auction results, including PVRM, TVRM, E-Auction, camera-assisted lookup, and Cloudflare Worker deployment.
 
 Live site:
 - 首頁: https://plate.hk/
