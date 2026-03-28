@@ -1,0 +1,12 @@
+{
+  "issue_count": 1,
+  "total_rows": 17,
+  "issues": [
+    {
+      "auction_date": "notable",
+      "count": 17,
+      "file": "issues/notable.json"
+    }
+  ]
+}
+

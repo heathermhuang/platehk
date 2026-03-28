@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="zh-HK">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>私隱政策 | PVRM</title>
+    <meta
+      name="description"
+      content="Plate.hk 私隱政策：說明香港車牌拍賣搜尋網站如何處理分析數據、Cookie 與相關私隱安排。"
+    />
+    <meta name="robots" content="index,follow,max-image-preview:large" />
+    <link rel="canonical" href="https://plate.hk/privacy.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:title" content="私隱政策 | Plate.hk" />
+    <meta property="og:description" content="查看 Plate.hk 的私隱政策與資料處理說明。" />
+    <meta property="og:url" content="https://plate.hk/privacy.html" />
+    <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Noto+Sans+HK:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg:#eaf1fb;
+        --card:#f8fbffd6;
+        --line:#d5e3f4;
+        --ink:#0f1c2b;
+        --muted:#5a6878;
+        --accent:#1080c3;
+      }
+      * { box-sizing:border-box; }
+      body {
+        margin:0;
+        font-family:"Space Grotesk","Noto Sans HK",sans-serif;
+        color:var(--ink);
+        background:
+          radial-gradient(circle at 12% 8%, #d6f3ff 0, transparent 30%),
+          radial-gradient(circle at 92% -4%, #d7f9ee 0, transparent 24%),
+          radial-gradient(circle at 82% 86%, #dde7ff 0, transparent 26%),
+          linear-gradient(180deg, #f4f9ff 0%, var(--bg) 100%);
+      }
+      .wrap { max-width:1020px; margin:0 auto; padding:28px 18px 46px; }
+      .top { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
+      .top a {
+        border:1px solid var(--line);
+        background:#ffffffcc;
+        border-radius:999px;
+        padding:8px 14px;
+        text-decoration:none;
+        box-shadow:0 6px 20px rgba(8,20,40,.08);
+      }
+      .card {
+        margin-top:16px;
+        background:var(--card);
+        border:1px solid var(--line);
+        border-radius:18px;
+        padding:22px;
+        box-shadow:
+          inset 0 1px 0 #ffffffa6,
+          0 20px 46px rgba(11, 39, 75, 0.16);
+        backdrop-filter: blur(18px) saturate(150%);
+      }
+      h1 { margin:0; font-size:32px; letter-spacing:-0.01em; }
+      p { line-height:1.7; margin:10px 0; }
+      .meta { color:var(--muted); margin-top:6px; }
+      a { color:var(--accent); }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="top">
+        <a id="backLink" href="./index.html">&larr; 返回首頁</a>
+      </div>
+      <div class="card">
+        <h1 id="title"></h1>
+        <div class="meta" id="updated"></div>
+        <div id="content"></div>
+      </div>
+    </div>
+
+    <script>
+      const I18N = {
+        zh: {
+          pageTitle: "私隱政策 | PVRM",
+          title: "私隱政策",
+          back: "← 返回首頁",
+          updated: "最後更新：2026年2月28日",
+          html: `
+            <p>本網站遵循香港《個人資料（私隱）條例》（第486章）處理個人資料，並按網站性質採取資料最小化原則。</p>
+            <p>本網站不提供帳戶註冊，不主動收集姓名、身分證號碼或聯絡資料。車牌搜尋在瀏覽器端進行，網站本身不建立個人檔案。</p>
+            <p>為提升搜尋一致性，使用者輸入的車牌查詢會在瀏覽器端自動正規化（例如轉大寫、移除多餘空白、字母 I/O 對應 1/0）。此處理僅用於即時搜尋，不會建立可識別個人身分的使用者檔案。</p>
+            <p>資料審核頁面與公開 API 僅包含運輸署已公開的拍賣資料與 PDF 連結，不包含使用者個人資料或本機路徑資訊。</p>
+            <p>本網站使用 Google Analytics（gtag）了解流量與使用情況。相關技術資料（例如 IP 位址、裝置與瀏覽器資料、Cookie）可能由 Google 於香港以外地區處理。請參閱 Google 的私隱政策與條款。</p>
+            <p>本網站會採取合理保安措施保護系統與資料，並只在達成網站營運、統計分析與改善服務所需期間內保留資料。</p>
+            <p>如你需要行使查閱或更正資料權利（按條例第486章及資料保障原則），可透過頁面底部網站擁有人聯絡方式提出要求。</p>
+          `,
+        },
+        en: {
+          pageTitle: "Privacy Policy | PVRM",
+          title: "Privacy Policy",
+          back: "← Back to Home",
+          updated: "Last updated: 28 Feb 2026",
+          html: `
+            <p>This site handles personal data with reference to Hong Kong's Personal Data (Privacy) Ordinance (Cap. 486) and applies a data minimisation approach appropriate to this service.</p>
+            <p>No user account is required. The site does not intentionally collect direct identifiers such as name, HKID number, or contact details. Plate search is processed in-browser and this site does not build individual user profiles.</p>
+            <p>For consistent search behavior, plate queries are normalized in-browser (for example uppercase conversion, extra-space removal, and I/O to 1/0 mapping). This is used only for real-time matching and does not create personally identifiable user profiles.</p>
+            <p>The audit page and public API only include publicly released Transport Department auction data and PDF links, and do not include user personal data or local filesystem paths.</p>
+            <p>This site uses Google Analytics (gtag) for traffic and usage analytics. Technical data (for example IP address, browser/device information, and cookies) may be processed by Google outside Hong Kong. Please refer to Google's own privacy notice and terms.</p>
+            <p>Reasonable safeguards are applied to protect systems and data. Data is retained only as needed for site operation, analytics, and service improvement.</p>
+            <p>For data access or correction requests under Cap. 486 and related data protection principles, contact the site operator via the footer contact channel.</p>
+          `,
+        },
+      };
+
+      const params = new URLSearchParams(location.search);
+      let lang = params.get("lang") === "en" ? "en" : "zh";
+      const titleEl = document.getElementById("title");
+      const updatedEl = document.getElementById("updated");
+      const contentEl = document.getElementById("content");
+      const backLinkEl = document.getElementById("backLink");
+
+      function render() {
+        const t = I18N[lang];
+        document.documentElement.lang = lang === "en" ? "en" : "zh-HK";
+        document.title = t.pageTitle;
+        titleEl.textContent = t.title;
+        updatedEl.textContent = t.updated;
+        contentEl.innerHTML = t.html;
+        backLinkEl.textContent = t.back;
+        backLinkEl.href = `./index.html?lang=${lang}`;
+      }
+
+      render();
+    </script>
+  </body>
+</html>

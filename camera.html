@@ -1,0 +1,803 @@
+<!doctype html>
+<html lang="zh-HK">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>相機車牌辨識搜尋</title>
+    <meta
+      name="description"
+      content="用手機相機直接辨識香港車牌，並即時查詢本站的拍賣結果資料庫。"
+    />
+    <link rel="canonical" href="https://plate.hk/camera.html" />
+    <meta property="og:title" content="相機車牌辨識搜尋" />
+    <meta
+      property="og:description"
+      content="用手機相機直接辨識香港車牌，並即時查詢本站的拍賣結果資料庫。"
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://plate.hk/camera.html" />
+    <meta property="og:image" content="https://plate.hk/assets/logo.svg" />
+    <meta name="theme-color" content="#e9f5ff" />
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: linear-gradient(180deg, #f8fcff 0%, #eef6ff 42%, #f7fbff 100%);
+        --ink: #102b43;
+        --muted: #587089;
+        --line: rgba(151, 186, 214, 0.42);
+        --panel: rgba(255, 255, 255, 0.78);
+        --glass-edge: rgba(255, 255, 255, 0.68);
+        --accent: #1176bf;
+        --accent-soft: rgba(17, 118, 191, 0.12);
+        --ok: #0f8d5d;
+        --warn: #9b5a00;
+        --danger: #b23535;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; }
+      body {
+        min-height: 100vh;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: "SF Pro Display", "PingFang HK", "Noto Sans HK", sans-serif;
+      }
+      .wrap {
+        width: min(980px, calc(100vw - 24px));
+        margin: 0 auto;
+        padding: 18px 0 30px;
+      }
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 14px;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 0;
+      }
+      .brand img {
+        width: 58px;
+        height: auto;
+        flex: 0 0 auto;
+      }
+      .brand h1 {
+        margin: 0;
+        font-size: 29px;
+        line-height: 1.05;
+        letter-spacing: -0.02em;
+      }
+      .brand .sub {
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 15px;
+        line-height: 1.3;
+        font-weight: 600;
+      }
+      .lang-toggle {
+        display: inline-flex;
+        gap: 6px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 4px;
+        background: var(--panel);
+        box-shadow: inset 0 1px 0 var(--glass-edge);
+      }
+      .lang-toggle button {
+        appearance: none;
+        border: 0;
+        border-radius: 999px;
+        padding: 8px 12px;
+        font-size: 13px;
+        font-weight: 700;
+        background: transparent;
+        color: var(--muted);
+        cursor: pointer;
+      }
+      .lang-toggle button[aria-pressed="true"] {
+        background: var(--accent);
+        color: #fff;
+      }
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        padding: 16px;
+        box-shadow:
+          inset 0 1px 0 var(--glass-edge),
+          0 20px 46px rgba(11, 39, 75, 0.14);
+        backdrop-filter: blur(18px) saturate(145%);
+      }
+      .hero {
+        display: grid;
+        grid-template-columns: 1.15fr 0.85fr;
+        gap: 14px;
+        align-items: stretch;
+      }
+      .kicker {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        line-height: 1;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: #17588f;
+        background: var(--accent-soft);
+        border: 1px solid #c9e1f7;
+        border-radius: 999px;
+        padding: 7px 11px;
+      }
+      .lede {
+        margin-top: 12px;
+        font-size: 14px;
+        line-height: 1.65;
+        color: var(--muted);
+      }
+      .bullets {
+        margin: 14px 0 0;
+        padding-left: 18px;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.6;
+      }
+      .bullets li + li {
+        margin-top: 6px;
+      }
+      .summary-box {
+        background: linear-gradient(180deg, rgba(255,255,255,0.82), rgba(238,247,255,0.82));
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 14px;
+      }
+      .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+      .metric {
+        background: rgba(255,255,255,0.7);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 10px;
+      }
+      .metric .k {
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .metric .v {
+        margin-top: 4px;
+        font-size: 15px;
+        font-weight: 800;
+      }
+      .stage {
+        margin-top: 14px;
+        display: grid;
+        grid-template-columns: 1.12fr 0.88fr;
+        gap: 14px;
+        align-items: start;
+      }
+      .camera-shell {
+        position: relative;
+        overflow: hidden;
+        border-radius: 22px;
+        background: #0b1523;
+        aspect-ratio: 4 / 5;
+        border: 1px solid rgba(255,255,255,0.18);
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,0.12),
+          0 18px 40px rgba(7, 18, 34, 0.28);
+      }
+      video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+      .camera-empty {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        padding: 24px 20px 26px;
+        text-align: center;
+        color: rgba(255,255,255,0.96);
+        background:
+          radial-gradient(circle at top, rgba(21,92,142,0.18), transparent 54%),
+          linear-gradient(180deg, rgba(4,12,24,0.56), rgba(7,19,36,0.42));
+      }
+      .camera-empty::before {
+        content: "";
+        position: absolute;
+        inset: auto 16px 16px;
+        height: 72px;
+        border-radius: 18px;
+        background: rgba(7, 19, 36, 0.78);
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,0.08),
+          0 10px 28px rgba(0,0,0,0.16);
+      }
+      .camera-empty {
+        font-weight: 600;
+        line-height: 1.45;
+      }
+      .camera-empty > * {
+        position: relative;
+        z-index: 1;
+      }
+      .camera-empty[hidden] {
+        display: none;
+      }
+      .guide {
+        position: absolute;
+        left: 10%;
+        right: 10%;
+        top: 34%;
+        height: 17%;
+        border: 2px solid rgba(255,255,255,0.92);
+        border-radius: 18px;
+        box-shadow:
+          0 0 0 999px rgba(0,0,0,0.05),
+          0 0 0 1px rgba(36, 183, 255, 0.55),
+          0 0 24px rgba(36, 183, 255, 0.4);
+        pointer-events: none;
+      }
+      .guide::before,
+      .guide::after {
+        content: "";
+        position: absolute;
+        inset: auto auto 10px 10px;
+        width: 18px;
+        height: 18px;
+        border-left: 3px solid #fff;
+        border-bottom: 3px solid #fff;
+        border-radius: 0 0 0 10px;
+      }
+      .guide::after {
+        left: auto;
+        right: 10px;
+        border-left: 0;
+        border-right: 3px solid #fff;
+        border-radius: 0 0 10px 0;
+      }
+      .guide-top {
+        position: absolute;
+        left: 12px;
+        right: 12px;
+        top: calc(34% - 38px);
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        color: rgba(255,255,255,0.92);
+        font-size: 12px;
+        font-weight: 700;
+      }
+      .camera-toolbar {
+        margin-top: 12px;
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .camera-toolbar button,
+      .camera-toolbar a,
+      .manual button {
+        appearance: none;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: #ffffffd9;
+        color: var(--ink);
+        padding: 10px 14px;
+        font-size: 13px;
+        font-weight: 800;
+        text-decoration: none;
+        cursor: pointer;
+        box-shadow:
+          inset 0 1px 0 var(--glass-edge),
+          0 8px 18px rgba(12, 40, 80, 0.12);
+      }
+      .camera-toolbar button.primary,
+      .manual button.primary {
+        background: var(--accent);
+        border-color: rgba(17, 118, 191, 0.38);
+        color: #fff;
+      }
+      .camera-toolbar button:disabled,
+      .manual button:disabled {
+        opacity: 0.52;
+        cursor: not-allowed;
+      }
+      .status-card,
+      .results-card {
+        background: linear-gradient(180deg, rgba(255,255,255,0.84), rgba(239,247,255,0.8));
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 14px;
+        transition:
+          border-color 180ms ease,
+          box-shadow 180ms ease,
+          background 180ms ease;
+      }
+      .status-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        font-weight: 800;
+        padding: 7px 10px;
+        border-radius: 999px;
+        background: #eef7ff;
+        border: 1px solid #c9e1f7;
+        color: #1c5f93;
+      }
+      .status-badge.ok { color: var(--ok); background: rgba(15,141,93,0.1); border-color: rgba(15,141,93,0.24); }
+      .status-badge.warn { color: var(--warn); background: rgba(155,90,0,0.1); border-color: rgba(155,90,0,0.24); }
+      .status-badge.error { color: var(--danger); background: rgba(178,53,53,0.1); border-color: rgba(178,53,53,0.22); }
+      .detected-plate {
+        margin-top: 12px;
+        min-height: 84px;
+        border-radius: 18px;
+        border: 1px solid rgba(18, 25, 34, 0.18);
+        background: linear-gradient(180deg, #fffef8, #fff8d5);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.88);
+        display: grid;
+        place-items: center;
+        padding: 10px;
+        transition:
+          border-color 180ms ease,
+          box-shadow 180ms ease,
+          background 180ms ease,
+          transform 180ms ease;
+      }
+      .detected-plate .value {
+        font-size: clamp(26px, 4vw, 40px);
+        font-weight: 900;
+        letter-spacing: 0.1em;
+      }
+      .detected-plate .hint {
+        margin-top: 6px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .candidate-list {
+        margin-top: 10px;
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .candidate-chip {
+        appearance: none;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 7px 10px;
+        background: #fff;
+        font-size: 12px;
+        font-weight: 800;
+        color: var(--ink);
+        cursor: pointer;
+      }
+      .manual {
+        margin-top: 12px;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 8px;
+      }
+      .manual input {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 12px 14px;
+        font-size: 15px;
+        background: rgba(255,255,255,0.82);
+        color: var(--ink);
+      }
+      .results-stack {
+        margin-top: 12px;
+        display: grid;
+        gap: 10px;
+      }
+      .result-row {
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: rgba(255,255,255,0.72);
+        padding: 12px;
+        transition:
+          border-color 180ms ease,
+          box-shadow 180ms ease,
+          background 180ms ease,
+          transform 180ms ease;
+      }
+      .results-stack .result-row:first-child {
+        border-color: rgba(247, 200, 78, 0.46);
+        background: linear-gradient(180deg, rgba(255,252,239,0.96), rgba(247,252,255,0.92));
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,0.92),
+          0 14px 28px rgba(166, 126, 27, 0.1);
+      }
+      .results-stack .result-row:first-child .plate {
+        font-size: 20px;
+        letter-spacing: 0.06em;
+      }
+      .results-stack .result-row:first-child .amount {
+        font-size: 22px;
+        line-height: 1.02;
+        letter-spacing: -0.02em;
+        color: #0f4e79;
+      }
+      .results-stack .result-row:first-child .result-meta {
+        color: #4e647a;
+      }
+      .result-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        align-items: baseline;
+      }
+      .plate {
+        font-size: 18px;
+        font-weight: 900;
+        letter-spacing: 0.05em;
+      }
+      .amount {
+        font-size: 18px;
+        font-weight: 900;
+        color: #124970;
+      }
+      .result-meta {
+        margin-top: 6px;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.5;
+      }
+      .result-actions {
+        margin-top: 10px;
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .result-actions a {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        font-weight: 800;
+        color: var(--accent);
+        text-decoration: none;
+      }
+      .note {
+        margin-top: 12px;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.6;
+      }
+      body[data-camera-state="ok"] .status-card {
+        border-color: rgba(15,141,93,0.28);
+        background: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(240,255,246,0.9));
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,0.92),
+          0 18px 34px rgba(15,141,93,0.1);
+      }
+      body[data-camera-state="ok"] .detected-plate {
+        border-color: rgba(15,141,93,0.28);
+        background: linear-gradient(180deg, #fffef8, #efffe9);
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,0.92),
+          0 10px 24px rgba(15,141,93,0.1);
+        transform: translateY(-1px);
+      }
+      body[data-camera-state="ok"] .guide {
+        box-shadow:
+          0 0 0 999px rgba(0,0,0,0.05),
+          0 0 0 1px rgba(41, 202, 125, 0.55),
+          0 0 28px rgba(41, 202, 125, 0.34);
+      }
+      body[data-camera-state="ok"] .results-card {
+        border-color: rgba(17,118,191,0.26);
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,0.92),
+          0 16px 30px rgba(17,118,191,0.08);
+      }
+      .footer-links {
+        margin-top: 18px;
+        text-align: center;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .footer-links a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+      canvas {
+        display: none;
+      }
+      @media (max-width: 860px) {
+        .hero,
+        .stage {
+          grid-template-columns: 1fr;
+        }
+      }
+      @media (max-width: 700px) {
+        .wrap {
+          width: min(100vw - 16px, 980px);
+          padding-top: 8px;
+          padding-bottom: 18px;
+        }
+        .hero {
+          display: none;
+        }
+        .brand {
+          gap: 10px;
+        }
+        .brand img {
+          width: 52px;
+        }
+        .brand h1 {
+          font-size: 21px;
+          line-height: 1.08;
+        }
+        .brand .sub {
+          display: none;
+        }
+        .lang-toggle button {
+          padding: 7px 10px;
+          font-size: 12px;
+        }
+        .panel {
+          padding: 0;
+          border-radius: 0;
+          background: transparent;
+          border: 0;
+          box-shadow: none;
+          backdrop-filter: none;
+        }
+        .manual {
+          grid-template-columns: 1fr;
+        }
+        .camera-shell {
+          aspect-ratio: 7 / 9;
+          border-radius: 18px;
+        }
+        .guide-top {
+          top: calc(34% - 30px);
+          font-size: 11px;
+        }
+        .camera-toolbar {
+          margin-top: 8px;
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 8px;
+        }
+        .camera-toolbar button,
+        .camera-toolbar a,
+        .manual button {
+          width: 100%;
+          min-width: 0;
+          min-height: 44px;
+          justify-content: center;
+          text-align: center;
+          padding: 11px 12px;
+          font-size: 12px;
+          border-radius: 16px;
+          box-shadow:
+            inset 0 1px 0 var(--glass-edge),
+            0 8px 16px rgba(12, 40, 80, 0.1);
+        }
+        .camera-toolbar button.primary {
+          box-shadow:
+            inset 0 1px 0 rgba(255,255,255,0.34),
+            0 10px 20px rgba(17, 118, 191, 0.22);
+        }
+        .camera-toolbar a,
+        .camera-toolbar button:not(.primary) {
+          background: rgba(255,255,255,0.88);
+        }
+        .status-card,
+        .results-card {
+          padding: 12px;
+          border-radius: 16px;
+          box-shadow:
+            inset 0 1px 0 var(--glass-edge),
+            0 12px 24px rgba(12, 40, 80, 0.08);
+        }
+        .status-head {
+          align-items: flex-start;
+          gap: 8px;
+        }
+        .status-badge {
+          padding: 5px 9px;
+          font-size: 11px;
+        }
+        .detected-plate {
+          min-height: 74px;
+          margin-top: 10px;
+          padding: 9px;
+        }
+        .detected-plate .value {
+          font-size: clamp(22px, 8vw, 34px);
+          letter-spacing: 0.08em;
+        }
+        .candidate-list {
+          margin-top: 8px;
+          gap: 6px;
+        }
+        .candidate-chip {
+          padding: 6px 9px;
+          font-size: 11px;
+        }
+        .manual input {
+          padding: 11px 13px;
+          font-size: 14px;
+        }
+        .results-stack {
+          gap: 8px;
+        }
+        .result-row {
+          padding: 10px;
+          border-radius: 14px;
+        }
+        .results-stack .result-row:first-child {
+          transform: translateY(-1px);
+        }
+        .results-stack .result-row:first-child .plate {
+          font-size: 18px;
+        }
+        .results-stack .result-row:first-child .amount {
+          font-size: 21px;
+        }
+        .result-head {
+          gap: 8px;
+          align-items: flex-start;
+          flex-direction: column;
+        }
+        .plate,
+        .amount {
+          font-size: 17px;
+        }
+        .amount {
+          color: #0f507e;
+        }
+        .result-meta {
+          margin-top: 5px;
+          font-size: 12px;
+          line-height: 1.45;
+        }
+        .result-actions {
+          margin-top: 8px;
+          gap: 7px;
+        }
+        .result-actions a {
+          min-height: 32px;
+          padding: 6px 0;
+        }
+        .note {
+          margin-top: 10px;
+          font-size: 12px;
+          line-height: 1.5;
+        }
+        .stage {
+          margin-top: 8px;
+          gap: 12px;
+        }
+        .topbar {
+          margin-bottom: 8px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="topbar">
+        <div class="brand">
+          <img src="./assets/logo.svg" alt="PLATE HK logo" />
+          <div>
+            <h1 id="title"></h1>
+            <div class="sub" id="subtitle"></div>
+          </div>
+        </div>
+        <div class="lang-toggle" role="group" aria-label="Language">
+          <button id="langZh" type="button" aria-pressed="true">繁</button>
+          <button id="langEn" type="button" aria-pressed="false">EN</button>
+        </div>
+      </div>
+
+      <section class="panel hero">
+        <div>
+          <div class="kicker" id="kicker"></div>
+          <div class="lede" id="lede"></div>
+          <ul class="bullets" id="tips"></ul>
+        </div>
+        <div class="summary-box">
+          <div class="summary-grid">
+            <div class="metric">
+              <div class="k" id="m1k"></div>
+              <div class="v" id="m1v"></div>
+            </div>
+            <div class="metric">
+              <div class="k" id="m2k"></div>
+              <div class="v" id="m2v"></div>
+            </div>
+            <div class="metric">
+              <div class="k" id="m3k"></div>
+              <div class="v" id="m3v"></div>
+            </div>
+            <div class="metric">
+              <div class="k" id="m4k"></div>
+              <div class="v" id="m4v"></div>
+            </div>
+          </div>
+          <div class="note" id="privacyNote"></div>
+        </div>
+      </section>
+
+      <section class="stage">
+        <div>
+          <div class="camera-shell">
+            <video id="video" playsinline muted></video>
+            <div class="camera-empty" id="cameraEmpty"></div>
+            <div class="guide" id="guideBox" aria-hidden="true"></div>
+            <div class="guide-top">
+              <span id="guideLeft"></span>
+              <span id="guideRight"></span>
+            </div>
+          </div>
+          <div class="camera-toolbar">
+            <button class="primary" id="startBtn" type="button"></button>
+            <button class="primary" id="aiScanBtn" type="button" disabled></button>
+            <button id="stopBtn" type="button" disabled></button>
+            <a id="openSearchLink" href="./index.html"></a>
+          </div>
+        </div>
+
+        <div>
+          <section class="status-card">
+            <div class="status-head">
+              <strong id="statusTitle"></strong>
+              <span class="status-badge" id="statusBadge"></span>
+            </div>
+            <div class="detected-plate">
+              <div>
+                <div class="value" id="detectedPlate">--</div>
+                <div class="hint" id="detectedHint"></div>
+              </div>
+            </div>
+            <div class="candidate-list" id="candidateList"></div>
+            <div class="manual">
+              <input id="manualInput" inputmode="latin" autocomplete="off" spellcheck="false" />
+              <button class="primary" id="manualSearchBtn" type="button"></button>
+            </div>
+            <div class="note" id="ocrMeta"></div>
+          </section>
+
+          <section class="results-card" style="margin-top:14px;">
+            <div class="status-head">
+              <strong id="resultsTitle"></strong>
+              <span class="status-badge" id="resultsBadge"></span>
+            </div>
+            <div class="results-stack" id="results"></div>
+            <div class="note" id="resultsHint"></div>
+          </section>
+        </div>
+      </section>
+
+      <div class="footer-links">
+        <a id="backHome" href="./index.html"></a> ·
+        <a id="apiDoc" href="./api.html"></a> ·
+        <a id="changelog" href="./changelog.html"></a>
+      </div>
+    </div>
+
+    <canvas id="ocrCanvas" width="960" height="320"></canvas>
+    <script src="./assets/camera.js?v=20260328-03"></script>
+  </body>
+</html>

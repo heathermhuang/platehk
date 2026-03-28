@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="zh-HK">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MCP 文件 | PVRM</title>
+    <meta
+      name="description"
+      content="Plate.hk MCP 文件：供模型或代理工具存取香港車牌拍賣搜尋資料的介面與使用說明。"
+    />
+    <meta name="robots" content="index,follow,max-image-preview:large" />
+    <link rel="canonical" href="https://plate.hk/mcp.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:title" content="MCP 文件 | Plate.hk" />
+    <meta property="og:description" content="查看 Plate.hk MCP 工具介面與資料欄位。" />
+    <meta property="og:url" content="https://plate.hk/mcp.html" />
+    <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Noto+Sans+HK:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root { --bg:#eaf1fb; --card:#f8fbffd6; --line:#d5e3f4; --ink:#0f1c2b; --muted:#5a6878; --accent:#1080c3; }
+      * { box-sizing:border-box; }
+      body {
+        margin:0;
+        font-family:"Space Grotesk","Noto Sans HK",sans-serif;
+        color:var(--ink);
+        background:
+          radial-gradient(circle at 12% 8%, #d6f3ff 0, transparent 30%),
+          radial-gradient(circle at 92% -4%, #d7f9ee 0, transparent 24%),
+          radial-gradient(circle at 82% 86%, #dde7ff 0, transparent 26%),
+          linear-gradient(180deg, #f4f9ff 0%, var(--bg) 100%);
+      }
+      .wrap { max-width:1020px; margin:0 auto; padding:28px 18px 46px; }
+      .top { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
+      .top a {
+        border:1px solid var(--line);
+        background:#ffffffcc;
+        border-radius:999px;
+        padding:8px 14px;
+        text-decoration:none;
+        box-shadow:0 6px 20px rgba(8,20,40,.08);
+      }
+      .card {
+        margin-top:16px;
+        background:var(--card);
+        border:1px solid var(--line);
+        border-radius:18px;
+        padding:22px;
+        box-shadow:
+          inset 0 1px 0 #ffffffa6,
+          0 20px 46px rgba(11, 39, 75, 0.16);
+        backdrop-filter: blur(18px) saturate(150%);
+      }
+      h1 { margin:0; font-size:32px; letter-spacing:-0.01em; }
+      h2 { margin:18px 0 8px; font-size:18px; }
+      p, li { line-height:1.7; }
+      .meta { color:var(--muted); margin-top:6px; }
+      ul, ol { margin:8px 0 0 18px; }
+      code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; font-size: 12px; }
+      a { color:var(--accent); }
+      .box { background:#ffffffcc; border:1px solid var(--line); border-radius:12px; padding:12px 14px; box-shadow: inset 0 1px 0 #ffffffa6; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="top">
+        <a id="backLink" href="./index.html">&larr; 返回首頁</a>
+      </div>
+      <div class="card">
+        <h1 id="title"></h1>
+        <div class="meta" id="updated"></div>
+        <div id="content"></div>
+      </div>
+    </div>
+
+    <script>
+      const I18N = {
+        zh: {
+          pageTitle: "MCP 文件 | PVRM",
+          title: "MCP 文件",
+          back: "← 返回首頁",
+          updated: "最後更新：2026年2月23日",
+          html: `
+            <p>目標：讓 AI 與第三方開發者以「工具」方式存取車牌拍賣資料，不需要下載全量 JSON。</p>
+
+            <h2>服務架構</h2>
+            <ul>
+              <li>靜態 Open Data API（見 <code>api/</code>）</li>
+              <li>伺服器端搜尋 API（MySQL，提供 <code>/api/search</code>）</li>
+              <li>MCP 服務建議做成薄 proxy：優先使用搜尋 API，失敗再 fallback 到靜態 JSON 分片</li>
+            </ul>
+
+            <h2>工具建議</h2>
+            <div class="box">
+              <div><code>vrm.list_datasets</code> → { datasets: [{ id, label, base }] }</div>
+              <div><code>vrm.list_issues</code> → { issues: [{ auction_date, count, is_lny? }] }</div>
+              <div><code>vrm.get_issue</code> → { auction_date, rows: [...] }</div>
+              <div><code>vrm.search</code> → { rows: [...], next_cursor? }</div>
+              <div><code>vrm.get_plate_history</code> → { plate, hits: [...] }</div>
+            </div>
+
+            <h2>搜尋規則</h2>
+            <ul>
+              <li>Query normalization：trim、uppercase、移除多餘空白</li>
+              <li>HK PVRM 搜尋：<code>I → 1</code>、<code>O → 0</code>、忽略空白</li>
+              <li>必要時以 <code>issue</code> 參數限定單一期數</li>
+            </ul>
+
+            <h2>實作備註</h2>
+            <ul>
+              <li>快取 <code>issues.manifest.json</code>（每個 dataset 一份）</li>
+              <li>快取熱門 issue shard</li>
+              <li>沒有索引時可做 progressive scan</li>
+            </ul>
+
+            <h2>可選索引方案</h2>
+            <p>若需要更快搜尋，可額外生成倒排索引分片，例如按 plate 前 2 字元：</p>
+            <div class="box"><code>index/{dataset}/prefix/{AA}.json</code></div>
+          `,
+        },
+        en: {
+          pageTitle: "MCP Docs | PVRM",
+          title: "MCP Docs",
+          back: "← Back to Home",
+          updated: "Last updated: 23 Feb 2026",
+          html: `
+            <p>Goal: let AI and third-party developers access plate auction data as tools without downloading the full JSON.</p>
+
+            <h2>Service Layout</h2>
+            <ul>
+              <li>Static Open Data API (see <code>api/</code>)</li>
+              <li>Server-side search API (MySQL, exposes <code>/api/search</code>)</li>
+              <li>MCP should be a thin proxy: prefer search API, fall back to static shards</li>
+            </ul>
+
+            <h2>Suggested Tools</h2>
+            <div class="box">
+              <div><code>vrm.list_datasets</code> → { datasets: [{ id, label, base }] }</div>
+              <div><code>vrm.list_issues</code> → { issues: [{ auction_date, count, is_lny? }] }</div>
+              <div><code>vrm.get_issue</code> → { auction_date, rows: [...] }</div>
+              <div><code>vrm.search</code> → { rows: [...], next_cursor? }</div>
+              <div><code>vrm.get_plate_history</code> → { plate, hits: [...] }</div>
+            </div>
+
+            <h2>Search Rules</h2>
+            <ul>
+              <li>Normalize query: trim, uppercase, collapse spaces</li>
+              <li>HK PVRM: map <code>I → 1</code>, <code>O → 0</code>, ignore spaces</li>
+              <li>Use <code>issue</code> to restrict to a single auction date when needed</li>
+            </ul>
+
+            <h2>Implementation Notes</h2>
+            <ul>
+              <li>Cache <code>issues.manifest.json</code> per dataset</li>
+              <li>Cache hot issue shards</li>
+              <li>Progressive scan if no index exists</li>
+            </ul>
+
+            <h2>Optional Index</h2>
+            <p>For faster search, build an inverted index shard by first two plate characters:</p>
+            <div class="box"><code>index/{dataset}/prefix/{AA}.json</code></div>
+          `,
+        },
+      };
+
+      const params = new URLSearchParams(location.search);
+      let lang = params.get("lang") === "en" ? "en" : "zh";
+      const titleEl = document.getElementById("title");
+      const updatedEl = document.getElementById("updated");
+      const contentEl = document.getElementById("content");
+      const backLinkEl = document.getElementById("backLink");
+
+      function render() {
+        const t = I18N[lang];
+        document.documentElement.lang = lang === "en" ? "en" : "zh-HK";
+        document.title = t.pageTitle;
+        titleEl.textContent = t.title;
+        updatedEl.textContent = t.updated;
+        contentEl.innerHTML = t.html;
+        backLinkEl.textContent = t.back;
+        backLinkEl.href = `./index.html?lang=${lang}`;
+      }
+
+      render();
+    </script>
+  </body>
+</html>

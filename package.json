@@ -1,0 +1,13 @@
+{
+  "name": "platehk-cloudflare-worker",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:cloudflare:assets": "python3 scripts/build_cloudflare_public.py",
+    "cf:dev": "npm run build:cloudflare:assets && wrangler dev",
+    "cf:deploy": "npm run build:cloudflare:assets && wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}

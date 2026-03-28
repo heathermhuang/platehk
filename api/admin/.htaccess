@@ -1,0 +1,5 @@
+Options -Indexes
+
+# Never allow web access to admin scripts. Use CLI cron: php api/admin/sync.php
+Require all denied
+

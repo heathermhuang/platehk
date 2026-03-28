@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="zh-HK">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#eaf1fb" />
+    <meta name="color-scheme" content="light" />
+    <title>Plate.hk | 香港車牌拍賣結果搜尋</title>
+    <meta
+      name="description"
+      content="Plate.hk 入口頁：香港車牌拍賣結果搜尋平台，涵蓋 PVRM、TVRM 實體拍賣及拍牌易資料。"
+    />
+    <meta name="robots" content="index,follow,max-image-preview:large" />
+    <link rel="canonical" href="https://plate.hk/landing.html" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Plate.hk" />
+    <meta property="og:title" content="Plate.hk | 香港車牌拍賣結果搜尋" />
+    <meta property="og:description" content="香港車牌拍賣結果搜尋平台入口頁。" />
+    <meta property="og:url" content="https://plate.hk/landing.html" />
+    <meta property="og:locale" content="zh_HK" />
+    <meta property="og:locale:alternate" content="en" />
+    <meta property="og:image" content="https://plate.hk/assets/logo.svg" />
+    <meta property="og:image:alt" content="Plate.hk logo" />
+    <meta name="twitter:image:alt" content="Plate.hk logo" />
+    <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg" />
+    <link rel="dns-prefetch" href="//fonts.googleapis.com" />
+    <link rel="dns-prefetch" href="//fonts.gstatic.com" />
+    <script>
+      (() => {
+        const host = typeof location !== "undefined" ? location.hostname : "";
+        if (!["plate.hk", "www.plate.hk"].includes(host)) return;
+        const GA_ID = "G-8N8TVEGQHM";
+        const dnt =
+          (typeof navigator !== "undefined" &&
+            (navigator.doNotTrack === "1" || navigator.msDoNotTrack === "1")) ||
+          (typeof window !== "undefined" && window.doNotTrack === "1");
+        if (dnt) return;
+
+        window.dataLayer = window.dataLayer || [];
+        window.gtag = function () {
+          window.dataLayer.push(arguments);
+        };
+        window.gtag("js", new Date());
+        window.gtag("config", GA_ID);
+
+        const loadAnalytics = () => {
+          const s = document.createElement("script");
+          s.async = true;
+          s.src = `https://www.googletagmanager.com/gtag/js?id=${GA_ID}`;
+          s.referrerPolicy = "strict-origin-when-cross-origin";
+          document.head.appendChild(s);
+        };
+
+        if ("requestIdleCallback" in window) {
+          window.requestIdleCallback(loadAnalytics, { timeout: 2000 });
+        } else {
+          window.addEventListener("load", loadAnalytics, { once: true });
+        }
+      })();
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Noto+Sans+HK:wght@400;600;700;900&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #eaf1fb;
+        --panel: #f8fbffd6;
+        --ink: #0f1c2b;
+        --muted: #5a6878;
+        --accent: #1080c3;
+        --accent-soft: #d8ebff;
+        --line: #d5e3f4;
+        --plate: #f8c400;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background:
+          radial-gradient(circle at 12% 8%, #d6f3ff 0, transparent 30%),
+          radial-gradient(circle at 92% -4%, #d7f9ee 0, transparent 24%),
+          radial-gradient(circle at 82% 86%, #dde7ff 0, transparent 26%),
+          linear-gradient(180deg, #f4f9ff 0%, var(--bg) 100%);
+        color: var(--ink);
+        font-family: "Space Grotesk", "Noto Sans HK", sans-serif;
+      }
+      .wrap { max-width: 1120px; margin: 0 auto; padding: 28px 18px 56px; }
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 18px;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .mark {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 56px;
+        height: 56px;
+        border-radius: 16px;
+        background: linear-gradient(180deg, #ffffff, #f7fbff);
+        border: 1px solid var(--line);
+        box-shadow: 0 10px 30px rgba(12, 40, 80, 0.12);
+        font-weight: 900;
+        letter-spacing: 0.02em;
+        color: #102b43;
+        flex: 0 0 auto;
+      }
+      .titles { display: flex; flex-direction: column; gap: 4px; }
+      h1 { margin: 0; font-size: 30px; line-height: 1.08; letter-spacing: 0.01em; }
+      .sub {
+        color: var(--muted);
+        font-size: 14px;
+        font-weight: 600;
+        line-height: 1.2;
+      }
+      .actions { display: flex; align-items: center; gap: 10px; }
+      select {
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 10px 14px;
+        font: inherit;
+        background: #ffffffcc;
+        box-shadow: 0 6px 20px rgba(8, 20, 40, 0.08);
+      }
+      .hero {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        padding: 20px;
+        box-shadow:
+          inset 0 1px 0 #ffffffa6,
+          0 20px 46px rgba(11, 39, 75, 0.16);
+        backdrop-filter: blur(18px) saturate(150%);
+      }
+      .hero-grid {
+        display: grid;
+        grid-template-columns: 1.15fr 1fr;
+        gap: 14px;
+        align-items: start;
+      }
+      .chips {
+        margin-top: 10px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .chip {
+        font-size: 12px;
+        font-weight: 900;
+        color: #18578f;
+        background: var(--accent-soft);
+        border: 1px solid #bfddf7;
+        border-radius: 999px;
+        padding: 6px 10px;
+      }
+      .lead {
+        color: var(--muted);
+        line-height: 1.7;
+        font-size: 14px;
+        margin-top: 8px;
+      }
+      .cta-row {
+        margin-top: 14px;
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        border-radius: 12px;
+        border: 1px solid transparent;
+        padding: 11px 14px;
+        font-weight: 900;
+        text-decoration: none;
+        cursor: pointer;
+        user-select: none;
+      }
+      .btn.primary {
+        background: linear-gradient(135deg, #0c6ea8, #0f87b7);
+        color: white;
+      }
+      .btn.ghost {
+        background: #ffffff;
+        color: var(--accent);
+        border-color: #bfddf7;
+      }
+      .cards {
+        margin-top: 14px;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+      }
+      .card {
+        background: #ffffffd9;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 14px;
+        box-shadow: 0 12px 30px rgba(12, 40, 80, 0.08);
+      }
+      .card .k {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        font-weight: 900;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+        color: #18578f;
+        background: var(--accent-soft);
+        border: 1px solid #bfddf7;
+        border-radius: 999px;
+        padding: 6px 10px;
+      }
+      .k.soon {
+        color: #6a6a6a;
+        background: #f3f3f3;
+        border-color: #e1e1e1;
+      }
+      .card h2 { margin: 10px 0 0; font-size: 18px; }
+      .card p { margin: 8px 0 0; color: var(--muted); line-height: 1.65; font-size: 14px; }
+      .card .go { margin-top: 12px; display: flex; gap: 10px; flex-wrap: wrap; }
+      .btn.disabled {
+        pointer-events: none;
+        opacity: 0.6;
+      }
+
+      footer {
+        margin-top: 16px;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.6;
+      }
+      footer a { color: var(--accent); }
+
+      @media (max-width: 920px) {
+        .hero-grid { grid-template-columns: 1fr; }
+        .cards { grid-template-columns: 1fr; }
+      }
+      @media (max-width: 520px) {
+        h1 { font-size: 26px; }
+        .mark { width: 50px; height: 50px; border-radius: 15px; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="topbar">
+        <div class="brand">
+          <div class="mark">hk.app</div>
+          <div class="titles">
+            <h1 id="h1"></h1>
+            <div class="sub" id="sub"></div>
+          </div>
+        </div>
+        <div class="actions">
+          <select id="lang" aria-label="Language / 語言" title="Language / 語言">
+            <option value="zh">中文 Chinese</option>
+            <option value="en">English 英文</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="hero">
+        <div class="hero-grid">
+          <div>
+            <div class="lead" id="lead"></div>
+            <div class="chips" id="chips"></div>
+            <div class="cta-row">
+              <a class="btn primary" id="openAll" href="./index.html">Open</a>
+              <a class="btn ghost" id="openPvrm" href="./index.html?d=pvrm">PVRM</a>
+              <a class="btn ghost" id="openTvrmPhysical" href="./index.html?d=tvrm_physical">TVRM Physical</a>
+              <a class="btn ghost" id="openTvrmEAuction" href="./index.html?d=tvrm_eauction">TVRM E-Auction</a>
+            </div>
+          </div>
+          <div class="cards">
+            <div class="card">
+              <span class="k">Featured</span>
+              <h2 id="c1t"></h2>
+              <p id="c1p"></p>
+              <div class="go">
+                <a class="btn primary" id="c1b" href="./index.html?d=pvrm">Open</a>
+              </div>
+            </div>
+            <div class="card">
+              <span class="k soon" id="c2k">Coming soon</span>
+              <h2 id="c2t"></h2>
+              <p id="c2p"></p>
+              <div class="go">
+                <a class="btn primary disabled" id="c2b" href="#">Soon</a>
+              </div>
+            </div>
+            <div class="card">
+              <span class="k soon" id="c3k">Coming soon</span>
+              <h2 id="c3t"></h2>
+              <p id="c3p"></p>
+              <div class="go">
+                <a class="btn primary disabled" id="c3b" href="#">Soon</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer>
+        <div id="foot1"></div>
+        <div style="margin-top:6px;">
+          <a id="popular" href="./plates/index.html">熱門車牌</a> ·
+          <a id="terms" href="./terms.html">使用條款</a> ·
+          <a id="privacy" href="./privacy.html">私隱政策</a> ·
+          <a id="changelog" href="./changelog.html">更新日誌</a> ·
+          <a id="feedback" href="https://forms.gle/1YFfSmraLp27YneU9" target="_blank" rel="noopener">反饋表格</a>
+        </div>
+      </footer>
+    </div>
+    <script src="./assets/landing.js"></script>
+  </body>
+</html>

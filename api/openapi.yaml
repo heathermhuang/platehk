@@ -1,0 +1,87 @@
+openapi: 3.0.3
+info:
+  title: Hong Kong VRM Auction Data API
+  version: v1
+  description: |
+    Static Open Data API for Hong Kong vehicle registration mark auction results.
+    Data sources are Transport Department published PDF handouts and a bundled legacy TVRM workbook.
+servers:
+  - url: https://<your-domain>
+paths:
+  /api/v1/index.json:
+    get:
+      summary: API entrypoint
+      responses:
+        "200":
+          description: OK
+  /api/v1/{dataset}/issues.manifest.json:
+    get:
+      summary: List issues (auction dates) and shard file paths
+      parameters:
+        - in: path
+          name: dataset
+          required: true
+          schema:
+            type: string
+            enum: [pvrm, tvrm_physical, tvrm_eauction, tvrm_legacy]
+      responses:
+        "200":
+          description: OK
+  /api/v1/{dataset}/auctions.json:
+    get:
+      summary: Per-issue metadata (PDF URLs, proceeds, errors)
+      parameters:
+        - in: path
+          name: dataset
+          required: true
+          schema:
+            type: string
+            enum: [pvrm, tvrm_physical, tvrm_eauction, tvrm_legacy]
+      responses:
+        "200":
+          description: OK
+  /api/v1/{dataset}/results.slim.json:
+    get:
+      summary: Full dataset as a flat array (large)
+      parameters:
+        - in: path
+          name: dataset
+          required: true
+          schema:
+            type: string
+            enum: [pvrm, tvrm_physical, tvrm_eauction, tvrm_legacy]
+      responses:
+        "200":
+          description: OK
+  /api/v1/{dataset}/preset.amount_desc.top1000.json:
+    get:
+      summary: Convenience preset (top 1000 by amount desc)
+      parameters:
+        - in: path
+          name: dataset
+          required: true
+          schema:
+            type: string
+            enum: [pvrm, tvrm_physical, tvrm_eauction, tvrm_legacy]
+      responses:
+        "200":
+          description: OK
+  /api/v1/{dataset}/issues/{auction_date}.json:
+    get:
+      summary: Issue shard (all rows for one issue)
+      parameters:
+        - in: path
+          name: dataset
+          required: true
+          schema:
+            type: string
+            enum: [pvrm, tvrm_physical, tvrm_eauction, tvrm_legacy]
+        - in: path
+          name: auction_date
+          required: true
+          schema:
+            type: string
+            example: "2026-01-17"
+      responses:
+        "200":
+          description: OK

@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="zh-HK">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>資料審核 | PVRM</title>
+    <meta
+      name="description"
+      content="Plate.hk 資料審核頁：查看香港車牌拍賣資料的 PDF 可用性、期數、總額與解析狀態。"
+    />
+    <meta name="robots" content="index,follow,max-image-preview:large" />
+    <link rel="canonical" href="https://plate.hk/audit.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:title" content="資料審核 | Plate.hk" />
+    <meta property="og:description" content="查看香港車牌拍賣資料審核與 PDF 狀態。" />
+    <meta property="og:url" content="https://plate.hk/audit.html" />
+    <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Noto+Sans+HK:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #eaf1fb;
+        --ink: #0f1c2b;
+        --muted: #5a6878;
+        --card: #f8fbffd6;
+        --line: #d5e3f4;
+        --accent: #1080c3;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background:
+          radial-gradient(circle at 12% 8%, #d6f3ff 0, transparent 30%),
+          radial-gradient(circle at 92% -4%, #d7f9ee 0, transparent 24%),
+          radial-gradient(circle at 82% 86%, #dde7ff 0, transparent 26%),
+          linear-gradient(180deg, #f4f9ff 0%, var(--bg) 100%);
+        color: var(--ink);
+        font-family: "Space Grotesk", "Noto Sans HK", sans-serif;
+      }
+      .wrap {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 28px 18px 46px;
+      }
+      header {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 10px;
+      }
+      .title {
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        font-size: 30px;
+      }
+      .sub {
+        color: var(--muted);
+        font-size: 14px;
+      }
+      .actions {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+      .actions a,
+      .actions button,
+      select {
+        font: inherit;
+        border: 1px solid var(--line);
+        background: #ffffffcc;
+        border-radius: 999px;
+        padding: 8px 14px;
+        color: var(--ink);
+        cursor: pointer;
+        text-decoration: none;
+        box-shadow: 0 6px 20px rgba(8, 20, 40, 0.08);
+      }
+      .actions button {
+        white-space: nowrap;
+      }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 18px;
+        box-shadow:
+          inset 0 1px 0 #ffffffa6,
+          0 20px 46px rgba(11, 39, 75, 0.16);
+        backdrop-filter: blur(18px) saturate(150%);
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+      }
+      .stat {
+        border: 1px dashed var(--line);
+        border-radius: 14px;
+        padding: 11px;
+        background: #ffffff9e;
+      }
+      .stat .k {
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .stat .v {
+        font-weight: 800;
+        font-size: 18px;
+        margin-top: 2px;
+      }
+      .filters {
+        margin-top: 12px;
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .filters input,
+      .filters select {
+        min-width: 180px;
+      }
+      .filters label {
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border: 1px solid var(--line);
+        background: #ffffffcc;
+        border-radius: 999px;
+        padding: 8px 12px;
+        box-shadow: 0 6px 20px rgba(8, 20, 40, 0.08);
+      }
+      .toggle input {
+        min-width: auto;
+      }
+      .validation-grid {
+        margin-top: 12px;
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+      }
+      .summary-note {
+        margin-top: 10px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .row-problem td {
+        background: #fff7f7;
+      }
+      .table-wrap {
+        margin-top: 12px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: #ffffffb8;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+        min-width: 980px;
+        table-layout: fixed;
+      }
+      th,
+      td {
+        border-top: 1px solid var(--line);
+        padding: 8px 6px;
+        vertical-align: top;
+      }
+      th {
+        text-align: left;
+        color: var(--ink);
+        background: #eaf1fb;
+        position: sticky;
+        top: 0;
+        z-index: 1;
+      }
+      td {
+        word-break: break-word;
+        overflow-wrap: anywhere;
+      }
+      .pdf-cell a {
+        color: var(--accent);
+        text-decoration: none;
+        font-weight: 700;
+      }
+      .pdf-cell a:hover {
+        text-decoration: underline;
+      }
+      .nowrap {
+        white-space: nowrap;
+      }
+      .pdf-meta {
+        margin-top: 4px;
+      }
+      .ok {
+        color: #0b6b2a;
+        font-weight: 700;
+      }
+      .bad {
+        color: #a12b2b;
+        font-weight: 700;
+      }
+      .muted {
+        color: var(--muted);
+      }
+      code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        font-size: 12px;
+        white-space: pre-wrap;
+        word-break: break-word;
+        overflow-wrap: anywhere;
+      }
+      @media (max-width: 900px) {
+        .grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        .validation-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <div>
+          <div class="title" id="title">資料審核</div>
+          <div class="sub" id="sub">PDF 下載與清洗狀態總覽</div>
+        </div>
+        <div class="actions">
+          <a href="./index.html" id="backLink">返回</a>
+          <button id="langBtn">English</button>
+        </div>
+      </header>
+
+      <div class="card">
+        <div class="grid" id="stats"></div>
+        <div class="filters">
+          <label for="datasetSel" id="datasetLabel">資料集</label>
+          <select id="datasetSel"></select>
+          <label for="statusSel" id="statusLabel">狀態</label>
+          <select id="statusSel"></select>
+          <label for="issueQuery" id="queryLabel">期數 / 檔案</label>
+          <input id="issueQuery" type="search" placeholder="搜尋期數或 PDF 名稱" />
+          <label class="toggle" for="problemsOnly">
+            <input id="problemsOnly" type="checkbox" />
+            <span id="problemsOnlyLabel">只看問題</span>
+          </label>
+          <span class="muted" id="generatedAt"></span>
+        </div>
+        <div class="validation-grid" id="validationStats"></div>
+        <div class="summary-note" id="auditSummary"></div>
+        <div class="table-wrap">
+          <table>
+            <colgroup>
+              <col style="width: 170px" />
+              <col style="width: 170px" />
+              <col style="width: 360px" />
+              <col style="width: 140px" />
+              <col style="width: 90px" />
+              <col style="width: 150px" />
+              <col style="width: 220px" />
+            </colgroup>
+            <thead>
+              <tr>
+                <th id="thDataset">分類</th>
+                <th id="thIssue">期數</th>
+                <th id="thPdf">PDF</th>
+                <th id="thOk">狀態</th>
+                <th id="thRows">車牌數</th>
+                <th id="thTotal">總額</th>
+                <th id="thErr">錯誤</th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <script src="./assets/audit.js"></script>
+  </body>
+</html>

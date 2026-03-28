@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="zh-HK">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>API 文檔 | PVRM</title>
+    <meta
+      name="description"
+      content="Plate.hk API 文檔：香港車牌拍賣資料的公開 JSON 介面、欄位與使用方式。"
+    />
+    <meta name="robots" content="index,follow,max-image-preview:large" />
+    <link rel="canonical" href="https://plate.hk/api.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:title" content="API 文檔 | Plate.hk" />
+    <meta property="og:description" content="查看 Plate.hk 公開 API 與資料欄位說明。" />
+    <meta property="og:url" content="https://plate.hk/api.html" />
+    <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Noto+Sans+HK:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg:#eaf1fb;
+        --card:#f8fbffd6;
+        --line:#d5e3f4;
+        --ink:#0f1c2b;
+        --muted:#5a6878;
+        --accent:#1080c3;
+      }
+      * { box-sizing:border-box; }
+      body {
+        margin:0;
+        font-family:"Space Grotesk","Noto Sans HK",sans-serif;
+        color:var(--ink);
+        background:
+          radial-gradient(circle at 12% 8%, #d6f3ff 0, transparent 30%),
+          radial-gradient(circle at 92% -4%, #d7f9ee 0, transparent 24%),
+          radial-gradient(circle at 82% 86%, #dde7ff 0, transparent 26%),
+          linear-gradient(180deg, #f4f9ff 0%, var(--bg) 100%);
+      }
+      .wrap { max-width:1020px; margin:0 auto; padding:28px 18px 46px; }
+      .top { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
+      .top a {
+        border:1px solid var(--line);
+        background:#ffffffcc;
+        border-radius:999px;
+        padding:8px 14px;
+        text-decoration:none;
+        box-shadow:0 6px 20px rgba(8,20,40,.08);
+      }
+      .card {
+        margin-top:16px;
+        background:var(--card);
+        border:1px solid var(--line);
+        border-radius:18px;
+        padding:22px;
+        box-shadow:
+          inset 0 1px 0 #ffffffa6,
+          0 20px 46px rgba(11, 39, 75, 0.16);
+        backdrop-filter: blur(18px) saturate(150%);
+      }
+      h1 { margin:0; font-size:32px; letter-spacing:-0.01em; }
+      h2 { margin:18px 0 8px; font-size:18px; }
+      p, li { line-height:1.7; }
+      .meta { color:var(--muted); margin-top:6px; }
+      ul { margin:8px 0 0 18px; }
+      code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; font-size: 12px; }
+      a { color:var(--accent); }
+      .box {
+        background:#ffffffcc;
+        border:1px solid var(--line);
+        border-radius:12px;
+        padding:12px 14px;
+        box-shadow: inset 0 1px 0 #ffffffa6;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="top">
+        <a id="backLink" href="./index.html">&larr; 返回首頁</a>
+      </div>
+      <div class="card">
+        <h1 id="title"></h1>
+        <div class="meta" id="updated"></div>
+        <div id="content"></div>
+      </div>
+    </div>
+    <script src="./assets/api-page.js?v=20260326-02"></script>
+  </body>
+</html>

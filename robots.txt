@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /api/v1/
+Disallow: /api/admin/
+Sitemap: https://plate.hk/sitemap.xml

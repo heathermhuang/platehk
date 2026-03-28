@@ -1,0 +1,15 @@
+.DS_Store
+.tmp/
+.venv/
+.wrangler/
+node_modules/
+test-results/
+
+api/config.local.php
+cloudflare-worker/.dev.vars
+cloudflare-worker/.env
+cloudflare-worker/.env.*
+
+server/dump.sql
+logs/
+review_findings.md
