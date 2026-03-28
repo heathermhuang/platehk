@@ -1,21 +1,26 @@
-# 香港自訂車牌拍賣結果搜尋
+# Plate.hk
 
-這個網站會自動從運輸署拍賣頁抓取所有歷史拍賣結果 PDF，解析成可搜尋資料，並提供每筆結果的原始 PDF 連結。
+香港車牌拍賣結果搜尋與資料整理專案。  
+這個 repo 會把運輸署歷年拍賣資料整理成可搜尋、可驗證、可部署的靜態資料網站與 Cloudflare Worker API。
 
-## 網站目錄（TOC）
-
-- 首頁（搜尋）: https://plate.hk/
-- 條款: https://plate.hk/terms.html
-- 私隱政策: https://plate.hk/privacy.html
-- 更新日誌: https://plate.hk/changelog.html
-- 資料審核: https://plate.hk/audit.html
+Live site:
+- 首頁: https://plate.hk/
 - API 文檔: https://plate.hk/api.html
+- 資料審核: https://plate.hk/audit.html
+- 更新日誌: https://plate.hk/changelog.html
 
-## 功能
+資料範圍：
+- 自訂車牌 `PVRM`
+- 傳統車牌 `TVRM` 實體拍賣
+- `拍牌易` E-Auction
+- `1973-2006` 傳統車牌年份分段資料
 
-- 搜尋車牌（可匹配單行及雙行排列）
-- 顯示拍賣日期、上午/下午場次、成交金額
-- 每筆結果可直接打開原始 PDF 驗證
+主要能力：
+- 按車牌、成交價、拍賣日期搜尋
+- 每筆結果可回跳官方 PDF 驗證
+- 熱門車牌靜態 SEO 頁
+- mobile 相機辨識搜尋
+- Cloudflare Worker 原生部署
 
 ## 安裝與更新資料
 
