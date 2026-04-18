@@ -11,7 +11,8 @@
               points: [
                 "首頁正式支援 `Accept: text/markdown`，Agent 請求現在可直接取得機器友善的 Markdown 版本，不再只能讀 HTML。",
                 "新增 discovery `Link` headers、`/.well-known/api-catalog`、Agent Skills index、`agent.md` 與 `skill.md`，讓公開資料入口更容易被 AI 工具發現。",
-                "首頁註冊 4 個 WebMCP 工具（資料集、搜尋、期數列表、單一期數查詢），讓支援 `navigator.modelContext` 的代理可直接調用 Plate.hk。",
+                "新增 OAuth Protected Resource Metadata（`/.well-known/oauth-protected-resource`），讓代理可發現 `vision:ocr` 保護 API 的授權伺服器與 scope。",
+                "新增 `/.well-known/mcp/server-card.json`、`/.well-known/mcp-server-card` 與真實的 `/mcp` streamable HTTP transport，讓代理不只可在瀏覽器內用 WebMCP，也能由 server card 直接發現 Plate.hk 公開工具。",
                 "重新部署後，Is It Agent Ready 掃描結果由 Level 2 提升到 Level 4（Agent-Integrated）。"
               ]
             },
@@ -337,7 +338,8 @@
               points: [
                 "The homepage now supports `Accept: text/markdown`, so agents can request a machine-friendly Markdown representation instead of parsing only HTML.",
                 "Added discovery `Link` headers, `/.well-known/api-catalog`, an Agent Skills index, plus `agent.md` and `skill.md` so the public data surface is easier for AI tooling to discover.",
-                "Registered 4 WebMCP tools on the homepage for dataset discovery, search, issue listing, and single-issue lookup through `navigator.modelContext`.",
+                "Added OAuth Protected Resource Metadata at `/.well-known/oauth-protected-resource` so agents can discover the authorization server and `vision:ocr` scope for the protected OCR API.",
+                "Added `/.well-known/mcp/server-card.json`, `/.well-known/mcp-server-card`, and a real `/mcp` streamable HTTP transport so agents can discover Plate.hk's public tools outside the browser WebMCP path.",
                 "After redeploying, the Is It Agent Ready score moved from Level 2 to Level 4 (Agent-Integrated)."
               ]
             },

@@ -21,8 +21,12 @@ Agent-readable guidance:
 - Skill summary: /skill.md
 - Agent Skills index: /.well-known/agent-skills/index.json
 - API catalog: /.well-known/api-catalog
+- OAuth protected resource metadata: /.well-known/oauth-protected-resource
 - OAuth authorization server metadata for protected APIs: /.well-known/oauth-authorization-server
 - OAuth JWKS: /.well-known/jwks.json
+- MCP Server Card: /.well-known/mcp/server-card.json
+- MCP Server Card (SEP path): /.well-known/mcp-server-card
+- MCP transport: /mcp
 
 Optional server-side search API (faster, if deployed):
 - Health check: /api/health

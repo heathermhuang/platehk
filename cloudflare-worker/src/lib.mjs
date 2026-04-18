@@ -419,6 +419,17 @@ export function getOAuthScopeCatalog() {
   return [OAUTH_SCOPE_VISION];
 }
 
+export function buildOAuthProtectedResourceMetadata(request, env, resourcePath = "/api/vision_plate") {
+  const issuer = getOAuthIssuer(request, env);
+  const normalizedPath = `/${String(resourcePath || "/api/vision_plate").replace(/^\/+/, "")}`;
+  return {
+    resource: `${issuer}${normalizedPath}`,
+    authorization_servers: [issuer],
+    scopes_supported: getOAuthScopeCatalog(),
+    bearer_methods_supported: ["header"],
+  };
+}
+
 export function buildOAuthAuthorizationServerMetadata(request, env) {
   const issuer = getOAuthIssuer(request, env);
   return {

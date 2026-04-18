@@ -6,7 +6,12 @@
 1) **靜態 Open Data API**（見 `api/`）  
 2) **伺服器端搜尋 API（MySQL）**（見 `server/`，提供 `/api/search`）
 
-MCP 服務建議做成一個薄薄的 proxy：
+現在 Worker 已提供一個最小可用的 HTTP MCP 端點：
+- `/mcp`
+- `/.well-known/mcp/server-card.json`
+- `/.well-known/mcp-server-card`
+
+MCP 服務設計仍建議保持薄薄的 proxy：
 - 優先呼叫伺服器端 `/api/search`（不需要掃描分片 JSON，延遲最低）
 - 若後端不可用，再 fallback 到 `/api/v1/...` 的分片資料
 

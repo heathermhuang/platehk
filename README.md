@@ -42,6 +42,8 @@ Plate.hk turns Transport Department source documents into a searchable static we
 - A public `/api/v1` JSON surface for dataset browsing
 - Camera-assisted lookup via the Cloudflare Worker runtime
 - OAuth 2.0 client-credentials discovery for protected OCR access
+- OAuth Protected Resource Metadata for agent auth discovery
+- MCP Server Card plus a streamable HTTP `/mcp` transport for agent tool discovery
 - Build scripts for ingestion, normalization, validation, and release packaging
 
 ## Data Coverage
@@ -194,8 +196,9 @@ For the contributor workflow, review [CONTRIBUTING.md](./CONTRIBUTING.md).
 - Review [SECURITY.md](./SECURITY.md) before changing public endpoints, OCR flows, or deployment boundaries
 - Run `python3 scripts/scan_repo_secrets.py` if you touched config, CI, or API-adjacent code
 - Do not commit credentials, tokens, or local environment files
-- Protected agent-facing OCR auth is published via `/.well-known/oauth-authorization-server` and `/.well-known/jwks.json`
+- Protected agent-facing OCR auth is published via `/.well-known/oauth-protected-resource`, `/.well-known/oauth-authorization-server`, and `/.well-known/jwks.json`
 - The worker expects `OAUTH_CLIENTS_JSON`, `OAUTH_JWT_PRIVATE_JWK`, and `OAUTH_JWKS_JSON` to issue and verify bearer tokens for `/api/vision_plate`
+- The worker now also serves a public MCP transport at `/mcp` with discovery at `/.well-known/mcp/server-card.json` and `/.well-known/mcp-server-card`
 
 ## License
 

@@ -1,9 +1,14 @@
 import { handleApiRequest } from "./api.mjs";
 import {
+  buildOAuthProtectedResourceMetadata,
   buildOAuthAuthorizationServerMetadata,
   getOAuthJwksDocument,
   getStaticText,
 } from "./lib.mjs";
+import {
+  buildMcpServerCard,
+  handleMcpRequest,
+} from "./mcp.mjs";
 
 const PRIMARY_HOSTS = new Set(["plate.hk", "www.plate.hk"]);
 
@@ -55,8 +60,12 @@ function appendLink(headers, value) {
 
 function appendDiscoveryLinkHeaders(headers, url) {
   appendLink(headers, `</.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json"`);
+  appendLink(headers, `</.well-known/oauth-protected-resource>; rel="alternate"; type="application/json"`);
   appendLink(headers, `</.well-known/oauth-authorization-server>; rel="alternate"; type="application/json"`);
   appendLink(headers, `</.well-known/jwks.json>; rel="alternate"; type="application/jwk-set+json"`);
+  appendLink(headers, `</.well-known/mcp/server-card.json>; rel="alternate"; type="application/json"`);
+  appendLink(headers, `</.well-known/mcp-server-card>; rel="alternate"; type="application/json"`);
+  appendLink(headers, `</mcp>; rel="alternate"; type="application/json"`);
   appendLink(headers, `</api/openapi.yaml>; rel="service-desc"; type="application/openapi+yaml"`);
   appendLink(headers, `</api.html>; rel="service-doc"; type="text/html"`);
   appendLink(headers, `</sitemap.xml>; rel="sitemap"; type="application/xml"`);
@@ -127,6 +136,13 @@ function serveOauthAuthorizationServerMetadata(request, env, { noindex = false }
   return new Response(JSON.stringify(buildOAuthAuthorizationServerMetadata(request, env)), { status: 200, headers });
 }
 
+function serveOauthProtectedResourceMetadata(request, env, { noindex = false } = {}) {
+  const headers = jsonAssetHeaders("application/json", { noindex, crossOrigin: true });
+  appendLink(headers, `</.well-known/oauth-authorization-server>; rel="alternate"; type="application/json"`);
+  if (request.method === "HEAD") return new Response(null, { status: 200, headers });
+  return new Response(JSON.stringify(buildOAuthProtectedResourceMetadata(request, env, "/api/vision_plate")), { status: 200, headers });
+}
+
 function serveOauthJwks(request, env, { noindex = false } = {}) {
   const headers = jsonAssetHeaders("application/jwk-set+json", {
     noindex,
@@ -135,6 +151,13 @@ function serveOauthJwks(request, env, { noindex = false } = {}) {
   });
   if (request.method === "HEAD") return new Response(null, { status: 200, headers });
   return new Response(JSON.stringify(getOAuthJwksDocument(env)), { status: 200, headers });
+}
+
+function serveMcpServerCard(request, { noindex = false } = {}) {
+  const headers = jsonAssetHeaders("application/json", { noindex, crossOrigin: true });
+  appendLink(headers, `</mcp>; rel="alternate"; type="application/json"`);
+  if (request.method === "HEAD") return new Response(null, { status: 200, headers });
+  return new Response(JSON.stringify(buildMcpServerCard(request)), { status: 200, headers });
 }
 
 function buildStagingRobotsTxt() {
@@ -162,11 +185,20 @@ async function serveAsset(request, env) {
   if (url.pathname === "/.well-known/api-catalog" && (request.method === "GET" || request.method === "HEAD")) {
     return serveApiCatalog(request, env, { noindex: genericNoindex });
   }
+  if ((url.pathname === "/.well-known/oauth-protected-resource"
+      || url.pathname === "/.well-known/oauth-protected-resource/api/vision_plate")
+      && (request.method === "GET" || request.method === "HEAD")) {
+    return serveOauthProtectedResourceMetadata(request, env, { noindex: genericNoindex });
+  }
   if (url.pathname === "/.well-known/oauth-authorization-server" && (request.method === "GET" || request.method === "HEAD")) {
     return serveOauthAuthorizationServerMetadata(request, env, { noindex: genericNoindex });
   }
   if (url.pathname === "/.well-known/jwks.json" && (request.method === "GET" || request.method === "HEAD")) {
     return serveOauthJwks(request, env, { noindex: genericNoindex });
+  }
+  if ((url.pathname === "/.well-known/mcp/server-card.json" || url.pathname === "/.well-known/mcp-server-card")
+      && (request.method === "GET" || request.method === "HEAD")) {
+    return serveMcpServerCard(request, { noindex: genericNoindex });
   }
   if (!primaryHost && url.pathname === "/robots.txt") {
     return new Response(buildStagingRobotsTxt(), {
@@ -228,6 +260,9 @@ export default {
     }
     if (url.pathname.startsWith("/api/")) {
       return handleApiRequest(request, env, ctx);
+    }
+    if (url.pathname === "/mcp") {
+      return handleMcpRequest(request, env, ctx);
     }
     return serveAsset(request, env);
   },

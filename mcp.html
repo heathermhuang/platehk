@@ -83,7 +83,7 @@
           pageTitle: "MCP 文件 | PVRM",
           title: "MCP 文件",
           back: "← 返回首頁",
-          updated: "最後更新：2026年2月23日",
+          updated: "最後更新：2026年4月18日",
           html: `
             <p>目標：讓 AI 與第三方開發者以「工具」方式存取車牌拍賣資料，不需要下載全量 JSON。</p>
 
@@ -91,17 +91,24 @@
             <ul>
               <li>靜態 Open Data API（見 <code>api/</code>）</li>
               <li>伺服器端搜尋 API（MySQL，提供 <code>/api/search</code>）</li>
-              <li>MCP 服務建議做成薄 proxy：優先使用搜尋 API，失敗再 fallback 到靜態 JSON 分片</li>
+              <li>Worker 現已提供最小可用的 streamable HTTP MCP 端點：<code>/mcp</code></li>
+              <li>MCP Server Card 會同時發布在 <code>/.well-known/mcp/server-card.json</code> 與 <code>/.well-known/mcp-server-card</code></li>
             </ul>
 
             <h2>工具建議</h2>
             <div class="box">
-              <div><code>vrm.list_datasets</code> → { datasets: [{ id, label, base }] }</div>
-              <div><code>vrm.list_issues</code> → { issues: [{ auction_date, count, is_lny? }] }</div>
-              <div><code>vrm.get_issue</code> → { auction_date, rows: [...] }</div>
-              <div><code>vrm.search</code> → { rows: [...], next_cursor? }</div>
-              <div><code>vrm.get_plate_history</code> → { plate, hits: [...] }</div>
+              <div><code>platehk_list_datasets</code> → 公開 dataset 與 API 入口</div>
+              <div><code>platehk_search</code> → 跨 dataset 搜尋車牌歷史</div>
+              <div><code>platehk_list_issues</code> → 列出指定 dataset 的拍賣期數</div>
+              <div><code>platehk_get_issue</code> → 取得指定期數完整資料</div>
             </div>
+
+            <h2>Discovery</h2>
+            <ul>
+              <li>OAuth Protected Resource Metadata：<code>/.well-known/oauth-protected-resource</code></li>
+              <li>OAuth Authorization Server：<code>/.well-known/oauth-authorization-server</code></li>
+              <li>MCP Server Card：<code>/.well-known/mcp/server-card.json</code></li>
+            </ul>
 
             <h2>搜尋規則</h2>
             <ul>
@@ -126,7 +133,7 @@
           pageTitle: "MCP Docs | PVRM",
           title: "MCP Docs",
           back: "← Back to Home",
-          updated: "Last updated: 23 Feb 2026",
+          updated: "Last updated: 18 Apr 2026",
           html: `
             <p>Goal: let AI and third-party developers access plate auction data as tools without downloading the full JSON.</p>
 
@@ -134,17 +141,24 @@
             <ul>
               <li>Static Open Data API (see <code>api/</code>)</li>
               <li>Server-side search API (MySQL, exposes <code>/api/search</code>)</li>
-              <li>MCP should be a thin proxy: prefer search API, fall back to static shards</li>
+              <li>The Worker now exposes a minimal streamable HTTP MCP endpoint at <code>/mcp</code></li>
+              <li>The MCP Server Card is published at both <code>/.well-known/mcp/server-card.json</code> and <code>/.well-known/mcp-server-card</code></li>
             </ul>
 
             <h2>Suggested Tools</h2>
             <div class="box">
-              <div><code>vrm.list_datasets</code> → { datasets: [{ id, label, base }] }</div>
-              <div><code>vrm.list_issues</code> → { issues: [{ auction_date, count, is_lny? }] }</div>
-              <div><code>vrm.get_issue</code> → { auction_date, rows: [...] }</div>
-              <div><code>vrm.search</code> → { rows: [...], next_cursor? }</div>
-              <div><code>vrm.get_plate_history</code> → { plate, hits: [...] }</div>
+              <div><code>platehk_list_datasets</code> → public datasets and API entrypoints</div>
+              <div><code>platehk_search</code> → search auction history across datasets</div>
+              <div><code>platehk_list_issues</code> → list auction issues for a dataset</div>
+              <div><code>platehk_get_issue</code> → fetch the full row set for one issue</div>
             </div>
+
+            <h2>Discovery</h2>
+            <ul>
+              <li>OAuth Protected Resource Metadata: <code>/.well-known/oauth-protected-resource</code></li>
+              <li>OAuth Authorization Server: <code>/.well-known/oauth-authorization-server</code></li>
+              <li>MCP Server Card: <code>/.well-known/mcp/server-card.json</code></li>
+            </ul>
 
             <h2>Search Rules</h2>
             <ul>

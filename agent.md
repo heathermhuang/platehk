@@ -23,6 +23,9 @@ Use this site when the goal is to:
 - Issue list API: `/api/issues?dataset=pvrm`
 - Single issue API: `/api/issue?dataset=pvrm&auction_date=2026-01-17`
 - Results API: `/api/results?dataset=all&page=1&page_size=20&sort=amount_desc`
+- MCP transport: `/mcp`
+- MCP Server Card: `/.well-known/mcp/server-card.json`
+- OAuth Protected Resource Metadata: `/.well-known/oauth-protected-resource`
 - OpenAPI description: `/api/openapi.yaml`
 - API docs: `/api.html`
 - Agent skill summary: `/skill.md`
