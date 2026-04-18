@@ -6,6 +6,7 @@ This project now has a full Cloudflare Workers runtime for the public site on `p
 - public data is served from `api/v1/*` static assets
 - search/results/issues/issue are driven from static JSON and chunked dataset files
 - OCR remains server-side and calls OpenAI from the Worker
+- protected OCR now also has OAuth 2.0 discovery and token issuance for machine clients
 
 DreamHost is no longer required for the `pvrm.hk` runtime path.
 
@@ -28,6 +29,7 @@ DreamHost is no longer required for the `pvrm.hk` runtime path.
 - Worker handles dynamic API routes under `/api/*`.
 - Search/results/issues/issue are built from static manifests, issue shards, presets, and chunked result files.
 - OCR stays server-side and calls OpenAI from the Worker.
+- Machine clients can discover auth at `/.well-known/oauth-authorization-server` and obtain bearer tokens from `/api/oauth/token`.
 
 ## Public assets staged for Cloudflare
 
@@ -51,6 +53,9 @@ Required:
 
 Recommended:
 - `APP_SECURITY_TOKEN_SECRET`
+- `OAUTH_CLIENTS_JSON`
+- `OAUTH_JWT_PRIVATE_JWK`
+- `OAUTH_JWKS_JSON`
 
 ## Commands
 

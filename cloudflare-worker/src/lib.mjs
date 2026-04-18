@@ -1,6 +1,9 @@
 const ISOLATE_RATE_LIMITS = new Map();
 const encoder = new TextEncoder();
 const STATIC_JSON_CACHE = new Map();
+const OAUTH_SCOPE_VISION = "vision:ocr";
+const OAUTH_SIGNING_CACHE = new Map();
+const OAUTH_VERIFY_CACHE = new Map();
 
 export function jsonResponse(data, status = 200, extraHeaders = {}) {
   return apiJsonResponse(JSON.stringify(data), status, extraHeaders);
@@ -105,6 +108,13 @@ export function requireJsonContentType(request) {
   const contentType = request.headers.get("content-type") || "";
   const mediaType = contentType.split(";", 1)[0].trim().toLowerCase();
   if (mediaType !== "application/json") return unsupportedMediaType();
+  return null;
+}
+
+export function requireFormUrlencodedContentType(request) {
+  const contentType = request.headers.get("content-type") || "";
+  const mediaType = contentType.split(";", 1)[0].trim().toLowerCase();
+  if (mediaType !== "application/x-www-form-urlencoded") return unsupportedMediaType();
   return null;
 }
 
@@ -399,9 +409,223 @@ export function getOpenAiConfig(env) {
   return { apiKey, baseUrl, timeoutSeconds, visionModel };
 }
 
+export function getOAuthIssuer(request, env) {
+  const configured = String(env.OAUTH_ISSUER || "").trim().replace(/\/+$/, "");
+  if (configured) return configured;
+  return new URL(request.url).origin;
+}
+
+export function getOAuthScopeCatalog() {
+  return [OAUTH_SCOPE_VISION];
+}
+
+export function buildOAuthAuthorizationServerMetadata(request, env) {
+  const issuer = getOAuthIssuer(request, env);
+  return {
+    issuer,
+    token_endpoint: `${issuer}/api/oauth/token`,
+    jwks_uri: `${issuer}/.well-known/jwks.json`,
+    grant_types_supported: ["client_credentials"],
+    token_endpoint_auth_methods_supported: ["client_secret_basic", "client_secret_post"],
+    scopes_supported: getOAuthScopeCatalog(),
+    service_documentation: `${issuer}/api.html`,
+  };
+}
+
+export function getOAuthJwksDocument(env) {
+  const raw = String(env.OAUTH_JWKS_JSON || "").trim();
+  if (!raw) return { keys: [] };
+  try {
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.keys)) return { keys: [] };
+    return {
+      keys: parsed.keys.filter((key) => key && typeof key === "object").map((key) => ({
+        ...key,
+        key_ops: undefined,
+        d: undefined,
+      })),
+    };
+  } catch {
+    return { keys: [] };
+  }
+}
+
+export function getOAuthClientMap(env) {
+  const raw = String(env.OAUTH_CLIENTS_JSON || "").trim();
+  if (!raw) return new Map();
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return new Map();
+  }
+  const entries = Array.isArray(parsed)
+    ? parsed
+        .filter((item) => item && typeof item === "object" && item.client_id)
+        .map((item) => [String(item.client_id), item])
+    : Object.entries(parsed || {}).map(([clientId, config]) => [clientId, config]);
+  const out = new Map();
+  for (const [clientId, config] of entries) {
+    const objectConfig = typeof config === "string" ? { client_secret: config } : (config || {});
+    const secret = String(objectConfig.client_secret || "").trim();
+    if (!clientId || !secret) continue;
+    const allowedScopes = Array.isArray(objectConfig.scopes) && objectConfig.scopes.length
+      ? objectConfig.scopes.map((scope) => String(scope || "").trim()).filter(Boolean)
+      : [OAUTH_SCOPE_VISION];
+    out.set(String(clientId), {
+      client_id: String(clientId),
+      client_secret: secret,
+      scopes: Array.from(new Set(allowedScopes)),
+      token_ttl_seconds: Math.max(60, Math.min(3600, Number(objectConfig.token_ttl_seconds || 300) || 300)),
+    });
+  }
+  return out;
+}
+
+export function isOAuthConfigured(env) {
+  return getOAuthClientMap(env).size > 0
+    && getOAuthJwksDocument(env).keys.length > 0
+    && String(env.OAUTH_JWT_PRIVATE_JWK || "").trim() !== "";
+}
+
 export function getSecuritySigningKey(env) {
   const seed = String(env.APP_SECURITY_TOKEN_SECRET || env.OPENAI_API_KEY || env.MYSQL_PASSWORD || "platehk-worker");
   return encoder.encode(cheapHashHex(`${seed}|platehk|vision-session`));
+}
+
+function getOAuthPrivateJwk(env) {
+  const raw = String(env.OAUTH_JWT_PRIVATE_JWK || "").trim();
+  if (!raw) throw new ApiError("oauth_not_configured", 503);
+  try {
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object" || parsed.kty !== "RSA") {
+      throw new Error("invalid_jwk");
+    }
+    return parsed;
+  } catch {
+    throw new ApiError("oauth_not_configured", 503);
+  }
+}
+
+function getOAuthPublicJwk(env, kid = "") {
+  const jwks = getOAuthJwksDocument(env);
+  const key = jwks.keys.find((item) => String(item?.kid || "") === String(kid || "")) || jwks.keys[0];
+  if (!key || key.kty !== "RSA") throw new ApiError("oauth_not_configured", 503);
+  return key;
+}
+
+async function getOAuthSigningKey(env) {
+  const privateJwk = getOAuthPrivateJwk(env);
+  const cacheKey = JSON.stringify(privateJwk);
+  if (OAUTH_SIGNING_CACHE.has(cacheKey)) return OAUTH_SIGNING_CACHE.get(cacheKey);
+  const key = await crypto.subtle.importKey(
+    "jwk",
+    privateJwk,
+    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  OAUTH_SIGNING_CACHE.set(cacheKey, key);
+  return key;
+}
+
+async function getOAuthVerifyKey(env, kid = "") {
+  const publicJwk = getOAuthPublicJwk(env, kid);
+  const cacheKey = JSON.stringify(publicJwk);
+  if (OAUTH_VERIFY_CACHE.has(cacheKey)) return OAUTH_VERIFY_CACHE.get(cacheKey);
+  const key = await crypto.subtle.importKey(
+    "jwk",
+    publicJwk,
+    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+    false,
+    ["verify"],
+  );
+  OAUTH_VERIFY_CACHE.set(cacheKey, key);
+  return key;
+}
+
+function normalizeScopeRequest(rawScope, allowedScopes) {
+  const requested = String(rawScope || "").trim();
+  if (!requested) return allowedScopes.slice();
+  const deduped = Array.from(new Set(requested.split(/\s+/).map((scope) => scope.trim()).filter(Boolean)));
+  if (!deduped.length) return allowedScopes.slice();
+  for (const scope of deduped) {
+    if (!allowedScopes.includes(scope)) throw new ApiError("invalid_scope", 400);
+  }
+  return deduped;
+}
+
+export async function issueOAuthAccessToken(request, env, client, requestedScope = "") {
+  const issuer = getOAuthIssuer(request, env);
+  const privateJwk = getOAuthPrivateJwk(env);
+  const scope = normalizeScopeRequest(requestedScope, client.scopes);
+  const now = Math.floor(Date.now() / 1000);
+  const exp = now + client.token_ttl_seconds;
+  const header = {
+    alg: "RS256",
+    typ: "at+jwt",
+    kid: String(privateJwk.kid || getOAuthPublicJwk(env).kid || "platehk-oauth-rs256"),
+  };
+  const payload = {
+    iss: issuer,
+    sub: client.client_id,
+    aud: `${issuer}/api/vision_plate`,
+    client_id: client.client_id,
+    scope: scope.join(" "),
+    iat: now,
+    nbf: now,
+    exp,
+    jti: randomHex(16),
+  };
+  const encodedHeader = base64urlEncode(JSON.stringify(header));
+  const encodedPayload = base64urlEncode(JSON.stringify(payload));
+  const signingInput = `${encodedHeader}.${encodedPayload}`;
+  const signingKey = await getOAuthSigningKey(env);
+  const signature = await crypto.subtle.sign(
+    { name: "RSASSA-PKCS1-v1_5" },
+    signingKey,
+    encoder.encode(signingInput),
+  );
+  return {
+    access_token: `${signingInput}.${base64urlEncode(new Uint8Array(signature))}`,
+    token_type: "Bearer",
+    expires_in: client.token_ttl_seconds,
+    scope: payload.scope,
+  };
+}
+
+export async function requireOAuthAccessToken(request, env, requiredScope = OAUTH_SCOPE_VISION) {
+  const headerValue = String(request.headers.get("authorization") || "").trim();
+  if (!/^bearer\s+/i.test(headerValue)) throw new ApiError("oauth_token_required", 403);
+  const token = headerValue.replace(/^bearer\s+/i, "").trim();
+  const parts = token.split(".");
+  if (parts.length !== 3) throw new ApiError("oauth_token_invalid", 403);
+  let header;
+  let payload;
+  try {
+    header = JSON.parse(base64urlDecodeToString(parts[0]));
+    payload = JSON.parse(base64urlDecodeToString(parts[1]));
+  } catch {
+    throw new ApiError("oauth_token_invalid", 403);
+  }
+  if (!header || header.alg !== "RS256") throw new ApiError("oauth_token_invalid", 403);
+  const verifyKey = await getOAuthVerifyKey(env, String(header.kid || ""));
+  const valid = await crypto.subtle.verify(
+    { name: "RSASSA-PKCS1-v1_5" },
+    verifyKey,
+    base64urlDecodeBytes(parts[2]),
+    encoder.encode(`${parts[0]}.${parts[1]}`),
+  );
+  if (!valid) throw new ApiError("oauth_token_invalid", 403);
+  const issuer = getOAuthIssuer(request, env);
+  const now = Math.floor(Date.now() / 1000);
+  if (String(payload.iss || "") !== issuer) throw new ApiError("oauth_token_invalid", 403);
+  if (Number(payload.nbf || 0) > now || Number(payload.exp || 0) < now) throw new ApiError("oauth_token_expired", 403);
+  const audience = Array.isArray(payload.aud) ? payload.aud.map(String) : [String(payload.aud || "")];
+  if (!audience.includes(`${issuer}/api/vision_plate`)) throw new ApiError("oauth_token_invalid", 403);
+  const scopeSet = new Set(String(payload.scope || "").split(/\s+/).filter(Boolean));
+  if (requiredScope && !scopeSet.has(requiredScope)) throw new ApiError("insufficient_scope", 403);
+  return payload;
 }
 
 export async function issueVisionSessionToken(request, env) {
@@ -475,10 +699,14 @@ export function base64urlEncode(input) {
   return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
 
-export function base64urlDecodeToString(input) {
+export function base64urlDecodeBytes(input) {
   const padded = String(input).replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(input.length / 4) * 4, "=");
   const binary = atob(padded);
-  return new TextDecoder().decode(Uint8Array.from(binary, (c) => c.charCodeAt(0)));
+  return Uint8Array.from(binary, (c) => c.charCodeAt(0));
+}
+
+export function base64urlDecodeToString(input) {
+  return new TextDecoder().decode(base64urlDecodeBytes(input));
 }
 
 export function cheapHashHex(text) {

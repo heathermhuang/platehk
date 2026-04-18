@@ -1,2 +1,5 @@
 OPENAI_API_KEY=sk-...
 APP_SECURITY_TOKEN_SECRET=replace-with-random-secret
+OAUTH_CLIENTS_JSON={"agent-client":{"client_secret":"replace-with-long-random-secret","scopes":["vision:ocr"]}}
+OAUTH_JWT_PRIVATE_JWK={"kty":"RSA","kid":"platehk-oauth-rs256","use":"sig","alg":"RS256","n":"<base64url-modulus>","e":"AQAB","d":"<base64url-private-exponent>","p":"<base64url-p>","q":"<base64url-q>","dp":"<base64url-dp>","dq":"<base64url-dq>","qi":"<base64url-qi>"}
+OAUTH_JWKS_JSON={"keys":[{"kty":"RSA","kid":"platehk-oauth-rs256","use":"sig","alg":"RS256","n":"<base64url-modulus>","e":"AQAB"}]}

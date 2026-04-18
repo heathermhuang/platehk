@@ -21,9 +21,15 @@ Agent-readable guidance:
 - Skill summary: /skill.md
 - Agent Skills index: /.well-known/agent-skills/index.json
 - API catalog: /.well-known/api-catalog
+- OAuth authorization server metadata for protected APIs: /.well-known/oauth-authorization-server
+- OAuth JWKS: /.well-known/jwks.json
 
 Optional server-side search API (faster, if deployed):
 - Health check: /api/health
 - Search: /api/search?dataset=pvrm&q=L1BERTY&sort=amount_desc&page=1&page_size=200
 - Issues: /api/issues?dataset=pvrm
 - Issue: /api/issue?dataset=pvrm&auction_date=2026-01-17
+
+Protected machine-auth API:
+- OCR token endpoint: /api/oauth/token (OAuth 2.0 client_credentials)
+- OCR endpoint: /api/vision_plate (Bearer token scope: vision:ocr)

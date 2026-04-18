@@ -8,10 +8,13 @@ import {
   enforcePublicReadRateLimit,
   enforceRateLimit,
   enforceSearchWindow,
+  getOAuthClientMap,
   getOpenAiConfig,
+  getOAuthJwksDocument,
   getStaticJson,
   handleApiError,
   issueVisionSessionToken,
+  issueOAuthAccessToken,
   jsonResponse,
   loadDatasetAllRows,
   loadDatasetAuctionMap,
@@ -26,15 +29,61 @@ import {
   notFound,
   plateNormForRow,
   readJsonBody,
+  requireFormUrlencodedContentType,
   requireGetLike,
   requireJsonContentType,
   requireMethod,
+  requireOAuthAccessToken,
   requireVisionSessionToken,
   sameOriginError,
   validDataset,
   withApiCache,
   httpPostJson,
 } from "./lib.mjs";
+
+function oauthErrorResponse(error, status = 400, description = "", extraHeaders = {}) {
+  const payload = { error };
+  if (description) payload.error_description = description;
+  return apiJsonResponse(JSON.stringify(payload), status, extraHeaders);
+}
+
+function parseClientBasicAuth(request) {
+  const header = String(request.headers.get("authorization") || "").trim();
+  if (!/^basic\s+/i.test(header)) return { clientId: "", clientSecret: "" };
+  try {
+    const decoded = atob(header.replace(/^basic\s+/i, ""));
+    const idx = decoded.indexOf(":");
+    if (idx === -1) return { clientId: "", clientSecret: "" };
+    return {
+      clientId: decoded.slice(0, idx),
+      clientSecret: decoded.slice(idx + 1),
+    };
+  } catch {
+    return { clientId: "", clientSecret: "" };
+  }
+}
+
+async function readTokenForm(request) {
+  const mediaErr = requireFormUrlencodedContentType(request);
+  if (mediaErr) return { error: mediaErr, form: null };
+  const raw = await request.text();
+  if (raw.length > 8192) throw new ApiError("payload_too_large", 400);
+  return {
+    error: null,
+    form: new URLSearchParams(raw),
+  };
+}
+
+function timingSafeEqual(a, b) {
+  const av = new TextEncoder().encode(String(a || ""));
+  const bv = new TextEncoder().encode(String(b || ""));
+  let mismatch = av.length === bv.length ? 0 : 1;
+  const len = Math.max(av.length, bv.length);
+  for (let i = 0; i < len; i += 1) {
+    mismatch |= (av[i] || 0) ^ (bv[i] || 0);
+  }
+  return mismatch === 0;
+}
 
 function duplicateKeyForRow(row) {
   const amount = row.amount_hkd == null ? null : Number(row.amount_hkd);
@@ -454,15 +503,64 @@ async function handleVisionSession(request, env) {
   }, 200, { "set-cookie": issued.cookie });
 }
 
+async function handleOauthToken(request, env) {
+  const methodErr = requireMethod(request, "POST");
+  if (methodErr) return methodErr;
+  if (!getOAuthJwksDocument(env).keys.length || !String(env.OAUTH_JWT_PRIVATE_JWK || "").trim()) {
+    return oauthErrorResponse("server_error", 503, "oauth_not_configured");
+  }
+  const { error: formError, form } = await readTokenForm(request);
+  if (formError) return formError;
+  const grantType = String(form.get("grant_type") || "");
+  if (grantType !== "client_credentials") {
+    return oauthErrorResponse("unsupported_grant_type", 400, "Only client_credentials is supported.");
+  }
+
+  const basic = parseClientBasicAuth(request);
+  const clientId = basic.clientId || String(form.get("client_id") || "").trim();
+  const clientSecret = basic.clientSecret || String(form.get("client_secret") || "").trim();
+  if (!clientId || !clientSecret) {
+    return oauthErrorResponse(
+      "invalid_client",
+      401,
+      "Client authentication is required.",
+      { "www-authenticate": 'Basic realm="plate.hk OAuth", charset="UTF-8"' },
+    );
+  }
+
+  const client = getOAuthClientMap(env).get(clientId);
+  if (!client || !timingSafeEqual(client.client_secret, clientSecret)) {
+    return oauthErrorResponse(
+      "invalid_client",
+      401,
+      "Client authentication failed.",
+      { "www-authenticate": 'Basic realm="plate.hk OAuth", charset="UTF-8"' },
+    );
+  }
+
+  try {
+    const issued = await issueOAuthAccessToken(request, env, client, String(form.get("scope") || ""));
+    return jsonResponse(issued);
+  } catch (error) {
+    if (error instanceof ApiError && error.code === "invalid_scope") {
+      return oauthErrorResponse("invalid_scope", 400, "Requested scope is not allowed for this client.");
+    }
+    throw error;
+  }
+}
+
 async function handleVisionPlate(request, env) {
   const methodErr = requireMethod(request, "POST");
   if (methodErr) return methodErr;
   const mediaErr = requireJsonContentType(request);
   if (mediaErr) return mediaErr;
-  const originErr = sameOriginError(request);
-  if (originErr) return originErr;
-  enforceRateLimit(`vision_plate:minute:${request.headers.get("cf-connecting-ip") || "unknown"}`, 45, 60);
-  enforceRateLimit(`vision_plate:hour:${request.headers.get("cf-connecting-ip") || "unknown"}`, 600, 3600);
+  const hasBearerToken = /^bearer\s+/i.test(String(request.headers.get("authorization") || ""));
+  if (!hasBearerToken) {
+    const originErr = sameOriginError(request);
+    if (originErr) return originErr;
+    enforceRateLimit(`vision_plate:minute:${request.headers.get("cf-connecting-ip") || "unknown"}`, 45, 60);
+    enforceRateLimit(`vision_plate:hour:${request.headers.get("cf-connecting-ip") || "unknown"}`, 600, 3600);
+  }
 
   const { apiKey, baseUrl, timeoutSeconds, visionModel } = getOpenAiConfig(env);
   if (!apiKey || !/^https:\/\//i.test(baseUrl)) return jsonResponse({ error: "vision_not_configured" }, 503);
@@ -474,7 +572,13 @@ async function handleVisionPlate(request, env) {
   if (!m) return badRequest("invalid_image_data_url");
   const bytes = Uint8Array.from(atob(m[2]), (c) => c.charCodeAt(0));
   if (bytes.length > 5 * 1024 * 1024) return badRequest("image_too_large");
-  await requireVisionSessionToken(request, env, String(req.vision_token || ""));
+  if (hasBearerToken) {
+    const token = await requireOAuthAccessToken(request, env);
+    enforceRateLimit(`vision_plate_oauth_client:minute:${String(token.client_id || token.sub || "unknown")}`, 90, 60);
+    enforceRateLimit(`vision_plate_oauth_client:hour:${String(token.client_id || token.sub || "unknown")}`, 1200, 3600);
+  } else {
+    await requireVisionSessionToken(request, env, String(req.vision_token || ""));
+  }
 
   const prompt = lang === "en"
     ? "Read the Hong Kong vehicle registration mark from this cropped plate image. Return JSON only with keys: plate, confidence, raw_text, reasoning_note. Normalize by removing spaces, converting I to 1, O to 0, and dropping Q. If uncertain, still return your best guess and lower confidence."
@@ -539,6 +643,7 @@ export async function handleApiRequest(request, env, ctx) {
     if (route === "issue") return handleIssue(request, env, ctx);
     if (route === "results") return handleResults(request, env, ctx);
     if (route === "search") return handleSearch(request, env, ctx);
+    if (route === "oauth/token") return handleOauthToken(request, env, ctx);
     if (route === "vision_session") return handleVisionSession(request, env, ctx);
     if (route === "vision_plate") return handleVisionPlate(request, env, ctx);
     return notFound("not_found");

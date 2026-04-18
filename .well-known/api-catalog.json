@@ -76,6 +76,31 @@
           "type": "application/json"
         }
       ]
+    },
+    {
+      "anchor": "https://plate.hk/api/vision_plate",
+      "service-desc": [
+        {
+          "href": "https://plate.hk/api/openapi.yaml",
+          "type": "application/openapi+yaml"
+        }
+      ],
+      "service-doc": [
+        {
+          "href": "https://plate.hk/api.html",
+          "type": "text/html"
+        }
+      ],
+      "service-meta": [
+        {
+          "href": "https://plate.hk/.well-known/oauth-authorization-server",
+          "type": "application/json"
+        },
+        {
+          "href": "https://plate.hk/.well-known/jwks.json",
+          "type": "application/jwk-set+json"
+        }
+      ]
     }
   ]
 }

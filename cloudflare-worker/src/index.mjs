@@ -1,5 +1,9 @@
 import { handleApiRequest } from "./api.mjs";
-import { getStaticText } from "./lib.mjs";
+import {
+  buildOAuthAuthorizationServerMetadata,
+  getOAuthJwksDocument,
+  getStaticText,
+} from "./lib.mjs";
 
 const PRIMARY_HOSTS = new Set(["plate.hk", "www.plate.hk"]);
 
@@ -51,6 +55,8 @@ function appendLink(headers, value) {
 
 function appendDiscoveryLinkHeaders(headers, url) {
   appendLink(headers, `</.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json"`);
+  appendLink(headers, `</.well-known/oauth-authorization-server>; rel="alternate"; type="application/json"`);
+  appendLink(headers, `</.well-known/jwks.json>; rel="alternate"; type="application/jwk-set+json"`);
   appendLink(headers, `</api/openapi.yaml>; rel="service-desc"; type="application/openapi+yaml"`);
   appendLink(headers, `</api.html>; rel="service-doc"; type="text/html"`);
   appendLink(headers, `</sitemap.xml>; rel="sitemap"; type="application/xml"`);
@@ -99,6 +105,38 @@ async function serveApiCatalog(request, env, { noindex = false } = {}) {
   return new Response(body, { status: 200, headers });
 }
 
+function jsonAssetHeaders(contentType, { noindex = false, cacheControl = "public, max-age=300, must-revalidate", crossOrigin = false } = {}) {
+  const headers = new Headers({
+    "content-type": `${contentType}; charset=utf-8`,
+    "cache-control": cacheControl,
+    "x-content-type-options": "nosniff",
+    "x-frame-options": "SAMEORIGIN",
+    "referrer-policy": "strict-origin-when-cross-origin",
+    "permissions-policy": "geolocation=(), microphone=(), camera=(self), browsing-topics=()",
+    "cross-origin-resource-policy": crossOrigin ? "cross-origin" : "same-origin",
+  });
+  if (crossOrigin) headers.set("access-control-allow-origin", "*");
+  if (noindex) headers.set("x-robots-tag", "noindex, nofollow, noarchive");
+  return headers;
+}
+
+function serveOauthAuthorizationServerMetadata(request, env, { noindex = false } = {}) {
+  const headers = jsonAssetHeaders("application/json", { noindex, crossOrigin: true });
+  appendLink(headers, `</.well-known/jwks.json>; rel="alternate"; type="application/jwk-set+json"`);
+  if (request.method === "HEAD") return new Response(null, { status: 200, headers });
+  return new Response(JSON.stringify(buildOAuthAuthorizationServerMetadata(request, env)), { status: 200, headers });
+}
+
+function serveOauthJwks(request, env, { noindex = false } = {}) {
+  const headers = jsonAssetHeaders("application/jwk-set+json", {
+    noindex,
+    cacheControl: "public, max-age=3600, must-revalidate",
+    crossOrigin: true,
+  });
+  if (request.method === "HEAD") return new Response(null, { status: 200, headers });
+  return new Response(JSON.stringify(getOAuthJwksDocument(env)), { status: 200, headers });
+}
+
 function buildStagingRobotsTxt() {
   return [
     "User-agent: *",
@@ -123,6 +161,12 @@ async function serveAsset(request, env) {
   }
   if (url.pathname === "/.well-known/api-catalog" && (request.method === "GET" || request.method === "HEAD")) {
     return serveApiCatalog(request, env, { noindex: genericNoindex });
+  }
+  if (url.pathname === "/.well-known/oauth-authorization-server" && (request.method === "GET" || request.method === "HEAD")) {
+    return serveOauthAuthorizationServerMetadata(request, env, { noindex: genericNoindex });
+  }
+  if (url.pathname === "/.well-known/jwks.json" && (request.method === "GET" || request.method === "HEAD")) {
+    return serveOauthJwks(request, env, { noindex: genericNoindex });
   }
   if (!primaryHost && url.pathname === "/robots.txt") {
     return new Response(buildStagingRobotsTxt(), {

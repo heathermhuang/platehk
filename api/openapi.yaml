@@ -8,6 +8,37 @@ info:
 servers:
   - url: https://<your-domain>
 paths:
+  /api/oauth/token:
+    post:
+      summary: Issue machine bearer tokens for protected OCR access
+      description: |
+        OAuth 2.0 token endpoint for agent clients.
+        Supports the `client_credentials` grant with `client_secret_basic` or `client_secret_post`.
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [grant_type]
+              properties:
+                grant_type:
+                  type: string
+                  enum: [client_credentials]
+                scope:
+                  type: string
+                  example: "vision:ocr"
+                client_id:
+                  type: string
+                client_secret:
+                  type: string
+      responses:
+        "200":
+          description: Bearer token issued
+        "400":
+          description: Invalid request, unsupported grant, or invalid scope
+        "401":
+          description: Invalid client authentication
   /api/v1/index.json:
     get:
       summary: API entrypoint
@@ -85,3 +116,39 @@ paths:
       responses:
         "200":
           description: OK
+  /api/vision_plate:
+    post:
+      summary: OCR a cropped Hong Kong plate image
+      description: |
+        Protected OCR endpoint.
+        Browser clients can continue using the same-origin `vision_session` flow, while machine clients can send a bearer token with the `vision:ocr` scope.
+      security:
+        - BearerToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [image_data_url]
+              properties:
+                image_data_url:
+                  type: string
+                  format: uri
+                lang:
+                  type: string
+                  enum: [zh, en]
+                vision_token:
+                  type: string
+                  description: Browser-only same-origin session token.
+      responses:
+        "200":
+          description: OCR result
+        "403":
+          description: Missing or invalid authorization
+components:
+  securitySchemes:
+    BearerToken:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
