@@ -1,0 +1,15 @@
+{
+  "version": "0.2.0",
+  "skills": [
+    {
+      "name": "platehk-public-data",
+      "description": "Search and inspect Hong Kong vehicle registration mark auction history with source-linked public APIs.",
+      "entrypoint": "https://plate.hk/skill.md"
+    },
+    {
+      "name": "platehk-issue-inspector",
+      "description": "Enumerate auction issues by dataset and inspect all rows for a single auction date.",
+      "entrypoint": "https://plate.hk/.well-known/agent-skills/platehk-issue-inspector/SKILL.md"
+    }
+  ]
+}

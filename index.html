@@ -104,6 +104,9 @@
         --glass-edge: #ffffffa6;
         --glass-glow: rgba(20, 110, 170, 0.14);
       }
+      html {
+        font-family: "Space Grotesk", "Noto Sans HK", sans-serif;
+      }
       * { box-sizing: border-box; }
       body {
         margin: 0;
@@ -113,8 +116,9 @@
           radial-gradient(circle at 82% 86%, #dde7ff 0, transparent 26%),
           linear-gradient(180deg, #f4f9ff 0%, var(--bg) 100%);
         color: var(--ink);
-        font-family: "Space Grotesk", "Noto Sans HK", sans-serif;
+        font-family: inherit;
       }
+      button, input, select, textarea { font: inherit; }
       .wrap { max-width: 1200px; margin: 0 auto; padding: 28px 18px 48px; }
       .brand {
         display: flex;
@@ -147,13 +151,15 @@
         align-items: center;
         justify-content: center;
         gap: 6px;
+        min-width: 44px;
+        min-height: 44px;
         border: 1px solid var(--line);
         border-radius: 999px;
-        padding: 9px 12px;
+        padding: 10px 14px;
         background: #ffffffd9;
         color: var(--ink);
         text-decoration: none;
-        font-size: 13px;
+        font-size: 14px;
         line-height: 1;
         font-weight: 800;
         box-shadow:
@@ -514,7 +520,9 @@
         margin-bottom: 6px;
       }
       .link-card a {
-        display: block;
+        display: flex;
+        align-items: center;
+        min-height: 44px;
         color: var(--accent);
         text-decoration: none;
         padding: 7px 8px;
@@ -1096,15 +1104,19 @@
         color: var(--accent);
         text-decoration: none;
         font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        min-height: 36px;
+        padding: 6px 0;
       }
       .issue-jump-link:hover {
         text-decoration: underline;
       }
       .icon-btn {
-        width: 36px;
-        height: 36px;
+        width: 44px;
+        height: 44px;
         border: 1px solid var(--line);
-        border-radius: 10px;
+        border-radius: 12px;
         background: #ffffffd4;
         display: inline-flex;
         align-items: center;
@@ -1127,9 +1139,9 @@
         display: block;
       }
       .row-share-btn {
-        width: 36px;
-        height: 36px;
-        border-radius: 10px;
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
       }
       .share-modal {
         position: fixed;
@@ -1196,10 +1208,12 @@
         border: none;
         background: transparent;
         color: var(--ink);
-        padding: 4px 9px;
+        min-width: 44px;
+        min-height: 44px;
+        padding: 0 14px;
         border-radius: 999px;
-        font-weight: 600;
-        font-size: 12px;
+        font-weight: 700;
+        font-size: 13px;
         cursor: pointer;
         letter-spacing: 0.2px;
       }
@@ -1545,9 +1559,9 @@
         }
         .table-wrap .icon-btn,
         .table-wrap .row-share-btn {
-          width: 32px;
-          height: 32px;
-          border-radius: 9px;
+          width: 44px;
+          height: 44px;
+          border-radius: 12px;
           box-shadow:
             inset 0 1px 0 var(--glass-edge),
             0 6px 14px rgba(12, 40, 80, 0.12);
@@ -1563,6 +1577,10 @@
         .table-wrap .row-actions {
           justify-content: flex-end;
           gap: 6px;
+        }
+        .table-wrap .issue-jump-link {
+          min-height: 44px;
+          padding: 10px 0;
         }
         .empty-row td {
           display: block;
@@ -1744,7 +1762,7 @@
         <a id="feedbackLink" href="https://forms.gle/1YFfSmraLp27YneU9" target="_blank" rel="noopener">反饋表格</a>
       </div>
       <div class="footer-credit">
-        Vide Coded by <a href="https://h.im/?ref=pvrm" target="_blank" rel="noopener">@heathermhuang</a>
+        Open-source by Plate.hk contributors
       </div>
     </div>
     <div class="share-modal" id="shareModal" aria-hidden="true">
@@ -1759,10 +1777,15 @@
         </div>
       </div>
     </div>
-    <script src="./assets/index.config.js?v=20260326-03"></script>
+    <script src="./assets/index.config.js?v=20260405-01"></script>
     <script src="./assets/index.home.js?v=20260321-02"></script>
     <script src="./assets/index.data.js?v=20260321-02"></script>
+    <script src="./assets/index.state.js?v=20260405-01"></script>
+    <script src="./assets/index.issue.js?v=20260405-01"></script>
+    <script src="./assets/index.present.js?v=20260328-06"></script>
     <script src="./assets/vendor/qrcode-generator.js?v=20260326-01"></script>
-    <script src="./assets/index.js?v=20260326-03"></script>
+    <script src="./assets/index.webmcp.js?v=20260418-01"></script>
+    <script src="./assets/index.share.js?v=20260328-04"></script>
+    <script src="./assets/index.js?v=20260405-01"></script>
   </body>
 </html>

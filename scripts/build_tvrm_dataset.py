@@ -81,6 +81,43 @@ def request_head_ok(url: str) -> bool:
 def extract_date_from_href(href: str) -> Optional[str]:
     m = FILENAME_DATE_RE.search(href)
     if not m:
+        decoded = unquote(href or "")
+        normalized = re.sub(r"[_%]+", " ", decoded)
+        month_map = {
+            "january": 1,
+            "february": 2,
+            "march": 3,
+            "april": 4,
+            "may": 5,
+            "june": 6,
+            "july": 7,
+            "august": 8,
+            "september": 9,
+            "october": 10,
+            "november": 11,
+            "december": 12,
+        }
+        same_month = re.search(r"\b(\d{1,2})\s*-\s*(\d{1,2})\s+([A-Za-z]+)\s+(20\d{2})\b", normalized)
+        if same_month:
+            d1, _d2, mon, y = same_month.groups()
+            mth = month_map.get(mon.lower())
+            if mth:
+                try:
+                    return date(int(y), mth, int(d1)).isoformat()
+                except ValueError:
+                    return None
+        cross_month = re.search(
+            r"\b(\d{1,2})\s+([A-Za-z]+)\s*-\s*(\d{1,2})\s+([A-Za-z]+)\s+(20\d{2})\b",
+            normalized,
+        )
+        if cross_month:
+            d1, mon1, _d2, _mon2, y = cross_month.groups()
+            mth = month_map.get(mon1.lower())
+            if mth:
+                try:
+                    return date(int(y), mth, int(d1)).isoformat()
+                except ValueError:
+                    return None
         return None
     y, mth, d = map(int, m.groups())
     try:
@@ -414,17 +451,70 @@ def parse_eauction_pdf_rows(pdf_path: Path, source: AuctionPdf) -> tuple[list[di
 
     # Try to derive a more accurate date label for this "issue" from the header text.
     # Example: "2026年2月5日至2026年2月9日..."
-    range_match = re.search(r"(\d{4})年(\d{1,2})月(\d{1,2})日\s*至\s*(\d{4})年(\d{1,2})月(\d{1,2})日", text)
+    compact_text = re.sub(r"\s+", "", text)
+    range_match = re.search(r"(\d{4})年(\d{1,2})月(\d{1,2})日至(\d{4})年(\d{1,2})月(\d{1,2})日", compact_text)
     date_label = None
     if range_match:
         y1, m1, d1, y2, m2, d2 = map(int, range_match.groups())
         date_label = f"{y1}年{m1}月{d1}日至{y2}年{m2}月{d2}日"
     else:
         # Newer handouts may omit the second year in Chinese, e.g. "2026年2月26日至3月2日".
-        range_match2 = re.search(r"(\d{4})年(\d{1,2})月(\d{1,2})日\s*至\s*(\d{1,2})月(\d{1,2})日", text)
+        range_match2 = re.search(r"(\d{4})年(\d{1,2})月(\d{1,2})日至(\d{1,2})月(\d{1,2})日", compact_text)
         if range_match2:
             y1, m1, d1, m2, d2 = map(int, range_match2.groups())
             date_label = f"{y1}年{m1}月{d1}日至{y1}年{m2}月{d2}日"
+        else:
+            en_norm = normalize_space(text)
+            same_month_en = re.search(
+                r"\b(\d{1,2})\s*-\s*(\d{1,2})\s+([A-Za-z]+)\s+(20\d{2})\b",
+                en_norm,
+                re.IGNORECASE,
+            )
+            if same_month_en:
+                d1, d2, mon, y = same_month_en.groups()
+                month_map = {
+                    "january": 1,
+                    "february": 2,
+                    "march": 3,
+                    "april": 4,
+                    "may": 5,
+                    "june": 6,
+                    "july": 7,
+                    "august": 8,
+                    "september": 9,
+                    "october": 10,
+                    "november": 11,
+                    "december": 12,
+                }
+                mth = month_map.get(mon.lower())
+                if mth:
+                    date_label = f"{int(y)}年{mth}月{int(d1)}日至{int(y)}年{mth}月{int(d2)}日"
+            else:
+                cross_month_en = re.search(
+                    r"\b(\d{1,2})\s+([A-Za-z]+)\s*-\s*(\d{1,2})\s+([A-Za-z]+)\s+(20\d{2})\b",
+                    en_norm,
+                    re.IGNORECASE,
+                )
+                if cross_month_en:
+                    d1, mon1, d2, mon2, y = cross_month_en.groups()
+                    month_map = {
+                        "january": 1,
+                        "february": 2,
+                        "march": 3,
+                        "april": 4,
+                        "may": 5,
+                        "june": 6,
+                        "july": 7,
+                        "august": 8,
+                        "september": 9,
+                        "october": 10,
+                        "november": 11,
+                        "december": 12,
+                    }
+                    m1 = month_map.get(mon1.lower())
+                    m2 = month_map.get(mon2.lower())
+                    if m1 and m2:
+                        date_label = f"{int(y)}年{m1}月{int(d1)}日至{int(y)}年{m2}月{int(d2)}日"
 
     for m in E_TEXT_RE.finditer(text):
         prefix, number, raw_amount = m.group(1), m.group(2), m.group(3)

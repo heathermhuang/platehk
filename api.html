@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>API 文檔 | PVRM</title>
+    <title>API 文檔 | Plate.hk</title>
     <meta
       name="description"
       content="Plate.hk API 文檔：香港車牌拍賣資料的公開 JSON 介面、欄位與使用方式。"
@@ -31,9 +31,12 @@
         --accent:#1080c3;
       }
       * { box-sizing:border-box; }
+      html {
+        font-family:"Space Grotesk","Noto Sans HK",sans-serif;
+      }
       body {
         margin:0;
-        font-family:"Space Grotesk","Noto Sans HK",sans-serif;
+        font-family:inherit;
         color:var(--ink);
         background:
           radial-gradient(circle at 12% 8%, #d6f3ff 0, transparent 30%),
@@ -41,13 +44,17 @@
           radial-gradient(circle at 82% 86%, #dde7ff 0, transparent 26%),
           linear-gradient(180deg, #f4f9ff 0%, var(--bg) 100%);
       }
+      button, input, select, textarea { font: inherit; }
       .wrap { max-width:1020px; margin:0 auto; padding:28px 18px 46px; }
       .top { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
       .top a {
+        display:inline-flex;
+        align-items:center;
+        min-height:44px;
         border:1px solid var(--line);
         background:#ffffffcc;
         border-radius:999px;
-        padding:8px 14px;
+        padding:10px 16px;
         text-decoration:none;
         box-shadow:0 6px 20px rgba(8,20,40,.08);
       }

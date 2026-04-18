@@ -1,0 +1,81 @@
+{
+  "linkset": [
+    {
+      "anchor": "https://plate.hk/.well-known/api-catalog",
+      "item": [
+        {
+          "href": "https://plate.hk/api/v1/index.json",
+          "type": "application/json"
+        },
+        {
+          "href": "https://plate.hk/api/search",
+          "type": "application/json"
+        },
+        {
+          "href": "https://plate.hk/api/issues",
+          "type": "application/json"
+        },
+        {
+          "href": "https://plate.hk/api/issue",
+          "type": "application/json"
+        },
+        {
+          "href": "https://plate.hk/api/results",
+          "type": "application/json"
+        }
+      ]
+    },
+    {
+      "anchor": "https://plate.hk/api/v1/index.json",
+      "service-desc": [
+        {
+          "href": "https://plate.hk/api/openapi.yaml",
+          "type": "application/openapi+yaml"
+        }
+      ],
+      "service-doc": [
+        {
+          "href": "https://plate.hk/api.html",
+          "type": "text/html"
+        }
+      ],
+      "service-meta": [
+        {
+          "href": "https://plate.hk/llms.txt",
+          "type": "text/plain"
+        },
+        {
+          "href": "https://plate.hk/skill.md",
+          "type": "text/markdown"
+        }
+      ],
+      "status": [
+        {
+          "href": "https://plate.hk/api/health",
+          "type": "application/json"
+        }
+      ]
+    },
+    {
+      "anchor": "https://plate.hk/api/search",
+      "service-desc": [
+        {
+          "href": "https://plate.hk/api/openapi.yaml",
+          "type": "application/openapi+yaml"
+        }
+      ],
+      "service-doc": [
+        {
+          "href": "https://plate.hk/api.html",
+          "type": "text/html"
+        }
+      ],
+      "status": [
+        {
+          "href": "https://plate.hk/api/health",
+          "type": "application/json"
+        }
+      ]
+    }
+  ]
+}

@@ -15,7 +15,7 @@ from rapidocr_onnxruntime import RapidOCR
 
 
 ROOT = Path(__file__).resolve().parents[1]
-XLS_PATH = Path("/Users/heatherm/Downloads/TVRM auction result (1973-2026).xls")
+DEFAULT_XLS_PATH = ROOT / "data" / "TVRM auction result (1973-2026).xls"
 TMP_DIR = ROOT / ".tmp" / "press_attachments"
 
 
@@ -96,8 +96,8 @@ def extract_marks_with_ocr(pdf_path: Path) -> list[str]:
     return marks
 
 
-def build_price_map(sheet_name: str) -> dict[str, int]:
-    book = xlrd.open_workbook(str(XLS_PATH))
+def build_price_map(xls_path: Path, sheet_name: str) -> dict[str, int]:
+    book = xlrd.open_workbook(str(xls_path))
     sheet = book.sheet_by_name(sheet_name)
     out: dict[str, int] = {}
     for row in range(1, sheet.nrows):
@@ -108,13 +108,13 @@ def build_price_map(sheet_name: str) -> dict[str, int]:
     return out
 
 
-def collect_matches(case: Case, top_n: int) -> tuple[list[str], list[tuple[int, str]]]:
+def collect_matches(case: Case, xls_path: Path, top_n: int) -> tuple[list[str], list[tuple[int, str]]]:
     pdf_path = download(case)
     marks = extract_marks_from_text(pdf_path)
     if len(marks) < 50:
         marks = extract_marks_with_ocr(pdf_path)
 
-    price_map = build_price_map(case.sheet_name)
+    price_map = build_price_map(xls_path, case.sheet_name)
     matches: list[tuple[int, str]] = []
     seen: set[str] = set()
     for raw in marks:
@@ -131,14 +131,22 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Extract TVRM press-attachment marks and seed search terms from the FOI XLS.")
     parser.add_argument("--date", action="append", help="Auction date to inspect, e.g. 2009-12-20. Repeatable.")
     parser.add_argument("--top", type=int, default=20, help="How many high-price seed marks to show per case.")
+    parser.add_argument(
+        "--xls-path",
+        default=os.environ.get("TVRM_XLS_PATH", str(DEFAULT_XLS_PATH)),
+        help="Path to the TVRM workbook. Defaults to data/TVRM auction result (1973-2026).xls or $TVRM_XLS_PATH.",
+    )
     args = parser.parse_args()
+    xls_path = Path(args.xls_path).expanduser()
+    if not xls_path.exists():
+        raise SystemExit(f"Workbook not found: {xls_path}")
 
     selected = [case for case in CASES if not args.date or case.auction_date in set(args.date)]
     if not selected:
         raise SystemExit("No matching cases.")
 
     for case in selected:
-        marks, matches = collect_matches(case, args.top)
+        marks, matches = collect_matches(case, xls_path, args.top)
         print(f"\n[{case.auction_date}] attachment={case.attachment_url}")
         print(f"marks_extracted={len(marks)}  matched_against_xls={len(matches)}")
         for price, mark in matches:

@@ -59,6 +59,28 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn("data/all.prefix1.top200.json", listing)
         self.assertIn("data/all.tvrm_legacy_overlap.json", listing)
 
+    def test_build_cloudflare_public_excludes_pipeline_bulks(self) -> None:
+        proc = subprocess.run(
+            ["python3", "scripts/build_cloudflare_public.py"],
+            cwd=ROOT,
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+        self.assertIn(".tmp/cloudflare-public", proc.stdout)
+        publish = ROOT / ".tmp" / "cloudflare-public"
+        self.assertTrue((publish / "index.html").exists())
+        self.assertTrue((publish / "data" / "hot_search" / "manifest.json").exists())
+        self.assertTrue((publish / "data" / "TVRM auction result (1973-2026).xls").exists())
+        self.assertTrue((publish / "api" / "v1" / "tvrm_eauction" / "results.chunks.json").exists())
+        self.assertTrue((publish / ".well-known" / "api-catalog.json").exists())
+        self.assertTrue((publish / ".well-known" / "agent-skills" / "index.json").exists())
+        self.assertFalse((publish / "data" / "results.json").exists())
+        self.assertFalse((publish / "data" / "pdfs").exists())
+        self.assertFalse((publish / "data" / "tvrm_physical" / "pdfs").exists())
+        self.assertFalse((publish / "data" / "tvrm_eauction" / "pdfs").exists())
+
     def test_release_ready_script_runs(self) -> None:
         proc = subprocess.run(
             ["bash", "scripts/release_ready.sh", "--fast"],

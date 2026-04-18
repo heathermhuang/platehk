@@ -2,191 +2,198 @@
 
 ![Plate.hk repository cover](docs/repo-cover-home.png)
 
-香港車牌拍賣結果搜尋與資料整理專案。  
-這個 repo 會把運輸署歷年拍賣資料整理成可搜尋、可驗證、可部署的靜態資料網站與 Cloudflare Worker API。
+[![License: MIT](https://img.shields.io/badge/license-MIT-111111.svg)](./LICENSE)
+![Runtime: Python + Node](https://img.shields.io/badge/runtime-Python%20%2B%20Node-0f766e.svg)
+![Deployment: Cloudflare Workers](https://img.shields.io/badge/deploy-Cloudflare%20Workers-f97316.svg)
+![Data Source: HK TD](https://img.shields.io/badge/source-Hong%20Kong%20Transport%20Department-1d4ed8.svg)
 
-Open source search and data pipeline for Hong Kong plate auction results, including PVRM, TVRM, E-Auction, camera-assisted lookup, and Cloudflare Worker deployment.
+Open-source search, audit, and publishing pipeline for Hong Kong vehicle registration mark auction results.
 
-Live site:
-- 首頁: https://plate.hk/
-- API 文檔: https://plate.hk/api.html
-- 資料審核: https://plate.hk/audit.html
-- 更新日誌: https://plate.hk/changelog.html
+Plate.hk turns Transport Department source documents into a searchable static website, a public JSON API, SEO landing pages, and Cloudflare-ready deployment artifacts. The repository covers personalized marks, traditional TVRM auctions, E-Auction records, historical legacy ranges, and camera-assisted lookup.
 
-資料範圍：
-- 自訂車牌 `PVRM`
-- 傳統車牌 `TVRM` 實體拍賣
-- `拍牌易` E-Auction
-- `1973-2006` 傳統車牌年份分段資料
+## Live project
 
-主要能力：
-- 按車牌、成交價、拍賣日期搜尋
-- 每筆結果可回跳官方 PDF 驗證
-- 熱門車牌靜態 SEO 頁
-- mobile 相機辨識搜尋
-- Cloudflare Worker 原生部署
+- Site: [https://plate.hk/](https://plate.hk/)
+- API docs: [https://plate.hk/api.html](https://plate.hk/api.html)
+- Data audit: [https://plate.hk/audit.html](https://plate.hk/audit.html)
+- Changelog: [https://plate.hk/changelog.html](https://plate.hk/changelog.html)
 
-## 安裝與更新資料
+## Project docs
+
+- Contribution guide: [CONTRIBUTING.md](./CONTRIBUTING.md)
+- Security posture: [SECURITY.md](./SECURITY.md)
+- OpenAPI spec: [api/openapi.yaml](./api/openapi.yaml)
+
+## At a Glance
+
+- Public-facing search experience for Hong Kong plate auction history
+- Verifiable source links back to official Transport Department documents
+- Static-first architecture with Cloudflare Worker APIs and prebuilt JSON shards
+- Built-in audit surface for source coverage, parse quality, and release confidence
+
+## Product Preview
+
+![Plate.hk homepage preview](docs/repo-cover-home.png)
+
+## What This Repo Includes
+
+- Searchable auction data for Hong Kong plate sales across multiple datasets
+- A static frontend with issue shards, hot-search caches, and SEO pages
+- A public `/api/v1` JSON surface for dataset browsing
+- Camera-assisted lookup via the Cloudflare Worker runtime
+- Build scripts for ingestion, normalization, validation, and release packaging
+
+## Data Coverage
+
+- `PVRM`: personalized vehicle registration marks
+- `TVRM physical`: traditional plate live auctions
+- `TVRM E-Auction`: 拍牌易 records
+- `TVRM legacy`: historical `1973-2006` year-range records
+
+## Quick Start
+
+Prerequisites:
+
+- Python 3
+- Node.js and npm
+
+Install dependencies:
 
 ```bash
 python3 -m pip install --user -r requirements.txt
+npm install
+```
+
+Build the site and generated artifacts:
+
+```bash
 ./scripts/build_site.sh
 ```
 
-執行後會生成：
-
-- `data/results.json`：所有可搜尋結果
-- `data/results.slim.json`：前端載入用精簡結果（建議部署時使用）
-- `data/issues.manifest.json`：分片索引（前端分期載入入口）
-- `data/preset.amount_desc.top1000.json`：首頁預設（金額高至低）快速顯示資料
-- `data/issues/*.json`：按拍賣期數分片的結果檔
-- `data/auctions.json`：每份 PDF 的解析統計與錯誤資訊
-- `data/pdfs/*.pdf`：已下載的來源 PDF
-
-TVRM（傳統車牌）資料集會額外生成：
-
-- `data/tvrm_physical/issues.manifest.json` / `data/tvrm_physical/issues/*.json`
-- `data/tvrm_physical/preset.amount_desc.top1000.json`
-- `data/tvrm_physical/auctions.json`
-- `data/tvrm_eauction/issues.manifest.json` / `data/tvrm_eauction/issues/*.json`
-- `data/tvrm_eauction/preset.amount_desc.top1000.json`
-- `data/tvrm_eauction/auctions.json`
-- `data/tvrm_legacy/issues.manifest.json` / `data/tvrm_legacy/issues/*.json`
-- `data/tvrm_legacy/preset.amount_desc.top1000.json`
-- `data/tvrm_legacy/auctions.json`
-- `data/all.search.meta.json`
-- `data/all.prefix1.top200.json`
-- `data/hot_search/manifest.json`
-- `data/hot_search/all_amount_desc/*.json`
-- `data/all.tvrm_legacy_overlap.json`
-- `data/popular_plates_manifest.json`
-- `plates/index.html`
-- `plates/*.html`
-
-`data/tvrm_legacy/` 現在只保留 `1973-2006` 年份區段資料：
-- `data/TVRM auction result (1973-2026).xls`：作為 `1973-2006` 歷史區段來源
-- `data/TVRM auction result (2006-2026).xlsx`：其中 `2007+` 的逐筆正式拍賣日期會合併到 `data/tvrm_physical/` / `data/tvrm_eauction/` 的日期分期
-
-因此 `tvrm_legacy` 現在固定只有：
-- `date_precision = "year_range"`：顯示時應使用 `auction_date_label`
-
-`data/all.prefix1.top200.json` 是 `全部車牌` 單字查詢的輕量預覽索引。  
-`data/hot_search/` 則是熱門查詢的預熱快取，讓像 `88`、`8888`、`HK` 這類高頻搜尋在第一個冷請求時也能直接命中靜態結果；其餘查詢則回落到伺服器端搜尋 API。
-`data/all.tvrm_legacy_overlap.json` 則會標記 `1973-2006` 歷史年份分段和其他 TVRM 資料集的重複結果，供前端聚合視圖去重。
-`plates/` 則是熱門車牌的靜態 SEO 落地頁，讓搜尋引擎可以直接索引高價 / 熱門車牌的結果頁。
-
-## 本機啟動網站
+Run locally:
 
 ```bash
 ./scripts/run_local.sh 8080
 ```
 
-然後打開：
-
-- [http://127.0.0.1:8080](http://127.0.0.1:8080)
-
-停止本機站：
+Open [http://127.0.0.1:8080](http://127.0.0.1:8080), then stop the server with:
 
 ```bash
 ./scripts/stop_local.sh 8080
 ```
 
-## 建置、檢查、打包
+## Common Commands
 
-完整重建資料：
+| Task | Command |
+| --- | --- |
+| Rebuild all site assets and generated data | `./scripts/build_site.sh` |
+| Run syntax checks and tests | `./scripts/check_site.sh` |
+| Run secrets and dependency security checks | `./scripts/check_security.sh` |
+| Build Cloudflare static publish directory | `python3 scripts/build_cloudflare_public.py` |
+| Start local Cloudflare Worker dev | `npm run cf:dev` |
+| Deploy Cloudflare Worker | `npm run cf:deploy` |
+| Build release archive | `./scripts/package_release.sh` |
+| Fast release smoke check | `./scripts/release_ready.sh --fast` |
 
-```bash
-./scripts/build_site.sh
+## Architecture
+
+The current production shape is:
+
+- Cloudflare Static Assets serves the frontend and prebuilt public data
+- Cloudflare Worker handles `/api/*` routes and the vision-assisted lookup flow
+- Static JSON shards power search, issue browsing, and high-frequency cached queries
+- SEO pages under `plates/` expose popular plate result pages to search engines
+
+The repository also keeps legacy PHP and shared-host tooling where needed for compatibility, migration, and admin-side workflows.
+
+```mermaid
+flowchart LR
+    A["Transport Department PDFs and workbooks"] --> B["Build scripts in scripts/"]
+    B --> C["Generated data in data/"]
+    B --> D["Public static API in api/v1/"]
+    B --> E["SEO pages in plates/"]
+    C --> F["Static frontend in assets/ + HTML pages"]
+    D --> G["Cloudflare Static Assets"]
+    E --> G
+    F --> G
+    H["Cloudflare Worker"] --> G
+    H --> I["/api/* routes"]
+    H --> J["Vision-assisted lookup"]
 ```
 
-執行語法檢查與回歸測試：
+## Why It Feels Professional
+
+- Static artifacts are generated, validated, and packaged from a reproducible pipeline
+- Search results are designed to be traceable back to the official published source
+- Cloudflare-ready deployment keeps the runtime small while preserving a public data surface
+- Audit and security workflows are documented in-repo instead of living in tribal knowledge
+
+## Repository Guide
+
+| Path | Purpose |
+| --- | --- |
+| `assets/` | Frontend JavaScript, styles, and page-specific UI logic |
+| `data/` | Generated data, audit reports, search indexes, and workbook sources |
+| `api/v1/` | Public static API payloads derived from generated data |
+| `plates/` | Generated SEO landing pages for popular plates |
+| `cloudflare-worker/` | Worker runtime for API routes and vision lookup |
+| `scripts/` | Build, validation, packaging, and data-update scripts |
+
+## Key Generated Outputs
+
+These are the artifacts most contributors need to understand:
+
+| Output | Purpose |
+| --- | --- |
+| `data/issues.manifest.json` and `data/issues/*.json` | PVRM issue shards used by the frontend |
+| `data/tvrm_physical/issues.manifest.json` and `data/tvrm_physical/issues/*.json` | Physical TVRM issue shards |
+| `data/tvrm_eauction/issues.manifest.json` and `data/tvrm_eauction/issues/*.json` | E-Auction issue shards |
+| `data/tvrm_legacy/issues.manifest.json` and `data/tvrm_legacy/issues/*.json` | Historical year-range TVRM shards |
+| `data/all.search.meta.json` | Aggregate search metadata |
+| `data/all.prefix1.top200.json` | Lightweight preview index for broad “all plates” queries |
+| `data/hot_search/` | Cached results for high-frequency queries such as `88`, `8888`, and `HK` |
+| `data/all.tvrm_legacy_overlap.json` | Deduplication hints for cross-dataset aggregation |
+| `data/audit.json` | Audit view payload listing source coverage and parse quality |
+| `api/v1/` | Static API payloads consumed by external clients and the site |
+
+The historical workbook sources remain in-repo because they are still part of the build graph:
+
+- `data/TVRM auction result (1973-2026).xls`
+- `data/TVRM auction result (2006-2026).xlsx`
+
+## Data Source and Verification
+
+Plate.hk is built from Hong Kong Transport Department publications and bundled legacy workbook sources.
+
+- Official source documents remain the source of truth
+- Search results link back to the original source document for manual verification
+- If a generated record disagrees with an official handout or workbook, the official publication should prevail
+
+## Updating Data
+
+When new auction records are published, rebuild the generated artifacts before opening a PR:
 
 ```bash
-./scripts/check_site.sh
+python3 scripts/build_dataset.py
+python3 scripts/build_tvrm_dataset.py
+python3 scripts/build_tvrm_legacy_dataset.py
+python3 scripts/build_all_results_preset.py
+python3 scripts/build_all_search_index.py
+python3 scripts/build_hot_search_cache.py
+python3 scripts/build_popular_plate_pages.py
+python3 scripts/build_public_api.py
+python3 scripts/build_audit_report.py
+python3 scripts/verify_data_integrity.py
 ```
 
-執行安全檢查（tracked secrets scan；如本機有 `pip-audit` 也會一併跑依賴漏洞審核）：
+For the contributor workflow, review [CONTRIBUTING.md](./CONTRIBUTING.md).
 
-```bash
-./scripts/check_security.sh
-```
+## Security
 
-產生 deploy 壓縮包：
+- Review [SECURITY.md](./SECURITY.md) before changing public endpoints, OCR flows, or deployment boundaries
+- Run `python3 scripts/scan_repo_secrets.py` if you touched config, CI, or API-adjacent code
+- Do not commit credentials, tokens, or local environment files
 
-```bash
-./scripts/package_release.sh
-```
+## License
 
-快速驗證打包內容（不做完整大檔 deploy 包）：
-
-```bash
-./scripts/package_release.sh --smoke
-```
-
-發版前快速檢查：
-
-```bash
-./scripts/release_ready.sh
-```
-
-只做語法檢查與 smoke package：
-
-```bash
-./scripts/release_ready.sh --fast
-```
-
-## Cloudflare Workers 部署
-
-專案現在已可用 Cloudflare Workers 直接提供前端與 `/api/*`，不再需要 DreamHost PHP/MySQL 參與網站 runtime：
-
-- Worker 入口：`cloudflare-worker/src/index.mjs`
-- API 路由：`cloudflare-worker/src/api.mjs`
-- Worker 共用工具：`cloudflare-worker/src/lib.mjs`
-- Wrangler 配置：`wrangler.jsonc`
-- Cloudflare 靜態發布目錄建置：`scripts/build_cloudflare_public.py`
-- Claude Code handover：`CLOUDFLARE_WORKERS_HANDOVER.md`
-
-建置 Cloudflare 靜態發布目錄：
-
-```bash
-python3 scripts/build_cloudflare_public.py
-```
-
-或使用 npm script：
-
-```bash
-npm run build:cloudflare:assets
-```
-
-目前的雲端架構是：
-- Workers Static Assets 負責前端與 `api/v1` 靜態資料
-- Worker 直接處理 `/api/*`
-- 搜尋、期數、聚合與歷史資料由靜態 JSON / chunk 檔驅動
-- OpenAI Vision 由 Worker 伺服器端呼叫
-
-## 注意
-
-- 運輸署部分早期 PDF 字型編碼特殊，個別金額可能無法完全自動解析，頁面會標示「未能自動解析」，請點擊該筆原始 PDF 進一步核對。
-
-## 未來更新流程
-
-每次有新拍賣資料時，固定執行以下步驟：
-
-1. `python3 scripts/build_dataset.py`
-2. `python3 scripts/build_tvrm_dataset.py`
-3. `python3 scripts/merge_tvrm_exact_workbook.py`
-4. `python3 scripts/build_tvrm_legacy_dataset.py`
-5. `python3 scripts/build_all_search_index.py`
-6. `python3 scripts/build_hot_search_cache.py`
-7. `python3 scripts/build_popular_plate_pages.py`
-8. `python3 scripts/verify_data_integrity.py`
-9. 如有功能/UI/資料策略更新，同步更新 `changelog.html`（中英文）
-10. 部署 `data/`、`plates/`、`api/v1/`、`index.html`、`camera.html`、`landing.html`、`api.html`、`audit.html`、`sw.js`、`terms.html`、`privacy.html`、`changelog.html`、`sitemap.xml`
-11. 發布後做一次硬刷新，確保新 Service Worker 與快取規則生效
-
-## 安全維運
-
-- 目前 threat model 與主要防護邊界整理在 [SECURITY.md](SECURITY.md)
-- `scripts/scan_repo_secrets.py` 會掃描 git tracked 檔案中的常見憑證模式，避免把 secrets 提交進版控
-- `.github/workflows/security.yml` 會在 PR / push 時跑 tracked secrets scan、`pip-audit` 與站點檢查
-- 本機若未安裝 `pip-audit`，`./scripts/check_security.sh` 會略過依賴漏洞審核；CI 仍會強制執行
+[MIT](./LICENSE)

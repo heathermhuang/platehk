@@ -12,4 +12,6 @@ cloudflare-worker/.env.*
 
 server/dump.sql
 logs/
+logs/security-events.log
 review_findings.md
+.gstack/

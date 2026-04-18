@@ -1,6 +1,6 @@
       const I18N = {
         zh: {
-          pageTitle: "API 文檔 | PVRM",
+          pageTitle: "API 文檔 | Plate.hk",
           title: "API 文檔",
           back: "← 返回首頁",
           updated: "最後更新：2026年3月20日",
@@ -54,7 +54,7 @@
           `,
         },
         en: {
-          pageTitle: "API Docs | PVRM",
+          pageTitle: "API Docs | Plate.hk",
           title: "API Docs",
           back: "← Back to Home",
           updated: "Last updated: 20 Mar 2026",

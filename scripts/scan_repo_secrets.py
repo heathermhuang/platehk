@@ -66,6 +66,8 @@ def scan_file(path: Path) -> list[tuple[str, int, str]]:
     findings: list[tuple[str, int, str]] = []
     try:
         text = path.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        return findings
     except UnicodeDecodeError:
         return findings
     for lineno, line in enumerate(text.splitlines(), start=1):

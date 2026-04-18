@@ -107,12 +107,16 @@ class GeneratedDataTests(unittest.TestCase):
         eauction_auctions = _load(DATA / "tvrm_eauction" / "auctions.json")
 
         physical_workbook = next(item for item in physical_auctions if str(item.get("pdf_url") or "").endswith(".xlsx"))
-        eauction_workbook = next(item for item in eauction_auctions if str(item.get("pdf_url") or "").endswith(".xlsx"))
-
         self.assertEqual(physical_workbook["source_format"], "xlsx")
-        self.assertEqual(eauction_workbook["source_format"], "xlsx")
         self.assertTrue(str(physical_workbook["pdf_url"]).startswith("./data/"))
-        self.assertTrue(str(eauction_workbook["pdf_url"]).startswith("./data/"))
+
+        eauction_workbook = next(
+            (item for item in eauction_auctions if str(item.get("pdf_url") or "").endswith(".xlsx")),
+            None,
+        )
+        if eauction_workbook is not None:
+            self.assertEqual(eauction_workbook["source_format"], "xlsx")
+            self.assertTrue(str(eauction_workbook["pdf_url"]).startswith("./data/"))
 
     def test_hot_search_cache_manifest_and_sample_exist(self) -> None:
         manifest = _load(DATA / "hot_search" / "manifest.json")

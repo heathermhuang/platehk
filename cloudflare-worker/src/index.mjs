@@ -1,4 +1,5 @@
 import { handleApiRequest } from "./api.mjs";
+import { getStaticText } from "./lib.mjs";
 
 const PRIMARY_HOSTS = new Set(["plate.hk", "www.plate.hk"]);
 
@@ -39,6 +40,65 @@ function securityHeadersForAsset(request, response, { noindex = false } = {}) {
   return headers;
 }
 
+function isMarkdownPreferred(request) {
+  const accept = String(request.headers.get("accept") || "").toLowerCase();
+  return accept.includes("text/markdown");
+}
+
+function appendLink(headers, value) {
+  headers.append("link", value);
+}
+
+function appendDiscoveryLinkHeaders(headers, url) {
+  appendLink(headers, `</.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json"`);
+  appendLink(headers, `</api/openapi.yaml>; rel="service-desc"; type="application/openapi+yaml"`);
+  appendLink(headers, `</api.html>; rel="service-doc"; type="text/html"`);
+  appendLink(headers, `</sitemap.xml>; rel="sitemap"; type="application/xml"`);
+  appendLink(headers, `</llms.txt>; rel="describedby"; type="text/plain"`);
+  appendLink(headers, `</skill.md>; rel="alternate"; type="text/markdown"`);
+  if (url.pathname === "/" || url.pathname === "/index.html") {
+    appendLink(headers, `</agent.md>; rel="alternate"; type="text/markdown"`);
+  }
+}
+
+async function serveHomepageMarkdown(request, env, { noindex = false } = {}) {
+  const body = await getStaticText(env, request.url, "./agent.md");
+  if (body == null) return new Response("Markdown representation unavailable", { status: 503 });
+  const headers = new Headers({
+    "content-type": "text/markdown; charset=utf-8",
+    "cache-control": "public, max-age=0, must-revalidate",
+    vary: "Accept",
+    "x-content-type-options": "nosniff",
+    "x-frame-options": "SAMEORIGIN",
+    "referrer-policy": "strict-origin-when-cross-origin",
+    "permissions-policy": "geolocation=(), microphone=(), camera=(self), browsing-topics=()",
+    "cross-origin-resource-policy": "same-origin",
+  });
+  if (noindex) headers.set("x-robots-tag", "noindex, nofollow, noarchive");
+  appendDiscoveryLinkHeaders(headers, new URL(request.url));
+  if (request.method === "HEAD") return new Response(null, { status: 200, headers });
+  return new Response(body, { status: 200, headers });
+}
+
+async function serveApiCatalog(request, env, { noindex = false } = {}) {
+  const body = await getStaticText(env, request.url, "./.well-known/api-catalog.json");
+  if (body == null) return new Response("Not found", { status: 404 });
+  const headers = new Headers({
+    "content-type": 'application/linkset+json; profile="https://www.rfc-editor.org/info/rfc9727"',
+    "cache-control": "public, max-age=0, must-revalidate",
+    "x-content-type-options": "nosniff",
+    "x-frame-options": "SAMEORIGIN",
+    "referrer-policy": "strict-origin-when-cross-origin",
+    "permissions-policy": "geolocation=(), microphone=(), camera=(self), browsing-topics=()",
+    "cross-origin-resource-policy": "same-origin",
+  });
+  if (noindex) headers.set("x-robots-tag", "noindex, nofollow, noarchive");
+  appendLink(headers, `</api/openapi.yaml>; rel="service-desc"; type="application/openapi+yaml"`);
+  appendLink(headers, `</api.html>; rel="service-doc"; type="text/html"`);
+  if (request.method === "HEAD") return new Response(null, { status: 200, headers });
+  return new Response(body, { status: 200, headers });
+}
+
 function buildStagingRobotsTxt() {
   return [
     "User-agent: *",
@@ -56,6 +116,14 @@ function buildEmptySitemapXml() {
 async function serveAsset(request, env) {
   const url = new URL(request.url);
   const primaryHost = isPrimaryHost(url.hostname);
+  const genericNoindex = !primaryHost;
+  const isHome = url.pathname === "/" || url.pathname === "/index.html";
+  if (primaryHost && isHome && (request.method === "GET" || request.method === "HEAD") && isMarkdownPreferred(request)) {
+    return serveHomepageMarkdown(request, env);
+  }
+  if (url.pathname === "/.well-known/api-catalog" && (request.method === "GET" || request.method === "HEAD")) {
+    return serveApiCatalog(request, env, { noindex: genericNoindex });
+  }
   if (!primaryHost && url.pathname === "/robots.txt") {
     return new Response(buildStagingRobotsTxt(), {
       status: 200,
@@ -82,19 +150,27 @@ async function serveAsset(request, env) {
   const response = await env.ASSETS.fetch(request);
   if (!response.ok) return response;
   const contentType = String(response.headers.get("content-type") || "").toLowerCase();
-  const noindex = !primaryHost && contentType.includes("text/html");
+  const noindex = genericNoindex && contentType.includes("text/html");
   if (!primaryHost && contentType.includes("text/html")) {
     const rewritten = (await response.text()).replaceAll("https://plate.hk", url.origin);
+    const headers = securityHeadersForAsset(request, response, { noindex });
+    if (url.pathname.endsWith(".md")) headers.set("content-type", "text/markdown; charset=utf-8");
+    if (primaryHost) appendDiscoveryLinkHeaders(headers, url);
+    if (isHome) headers.append("vary", "Accept");
     return new Response(rewritten, {
       status: response.status,
       statusText: response.statusText,
-      headers: securityHeadersForAsset(request, response, { noindex }),
+      headers,
     });
   }
+  const headers = securityHeadersForAsset(request, response, { noindex });
+  if (url.pathname.endsWith(".md")) headers.set("content-type", "text/markdown; charset=utf-8");
+  if (primaryHost) appendDiscoveryLinkHeaders(headers, url);
+  if (isHome) headers.append("vary", "Accept");
   return new Response(response.body, {
     status: response.status,
     statusText: response.statusText,
-    headers: securityHeadersForAsset(request, response, { noindex }),
+    headers,
   });
 }
 

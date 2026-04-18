@@ -431,7 +431,6 @@ const INDEX_I18N = {
       let lastUpdatedDate = null;
       const pageSize = 200;
       let renderVersion = 0;
-      let searchDebounceTimer = null;
       let currentDataset = "all";
       let searchState = null; // cache progressive search across pages
       let activeFilterRequestController = null;
@@ -440,7 +439,6 @@ const INDEX_I18N = {
       let activeSearchSeq = 0;
       let renderedRows = [];
       let renderedTotalCount = 0;
-      let currentPosterDataUrl = "";
       const SHARE_SITE_URL =
         typeof location !== "undefined" && location.origin
           ? location.origin

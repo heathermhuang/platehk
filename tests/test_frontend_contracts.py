@@ -12,6 +12,9 @@ class FrontendContractsTests(unittest.TestCase):
     def test_index_contains_issue_mode_and_search_assist_hooks(self) -> None:
         html = (ROOT / "index.html").read_text(encoding="utf-8")
         index_js = (ROOT / "assets" / "index.js").read_text(encoding="utf-8")
+        index_state_js = (ROOT / "assets" / "index.state.js").read_text(encoding="utf-8")
+        index_issue_js = (ROOT / "assets" / "index.issue.js").read_text(encoding="utf-8")
+        index_present_js = (ROOT / "assets" / "index.present.js").read_text(encoding="utf-8")
         index_home_js = (ROOT / "assets" / "index.home.js").read_text(encoding="utf-8")
         self.assertIn('id="issuePanel"', html)
         self.assertIn('id="searchNote"', html)
@@ -24,21 +27,25 @@ class FrontendContractsTests(unittest.TestCase):
         self.assertIn('id="datasetLabel"', html)
         self.assertIn('id="issueLabel"', html)
         self.assertIn('id="sortLabel"', html)
-        self.assertIn("function renderIssuePanel(", index_js)
-        self.assertIn("function renderSearchAssist(", index_js)
         self.assertIn("function renderDatasetSwitcher(", index_home_js)
         self.assertIn("function renderHomeCards(", index_home_js)
-        self.assertIn("function clearIssueSelection(", index_js)
         self.assertIn("function syncFocusModeChrome(", index_home_js)
         self.assertIn("function renderResultsContext(", index_home_js)
         self.assertIn("function syncResultsTableMode(", index_home_js)
         self.assertIn("function emptyResultsMessage(", index_home_js)
-        self.assertIn("function issueSummaryText(", index_js)
+        self.assertIn("function renderSearchAssist(", index_present_js)
+        self.assertIn("function formatAuctionDate(", index_present_js)
+        self.assertIn("function updateIssueTotal(", index_present_js)
+        self.assertIn("function parseInitialState(", index_state_js)
+        self.assertIn("function bindControlEvents(", index_state_js)
+        self.assertIn("function renderIssuePanel(", index_issue_js)
+        self.assertIn("function clearIssueSelection(", index_issue_js)
+        self.assertIn("function issueSummaryText(", index_issue_js)
         self.assertIn("data-dataset-switch", index_js)
         self.assertIn("data-open-issue", index_js)
-        self.assertIn("function openIssueByKey(", index_js)
+        self.assertIn("function openIssueByKey(", index_issue_js)
         self.assertIn("issue-jump-link", html)
-        self.assertIn("issue-summary", index_js)
+        self.assertIn("issue-summary", index_issue_js)
 
     def test_audit_contains_filterable_qa_panel_hooks(self) -> None:
         html = (ROOT / "audit.html").read_text(encoding="utf-8")
@@ -51,9 +58,9 @@ class FrontendContractsTests(unittest.TestCase):
         self.assertIn("function renderValidation(", audit_js)
 
     def test_issue_state_url_support_stays_in_frontend(self) -> None:
-        index_js = (ROOT / "assets" / "index.js").read_text(encoding="utf-8")
-        self.assertRegex(index_js, re.compile(r'params\.get\("issue"\)'))
-        self.assertRegex(index_js, re.compile(r'params\.set\("issue", nextIssue\)'))
+        index_state_js = (ROOT / "assets" / "index.state.js").read_text(encoding="utf-8")
+        self.assertRegex(index_state_js, re.compile(r'params\.get\("issue"\)'))
+        self.assertRegex(index_state_js, re.compile(r'params\.set\("issue", nextIssue\)'))
 
     def test_plate_normalization_ignores_q_in_main_and_worker(self) -> None:
         index_js = (ROOT / "assets" / "index.js").read_text(encoding="utf-8")
@@ -80,7 +87,17 @@ class FrontendContractsTests(unittest.TestCase):
 
     def test_app_pages_use_external_scripts(self) -> None:
         expectations = {
-            "index.html": ["./assets/index.config.js", "./assets/index.home.js", "./assets/index.data.js", "./assets/index.js"],
+            "index.html": [
+                "./assets/index.config.js",
+                "./assets/index.home.js",
+                "./assets/index.data.js",
+                "./assets/index.webmcp.js",
+                "./assets/index.state.js",
+                "./assets/index.issue.js",
+                "./assets/index.present.js",
+                "./assets/index.share.js",
+                "./assets/index.js",
+            ],
             "landing.html": ["./assets/landing.js"],
             "audit.html": ["./assets/audit.js"],
             "api.html": ["./assets/api-page.js"],
@@ -147,8 +164,9 @@ class FrontendContractsTests(unittest.TestCase):
         example = (ROOT / "api" / "config.local.php.example").read_text(encoding="utf-8")
         self.assertIn("OPENAI_API_KEY_HERE", example)
         self.assertIn("CHANGE_ME", example)
+        self.assertIn("db.example.com", example)
+        self.assertIn("example_database", example)
         self.assertNotIn("sk-proj-", example)
-        self.assertNotIn("EPmKetBkU8+HjbA", example)
 
     def test_htaccess_hardening_blocks_sensitive_files_and_unused_ocr_sources(self) -> None:
         root_htaccess = (ROOT / ".htaccess").read_text(encoding="utf-8")
@@ -162,16 +180,41 @@ class FrontendContractsTests(unittest.TestCase):
 
     def test_share_poster_uses_local_qr_generator(self) -> None:
         html = (ROOT / "index.html").read_text(encoding="utf-8")
-        index_js = (ROOT / "assets" / "index.js").read_text(encoding="utf-8")
+        share_js = (ROOT / "assets" / "index.share.js").read_text(encoding="utf-8")
         self.assertIn("./assets/vendor/qrcode-generator.js", html)
-        self.assertIn('typeof qrcode !== "function"', index_js)
-        self.assertNotIn("api.qrserver.com", index_js)
+        self.assertIn("./assets/index.share.js", html)
+        self.assertIn('typeof qrcode !== "function"', share_js)
+        self.assertNotIn("api.qrserver.com", share_js)
 
     def test_security_document_exists(self) -> None:
         security = (ROOT / "SECURITY.md").read_text(encoding="utf-8")
         self.assertIn("## Trust Boundaries", security)
         self.assertIn("## Attack Surface", security)
         self.assertIn("## STRIDE Summary", security)
+
+    def test_agent_readiness_discovery_artifacts_exist(self) -> None:
+        llms = (ROOT / "llms.txt").read_text(encoding="utf-8")
+        agent_md = (ROOT / "agent.md").read_text(encoding="utf-8")
+        skill_md = (ROOT / "skill.md").read_text(encoding="utf-8")
+        worker = (ROOT / "cloudflare-worker" / "src" / "index.mjs").read_text(encoding="utf-8")
+        webmcp = (ROOT / "assets" / "index.webmcp.js").read_text(encoding="utf-8")
+        api_catalog = (ROOT / ".well-known" / "api-catalog.json").read_text(encoding="utf-8")
+        agent_skills = (ROOT / ".well-known" / "agent-skills" / "index.json").read_text(encoding="utf-8")
+        legacy_skills = (ROOT / ".well-known" / "skills" / "index.json").read_text(encoding="utf-8")
+
+        self.assertIn("/.well-known/api-catalog", llms)
+        self.assertIn("/.well-known/agent-skills/index.json", llms)
+        self.assertIn("/agent.md", llms)
+        self.assertIn("Plate.hk Agent Overview", agent_md)
+        self.assertIn("name: platehk-public-data", skill_md)
+        self.assertIn("text/markdown", worker)
+        self.assertIn('rel="api-catalog"', worker)
+        self.assertIn("serveHomepageMarkdown", worker)
+        self.assertIn("platehk_search", webmcp)
+        self.assertIn("navigator.modelContext", webmcp)
+        self.assertIn('"linkset"', api_catalog)
+        self.assertIn('"skills"', agent_skills)
+        self.assertIn('"skills"', legacy_skills)
 
     def test_security_logging_and_ci_scaffolding_exist(self) -> None:
         api_lib = (ROOT / "api" / "lib.php").read_text(encoding="utf-8")

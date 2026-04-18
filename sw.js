@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pvrm-static-v126';
+const CACHE_NAME = 'pvrm-static-v130';
 const ASSETS = [
   './',
   './index.html',
@@ -11,6 +11,10 @@ const ASSETS = [
   './assets/index.config.js',
   './assets/index.home.js',
   './assets/index.data.js',
+  './assets/index.state.js',
+  './assets/index.issue.js',
+  './assets/index.present.js',
+  './assets/index.share.js',
   './assets/vendor/qrcode-generator.js',
   './assets/landing.js',
   './assets/audit.js',

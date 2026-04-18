@@ -12,15 +12,15 @@ DreamHost is no longer required for the `pvrm.hk` runtime path.
 ## What is already prepared
 
 - Worker router:
-  - `/Users/heatherm/Documents/Codex/PVRM/cloudflare-worker/src/index.mjs`
-  - `/Users/heatherm/Documents/Codex/PVRM/cloudflare-worker/src/api.mjs`
-  - `/Users/heatherm/Documents/Codex/PVRM/cloudflare-worker/src/lib.mjs`
+  - `cloudflare-worker/src/index.mjs`
+  - `cloudflare-worker/src/api.mjs`
+  - `cloudflare-worker/src/lib.mjs`
 - Wrangler config:
-  - `/Users/heatherm/Documents/Codex/PVRM/wrangler.jsonc`
+  - `wrangler.jsonc`
 - Cloudflare publish build:
-  - `/Users/heatherm/Documents/Codex/PVRM/scripts/build_cloudflare_public.py`
+  - `scripts/build_cloudflare_public.py`
 - Local env example:
-  - `/Users/heatherm/Documents/Codex/PVRM/cloudflare-worker/.dev.vars.example`
+  - `cloudflare-worker/.dev.vars.example`
 
 ## Runtime architecture
 
@@ -42,7 +42,7 @@ DreamHost is no longer required for the `pvrm.hk` runtime path.
 - `robots.txt`, `sitemap.xml`, `llms.txt`, `sw.js`
 
 Output directory:
-- `/Users/heatherm/Documents/Codex/PVRM/.tmp/cloudflare-public`
+- `.tmp/cloudflare-public`
 
 ## Worker env and bindings
 

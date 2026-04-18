@@ -23,6 +23,8 @@ ROOT_FILES = [
     "robots.txt",
     "sitemap.xml",
     "llms.txt",
+    "agent.md",
+    "skill.md",
     "sw.js",
 ]
 
@@ -31,6 +33,10 @@ ROOT_DIRS = [
     "data",
     "plates",
     "mcp",
+]
+
+SPECIAL_ROOT_DIRS = [
+    ".well-known",
 ]
 
 API_V1_DATASETS = [
@@ -43,15 +49,24 @@ API_V1_DATASETS = [
 IGNORE_BULKY_PATTERNS = (
     ".DS_Store",
     "__pycache__",
+    "pdfs",
+    "results.json",
     "results.slim.json",
+    "sources.tsv",
+    "urls.txt",
+    "urls.all.txt",
     "results.slim 2.json",
     "issues.manifest 2.json",
     "preset.amount_desc.top1000 2.json",
+    "* 2.json",
+    "* 3.json",
+    "* 2.html",
+    "* 3.html",
 )
 
 
-def copy_path(src: Path, dst: Path) -> None:
-    if src.name.startswith("."):
+def copy_path(src: Path, dst: Path, *, allow_hidden: bool = False) -> None:
+    if src.name.startswith(".") and not allow_hidden:
         return
     if src.is_dir():
         shutil.copytree(
@@ -111,6 +126,9 @@ def main() -> None:
 
     for rel in ROOT_DIRS:
         copy_path(ROOT / rel, TARGET / rel)
+
+    for rel in SPECIAL_ROOT_DIRS:
+        copy_path(ROOT / rel, TARGET / rel, allow_hidden=True)
 
     api_dir = TARGET / "api"
     api_dir.mkdir(parents=True, exist_ok=True)
