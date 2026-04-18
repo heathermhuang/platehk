@@ -226,6 +226,18 @@ function composeAuctionKey(datasetKey, auctionDate) {
         getRenderedTotalCount: () => renderedTotalCount,
       });
 
+      function forwardUpdateIssueTotal(...args) {
+        return updateIssueTotal(...args);
+      }
+
+      function forwardFormatAuctionDate(...args) {
+        return formatAuctionDate(...args);
+      }
+
+      function forwardFormatPriceText(...args) {
+        return formatPriceText(...args);
+      }
+
       const {
         cancelActiveFilterRequest,
         loadIssue,
@@ -238,7 +250,7 @@ function composeAuctionKey(datasetKey, auctionDate) {
         composeAuctionKey,
         buildAuctionsByDateMap,
         render,
-        updateIssueTotal,
+        updateIssueTotal: forwardUpdateIssueTotal,
         applyLanguage,
         buildIssueOptions,
       });
@@ -667,8 +679,8 @@ function composeAuctionKey(datasetKey, auctionDate) {
       const sharePosterModal = window.createPlateIndexShareModal({
         t,
         normalizePlate,
-        formatAuctionDate,
-        formatPriceText,
+        formatAuctionDate: forwardFormatAuctionDate,
+        formatPriceText: forwardFormatPriceText,
         getCurrentLang: () => currentLang,
         getCurrentDataset: () => currentDataset,
         shareModalEl,
@@ -695,7 +707,7 @@ function composeAuctionKey(datasetKey, auctionDate) {
         computeIssueTotal,
         datasetLabelForKey,
         issueLabelForDate,
-        updateIssueTotal,
+        updateIssueTotal: forwardUpdateIssueTotal,
         loadDataset,
         applyLanguage,
         applyFilters,
