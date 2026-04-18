@@ -3,8 +3,18 @@
           pageTitle: "更新日誌 | PVRM",
           title: "更新日誌",
           back: "← 返回首頁",
-          updated: "最後更新：2026年3月26日",
+          updated: "最後更新：2026年4月18日",
           items: [
+            {
+              date: "2026-04-18",
+              title: "Agent discovery、Markdown negotiation 與 WebMCP 上線",
+              points: [
+                "首頁正式支援 `Accept: text/markdown`，Agent 請求現在可直接取得機器友善的 Markdown 版本，不再只能讀 HTML。",
+                "新增 discovery `Link` headers、`/.well-known/api-catalog`、Agent Skills index、`agent.md` 與 `skill.md`，讓公開資料入口更容易被 AI 工具發現。",
+                "首頁註冊 4 個 WebMCP 工具（資料集、搜尋、期數列表、單一期數查詢），讓支援 `navigator.modelContext` 的代理可直接調用 Plate.hk。",
+                "重新部署後，Is It Agent Ready 掃描結果由 Level 2 提升到 Level 4（Agent-Integrated）。"
+              ]
+            },
             {
               date: "2026-03-26",
               title: "Cloudflare Workers 全站運行打通",
@@ -319,8 +329,18 @@
           pageTitle: "Changelog | PVRM",
           title: "Changelog",
           back: "← Back to Home",
-          updated: "Last updated: 26 Mar 2026",
+          updated: "Last updated: 18 Apr 2026",
           items: [
+            {
+              date: "2026-04-18",
+              title: "Agent discovery, Markdown negotiation, and WebMCP shipped",
+              points: [
+                "The homepage now supports `Accept: text/markdown`, so agents can request a machine-friendly Markdown representation instead of parsing only HTML.",
+                "Added discovery `Link` headers, `/.well-known/api-catalog`, an Agent Skills index, plus `agent.md` and `skill.md` so the public data surface is easier for AI tooling to discover.",
+                "Registered 4 WebMCP tools on the homepage for dataset discovery, search, issue listing, and single-issue lookup through `navigator.modelContext`.",
+                "After redeploying, the Is It Agent Ready score moved from Level 2 to Level 4 (Agent-Integrated)."
+              ]
+            },
             {
               date: "2026-03-26",
               title: "Cloudflare Workers full-site runtime completed",
