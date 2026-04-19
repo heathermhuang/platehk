@@ -142,6 +142,16 @@ flowchart LR
 | `cloudflare-worker/` | Worker runtime for API routes and vision lookup |
 | `scripts/` | Build, validation, packaging, and data-update scripts |
 
+## Data Coverage
+
+Plate.hk publishes the following datasets:
+
+- `all`: unified cross-dataset view with `dataset_key` on every record plus deduplicated plate summaries
+- `pvrm`: personalized vehicle registration marks
+- `tvrm_physical`: traditional plate live auctions
+- `tvrm_eauction`: 拍牌易 records
+- `tvrm_legacy`: historical `1973-2006` year-range records
+
 ## Key Generated Outputs
 
 These are the artifacts most contributors need to understand:

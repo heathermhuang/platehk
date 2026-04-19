@@ -12,6 +12,7 @@ API = ROOT / "api" / "v1"
 
 
 DATASETS = {
+    "all": DATA / "all",
     "pvrm": DATA,
     "tvrm_physical": DATA / "tvrm_physical",
     "tvrm_eauction": DATA / "tvrm_eauction",
@@ -58,12 +59,17 @@ def build() -> int:
 
         manifest = _read_json(base / "issues.manifest.json")
         auctions = _read_json(base / "auctions.json")
+        manifest_issues = manifest.get("issues") or []
+        latest_issue = manifest_issues[0] if manifest_issues else {}
+        issue_key_field = "auction_key" if key == "all" else "auction_date"
 
         # Copy core files
         _copy(base / "issues.manifest.json", out / "issues.manifest.json")
         _copy(base / "auctions.json", out / "auctions.json")
         _copy(base / "results.slim.json", out / "results.slim.json")
         _copy(base / "preset.amount_desc.top1000.json", out / "preset.amount_desc.top1000.json")
+        if (base / "plates.json").exists():
+            _copy(base / "plates.json", out / "plates.json")
 
         # Copy per-issue shards
         issues_dir = base / "issues"
@@ -80,13 +86,20 @@ def build() -> int:
             "base": f"/api/v1/{key}",
             "issue_count": int(manifest.get("issue_count") or 0),
             "total_rows": int(manifest.get("total_rows") or 0),
-            "latest_issue": (manifest.get("issues") or [{}])[0].get("auction_date") if manifest.get("issues") else None,
+            "latest_issue": latest_issue.get("auction_date"),
+            "latest_issue_key": latest_issue.get(issue_key_field) or latest_issue.get("auction_date"),
+            "issue_key_field": issue_key_field,
             "files": {
                 "issues_manifest": f"/api/v1/{key}/issues.manifest.json",
                 "auctions": f"/api/v1/{key}/auctions.json",
                 "results_slim": f"/api/v1/{key}/results.slim.json",
                 "preset_amount_desc_top1000": f"/api/v1/{key}/preset.amount_desc.top1000.json",
-                "issue_shard_template": f"/api/v1/{key}/issues/{{auction_date}}.json",
+                "issue_shard_template": (
+                    f"/api/v1/{key}/issues/{{auction_key}}.json"
+                    if key == "all"
+                    else f"/api/v1/{key}/issues/{{auction_date}}.json"
+                ),
+                **({"plates": f"/api/v1/{key}/plates.json"} if (base / "plates.json").exists() else {}),
             },
             "pdfs_listed": len(auctions),
         }

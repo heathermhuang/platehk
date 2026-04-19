@@ -40,6 +40,7 @@ SPECIAL_ROOT_DIRS = [
 ]
 
 API_V1_DATASETS = [
+    "all",
     "pvrm",
     "tvrm_physical",
     "tvrm_eauction",

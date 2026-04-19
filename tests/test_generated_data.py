@@ -20,10 +20,21 @@ def _normalize_plate(value) -> str:
         raw = ""
     else:
         raw = str(value)
-    return raw.upper().replace(" ", "").replace("I", "1").replace("O", "0").strip()
+    return raw.upper().replace(" ", "").replace("I", "1").replace("O", "0").replace("Q", "").strip()
 
 
 class GeneratedDataTests(unittest.TestCase):
+    def test_unified_all_dataset_exists_in_public_api_index(self) -> None:
+        index = _load(ROOT / "api" / "v1" / "index.json")
+        self.assertIn("all", index["datasets"])
+        all_dataset = index["datasets"]["all"]
+        self.assertEqual(all_dataset["base"], "/api/v1/all")
+        self.assertGreater(all_dataset["total_rows"], 200000)
+        self.assertIn("plates", all_dataset["files"])
+        self.assertEqual(all_dataset["issue_key_field"], "auction_key")
+        self.assertEqual(all_dataset["files"]["issue_shard_template"], "/api/v1/all/issues/{auction_key}.json")
+        self.assertTrue(str(all_dataset["latest_issue_key"]).startswith("pvrm::"))
+
     def test_legacy_overlap_report_matches_source_data(self) -> None:
         physical = _load(DATA / "tvrm_physical" / "results.slim.json")
         eauction = _load(DATA / "tvrm_eauction" / "results.slim.json")
@@ -87,6 +98,89 @@ class GeneratedDataTests(unittest.TestCase):
         legacy = index["datasets"]["tvrm_legacy"]
         self.assertEqual(legacy["base"], "/api/v1/tvrm_legacy")
         self.assertGreater(legacy["total_rows"], 40000)
+
+    def test_unified_all_results_rows_are_tagged_and_exact_deduped(self) -> None:
+        rows = _load(DATA / "all" / "results.slim.json")
+        self.assertGreater(len(rows), 200000)
+        self.assertTrue(all(row.get("dataset_key") for row in rows[:100]))
+        self.assertTrue(all(row.get("auction_key") for row in rows[:100]))
+
+        seen = set()
+        for row in rows:
+            key = json.dumps(
+                [
+                    row.get("dataset_key"),
+                    _normalize_plate(row.get("single_line") or row.get("double_line")),
+                    row.get("auction_date"),
+                    row.get("date_precision"),
+                    row.get("year_range"),
+                    row.get("amount_hkd"),
+                    row.get("result_status"),
+                ],
+                ensure_ascii=False,
+                separators=(",", ":"),
+            )
+            self.assertNotIn(key, seen)
+            seen.add(key)
+
+    def test_plate_summary_matches_all_rows(self) -> None:
+        rows = _load(DATA / "all" / "results.slim.json")
+        plates = _load(DATA / "all" / "plates.json")
+        by_plate = {}
+        for row in rows:
+            plate = _normalize_plate(row.get("single_line") or row.get("double_line"))
+            if not plate:
+                continue
+            stat = by_plate.setdefault(
+                plate,
+                {
+                    "count": 0,
+                    "datasets": set(),
+                },
+            )
+            stat["count"] += 1
+            stat["datasets"].add(row.get("dataset_key"))
+
+        self.assertEqual(len(plates), len(by_plate))
+        for item in plates[:500]:
+            plate = item["plate_norm"]
+            stat = by_plate[plate]
+            self.assertEqual(item["auction_record_count"], stat["count"])
+            self.assertEqual(sorted(item["dataset_keys"]), sorted(x for x in stat["datasets"] if x))
+
+    def test_all_issue_manifest_uses_auction_keys_for_duplicate_dates(self) -> None:
+        manifest = _load(DATA / "all" / "issues.manifest.json")
+        self.assertTrue(all(item.get("auction_key") for item in manifest["issues"][:50]))
+        duplicate_date_items = [item for item in manifest["issues"] if item.get("auction_date") == "2025-12-13"]
+        self.assertEqual(len(duplicate_date_items), 2)
+        keys = {item["auction_key"] for item in duplicate_date_items}
+        self.assertEqual(keys, {"pvrm::2025-12-13", "tvrm_physical::2025-12-13"})
+        files = {item["file"] for item in duplicate_date_items}
+        self.assertEqual(files, {"issues/pvrm--2025-12-13.json", "issues/tvrm_physical--2025-12-13.json"})
+
+    def test_dataset_outputs_no_longer_repeat_same_auction_record(self) -> None:
+        for rel in [
+            "tvrm_physical/results.slim.json",
+            "tvrm_eauction/results.slim.json",
+            "tvrm_legacy/results.slim.json",
+        ]:
+            rows = _load(DATA / rel)
+            seen = set()
+            for row in rows:
+                key = json.dumps(
+                    [
+                        _normalize_plate(row.get("single_line") or row.get("double_line")),
+                        row.get("auction_date"),
+                        row.get("date_precision"),
+                        row.get("year_range"),
+                        row.get("amount_hkd"),
+                        row.get("result_status"),
+                    ],
+                    ensure_ascii=False,
+                    separators=(",", ":"),
+                )
+                self.assertNotIn(key, seen, rel)
+                seen.add(key)
 
     def test_legacy_dataset_is_pre_2007_year_ranges_only(self) -> None:
         manifest = _load(DATA / "tvrm_legacy" / "issues.manifest.json")

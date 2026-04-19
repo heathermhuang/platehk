@@ -87,6 +87,21 @@ def compare_row(row: dict) -> tuple:
     )
 
 
+def dedupe_key(row: dict) -> tuple:
+    return (
+        str(row.get("single_line") or ""),
+        row.get("amount_hkd"),
+        str(row.get("result_status") or ""),
+    )
+
+
+def dedupe_issue_rows(rows: list[dict]) -> list[dict]:
+    deduped = {dedupe_key(row): dict(row) for row in rows}
+    out = list(deduped.values())
+    out.sort(key=compare_row)
+    return out
+
+
 def load_exact_overlap_signatures() -> set[str]:
     signatures: set[str] = set()
     wb = load_workbook(EXACT_XLSX_PATH, read_only=True, data_only=True)
@@ -193,10 +208,9 @@ def build() -> int:
 
     issue_dates_desc = sorted(by_issue.keys(), reverse=True)
     for issue_key in issue_dates_desc:
-        rows = by_issue[issue_key]
+        rows = dedupe_issue_rows(by_issue[issue_key])
         if not rows:
             continue
-        rows.sort(key=compare_row)
         label = str(rows[0].get("auction_date_label") or issue_key)
         year_range = rows[0].get("year_range")
         total_amount = sum(int(row["amount_hkd"]) for row in rows if row.get("amount_hkd") is not None)

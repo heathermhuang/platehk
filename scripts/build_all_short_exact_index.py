@@ -16,13 +16,6 @@ OUT_CHAR1_DIR = DATA / "all.char1"
 OUT_BIGRAM_DIR = DATA / "all.bigram"
 OUT_PREFIX2_DIR = DATA / "all.prefix2"
 
-DATASET_DIRS = {
-    "pvrm": DATA,
-    "tvrm_physical": DATA / "tvrm_physical",
-    "tvrm_eauction": DATA / "tvrm_eauction",
-    "tvrm_legacy": DATA / "tvrm_legacy",
-}
-
 MAX_PREFIX1_ROWS = 200
 
 
@@ -93,16 +86,10 @@ def tag_row(dataset_key: str, row: dict) -> dict:
     }
 
 
-def iter_dataset_rows(dataset_key: str):
-    base = DATASET_DIRS[dataset_key]
-    manifest = load_json(base / "issues.manifest.json")
-    for issue in manifest.get("issues", []):
-        file_rel = issue.get("file")
-        if not file_rel:
-            continue
-        rows = load_json(base / file_rel)
-        for row in rows:
-            yield tag_row(dataset_key, row)
+def iter_all_rows():
+    rows = load_json(DATA / "all" / "results.slim.json")
+    for row in rows:
+        yield row
 
 
 def trim_bucket(rows: list[dict], limit: int) -> list[dict]:
@@ -116,60 +103,64 @@ def build() -> int:
     prefix1_rows: dict[str, list[dict]] = {}
     prefix1_totals: dict[str, int] = {}
 
-    nonlegacy_exact_keys: set[str] = set()
-    nonlegacy_coarse_keys: set[str] = set()
     legacy_overlap_exact_keys: set[str] = set()
     legacy_overlap_coarse_keys: set[str] = set()
     legacy_overlap_rows = 0
     overlap_samples: list[dict] = []
 
-    dataset_order = ["pvrm", "tvrm_physical", "tvrm_eauction", "tvrm_legacy"]
+    physical = load_json(DATA / "tvrm_physical" / "results.slim.json")
+    eauction = load_json(DATA / "tvrm_eauction" / "results.slim.json")
+    legacy = load_json(DATA / "tvrm_legacy" / "results.slim.json")
+    nonlegacy_exact_keys = {exact_overlap_key(tag_row("nonlegacy", row)) for row in physical + eauction}
+    nonlegacy_coarse_keys = {coarse_overlap_key(tag_row("nonlegacy", row)) for row in physical + eauction}
 
-    for dataset_key in dataset_order:
-        for row in iter_dataset_rows(dataset_key):
-            if dataset_key != "tvrm_legacy":
-                nonlegacy_exact_keys.add(exact_overlap_key(row))
-                nonlegacy_coarse_keys.add(coarse_overlap_key(row))
-            else:
-                drop = False
-                if row.get("date_precision") == "day":
-                    key = exact_overlap_key(row)
-                    if key in nonlegacy_exact_keys:
-                        legacy_overlap_exact_keys.add(key)
-                        drop = True
-                else:
-                    key = coarse_overlap_key(row)
-                    if key in nonlegacy_coarse_keys:
-                        legacy_overlap_coarse_keys.add(key)
-                        drop = True
-                if drop:
-                    legacy_overlap_rows += 1
-                    if len(overlap_samples) < 50:
-                        overlap_samples.append(
-                            {
-                                "single_line": row.get("single_line"),
-                                "amount_hkd": row.get("amount_hkd"),
-                                "auction_date": row.get("auction_date"),
-                                "auction_date_label": row.get("auction_date_label"),
-                                "date_precision": row.get("date_precision"),
-                            }
-                        )
-                    continue
+    for row in legacy:
+        if row.get("date_precision") == "day":
+            key = exact_overlap_key(tag_row("tvrm_legacy", row))
+            if key in nonlegacy_exact_keys:
+                legacy_overlap_exact_keys.add(key)
+                legacy_overlap_rows += 1
+                if len(overlap_samples) < 50:
+                    overlap_samples.append(
+                        {
+                            "single_line": row.get("single_line"),
+                            "amount_hkd": row.get("amount_hkd"),
+                            "auction_date": row.get("auction_date"),
+                            "auction_date_label": row.get("auction_date_label"),
+                            "date_precision": row.get("date_precision"),
+                        }
+                    )
+        else:
+            key = coarse_overlap_key(tag_row("tvrm_legacy", row))
+            if key in nonlegacy_coarse_keys:
+                legacy_overlap_coarse_keys.add(key)
+                legacy_overlap_rows += 1
+                if len(overlap_samples) < 50:
+                    overlap_samples.append(
+                        {
+                            "single_line": row.get("single_line"),
+                            "amount_hkd": row.get("amount_hkd"),
+                            "auction_date": row.get("auction_date"),
+                            "auction_date_label": row.get("auction_date_label"),
+                            "date_precision": row.get("date_precision"),
+                        }
+                    )
 
-            norm = plate_norm_for_row(row)
-            if not norm:
-                continue
+    for row in iter_all_rows():
+        norm = plate_norm_for_row(row)
+        if not norm:
+            continue
 
-            if len(norm) <= 2:
-                short_exact.setdefault(norm, []).append(row)
+        if len(norm) <= 2:
+            short_exact.setdefault(norm, []).append(row)
 
-            prefix = norm[:1]
-            if prefix:
-                prefix1_totals[prefix] = prefix1_totals.get(prefix, 0) + 1
-                bucket = prefix1_rows.setdefault(prefix, [])
-                bucket.append(row)
-                if len(bucket) > MAX_PREFIX1_ROWS * 2:
-                    trim_bucket(bucket, MAX_PREFIX1_ROWS)
+        prefix = norm[:1]
+        if prefix:
+            prefix1_totals[prefix] = prefix1_totals.get(prefix, 0) + 1
+            bucket = prefix1_rows.setdefault(prefix, [])
+            bucket.append(row)
+            if len(bucket) > MAX_PREFIX1_ROWS * 2:
+                trim_bucket(bucket, MAX_PREFIX1_ROWS)
 
     for q, rows in short_exact.items():
         rows.sort(key=compare_rows)

@@ -15,10 +15,11 @@ import {
   handleApiError,
   issueVisionSessionToken,
   issueOAuthAccessToken,
+  issueLookupKey,
+  issueShardPath,
   jsonResponse,
   loadDatasetAllRows,
   loadDatasetAuctionMap,
-  loadDatasetAuctions,
   loadDatasetIndex,
   loadDatasetIssueManifest,
   loadDatasetIssueRows,
@@ -37,6 +38,7 @@ import {
   requireVisionSessionToken,
   sameOriginError,
   validDataset,
+  validIssueId,
   withApiCache,
   httpPostJson,
 } from "./lib.mjs";
@@ -173,10 +175,10 @@ function slicePage(rows, page, pageSize) {
 }
 
 async function loadAllVisibleTotal(env, request) {
-  const [index, overlap] = await Promise.all([
-    loadDatasetIndex(env, request.url),
-    loadOverlapKeyLookup(env, request),
-  ]);
+  const index = await loadDatasetIndex(env, request.url);
+  const allTotal = Number(index?.datasets?.all?.total_rows || 0);
+  if (allTotal > 0) return allTotal;
+  const overlap = await loadOverlapKeyLookup(env, request);
   let total = 0;
   for (const dataset of CHILD_DATASETS) {
     total += Number(index?.datasets?.[dataset]?.total_rows || 0);
@@ -185,37 +187,68 @@ async function loadAllVisibleTotal(env, request) {
 }
 
 async function loadStaticIssuesPayload(env, request, dataset) {
-  const [manifest, auctions, preset] = await Promise.all([
+  const [manifest, auctionMap, preset] = await Promise.all([
     loadDatasetIssueManifest(env, request.url, dataset),
-    loadDatasetAuctions(env, request.url, dataset),
+    loadDatasetAuctionMap(env, request.url, dataset),
     loadDatasetPreset(env, request.url, dataset),
   ]);
   const topAmount = Array.isArray(preset) && preset.length ? Number(preset[0]?.amount_hkd || 0) || null : null;
+  const issues = Array.isArray(manifest?.issues) ? manifest.issues : [];
   return {
     dataset,
     total_rows: Number(manifest?.total_rows || 0),
     issue_count: Number(manifest?.issue_count || 0),
     top_amount_hkd: topAmount,
-    issues: auctions.map((row) => ({
-      auction_date: String(row.auction_date || ""),
-      auction_date_label: row.auction_date_label == null ? null : String(row.auction_date_label),
-      date_precision: row.date_precision == null ? null : String(row.date_precision),
-      year_range: row.year_range == null ? null : String(row.year_range),
-      is_lny: Boolean(row.is_lny),
-      pdf_url: row.pdf_url || null,
-      total_sale_proceeds_hkd: row.total_sale_proceeds_hkd == null ? null : Number(row.total_sale_proceeds_hkd),
-    })),
+    issues: issues.map((issue) => {
+      const auctionMeta = auctionMap.get(issueLookupKey(dataset, issue)) || null;
+      return {
+        ...(dataset === "all"
+          ? {
+              auction_key: issue.auction_key == null ? null : String(issue.auction_key),
+              dataset_key: issue.dataset_key == null ? null : String(issue.dataset_key),
+            }
+          : {}),
+        auction_date: String(issue.auction_date || ""),
+        auction_date_label: issue.auction_date_label == null
+          ? (auctionMeta?.auction_date_label == null ? null : String(auctionMeta.auction_date_label))
+          : String(issue.auction_date_label),
+        date_precision: issue.date_precision == null
+          ? (auctionMeta?.date_precision == null ? null : String(auctionMeta.date_precision))
+          : String(issue.date_precision),
+        year_range: issue.year_range == null
+          ? (auctionMeta?.year_range == null ? null : String(auctionMeta.year_range))
+          : String(issue.year_range),
+        is_lny: issue.is_lny != null ? Boolean(issue.is_lny) : Boolean(auctionMeta?.is_lny),
+        pdf_url: issue.pdf_url || auctionMeta?.pdf_url || null,
+        total_sale_proceeds_hkd: issue.total_sale_proceeds_hkd == null
+          ? (auctionMeta?.total_sale_proceeds_hkd == null ? null : Number(auctionMeta.total_sale_proceeds_hkd))
+          : Number(issue.total_sale_proceeds_hkd),
+        count: issue.count == null ? null : Number(issue.count),
+        file: issue.file == null ? null : String(issue.file),
+      };
+    }),
   };
 }
 
-async function loadStaticIssuePayload(env, request, dataset, auctionDate) {
-  const [auctionMap, rows] = await Promise.all([
+async function loadStaticIssuePayload(env, request, dataset, issueId) {
+  const [manifest, auctionMap] = await Promise.all([
+    loadDatasetIssueManifest(env, request.url, dataset),
     loadDatasetAuctionMap(env, request.url, dataset),
-    loadDatasetIssueRows(env, request.url, dataset, auctionDate),
   ]);
-  const issue = auctionMap.get(auctionDate);
+  const issues = Array.isArray(manifest?.issues) ? manifest.issues : [];
+  const issue = issues.find((item) => issueLookupKey(dataset, item) === issueId) || null;
   if (!issue) return null;
-  const mappedRows = rows.map((row) => mapStaticRow(row, dataset, issue));
+  const rows = await loadDatasetIssueRows(
+    env,
+    request.url,
+    dataset,
+    issueId,
+    String(issue.file || issueShardPath(dataset, issueId))
+  );
+  const auctionMeta = dataset === "all"
+    ? issue
+    : (auctionMap.get(issueId) || auctionMap.get(String(issue.auction_date || "")) || issue);
+  const mappedRows = rows.map((row) => mapStaticRow(row, dataset, auctionMeta));
   mappedRows.sort((a, b) => {
     const av = a.amount_hkd == null ? -1 : Number(a.amount_hkd);
     const bv = b.amount_hkd == null ? -1 : Number(b.amount_hkd);
@@ -225,13 +258,27 @@ async function loadStaticIssuePayload(env, request, dataset, auctionDate) {
   return {
     dataset,
     issue: {
+      ...(dataset === "all"
+        ? {
+            auction_key: issue.auction_key == null ? null : String(issue.auction_key),
+            dataset_key: issue.dataset_key == null ? null : String(issue.dataset_key),
+          }
+        : {}),
       auction_date: String(issue.auction_date || ""),
-      auction_date_label: issue.auction_date_label == null ? null : String(issue.auction_date_label),
-      date_precision: issue.date_precision == null ? null : String(issue.date_precision),
-      year_range: issue.year_range == null ? null : String(issue.year_range),
-      is_lny: Boolean(issue.is_lny),
-      pdf_url: issue.pdf_url || null,
-      total_sale_proceeds_hkd: issue.total_sale_proceeds_hkd == null ? null : Number(issue.total_sale_proceeds_hkd),
+      auction_date_label: issue.auction_date_label == null
+        ? (auctionMeta?.auction_date_label == null ? null : String(auctionMeta.auction_date_label))
+        : String(issue.auction_date_label),
+      date_precision: issue.date_precision == null
+        ? (auctionMeta?.date_precision == null ? null : String(auctionMeta.date_precision))
+        : String(issue.date_precision),
+      year_range: issue.year_range == null
+        ? (auctionMeta?.year_range == null ? null : String(auctionMeta.year_range))
+        : String(issue.year_range),
+      is_lny: issue.is_lny != null ? Boolean(issue.is_lny) : Boolean(auctionMeta?.is_lny),
+      pdf_url: issue.pdf_url || auctionMeta?.pdf_url || null,
+      total_sale_proceeds_hkd: issue.total_sale_proceeds_hkd == null
+        ? (auctionMeta?.total_sale_proceeds_hkd == null ? null : Number(auctionMeta.total_sale_proceeds_hkd))
+        : Number(issue.total_sale_proceeds_hkd),
     },
     rows: mappedRows,
   };
@@ -267,31 +314,21 @@ async function loadStaticDatasetResults(env, request, dataset, sort, page, pageS
 }
 
 async function loadStaticAllResults(env, request, sort, page, pageSize) {
+  const manifest = await loadDatasetIssueManifest(env, request.url, "all");
   if (sort === "amount_desc" && page <= 5) {
-    const [rows, total] = await Promise.all([
-      getStaticJson(env, request.url, "./data/all.preset.amount_desc.top1000.json"),
-      loadAllVisibleTotal(env, request),
-    ]);
-    const deduped = await dedupeAllIndexRows(env, request, Array.isArray(rows) ? rows : []);
-    return { total, rows: slicePage(deduped, page, pageSize) };
+    const rows = await loadDatasetPreset(env, request.url, "all");
+    return {
+      total: Number(manifest?.total_rows || rows.length),
+      rows: slicePage(rows, page, pageSize),
+    };
   }
-  let merged = [];
   if (sort === "date_desc") {
-    const datasets = await Promise.all(CHILD_DATASETS.map((dataset) => loadStaticDatasetResults(env, request, dataset, sort, 1, 999999)));
-    merged = datasets.flatMap((payload) => payload.rows || []);
-  } else {
-    const datasets = await Promise.all(CHILD_DATASETS.map(async (dataset) => {
-      const [rows, auctionMap] = await Promise.all([
-        loadDatasetAllRows(env, request.url, dataset),
-        loadDatasetAuctionMap(env, request.url, dataset),
-      ]);
-      return rows.map((row) => mapStaticRow(row, dataset, auctionMap.get(String(row?.auction_date || "")) || null));
-    }));
-    merged = datasets.flat();
+    return buildPagedDateDescRows(env, request.url, "all", page, pageSize);
   }
-  const deduped = await dedupeAllIndexRows(env, request, merged);
-  const sorted = sortRowsForResults(deduped, sort);
-  return { total: await loadAllVisibleTotal(env, request), rows: slicePage(sorted, page, pageSize) };
+  const rows = await loadDatasetAllRows(env, request.url, "all");
+  const mapped = rows.map((row) => mapStaticRow(row, "all", null));
+  const sorted = sortRowsForResults(mapped, sort);
+  return { total: Number(manifest?.total_rows || sorted.length), rows: slicePage(sorted, page, pageSize) };
 }
 
 async function searchStaticDataset(env, request, dataset, query, issue, sort, mode, page, pageSize) {
@@ -325,7 +362,44 @@ async function searchStaticDataset(env, request, dataset, query, issue, sort, mo
   };
 }
 
-async function searchStaticAll(env, request, query, sort, mode, page, pageSize) {
+async function searchStaticAll(env, request, query, issue, sort, mode, page, pageSize) {
+  if (issue) {
+    const issuePayload = await loadStaticIssuePayload(env, request, "all", issue);
+    if (!issuePayload) {
+      return {
+        dataset: "all",
+        q: query,
+        issue,
+        mode: mode || null,
+        sort,
+        page,
+        page_size: pageSize,
+        total: 0,
+        rows: [],
+      };
+    }
+    const matched = [];
+    for (const row of issuePayload.rows || []) {
+      const rank = searchMatchRank(row, query);
+      if (rank == null) continue;
+      if (mode === "exact_prefix" || query.length <= 2) {
+        if (rank > 1) continue;
+      }
+      matched.push(row);
+    }
+    matched.sort((a, b) => compareSearchRows(a, b, sort, query));
+    return {
+      dataset: "all",
+      q: query,
+      issue,
+      mode: mode || null,
+      sort,
+      page,
+      page_size: pageSize,
+      total: matched.length,
+      rows: slicePage(matched, page, pageSize),
+    };
+  }
   const hotPayload = await loadHotSearchCache(env, request, query, page, pageSize, sort);
   if (hotPayload) return hotPayload;
   if (query.length === 1) {
@@ -342,10 +416,18 @@ async function searchStaticAll(env, request, query, sort, mode, page, pageSize) 
       rows: slicePage(prefixPayload.rows, page, pageSize),
     };
   }
-  const payloads = await Promise.all(CHILD_DATASETS.map((dataset) => searchStaticDataset(env, request, dataset, query, "", sort, mode, 1, 999999)));
-  const merged = payloads.flatMap((payload) => payload.rows || []);
-  const deduped = await dedupeAllIndexRows(env, request, merged);
-  deduped.sort((a, b) => compareSearchRows(a, b, sort, query));
+  const rows = await loadDatasetAllRows(env, request.url, "all");
+  const matched = [];
+  for (const row of rows) {
+    const mapped = mapStaticRow(row, "all", null);
+    const rank = searchMatchRank(mapped, query);
+    if (rank == null) continue;
+    if (mode === "exact_prefix" || query.length <= 2) {
+      if (rank > 1) continue;
+    }
+    matched.push(mapped);
+  }
+  matched.sort((a, b) => compareSearchRows(a, b, sort, query));
   return {
     dataset: "all",
     q: query,
@@ -354,8 +436,8 @@ async function searchStaticAll(env, request, query, sort, mode, page, pageSize) 
     sort,
     page,
     page_size: pageSize,
-    total: deduped.length,
-    rows: slicePage(deduped, page, pageSize),
+    total: matched.length,
+    rows: slicePage(matched, page, pageSize),
   };
 }
 
@@ -370,7 +452,7 @@ async function handleIssues(request, env, ctx) {
   if (methodErr) return methodErr;
   const url = new URL(request.url);
   const dataset = String(url.searchParams.get("dataset") || "");
-  if (!validDataset(dataset)) return badRequest("invalid dataset");
+  if (!validDataset(dataset, true)) return badRequest("invalid dataset");
   enforcePublicReadRateLimit(request, `issues:${dataset}`, 180, 2400);
   return withApiCache(request, ctx, 300, async () => jsonResponse(await loadStaticIssuesPayload(env, request, dataset)));
 }
@@ -380,12 +462,12 @@ async function handleIssue(request, env, ctx) {
   if (methodErr) return methodErr;
   const url = new URL(request.url);
   const dataset = String(url.searchParams.get("dataset") || "");
-  const auctionDate = String(url.searchParams.get("auction_date") || "");
-  if (!validDataset(dataset)) return badRequest("invalid dataset");
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(auctionDate)) return badRequest("invalid auction_date");
+  const issueId = String(url.searchParams.get("auction_date") || "");
+  if (!validDataset(dataset, true)) return badRequest("invalid dataset");
+  if (!validIssueId(dataset, issueId)) return badRequest("invalid auction_date");
   enforcePublicReadRateLimit(request, `issue:${dataset}`, 240, 3200);
   return withApiCache(request, ctx, 300, async () => {
-    const payload = await loadStaticIssuePayload(env, request, dataset, auctionDate);
+    const payload = await loadStaticIssuePayload(env, request, dataset, issueId);
     if (!payload) return notFound("issue not found");
     return jsonResponse(payload);
   });
@@ -463,7 +545,7 @@ async function handleSearch(request, env, ctx) {
   if (!Number.isInteger(page) || page < 1) return badRequest("invalid paging");
   enforcePageSize("search", pageSize, 200);
   enforceSearchWindow(dataset, query, page);
-  if (issue && !/^\d{4}-\d{2}-\d{2}$/.test(issue)) return badRequest("invalid issue");
+  if (issue && !validIssueId(dataset, issue)) return badRequest("invalid issue");
   if (!["amount_desc", "amount_asc", "date_desc", "plate_asc"].includes(sort)) return badRequest("invalid sort");
   if (!["", "exact_prefix"].includes(mode)) return badRequest("invalid mode");
 
@@ -482,7 +564,7 @@ async function handleSearch(request, env, ctx) {
   const cacheTtl = !issue ? (dataset === "all" ? 600 : (query.length <= 2 ? 300 : 0)) : 0;
   return withApiCache(request, ctx, cacheTtl, async () => {
     const payload = dataset === "all"
-      ? await searchStaticAll(env, request, query, sort, mode, page, pageSize)
+      ? await searchStaticAll(env, request, query, issue, sort, mode, page, pageSize)
       : await searchStaticDataset(env, request, dataset, query, issue, sort, mode, page, pageSize);
     return jsonResponse(payload);
   });

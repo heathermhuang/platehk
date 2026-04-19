@@ -140,6 +140,12 @@ window.createPlateIndexDataFlow = function createPlateIndexDataFlow({
     allDatasetSummaryPromise = fetchJsonStrict("./api/v1/index.json", { cache: "force-cache" })
       .then((payload) => {
         const datasets = payload?.datasets || {};
+        if (datasets.all) {
+          return {
+            totalRows: Number(datasets.all.total_rows || 0),
+            issueCount: Number(datasets.all.issue_count || 0),
+          };
+        }
         const childKeys = Array.isArray(DATASETS.all?.children) ? DATASETS.all.children : [];
         let totalRows = 0;
         let issueCount = 0;
@@ -230,60 +236,13 @@ window.createPlateIndexDataFlow = function createPlateIndexDataFlow({
   }
 
   async function apiAllResultsMerged({ sortMode, page, pageSize, signal }) {
-    if (sortMode === "amount_desc" && page <= 5) {
-      const [overlapInfo, presetRows] = await Promise.all([
-        loadAllTvrmLegacyOverlapKeys(),
-        loadAllAmountDescPresetRows(),
-      ]);
-      const deduped = dedupeAllRows(presetRows, overlapInfo);
-      const start = (page - 1) * pageSize;
-      return {
-        total: Number(manifest.total_rows || deduped.length),
-        rows: deduped.slice(start, start + pageSize),
-      };
-    }
-
-    const childKeys = Array.isArray(DATASETS.all?.children) ? DATASETS.all.children : [];
-    const need = page * pageSize;
-    const batchSize = 500;
-    const batches = Math.max(1, Math.ceil(need / batchSize));
-    const requests = [];
-
-    for (const dataset of childKeys) {
-      for (let batch = 1; batch <= batches; batch += 1) {
-        requests.push(
-          apiResults({
-            dataset,
-            sortMode,
-            page: batch,
-            pageSize: batch === batches && need % batchSize !== 0 ? need % batchSize : batchSize,
-            signal,
-          }).then((payload) => ({
-            dataset,
-            rows: Array.isArray(payload?.rows) ? payload.rows : [],
-          }))
-        );
-      }
-    }
-
-    const payloads = await Promise.all(requests);
-    const overlapInfo = await loadAllTvrmLegacyOverlapKeys();
-    const mergedRows = [];
-    for (const payload of payloads) {
-      for (const row of payload.rows) {
-        mergedRows.push({
-          ...row,
-          dataset_key: row.dataset_key || payload.dataset,
-        });
-      }
-    }
-
-    const deduped = sortRows(dedupeAllRows(mergedRows, overlapInfo), sortMode);
-    const start = (page - 1) * pageSize;
-    return {
-      total: Number(manifest.total_rows || deduped.length),
-      rows: deduped.slice(start, start + pageSize),
-    };
+    return apiResults({
+      dataset: "all",
+      sortMode,
+      page,
+      pageSize,
+      signal,
+    });
   }
 
   async function apiIssues(dataset) {
@@ -328,9 +287,12 @@ window.createPlateIndexDataFlow = function createPlateIndexDataFlow({
           ...row,
           dataset_key: row.dataset_key || currentDataset,
           auction_key:
-            currentDataset === "all"
-              ? composeAuctionKey(row.dataset_key || currentDataset, row.auction_date)
-              : row.auction_date,
+            row.auction_key
+            || (
+              currentDataset === "all"
+                ? composeAuctionKey(row.dataset_key || currentDataset, row.auction_date)
+                : row.auction_date
+            ),
         }));
         loadedIssues.set(dateIso, taggedRows);
         loadingIssues.delete(dateIso);
@@ -531,23 +493,6 @@ window.createPlateIndexDataFlow = function createPlateIndexDataFlow({
     issueEl.value = "";
     issueTotalEl.textContent = "";
 
-    const ds = DATASETS[currentDataset] || DATASETS.all;
-    if (ds.virtual) {
-      const [overlapInfo, summary] = await Promise.all([
-        loadAllTvrmLegacyOverlapKeys(),
-        loadAllDatasetSummary(),
-      ]);
-      lastUpdatedDate = new Date();
-
-      manifest = {
-        total_rows: Math.max(0, Number(summary.totalRows || 0) - Number(overlapInfo?.rowsToDrop || 0)),
-        issue_count: Number(summary.issueCount || 0),
-        issues: [],
-        top_amount_hkd: null,
-      };
-      auctionsByDate = {};
-      return;
-    }
     if (currentDataset === "tvrm_legacy" && !allTvrmLegacyOverlapKeys) {
       try {
         await loadAllTvrmLegacyOverlapKeys();

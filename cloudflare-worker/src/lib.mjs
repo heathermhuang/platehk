@@ -87,6 +87,39 @@ export function validDataset(dataset, allowAll = false) {
   return ["pvrm", "tvrm_physical", "tvrm_eauction", "tvrm_legacy"].includes(dataset);
 }
 
+export function composeAuctionKey(datasetKey, auctionDate) {
+  const dataset = String(datasetKey || "");
+  const date = String(auctionDate || "");
+  if (!dataset || !date) return "";
+  return `${dataset}::${date}`;
+}
+
+export function issueLookupKey(dataset, item) {
+  if (!item || typeof item !== "object") return "";
+  if (dataset === "all") {
+    if (item.auction_key) return String(item.auction_key);
+    return composeAuctionKey(item.dataset_key || item.dataset, item.auction_date);
+  }
+  return String(item.auction_date || "");
+}
+
+export function issueShardPath(dataset, issueId) {
+  if (dataset === "all") {
+    return `issues/${String(issueId || "").replace("::", "--")}.json`;
+  }
+  return `issues/${String(issueId || "")}.json`;
+}
+
+export function validIssueId(dataset, issueId) {
+  const value = String(issueId || "");
+  if (!value) return false;
+  if (dataset === "all") {
+    const match = /^([a-z_]+)::(\d{4}-\d{2}-\d{2})$/.exec(value);
+    return !!(match && validDataset(match[1]));
+  }
+  return /^\d{4}-\d{2}-\d{2}$/.test(value);
+}
+
 export function shortQuerySearchPageCap(dataset, normalizedQuery) {
   const qLen = String(normalizedQuery || "").length;
   if (qLen <= 1) return dataset === "all" ? 3 : 5;
@@ -191,14 +224,24 @@ export function enforcePublicReadRateLimit(request, endpointKey, minuteLimit, ho
 }
 
 export function mapStaticRow(row, datasetKey, auctionMeta = null) {
+  const resolvedDatasetKey = String(row?.dataset_key || row?.dataset || datasetKey || "");
+  const resolvedAuctionDate = String(row?.auction_date || "");
   const doubleLine = Array.isArray(row?.double_line)
     ? row.double_line
     : (row?.double_top !== undefined || row?.double_bottom !== undefined)
       ? [row.double_top || "", row.double_bottom || ""]
       : null;
   return {
-    dataset_key: String(datasetKey || row?.dataset || ""),
-    auction_date: String(row?.auction_date || ""),
+    dataset_key: resolvedDatasetKey,
+    auction_key: String(
+      row?.auction_key
+      || composeAuctionKey(
+        resolvedDatasetKey,
+        resolvedAuctionDate
+      )
+      || ""
+    ),
+    auction_date: resolvedAuctionDate,
     auction_date_label: row?.auction_date_label == null
       ? (auctionMeta?.auction_date_label == null ? null : String(auctionMeta.auction_date_label))
       : String(row.auction_date_label),
@@ -287,8 +330,9 @@ export async function loadDatasetAuctionMap(env, requestUrl, dataset) {
   const rows = await loadDatasetAuctions(env, requestUrl, dataset);
   const out = new Map();
   for (const row of rows) {
-    if (!row?.auction_date) continue;
-    out.set(String(row.auction_date), row);
+    const key = issueLookupKey(dataset, row);
+    if (!key) continue;
+    out.set(key, row);
   }
   STATIC_JSON_CACHE.set(cacheKey, out);
   return out;
@@ -299,8 +343,9 @@ export async function loadDatasetPreset(env, requestUrl, dataset) {
   return Array.isArray(rows) ? rows : [];
 }
 
-export async function loadDatasetIssueRows(env, requestUrl, dataset, auctionDate) {
-  const rows = await getStaticJson(env, requestUrl, `./api/v1/${dataset}/issues/${auctionDate}.json`);
+export async function loadDatasetIssueRows(env, requestUrl, dataset, auctionDate, relFile = "") {
+  const target = relFile || issueShardPath(dataset, auctionDate);
+  const rows = await getStaticJson(env, requestUrl, `./api/v1/${dataset}/${target}`);
   return Array.isArray(rows) ? rows : [];
 }
 
@@ -350,10 +395,17 @@ export async function buildPagedDateDescRows(env, requestUrl, dataset, page, pag
   for (const issue of issues) {
     const auctionDate = String(issue?.auction_date || "");
     if (!auctionDate) continue;
-    const issueRows = await loadDatasetIssueRows(env, requestUrl, dataset, auctionDate);
+    const issueRows = await loadDatasetIssueRows(
+      env,
+      requestUrl,
+      dataset,
+      auctionDate,
+      String(issue?.file || `issues/${auctionDate}.json`)
+    );
+    const issueMeta = dataset === "all" ? issue : (auctionMap.get(auctionDate) || issue || null);
     for (const row of issueRows) {
       if (seen >= offset && out.length < pageSize) {
-        out.push(mapStaticRow(row, dataset, auctionMap.get(auctionDate) || null));
+        out.push(mapStaticRow(row, dataset, issueMeta));
       }
       seen += 1;
       if (seen >= limit && out.length >= pageSize) {

@@ -457,7 +457,6 @@ const INDEX_I18N = {
         all: {
           titleZh: "香港全部車牌拍賣結果搜尋",
           titleEn: "All Hong Kong VRM Auction Results Search",
-          virtual: true,
           children: ["pvrm", "tvrm_physical", "tvrm_eauction", "tvrm_legacy"],
         },
         pvrm: {

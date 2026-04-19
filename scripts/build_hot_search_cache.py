@@ -12,13 +12,7 @@ OUT_DIR = DATA / "hot_search" / "all_amount_desc"
 OUT_MANIFEST = DATA / "hot_search" / "manifest.json"
 POPULAR_MANIFEST = DATA / "popular_plates_manifest.json"
 OVERLAP = DATA / "all.tvrm_legacy_overlap.json"
-
-DATASET_DIRS = {
-    "pvrm": DATA,
-    "tvrm_physical": DATA / "tvrm_physical",
-    "tvrm_eauction": DATA / "tvrm_eauction",
-    "tvrm_legacy": DATA / "tvrm_legacy",
-}
+ALL_RESULTS = DATA / "all" / "results.slim.json"
 
 MAX_QUERIES = 240
 MAX_ROWS = 200
@@ -61,22 +55,6 @@ def plate_norm_for_row(row: dict) -> str:
     return normalize_plate(row.get("single_line") or row.get("double_line"))
 
 
-def exact_overlap_key(row: dict) -> str:
-    return json.dumps(
-        [plate_norm_for_row(row), row.get("amount_hkd"), row.get("auction_date")],
-        ensure_ascii=False,
-        separators=(",", ":"),
-    )
-
-
-def coarse_overlap_key(row: dict) -> str:
-    return json.dumps(
-        [plate_norm_for_row(row), row.get("amount_hkd")],
-        ensure_ascii=False,
-        separators=(",", ":"),
-    )
-
-
 def compare_rows(row: dict) -> tuple:
     amount = row.get("amount_hkd")
     amount_sort = -(int(amount) if amount is not None else -1)
@@ -95,29 +73,10 @@ def tag_row(dataset_key: str, row: dict) -> dict:
     }
 
 
-def iter_dataset_rows(dataset_key: str):
-    base = DATASET_DIRS[dataset_key]
-    manifest = load_json(base / "issues.manifest.json")
-    for issue in manifest.get("issues", []):
-        file_rel = issue.get("file")
-        if not file_rel:
-            continue
-        rows = load_json(base / file_rel)
-        for row in rows:
-            yield tag_row(dataset_key, row)
-
-
-def load_overlap_keys() -> tuple[set[str], set[str]]:
-    raw = load_json(OVERLAP)
-    return set(raw.get("exact_keys") or []), set(raw.get("keys") or [])
-
-
-def should_drop_legacy_row(row: dict, overlap_exact: set[str], overlap_coarse: set[str]) -> bool:
-    if row.get("dataset_key") != "tvrm_legacy":
-        return False
-    if row.get("date_precision") == "day":
-        return exact_overlap_key(row) in overlap_exact
-    return coarse_overlap_key(row) in overlap_coarse
+def iter_all_rows():
+    rows = load_json(ALL_RESULTS)
+    for row in rows:
+        yield row
 
 
 def candidate_queries() -> list[str]:
@@ -151,7 +110,6 @@ def trim_bucket(rows: list[dict], limit: int) -> list[dict]:
 
 
 def build() -> int:
-    overlap_exact, overlap_coarse = load_overlap_keys()
     queries = candidate_queries()
     query_set = set(queries)
     query_lengths = sorted({len(q) for q in queries})
@@ -162,27 +120,24 @@ def build() -> int:
         shutil.rmtree(OUT_DIR)
     OUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    for dataset_key in ["pvrm", "tvrm_physical", "tvrm_eauction", "tvrm_legacy"]:
-        for row in iter_dataset_rows(dataset_key):
-            if should_drop_legacy_row(row, overlap_exact, overlap_coarse):
+    for row in iter_all_rows():
+        plate = plate_norm_for_row(row)
+        if not plate:
+            continue
+        matched_queries: set[str] = set()
+        for size in query_lengths:
+            if size > len(plate):
                 continue
-            plate = plate_norm_for_row(row)
-            if not plate:
-                continue
-            matched_queries: set[str] = set()
-            for size in query_lengths:
-                if size > len(plate):
-                    continue
-                for start in range(0, len(plate) - size + 1):
-                    token = plate[start : start + size]
-                    if token in query_set:
-                        matched_queries.add(token)
-            for query in matched_queries:
-                totals[query] += 1
-                bucket = top_rows[query]
-                bucket.append(row)
-                if len(bucket) > MAX_ROWS * 2:
-                    trim_bucket(bucket, MAX_ROWS)
+            for start in range(0, len(plate) - size + 1):
+                token = plate[start : start + size]
+                if token in query_set:
+                    matched_queries.add(token)
+        for query in matched_queries:
+            totals[query] += 1
+            bucket = top_rows[query]
+            bucket.append(row)
+            if len(bucket) > MAX_ROWS * 2:
+                trim_bucket(bucket, MAX_ROWS)
 
     manifest: list[dict] = []
     for query in queries:

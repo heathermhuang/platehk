@@ -42,7 +42,7 @@ window.createPlateIndexStateFlow = function createPlateIndexStateFlow({
     const nextSort = sort || sortEl.value || "amount_desc";
     if (nextLang === "zh" || nextLang === "en") params.set("lang", nextLang);
     if (nextDataset && nextDataset !== "all") params.set("d", nextDataset);
-    if (nextIssue && nextDataset !== "all") params.set("issue", nextIssue);
+    if (nextIssue) params.set("issue", nextIssue);
     if (nextQuery) params.set("q", nextQuery);
     if (nextSort && nextSort !== "amount_desc") params.set("sort", nextSort);
     return params.toString();

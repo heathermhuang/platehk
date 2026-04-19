@@ -821,15 +821,22 @@ function composeAuctionKey(datasetKey, auctionDate) {
 
       function issueLabelForDate(issueKey, datasetKey = currentDataset) {
         if (!issueKey) return "";
-        const directMeta = auctionsByDate[datasetKey === "all" ? issueKey : issueKey] || null;
+        const directMeta = auctionsByDate[issueKey] || null;
         const issueMeta = getIssueMeta(issueKey);
         const meta = directMeta || issueMeta;
-        return resolveDisplayDateLabel({
+        const resolvedDatasetKey = datasetKey === "all"
+          ? ((meta && meta.dataset_key) || datasetKey)
+          : datasetKey;
+        const resolvedLabel = resolveDisplayDateLabel({
           label: meta && meta.auction_date_label,
-          auctionDate: issueKey,
+          auctionDate: (meta && meta.auction_date) || (String(issueKey).includes("::") ? String(issueKey).split("::").pop() : issueKey),
           datePrecision: meta && meta.date_precision,
-          datasetKey,
+          datasetKey: resolvedDatasetKey,
         });
+        if (datasetKey === "all" && meta && meta.dataset_key) {
+          return `${datasetLabelForKey(meta.dataset_key)} · ${resolvedLabel}`;
+        }
+        return resolvedLabel;
       }
 
       function render(list, totalCount, modeText) {
@@ -902,35 +909,45 @@ function composeAuctionKey(datasetKey, auctionDate) {
       }
 
       function buildIssueOptions() {
-        issueDatesDesc = (manifest.issues || []).map((x) => x.auction_date);
-        if (currentDataset === "all") {
-          issueEl.innerHTML = `<option value="">${escapeHtml(t("issueUnavailableAll"))}</option>`;
-          issueEl.value = "";
-          issueEl.disabled = true;
-          return;
-        }
+        issueDatesDesc = (manifest.issues || []).map((x) => {
+          if (currentDataset === "all") {
+            return String(x?.auction_key || composeAuctionKey(x?.dataset_key, x?.auction_date));
+          }
+          return String(x?.auction_date || "");
+        }).filter(Boolean);
         issueEl.disabled = false;
         const selected = issueEl.value || "";
         issueEl.innerHTML = [
           `<option value="">${escapeHtml(t("issueAll"))}</option>`,
-          ...issueDatesDesc.map((iso) => {
-            const meta = auctionsByDate[iso];
-            const issueMeta = getIssueMeta(iso);
+          ...issueDatesDesc.map((issueKey) => {
+            const meta = auctionsByDate[issueKey];
+            const issueMeta = getIssueMeta(issueKey);
             let text = resolveDisplayDateLabel({
               label: (meta && meta.auction_date_label) || (issueMeta && issueMeta.auction_date_label) || "",
-              auctionDate: iso,
+              auctionDate: (meta && meta.auction_date) || (issueMeta && issueMeta.auction_date) || issueKey,
               datePrecision: (meta && meta.date_precision) || (issueMeta && issueMeta.date_precision) || "",
-              datasetKey: currentDataset,
+              datasetKey: currentDataset === "all"
+                ? ((meta && meta.dataset_key) || (issueMeta && issueMeta.dataset_key) || currentDataset)
+                : currentDataset,
             });
             if (meta && meta.is_lny) text = `${text} 🧧`;
-            return `<option value="${iso}">${escapeHtml(text)}</option>`;
+            if (currentDataset === "all") {
+              const datasetText = datasetLabelForKey((meta && meta.dataset_key) || (issueMeta && issueMeta.dataset_key) || "");
+              text = datasetText ? `${datasetText} · ${text}` : text;
+            }
+            return `<option value="${escapeHtml(issueKey)}">${escapeHtml(text)}</option>`;
           }),
         ].join("");
         issueEl.value = issueDatesDesc.includes(selected) ? selected : "";
       }
 
-      function getIssueMeta(dateIso) {
-        return (manifest.issues || []).find((x) => x.auction_date === dateIso) || null;
+      function getIssueMeta(issueKey) {
+        return (manifest.issues || []).find((x) => {
+          const key = currentDataset === "all"
+            ? String(x?.auction_key || composeAuctionKey(x?.dataset_key, x?.auction_date))
+            : String(x?.auction_date || "");
+          return key === issueKey;
+        }) || null;
       }
 
       function isLnyMeta(meta) {
@@ -1134,7 +1151,7 @@ function composeAuctionKey(datasetKey, auctionDate) {
         statusEl.textContent = t("loading");
         await loadDataset(currentDataset);
         applyLanguage();
-        if (initialState.issue && currentDataset !== "all" && issueDatesDesc.includes(initialState.issue)) {
+        if (initialState.issue && issueDatesDesc.includes(initialState.issue)) {
           issueEl.value = initialState.issue;
         }
         await applyFilters();

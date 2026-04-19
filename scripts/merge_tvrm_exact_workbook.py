@@ -71,6 +71,13 @@ def dedupe_key(row: dict) -> tuple:
     return (str(row.get("single_line") or ""), row.get("amount_hkd"))
 
 
+def dedupe_issue_rows(rows: list[dict]) -> list[dict]:
+    deduped = {dedupe_key(row): dict(row) for row in rows}
+    out = list(deduped.values())
+    out.sort(key=compare_row)
+    return out
+
+
 def load_exact_rows_after_cutoff() -> dict[str, list[dict]]:
     by_issue: dict[str, list[dict]] = defaultdict(list)
     wb = load_workbook(EXACT_XLSX_PATH, read_only=True, data_only=True)
@@ -170,11 +177,11 @@ def rebuild_dataset(dataset_key: str, state: dict) -> dict[str, int]:
     workbook_only_issues = 0
 
     for issue_date in issue_dates_asc:
-        rows = rows_by_issue[issue_date]
+        rows = dedupe_issue_rows(rows_by_issue[issue_date])
+        rows_by_issue[issue_date] = rows
         if not rows:
             continue
         keep_files.add(f"{issue_date}.json")
-        rows.sort(key=compare_row)
         shard_rel = f"issues/{issue_date}.json"
         write_json(issues_dir / f"{issue_date}.json", rows)
         all_rows.extend(rows)

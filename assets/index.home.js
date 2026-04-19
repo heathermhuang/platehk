@@ -251,7 +251,7 @@ window.createPlateIndexHomeViews = function createPlateIndexHomeViews(deps) {
     let subtitle = "";
     const chips = [];
 
-    if (selectedIssue && currentDataset !== "all") {
+    if (selectedIssue) {
       const label = issueLabelForDate(selectedIssue);
       kicker = t("resultsKickerIssue");
       title = t("resultsTitleIssue")(label);
@@ -313,7 +313,7 @@ window.createPlateIndexHomeViews = function createPlateIndexHomeViews(deps) {
     const currentDataset = getCurrentDataset();
     const q = normalizePlate(qEl.value);
     const selectedIssue = issueEl.value || "";
-    if (selectedIssue && currentDataset !== "all") {
+    if (selectedIssue) {
       const label = issueLabelForDate(selectedIssue);
       return {
         main: q ? t("emptyStateQueryIssue")(label, q) : t("emptyStateIssue")(label),

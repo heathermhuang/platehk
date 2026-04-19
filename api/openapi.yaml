@@ -80,7 +80,7 @@ paths:
           required: true
           schema:
             type: string
-            enum: [pvrm, tvrm_physical, tvrm_eauction, tvrm_legacy]
+            enum: [all, pvrm, tvrm_physical, tvrm_eauction, tvrm_legacy]
       responses:
         "200":
           description: OK
@@ -93,11 +93,11 @@ paths:
           required: true
           schema:
             type: string
-            enum: [pvrm, tvrm_physical, tvrm_eauction, tvrm_legacy]
+            enum: [all, pvrm, tvrm_physical, tvrm_eauction, tvrm_legacy]
       responses:
         "200":
           description: OK
-  /api/v1/{dataset}/issues/{auction_date}.json:
+  /api/v1/{dataset}/issues/{issue_id}.json:
     get:
       summary: Issue shard (all rows for one issue)
       parameters:
@@ -106,13 +106,16 @@ paths:
           required: true
           schema:
             type: string
-            enum: [pvrm, tvrm_physical, tvrm_eauction, tvrm_legacy]
+            enum: [all, pvrm, tvrm_physical, tvrm_eauction, tvrm_legacy]
         - in: path
-          name: auction_date
+          name: issue_id
           required: true
           schema:
             type: string
             example: "2026-01-17"
+          description: |
+            Uses `YYYY-MM-DD` for dataset-specific shards and `{dataset_key}::{YYYY-MM-DD}`
+            for the unified `all` dataset, for example `pvrm::2026-03-28`.
       responses:
         "200":
           description: OK
