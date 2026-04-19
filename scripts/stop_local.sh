@@ -2,7 +2,7 @@
 set -euo pipefail
 
 PORT="${1:-8080}"
-PID_FILE="/tmp/pvrm_php_${PORT}.pid"
+PID_FILE="/tmp/pvrm_local_${PORT}.pid"
 
 if [[ -f "${PID_FILE}" ]]; then
   PID="$(cat "${PID_FILE}")"

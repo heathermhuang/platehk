@@ -51,7 +51,7 @@ class WorkflowTests(unittest.TestCase):
             self.assertIn(f"http://127.0.0.1:{port}", proc.stdout)
             time.sleep(1)
             req = urllib.request.Request(
-                f"http://127.0.0.1:{port}/api/search?dataset=all&q=HKB88&page=1&page_size=5&sort=amount_desc",
+                f"http://127.0.0.1:{port}/api/search?dataset=all&q=88&page=1&page_size=5&sort=amount_desc",
                 headers={"Accept": "application/json"},
             )
             with urllib.request.urlopen(req, timeout=15) as resp:

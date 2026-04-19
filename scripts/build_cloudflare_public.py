@@ -9,6 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = ROOT / ".tmp" / "cloudflare-public"
 RESULTS_CHUNK_ROWS = 12000
+MAX_WORKERS_ASSET_BYTES = 25 * 1024 * 1024
 
 ROOT_FILES = [
     "index.html",
@@ -117,6 +118,29 @@ def build_results_chunks(dataset: str) -> None:
     write_json(dataset_dir / "results.chunks.json", manifest)
 
 
+def prune_oversized_assets() -> None:
+    publish_index_path = TARGET / "api" / "v1" / "index.json"
+    publish_index = json.loads(publish_index_path.read_text()) if publish_index_path.exists() else None
+    oversized_paths = [
+        TARGET / "data" / "all" / "plates.json",
+        TARGET / "api" / "v1" / "all" / "plates.json",
+    ]
+    removed = False
+    for path in oversized_paths:
+        if path.exists() and path.stat().st_size > MAX_WORKERS_ASSET_BYTES:
+            path.unlink()
+            removed = True
+    if removed and isinstance(publish_index, dict):
+        datasets = publish_index.get("datasets")
+        if isinstance(datasets, dict):
+            all_dataset = datasets.get("all")
+            if isinstance(all_dataset, dict):
+                files = all_dataset.get("files")
+                if isinstance(files, dict):
+                    files.pop("plates", None)
+        write_json(publish_index_path, publish_index)
+
+
 def main() -> None:
     if TARGET.exists():
         shutil.rmtree(TARGET)
@@ -140,6 +164,7 @@ def main() -> None:
     for dataset in API_V1_DATASETS:
         copy_path(ROOT / "api" / "v1" / dataset, api_v1_dir / dataset)
         build_results_chunks(dataset)
+    prune_oversized_assets()
 
     print(f"Built Cloudflare publish directory at {TARGET}")
 
