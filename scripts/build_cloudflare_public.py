@@ -62,6 +62,7 @@ IGNORE_BULKY_PATTERNS = (
     "preset.amount_desc.top1000 2.json",
     "* 2.json",
     "* 3.json",
+    "* [0-9].html",
     "* 2.html",
     "* 3.html",
 )

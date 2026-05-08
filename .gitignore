@@ -4,6 +4,10 @@
 .wrangler/
 node_modules/
 test-results/
+playwright-report/
+plates/* [0-9].html
+api/v1/**/* [0-9].json
+data/**/* [0-9].json
 
 api/config.local.php
 cloudflare-worker/.dev.vars
