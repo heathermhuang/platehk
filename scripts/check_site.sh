@@ -20,8 +20,12 @@ python3 -m py_compile \
   scripts/export_mysql_dump.py \
   scripts/scan_repo_secrets.py
 
-php -l api/lib.php >/dev/null
-php -l api/admin/sync.php >/dev/null
+if command -v php >/dev/null 2>&1; then
+  php -l api/lib.php >/dev/null
+  php -l api/admin/sync.php >/dev/null
+else
+  echo "Skipping PHP syntax checks: php executable not found."
+fi
 bash -n scripts/run_local.sh
 bash -n scripts/stop_local.sh
 bash -n scripts/build_site.sh

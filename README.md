@@ -57,7 +57,7 @@ Plate.hk turns Transport Department source documents into a searchable static we
 
 Prerequisites:
 
-- Python 3
+- Python 3.10+ (CI uses Python 3.12)
 - Node.js and npm
 
 Install dependencies:
