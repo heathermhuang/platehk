@@ -17,7 +17,11 @@ if (strlen($qn) > 16) bad_request('q too long');
 if ($page < 1) bad_request('invalid paging');
 enforce_public_page_size('search', $page_size, 200);
 enforce_public_search_window($dataset, $qn, $page, $page_size);
-if ($issue !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $issue)) bad_request('invalid issue');
+$issue_selector = null;
+if ($issue !== '') {
+  $issue_selector = parse_issue_selector($dataset, $issue);
+  if ($issue_selector === null) bad_request('invalid issue');
+}
 if (!in_array($sort, ['amount_desc','amount_asc','date_desc','plate_asc'], true)) bad_request('invalid sort');
 if (!in_array($mode, ['', 'exact_prefix'], true)) bad_request('invalid mode');
 
@@ -189,13 +193,20 @@ if ($dataset === 'all' && $issue === '') {
 $pdo = db();
 [ $datasetClause, $datasetParams ] = sql_dataset_clause($dataset, 'r');
 [ $dedupeClause, $dedupeParams ] = sql_legacy_dedupe_clause($dataset, 'r');
-$issueClause = $issue !== '' ? ' AND r.auction_date = :issue' : '';
+$issueClause = '';
 $params = array_merge($datasetParams, $dedupeParams, [
   ':q_exact' => $qn,
   ':q_prefix' => $qn . '%',
   ':q_contains' => '%' . $qn . '%',
 ]);
-if ($issue !== '') $params[':issue'] = $issue;
+if ($issue_selector !== null) {
+  $issueClause = ' AND r.auction_date = :issue';
+  $params[':issue'] = $issue_selector['auction_date'];
+  if ($dataset === 'all' && !empty($issue_selector['dataset'])) {
+    $issueClause .= ' AND r.dataset = :issue_dataset';
+    $params[':issue_dataset'] = $issue_selector['dataset'];
+  }
+}
 
 function build_search_branch($datasetClause, $issueClause, $dedupeClause, $matchCondition, $rank) {
   return "

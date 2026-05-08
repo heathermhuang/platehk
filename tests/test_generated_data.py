@@ -33,7 +33,9 @@ class GeneratedDataTests(unittest.TestCase):
         self.assertIn("plates", all_dataset["files"])
         self.assertEqual(all_dataset["issue_key_field"], "auction_key")
         self.assertEqual(all_dataset["files"]["issue_shard_template"], "/api/v1/all/issues/{auction_key}.json")
-        self.assertTrue(str(all_dataset["latest_issue_key"]).startswith("pvrm::"))
+        latest_issue_key = str(all_dataset["latest_issue_key"])
+        self.assertRegex(latest_issue_key, r"^(pvrm|tvrm_physical|tvrm_eauction)::\d{4}-\d{2}-\d{2}$")
+        self.assertTrue(latest_issue_key.endswith(str(all_dataset["latest_issue"])))
 
     def test_legacy_overlap_report_matches_source_data(self) -> None:
         physical = _load(DATA / "tvrm_physical" / "results.slim.json")

@@ -522,9 +522,55 @@ function cache_put_json($key, $json) {
   @rename($tmp, $path);
 }
 
+function child_datasets() {
+  return ['pvrm', 'tvrm_physical', 'tvrm_eauction', 'tvrm_legacy'];
+}
+
 function valid_dataset($ds, $allow_all = false) {
   if ($allow_all && $ds === 'all') return true;
-  return in_array($ds, ['pvrm', 'tvrm_physical', 'tvrm_eauction', 'tvrm_legacy'], true);
+  return in_array($ds, child_datasets(), true);
+}
+
+function dataset_order_sql($column = 'dataset') {
+  return "CASE {$column}
+    WHEN 'pvrm' THEN 0
+    WHEN 'tvrm_physical' THEN 1
+    WHEN 'tvrm_eauction' THEN 2
+    WHEN 'tvrm_legacy' THEN 3
+    ELSE 99
+  END";
+}
+
+function parse_all_auction_key($value) {
+  if (!is_string($value)) return null;
+  if (!preg_match('/^([a-z_]+)::(\d{4}-\d{2}-\d{2})$/', $value, $m)) return null;
+  $dataset = (string)$m[1];
+  if (!valid_dataset($dataset)) return null;
+  return [
+    'dataset' => $dataset,
+    'auction_date' => (string)$m[2],
+    'auction_key' => $dataset . '::' . (string)$m[2],
+  ];
+}
+
+function parse_issue_selector($dataset, $value) {
+  if (!is_string($value) || $value === '') return null;
+  if ($dataset === 'all') {
+    $parsed = parse_all_auction_key($value);
+    if ($parsed !== null) return $parsed;
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) return null;
+    return [
+      'dataset' => null,
+      'auction_date' => (string)$value,
+      'auction_key' => null,
+    ];
+  }
+  if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) return null;
+  return [
+    'dataset' => $dataset,
+    'auction_date' => (string)$value,
+    'auction_key' => null,
+  ];
 }
 
 function sql_plate_norm_expr($alias = 'r') {

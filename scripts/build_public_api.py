@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import shutil
+from datetime import date
 from pathlib import Path
 
 
@@ -35,14 +36,9 @@ def _copy(src: Path, dst: Path) -> None:
 
 
 def build() -> int:
-    audit_p = DATA / "audit.json"
-    generated_at = None
-    if audit_p.exists():
-        generated_at = (_read_json(audit_p) or {}).get("generated_at")
-
     index = {
         "version": "v1",
-        "generated_at": generated_at,
+        "generated_at": date.today().isoformat(),
         "datasets": {},
         "notes": [
             "All data comes from Transport Department published PDFs and official workbook exports. If any discrepancy is found, the official published results shall prevail.",

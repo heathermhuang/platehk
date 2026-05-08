@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import random
+import shutil
 import subprocess
 import time
 import unittest
@@ -14,6 +15,44 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class WorkflowTests(unittest.TestCase):
+    def test_cron_update_rebuilds_unified_all_outputs(self) -> None:
+        script = (ROOT / "scripts" / "cron_update.sh").read_text(encoding="utf-8")
+        self.assertIn("python3 scripts/build_all_dataset.py", script)
+        self.assertIn("python3 scripts/build_all_results_preset.py", script)
+        self.assertIn("python3 scripts/build_all_search_index.py", script)
+        self.assertIn("python3 scripts/build_hot_search_cache.py", script)
+        self.assertIn("python3 scripts/build_public_api.py", script)
+
+    def test_verify_data_integrity_checks_all_dataset(self) -> None:
+        proc = subprocess.run(
+            ["python3", "scripts/verify_data_integrity.py"],
+            cwd=ROOT,
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+        self.assertIn("[all] Data integrity OK", proc.stdout)
+
+    @unittest.skipUnless(shutil.which("php"), "php executable is required for PHP workflow checks")
+    def test_php_issue_selector_supports_all_auction_keys(self) -> None:
+        proc = subprocess.run(
+            [
+                "php",
+                "-r",
+                "require 'api/lib.php'; echo json_encode(parse_issue_selector('all', 'pvrm::2026-03-28'));",
+            ],
+            cwd=ROOT,
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        payload = json.loads(proc.stdout)
+        self.assertEqual(payload["dataset"], "pvrm")
+        self.assertEqual(payload["auction_date"], "2026-03-28")
+        self.assertEqual(payload["auction_key"], "pvrm::2026-03-28")
+
     def test_run_local_serves_root_without_db_health_dependency(self) -> None:
         port = random.randint(18080, 18999)
         try:
@@ -182,6 +221,7 @@ class WorkflowTests(unittest.TestCase):
         self.assertTrue((publish / "api" / "v1" / "tvrm_eauction" / "results.chunks.json").exists())
         self.assertTrue((publish / ".well-known" / "api-catalog.json").exists())
         self.assertTrue((publish / ".well-known" / "agent-skills" / "index.json").exists())
+        self.assertFalse(list((publish / "plates").glob("* [0-9].html")))
         self.assertFalse((publish / "data" / "results.json").exists())
         self.assertFalse((publish / "data" / "pdfs").exists())
         self.assertFalse((publish / "data" / "tvrm_physical" / "pdfs").exists())

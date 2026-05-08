@@ -87,6 +87,7 @@ def verify_dataset(base: Path, label: str) -> int:
 
 def main() -> int:
     datasets = [
+        (DATA / "all", "all"),
         (DATA, "pvrm"),
         (DATA / "tvrm_physical", "tvrm_physical"),
         (DATA / "tvrm_eauction", "tvrm_eauction"),

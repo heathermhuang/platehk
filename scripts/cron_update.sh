@@ -12,7 +12,7 @@ cd "$ROOT"
 # If you use a virtual environment, enable it here.
 # source "$ROOT/.venv/bin/activate"
 
-# Update datasets
+# Update source datasets.
 # PVRM dataset builder currently runs full normalization; keep it for data correctness.
 python3 scripts/build_dataset.py
 python3 scripts/sync_lny_urls_to_tvrm_physical.py
@@ -37,6 +37,14 @@ fi
 if [[ "$need_repair" -eq 1 ]]; then
   python3 scripts/parse_tvrm_pdfs.py
 fi
+
+# Rebuild derived datasets and downstream artifacts.
+python3 scripts/build_tvrm_legacy_dataset.py
+python3 scripts/build_all_dataset.py
+python3 scripts/build_all_results_preset.py
+python3 scripts/build_all_search_index.py
+python3 scripts/build_hot_search_cache.py
+python3 scripts/build_popular_plate_pages.py
 
 # Rebuild public API + audit report
 python3 scripts/build_public_api.py

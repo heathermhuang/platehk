@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import shutil
 from collections import defaultdict
+from datetime import date
 from pathlib import Path
 
 
@@ -379,14 +380,9 @@ def build() -> int:
     preset_amount_desc = sorted(all_rows, key=compare_row)[:1000]
     plate_summaries = build_plate_summaries(all_rows)
 
-    audit_path = DATA / "audit.json"
-    generated_at = None
-    if audit_path.exists():
-        generated_at = (load_json(audit_path) or {}).get("generated_at")
-
     manifest = {
         "dataset": "all",
-        "generated_at": generated_at,
+        "generated_at": date.today().isoformat(),
         "total_rows": len(all_rows),
         "issue_count": len(manifest_items_desc),
         "plate_count": len(plate_summaries),
