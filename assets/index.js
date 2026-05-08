@@ -868,8 +868,8 @@ function composeAuctionKey(datasetKey, auctionDate) {
                   <td class="col-category" data-label="${escapeHtml(t("thCategory"))}">${renderCategoryCell(r)}</td>
                   <td class="col-source" data-label="${escapeHtml(t("thPdf"))}">
                     <div class="row-actions">
-                      <a class="icon-btn" href="${href}" target="_blank" rel="noopener" title="${escapeHtml(linkText)}">${pdfIconSvg()}</a>
-                      <button class="icon-btn row-share-btn" type="button" data-row-index="${idx}" title="${escapeHtml(t("share"))}">${shareIconSvg()}</button>
+                      <a class="icon-btn" href="${href}" target="_blank" rel="noopener" title="${escapeHtml(linkText)}" aria-label="${escapeHtml(linkText)}">${pdfIconSvg()}</a>
+                      <button class="icon-btn row-share-btn" type="button" data-row-index="${idx}" title="${escapeHtml(t("share"))}" aria-label="${escapeHtml(t("share"))}">${shareIconSvg()}</button>
                     </div>
                   </td>
                 </tr>

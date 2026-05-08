@@ -82,6 +82,14 @@ window.createPlateIndexDataFlow = function createPlateIndexDataFlow({
   let allDatasetSummaryPromise = null;
   let allAmountDescPresetPromise = null;
 
+  function isFileMode() {
+    try {
+      return typeof location !== "undefined" && location.protocol === "file:";
+    } catch {
+      return false;
+    }
+  }
+
   async function resolveApiBase() {
     if (!API_STATE.basePath) API_STATE.basePath = "./api";
     return API_STATE.basePath;
@@ -97,6 +105,11 @@ window.createPlateIndexDataFlow = function createPlateIndexDataFlow({
 
   async function detectServerApi() {
     if (API_STATE.checked) return API_STATE.available;
+    if (isFileMode()) {
+      API_STATE.available = true;
+      API_STATE.checked = true;
+      return true;
+    }
     if (isOfflineNow()) {
       API_STATE.available = false;
       return false;
@@ -106,7 +119,95 @@ window.createPlateIndexDataFlow = function createPlateIndexDataFlow({
     return API_STATE.available;
   }
 
+  async function staticApiJson(endpoint, params, signal) {
+    const dataset = params.get("dataset") || currentDataset || "all";
+    const base = `./api/v1/${dataset}`;
+    const offlineRoot = typeof window !== "undefined" ? window.PLATE_INDEX_OFFLINE_DATA : null;
+    const offline = isFileMode()
+      ? offlineRoot?.datasets?.[dataset]
+      : null;
+    if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
+
+    if (endpoint === "issues") {
+      if (offline?.manifest) return offline.manifest;
+      return await fetchJsonStrict(`${base}/issues.manifest.json`, { cache: "force-cache", signal });
+    }
+
+    if (endpoint === "issue") {
+      const key = params.get("auction_date") || "";
+      if (!key) return { rows: [] };
+      if (offline?.presetAmountDesc) {
+        const rows = offline.presetAmountDesc.filter((row) => (
+          String(row.auction_key || "") === key
+          || String(row.auction_date || "") === key
+        ));
+        return { rows };
+      }
+      const manifestPayload = await fetchJsonStrict(`${base}/issues.manifest.json`, { cache: "force-cache", signal });
+      const meta = (manifestPayload.issues || []).find((issue) => (
+        String(issue.auction_key || "") === key
+        || String(issue.auction_date || "") === key
+      ));
+      const file = String(meta?.file || "");
+      if (!file) return { rows: [] };
+      const rows = await fetchJsonStrict(`${base}/${file}`, { cache: "force-cache", signal });
+      return { rows: Array.isArray(rows) ? rows : [] };
+    }
+
+    if (endpoint === "results") {
+      const sortMode = params.get("sort") || "amount_desc";
+      const page = Math.max(1, Number(params.get("page") || 1));
+      const requestedPageSize = Math.max(1, Number(params.get("page_size") || pageSize));
+      const manifestPayload = offline?.manifest
+        || await fetchJsonStrict(`${base}/issues.manifest.json`, { cache: "force-cache", signal });
+      let rows = [];
+      if (offline?.presetAmountDesc) {
+        rows = sortRows(offline.presetAmountDesc, sortMode);
+      } else if (sortMode === "amount_desc") {
+        rows = await fetchJsonStrict(`${base}/preset.amount_desc.top1000.json`, { cache: "force-cache", signal });
+      } else if (dataset !== "all") {
+        rows = await fetchJsonStrict(`${base}/results.slim.json`, { cache: "force-cache", signal });
+        rows = sortRows(Array.isArray(rows) ? rows : [], sortMode);
+      }
+      const total = Number(manifestPayload.total_rows || rows.length || 0);
+      const start = (page - 1) * requestedPageSize;
+      return {
+        page,
+        page_size: requestedPageSize,
+        total,
+        rows: (Array.isArray(rows) ? rows : []).slice(start, start + requestedPageSize),
+      };
+    }
+
+    if (endpoint === "search") {
+      const q = normalizePlate(params.get("q") || "");
+      const sortMode = params.get("sort") || "amount_desc";
+      const page = Math.max(1, Number(params.get("page") || 1));
+      const requestedPageSize = Math.max(1, Number(params.get("page_size") || pageSize));
+      const manifestPayload = offline?.manifest
+        || await fetchJsonStrict(`${base}/issues.manifest.json`, { cache: "force-cache", signal });
+      const sourceRows = offline?.presetAmountDesc
+        || await fetchJsonStrict(`${base}/preset.amount_desc.top1000.json`, { cache: "force-cache", signal });
+      const rows = sortRows((Array.isArray(sourceRows) ? sourceRows : []).filter((row) => {
+        if (!q) return true;
+        return normalizePlate(row.single_line).includes(q) || normalizePlate(row.double_line).includes(q);
+      }), sortMode, q);
+      const start = (page - 1) * requestedPageSize;
+      return {
+        page,
+        page_size: requestedPageSize,
+        total: rows.length || Number(manifestPayload.total_rows || 0),
+        rows: rows.slice(start, start + requestedPageSize),
+      };
+    }
+
+    throw new Error(`Unsupported static API endpoint: ${endpoint}`);
+  }
+
   async function fetchApiJson(endpoint, params, signal) {
+    if (isFileMode()) {
+      return await staticApiJson(endpoint, params, signal);
+    }
     const apiBase = (await resolveApiBase()) || "./api";
     let resp = await fetch(`${apiBase}/${endpoint}.php?${params.toString()}`, { cache: "no-store", signal });
     if (!resp.ok && apiBase === "./api") {

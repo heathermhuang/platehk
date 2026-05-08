@@ -21,15 +21,15 @@ var qrcode = function() {
   // qrcode
   //---------------------------------------------------------------------
 
+  var PAD0 = 0xEC;
+  var PAD1 = 0x11;
+
   /**
    * qrcode
    * @param typeNumber 1 to 40
    * @param errorCorrectionLevel 'L','M','Q','H'
    */
   var qrcode = function(typeNumber, errorCorrectionLevel) {
-
-    var PAD0 = 0xEC;
-    var PAD1 = 0x11;
 
     var _typeNumber = typeNumber;
     var _errorCorrectionLevel = QRErrorCorrectionLevel[errorCorrectionLevel];

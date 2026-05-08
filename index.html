@@ -428,6 +428,7 @@
       .issue-entry-btn {
         display: inline-flex;
         align-items: center;
+        min-height: 44px;
         gap: 6px;
         border: 1px solid var(--line);
         border-radius: 999px;
@@ -716,6 +717,7 @@
       .issue-link-btn {
         display: inline-flex;
         align-items: center;
+        min-height: 44px;
         gap: 6px;
         border: 1px solid var(--line);
         border-radius: 999px;
@@ -752,6 +754,7 @@
       }
       input, select {
         width: 100%;
+        min-height: 44px;
         border: 1px solid var(--line);
         border-radius: 999px;
         padding: 10px 14px;
@@ -763,6 +766,7 @@
         backdrop-filter: blur(8px) saturate(130%);
       }
       button {
+        min-height: 44px;
         border: 0;
         border-radius: 999px;
         padding: 10px 14px;
@@ -947,9 +951,11 @@
         line-height: 1.25;
       }
       .price-value {
+        display: inline-block;
         color: #102b43;
         font-weight: 800;
-        letter-spacing: 0.01em;
+        letter-spacing: 0;
+        font-variant-numeric: tabular-nums;
       }
       .empty-main {
         color: #102b43;
@@ -986,7 +992,9 @@
       }
       .plate {
         display: inline-flex;
-        min-width: 118px;
+        box-sizing: border-box;
+        width: 118px;
+        max-width: 100%;
         min-height: 42px;
         padding: 4px 8px;
         border: 2px solid #121212;
@@ -1017,6 +1025,11 @@
         align-items: center;
         gap: 10px;
         flex-wrap: wrap;
+      }
+      .footer-nav a {
+        display: inline-flex;
+        align-items: center;
+        min-height: 44px;
       }
       .footer-info {
         color: var(--muted);
@@ -1454,7 +1467,7 @@
         }
         .table-wrap tbody tr {
           display: grid;
-          grid-template-columns: clamp(110px, 30vw, 126px) clamp(110px, 30vw, 126px) minmax(88px, 1fr);
+          grid-template-columns: minmax(82px, 1fr) minmax(82px, 1fr) minmax(136px, 1.35fr);
           grid-template-areas:
             "date date date"
             "single double price"
@@ -1495,11 +1508,11 @@
         }
         .table-wrap td.col-single {
           grid-area: single;
-          justify-self: start;
+          justify-self: stretch;
         }
         .table-wrap td.col-double {
           grid-area: double;
-          justify-self: start;
+          justify-self: stretch;
         }
         .table-wrap td.col-price {
           grid-area: price;
@@ -1509,7 +1522,7 @@
           flex-direction: column;
           justify-content: space-between;
           gap: 6px;
-          min-width: 96px;
+          min-width: 0;
           padding: 8px 8px 7px;
           border-radius: 12px;
           border: 1px solid rgba(246, 199, 75, 0.46);
@@ -1527,16 +1540,18 @@
           align-self: center;
         }
         .table-wrap td.col-date .cell-main {
-          font-size: 12px;
+          font-size: 14px;
           line-height: 1.25;
           color: #2d587b;
           font-weight: 800;
         }
         .table-wrap td.col-price .price-value,
         .table-wrap td.col-price .price.na {
-          font-size: 19px;
+          max-width: 100%;
+          font-size: clamp(16px, 3.9vw, 19px);
           line-height: 1.05;
-          letter-spacing: -0.02em;
+          letter-spacing: 0;
+          white-space: nowrap;
         }
         .table-wrap td.col-price .badge {
           margin-top: 0;
@@ -1546,16 +1561,19 @@
         }
         .table-wrap td.col-single .plate,
         .table-wrap td.col-double .plate {
-          width: clamp(110px, 30vw, 126px);
-          min-height: 36px;
-          font-size: 12px;
+          box-sizing: border-box;
+          width: 100%;
+          min-width: 0;
+          min-height: 40px;
+          padding: 5px 6px;
+          font-size: clamp(14px, 3.2vw, 16px);
         }
         .table-wrap td.col-double .plate.double {
-          min-height: 40px;
+          min-height: 44px;
         }
         .table-wrap td.col-category .category-pill {
-          font-size: 11px;
-          padding: 3px 7px;
+          font-size: 12px;
+          padding: 4px 8px;
         }
         .table-wrap .icon-btn,
         .table-wrap .row-share-btn {
@@ -1643,17 +1661,26 @@
           grid-column: auto;
         }
         .table-wrap tbody tr {
-          grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+          grid-template-columns: minmax(70px, 1fr) minmax(70px, 1fr) minmax(118px, 1.35fr);
           gap: 5px;
           padding: 8px 9px;
         }
-        .table-wrap td.col-single .plate,
-        .table-wrap td.col-double .plate {
-          width: 100%;
+        .table-wrap td.col-price {
           min-width: 0;
+          padding: 7px 6px;
+        }
+      }
+      @media (max-width: 400px) {
+        .table-wrap tbody tr {
+          grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+          grid-template-areas:
+            "date date"
+            "single double"
+            "price price"
+            "category source";
         }
         .table-wrap td.col-price {
-          min-width: 76px;
+          align-self: auto;
         }
       }
     </style>
@@ -1724,7 +1751,7 @@
       </div>
 
       <section class="results-context" id="resultsContext" hidden></section>
-      <div class="table-wrap" id="resultsTableWrap">
+      <div class="table-wrap" id="resultsTableWrap" role="region" aria-label="Search results table" tabindex="0">
         <table id="resultsTable">
           <thead>
             <tr>
@@ -1779,13 +1806,14 @@
     </div>
     <script src="./assets/index.config.js?v=20260405-01"></script>
     <script src="./assets/index.home.js?v=20260321-02"></script>
+    <script src="./assets/index.offline-data.js?v=20260426-01"></script>
     <script src="./assets/index.data.js?v=20260321-02"></script>
     <script src="./assets/index.state.js?v=20260405-01"></script>
     <script src="./assets/index.issue.js?v=20260405-01"></script>
     <script src="./assets/index.present.js?v=20260328-06"></script>
-    <script src="./assets/vendor/qrcode-generator.js?v=20260326-01"></script>
+    <script src="./assets/vendor/qrcode-generator.js?v=20260503-01"></script>
     <script src="./assets/index.webmcp.js?v=20260418-01"></script>
-    <script src="./assets/index.share.js?v=20260328-04"></script>
+    <script src="./assets/index.share.js?v=20260503-01"></script>
     <script src="./assets/index.js?v=20260405-01"></script>
   </body>
 </html>

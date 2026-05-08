@@ -159,10 +159,11 @@ window.createPlateIndexShareModal = function createPlateIndexShareModal({
     qr.addData(String(url || ""));
     qr.make();
     const moduleCount = qr.getModuleCount();
-    const quietZone = 3;
+    const quietZone = 4;
     const totalModules = moduleCount + quietZone * 2;
     const cellSize = Math.max(1, Math.floor(size / totalModules));
-    const actualSize = cellSize * totalModules;
+    const actualSize = Math.max(size, cellSize * totalModules);
+    const offset = Math.floor((actualSize - cellSize * totalModules) / 2);
     const canvas = document.createElement("canvas");
     canvas.width = actualSize;
     canvas.height = actualSize;
@@ -174,8 +175,8 @@ window.createPlateIndexShareModal = function createPlateIndexShareModal({
       for (let col = 0; col < moduleCount; col += 1) {
         if (!qr.isDark(row, col)) continue;
         qctx.fillRect(
-          (col + quietZone) * cellSize,
-          (row + quietZone) * cellSize,
+          offset + (col + quietZone) * cellSize,
+          offset + (row + quietZone) * cellSize,
           cellSize,
           cellSize
         );
@@ -589,7 +590,7 @@ window.createPlateIndexShareModal = function createPlateIndexShareModal({
     ctx.fill();
     try {
       const qr = loadPosterQr(shareUrl, qrSize);
-      ctx.drawImage(qr, qrX, qrY, qrSize, qrSize);
+      ctx.drawImage(qr, qrX, qrY);
     } catch {
       ctx.fillStyle = "#f1f1f1";
       ctx.fillRect(qrX, qrY, qrSize, qrSize);
