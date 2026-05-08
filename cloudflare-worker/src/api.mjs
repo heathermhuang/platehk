@@ -174,6 +174,47 @@ function slicePage(rows, page, pageSize) {
   return rows.slice(offset, offset + pageSize);
 }
 
+function rowMatchesSearch(row, query, mode) {
+  const rank = searchMatchRank(row, query);
+  if (rank == null) return false;
+  if (mode === "exact_prefix" || query.length <= 2) {
+    return rank <= 1;
+  }
+  return true;
+}
+
+function collectSearchMatches(rows, query, mode, mapRow = (row) => row) {
+  const matched = [];
+  for (const row of rows || []) {
+    const mapped = mapRow(row);
+    if (rowMatchesSearch(mapped, query, mode)) matched.push(mapped);
+  }
+  return matched;
+}
+
+function sortSearchMatches(rows, sort, query) {
+  rows.sort((a, b) => compareSearchRows(a, b, sort, query));
+  return rows;
+}
+
+function buildSearchPayload(dataset, query, issue, mode, sort, page, pageSize, total, rows) {
+  return {
+    dataset,
+    q: query,
+    issue: issue || null,
+    mode: mode || null,
+    sort,
+    page,
+    page_size: pageSize,
+    total,
+    rows,
+  };
+}
+
+function buildPagedSearchPayload(dataset, query, issue, mode, sort, page, pageSize, rows, total = rows.length) {
+  return buildSearchPayload(dataset, query, issue, mode, sort, page, pageSize, total, slicePage(rows, page, pageSize));
+}
+
 async function loadAllVisibleTotal(env, request) {
   const index = await loadDatasetIndex(env, request.url);
   const allTotal = Number(index?.datasets?.all?.total_rows || 0);
@@ -338,107 +379,49 @@ async function searchStaticDataset(env, request, dataset, query, issue, sort, mo
     : (mode === "exact_prefix"
         ? await loadDatasetSlimRows(env, request.url, dataset)
         : await loadDatasetAllRows(env, request.url, dataset));
-  const matched = [];
-  for (const row of rows) {
-    const mapped = mapStaticRow(row, dataset, auctionMap.get(String(row?.auction_date || "")) || null);
-    const rank = searchMatchRank(mapped, query);
-    if (rank == null) continue;
-    if (mode === "exact_prefix" || query.length <= 2) {
-      if (rank > 1) continue;
-    }
-    matched.push(mapped);
-  }
-  matched.sort((a, b) => compareSearchRows(a, b, sort, query));
-  return {
-    dataset,
-    q: query,
-    issue: issue || null,
-    mode: mode || null,
+  const matched = sortSearchMatches(
+    collectSearchMatches(
+      rows,
+      query,
+      mode,
+      (row) => mapStaticRow(row, dataset, auctionMap.get(String(row?.auction_date || "")) || null),
+    ),
     sort,
-    page,
-    page_size: pageSize,
-    total: matched.length,
-    rows: slicePage(matched, page, pageSize),
-  };
+    query,
+  );
+  return buildPagedSearchPayload(dataset, query, issue, mode, sort, page, pageSize, matched);
 }
 
 async function searchStaticAll(env, request, query, issue, sort, mode, page, pageSize) {
   if (issue) {
     const issuePayload = await loadStaticIssuePayload(env, request, "all", issue);
-    if (!issuePayload) {
-      return {
-        dataset: "all",
-        q: query,
-        issue,
-        mode: mode || null,
-        sort,
-        page,
-        page_size: pageSize,
-        total: 0,
-        rows: [],
-      };
-    }
-    const matched = [];
-    for (const row of issuePayload.rows || []) {
-      const rank = searchMatchRank(row, query);
-      if (rank == null) continue;
-      if (mode === "exact_prefix" || query.length <= 2) {
-        if (rank > 1) continue;
-      }
-      matched.push(row);
-    }
-    matched.sort((a, b) => compareSearchRows(a, b, sort, query));
-    return {
-      dataset: "all",
-      q: query,
-      issue,
-      mode: mode || null,
-      sort,
-      page,
-      page_size: pageSize,
-      total: matched.length,
-      rows: slicePage(matched, page, pageSize),
-    };
+    if (!issuePayload) return buildPagedSearchPayload("all", query, issue, mode, sort, page, pageSize, [], 0);
+    const matched = sortSearchMatches(collectSearchMatches(issuePayload.rows, query, mode), sort, query);
+    return buildPagedSearchPayload("all", query, issue, mode, sort, page, pageSize, matched);
   }
   const hotPayload = await loadHotSearchCache(env, request, query, page, pageSize, sort);
   if (hotPayload) return hotPayload;
   if (query.length === 1) {
     const prefixPayload = await loadAllPrefix1Rows(env, request, query, sort);
-    return {
-      dataset: "all",
-      q: query,
-      issue: null,
-      mode: mode || null,
+    return buildPagedSearchPayload(
+      "all",
+      query,
+      null,
+      mode,
       sort,
       page,
-      page_size: pageSize,
-      total: Number(prefixPayload.total || 0),
-      rows: slicePage(prefixPayload.rows, page, pageSize),
-    };
+      pageSize,
+      prefixPayload.rows,
+      Number(prefixPayload.total || 0),
+    );
   }
   const rows = await loadDatasetAllRows(env, request.url, "all");
-  const matched = [];
-  for (const row of rows) {
-    const mapped = mapStaticRow(row, "all", null);
-    const rank = searchMatchRank(mapped, query);
-    if (rank == null) continue;
-    if (mode === "exact_prefix" || query.length <= 2) {
-      if (rank > 1) continue;
-    }
-    matched.push(mapped);
-  }
-  matched.sort((a, b) => compareSearchRows(a, b, sort, query));
-  return {
-    dataset: "all",
-    q: query,
-    issue: null,
-    mode: mode || null,
+  const matched = sortSearchMatches(
+    collectSearchMatches(rows, query, mode, (row) => mapStaticRow(row, "all", null)),
     sort,
-    page,
-    page_size: pageSize,
-    total: matched.length,
-    rows: slicePage(matched, page, pageSize),
-  };
+    query,
+  );
+  return buildPagedSearchPayload("all", query, null, mode, sort, page, pageSize, matched);
 }
 
 async function handleHealth(request, env, ctx) {
@@ -719,15 +702,15 @@ export async function handleApiRequest(request, env, ctx) {
   const url = new URL(request.url);
   const route = url.pathname.replace(/^\/api\//, "").replace(/\.php$/, "");
   try {
-    if (route.startsWith("v1/") || route === "openapi.yaml") return env.ASSETS.fetch(request);
-    if (route === "health") return handleHealth(request, env, ctx);
-    if (route === "issues") return handleIssues(request, env, ctx);
-    if (route === "issue") return handleIssue(request, env, ctx);
-    if (route === "results") return handleResults(request, env, ctx);
-    if (route === "search") return handleSearch(request, env, ctx);
-    if (route === "oauth/token") return handleOauthToken(request, env, ctx);
-    if (route === "vision_session") return handleVisionSession(request, env, ctx);
-    if (route === "vision_plate") return handleVisionPlate(request, env, ctx);
+    if (route.startsWith("v1/") || route === "openapi.yaml") return await env.ASSETS.fetch(request);
+    if (route === "health") return await handleHealth(request, env, ctx);
+    if (route === "issues") return await handleIssues(request, env, ctx);
+    if (route === "issue") return await handleIssue(request, env, ctx);
+    if (route === "results") return await handleResults(request, env, ctx);
+    if (route === "search") return await handleSearch(request, env, ctx);
+    if (route === "oauth/token") return await handleOauthToken(request, env, ctx);
+    if (route === "vision_session") return await handleVisionSession(request, env, ctx);
+    if (route === "vision_plate") return await handleVisionPlate(request, env, ctx);
     return notFound("not_found");
   } catch (error) {
     return handleApiError(error);

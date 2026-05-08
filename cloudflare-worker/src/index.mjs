@@ -33,7 +33,7 @@ function securityHeadersForAsset(request, response, { noindex = false } = {}) {
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
         "img-src 'self' data: https:",
         "font-src 'self' data: https://fonts.gstatic.com",
-        "connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://analytics.google.com https://stats.g.doubleclick.net",
+        "connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com https://www.google-analytics.com https://region1.google-analytics.com https://analytics.google.com https://stats.g.doubleclick.net",
         "worker-src 'self' blob:",
         "frame-ancestors 'self'",
         "base-uri 'self'",
@@ -230,6 +230,7 @@ async function serveAsset(request, env) {
   if (!primaryHost && contentType.includes("text/html")) {
     const rewritten = (await response.text()).replaceAll("https://plate.hk", url.origin);
     const headers = securityHeadersForAsset(request, response, { noindex });
+    headers.delete("content-length");
     if (url.pathname.endsWith(".md")) headers.set("content-type", "text/markdown; charset=utf-8");
     if (primaryHost) appendDiscoveryLinkHeaders(headers, url);
     if (isHome) headers.append("vary", "Accept");

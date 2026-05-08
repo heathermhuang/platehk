@@ -5,9 +5,14 @@
   "scripts": {
     "build:cloudflare:assets": "python3 scripts/build_cloudflare_public.py",
     "cf:dev": "npm run build:cloudflare:assets && wrangler dev",
-    "cf:deploy": "npm run build:cloudflare:assets && wrangler deploy"
+    "cf:deploy": "npm run build:cloudflare:assets && wrangler deploy",
+    "test": "python3 -m unittest discover -s tests && npm run test:e2e",
+    "test:e2e": "playwright test",
+    "test:python": "python3 -m unittest discover -s tests"
   },
   "devDependencies": {
+    "@playwright/test": "^1.59.1",
+    "axe-core": "^4.11.4",
     "wrangler": "^4.0.0"
   }
 }
