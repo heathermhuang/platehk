@@ -169,21 +169,21 @@
       .panel {
         background: var(--panel);
         border: 1px solid var(--line);
-        border-radius: 18px;
-        padding: 16px;
+        border-radius: 14px;
+        padding: 12px;
         box-shadow:
           inset 0 1px 0 var(--glass-edge),
-          0 20px 46px rgba(11, 39, 75, 0.16),
+          0 14px 32px rgba(11, 39, 75, 0.13),
           0 0 0 1px rgba(255, 255, 255, 0.2);
         backdrop-filter: blur(18px) saturate(150%);
       }
       .panel-head {
         display: flex;
         justify-content: space-between;
-        gap: 10px;
+        gap: 8px;
         align-items: baseline;
         flex-wrap: wrap;
-        margin-bottom: 12px;
+        margin-bottom: 8px;
       }
       .panel-title {
         font-size: 15px;
@@ -192,8 +192,8 @@
       }
       .panel-note {
         color: var(--muted);
-        font-size: 13px;
-        line-height: 1.45;
+        font-size: 12px;
+        line-height: 1.35;
       }
       .intro {
         margin-top: 10px;
@@ -726,45 +726,80 @@
         }
       }
       .controls {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
+        display: grid;
+        grid-template-columns: minmax(240px, 1.2fr) minmax(360px, 1.4fr) auto;
+        gap: 8px;
+        align-items: end;
       }
       .controls-primary {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) auto;
-        gap: 10px;
-        align-items: end;
+        display: contents;
       }
       .controls-secondary {
         display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 10px;
+        grid-column: 2;
+        grid-row: 1;
+        grid-template-columns: minmax(110px, 0.9fr) minmax(150px, 1.2fr) minmax(120px, 0.85fr);
+        gap: 8px;
+        align-items: end;
       }
       .control-group {
         display: flex;
         flex-direction: column;
-        gap: 6px;
+        gap: 4px;
+        min-width: 0;
+      }
+      .control-group.query {
+        grid-column: 1;
+        grid-row: 1;
       }
       .control-label {
         color: #35597a;
         font-size: 12px;
         line-height: 1.2;
         font-weight: 800;
-        letter-spacing: 0.02em;
+        letter-spacing: 0.01em;
+      }
+      .control-group.query input,
+      .controls-secondary select {
+        min-height: 40px;
+        border-radius: 12px;
+        padding: 8px 12px;
+        font-size: 14px;
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,0.88),
+          0 6px 16px rgba(12, 40, 80, 0.08);
       }
       .control-group.query input {
-        padding: 12px 16px;
-        font-size: 15px;
+        font-size: 14px;
       }
       .control-actions {
+        grid-column: 3;
+        grid-row: 1;
         display: flex;
         align-items: end;
+        justify-content: flex-end;
+      }
+      .control-actions button {
+        min-height: 40px;
+        border: 1px solid #bfddf7;
+        border-radius: 12px;
+        padding: 8px 12px;
+        background: #ffffffd9;
+        color: #18578f;
+        font-size: 14px;
+        white-space: nowrap;
+        box-shadow:
+          inset 0 1px 0 var(--glass-edge),
+          0 6px 16px rgba(12, 40, 80, 0.08);
+      }
+      .control-actions button:hover {
+        background: #ecf6ff;
+        border-color: #9ccdee;
       }
       .search-assist {
-        margin-top: 12px;
+        margin-top: 8px;
         display: flex;
-        gap: 12px;
+        gap: 8px;
         align-items: center;
         justify-content: space-between;
         flex-wrap: wrap;
@@ -774,13 +809,13 @@
       }
       .search-note {
         color: var(--muted);
-        font-size: 13px;
-        line-height: 1.5;
+        font-size: 12px;
+        line-height: 1.4;
       }
       .search-history {
         display: inline-flex;
         align-items: center;
-        gap: 8px;
+        gap: 6px;
         flex-wrap: wrap;
         justify-content: flex-end;
       }
@@ -796,7 +831,7 @@
       .search-history-list {
         display: inline-flex;
         align-items: center;
-        gap: 8px;
+        gap: 6px;
         flex-wrap: wrap;
       }
       .search-history-chip,
@@ -806,6 +841,7 @@
         background: #ffffffd9;
         color: var(--ink);
         border-radius: 999px;
+        min-height: 30px;
         padding: 6px 10px;
         font-size: 12px;
         line-height: 1;
@@ -1419,8 +1455,14 @@
       a { color: var(--accent); }
       @media (max-width: 860px) {
         .home-shelf { grid-template-columns: 1fr; }
-        .controls-primary { grid-template-columns: 1fr; }
-        .controls-secondary { grid-template-columns: 1fr; }
+        .controls { grid-template-columns: minmax(0, 1fr) auto; }
+        .control-group.query { grid-column: 1; }
+        .control-actions { grid-column: 2; }
+        .controls-secondary {
+          grid-column: 1 / -1;
+          grid-row: 2;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
         h1 { font-size: 26px; }
         .dataset-subtitle { font-size: 15px; }
         .brand-logo { width: 56px; }
@@ -1550,15 +1592,14 @@
           display: none;
         }
         .controls {
-          gap: 9px;
-        }
-        .controls-primary {
-          gap: 10px;
-          align-items: center;
+          grid-template-columns: minmax(0, 1fr) auto;
+          gap: 8px;
         }
         .controls-secondary {
+          grid-column: 1 / -1;
+          grid-row: 2;
           grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: 8px;
+          gap: 7px;
         }
         .controls-secondary .control-group:last-child {
           grid-column: 1 / -1;
@@ -1581,31 +1622,31 @@
         .controls-secondary select,
         .control-actions button,
         .control-group.query input {
-          font-size: 13px;
+          font-size: 14px;
         }
         .controls-secondary select {
-          padding: 11px 12px;
-          border-radius: 16px;
+          padding: 9px 10px;
+          border-radius: 12px;
           background: rgba(255,255,255,0.92);
           box-shadow:
             inset 0 1px 0 rgba(255,255,255,0.84),
             0 6px 14px rgba(12, 40, 80, 0.06);
         }
         .control-group.query input {
-          padding: 12px 14px;
-          border-radius: 18px;
+          padding: 10px 12px;
+          border-radius: 14px;
           background: rgba(255,255,255,0.96);
           box-shadow:
             inset 0 1px 0 rgba(255,255,255,0.9),
             0 8px 18px rgba(12, 40, 80, 0.08);
         }
         .control-actions button {
-          padding: 11px 14px;
+          padding: 10px 12px;
           white-space: nowrap;
-          border-radius: 16px;
+          border-radius: 14px;
           box-shadow:
-            inset 0 1px 0 rgba(255,255,255,0.34),
-            0 10px 20px rgba(17, 118, 191, 0.14);
+            inset 0 1px 0 rgba(255,255,255,0.84),
+            0 8px 18px rgba(12, 40, 80, 0.08);
         }
         .search-assist {
           display: flex;
@@ -1927,7 +1968,7 @@
           <div class="controls-primary">
             <div class="control-group query">
               <label class="control-label" id="queryLabel" for="q"></label>
-              <input id="q" placeholder="輸入車牌，例如 L1BERTY" />
+              <input id="q" type="search" placeholder="輸入車牌，例如 L1BERTY" />
             </div>
             <div class="control-actions">
               <button id="reset">清除條件</button>
@@ -2019,7 +2060,7 @@
       </div>
     </div>
     <script src="./assets/index.config.js?v=20260405-01"></script>
-    <script src="./assets/index.home.js?v=20260511-04"></script>
+    <script src="./assets/index.home.js?v=20260511-05"></script>
     <script src="./assets/index.offline-data.js?v=20260426-01"></script>
     <script src="./assets/index.data.js?v=20260321-02"></script>
     <script src="./assets/index.state.js?v=20260405-01"></script>

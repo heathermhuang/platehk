@@ -3,8 +3,18 @@
           pageTitle: "更新日誌 | PVRM",
           title: "更新日誌",
           back: "← 返回首頁",
-          updated: "最後更新：2026年4月18日",
+          updated: "最後更新：2026年5月11日",
           items: [
+            {
+              date: "2026-05-11",
+              title: "拍賣日程與首頁搜尋區整理",
+              points: [
+                "首頁新增拍賣日程，集中顯示正在開放及即將舉行的 PVRM 登記窗口、拍牌易 E-Auction 與實體拍賣。",
+                "拍牌易 E-Auction 卡片精簡為兩個操作：前往平台與 PDF 詳情，移除重複的「拍賣頁」按鈕。",
+                "搜尋篩選列改為更省位的一行式桌面排版，並重新統一標題、標籤、輸入框與按鈕字級。",
+                "首頁預設不再顯示「跨資料集結果」佔位區；開始搜尋或進入資料集 / 期數後，才顯示結果上下文。"
+              ]
+            },
             {
               date: "2026-04-18",
               title: "Agent discovery、Markdown negotiation 與 WebMCP 上線",
@@ -330,8 +340,18 @@
           pageTitle: "Changelog | PVRM",
           title: "Changelog",
           back: "← Back to Home",
-          updated: "Last updated: 18 Apr 2026",
+          updated: "Last updated: 11 May 2026",
           items: [
+            {
+              date: "2026-05-11",
+              title: "Auction calendar and homepage search cleanup",
+              points: [
+                "Added the homepage auction calendar for open and upcoming PVRM registration, E-Auction, and physical auction events.",
+                "Trimmed E-Auction cards to two actions: open the platform and view the PDF handout, removing the duplicate Auction page button.",
+                "Made the search/filter panel more space-efficient on desktop while bringing the title, labels, fields, and reset button back into the site's normal type scale.",
+                "Removed the default homepage cross-dataset results placeholder; the results context now appears only after a search or when browsing a dataset or issue."
+              ]
+            },
             {
               date: "2026-04-18",
               title: "Agent discovery, Markdown negotiation, and WebMCP shipped",

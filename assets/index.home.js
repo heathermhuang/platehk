@@ -335,8 +335,6 @@ window.createPlateIndexHomeViews = function createPlateIndexHomeViews(deps) {
       addLink(t("auctionAgendaActionAuctionPage"), official.pvrmAuction || sourcePageHref);
     } else if (event.type === "tvrm_physical") {
       addLink(t("auctionAgendaActionAuctionPage"), official.tvrmAuction || sourcePageHref);
-    } else if (event.type === "tvrm_eauction") {
-      addLink(t("auctionAgendaActionAuctionPage"), sourcePageHref);
     }
     if (event.type === "tvrm_eauction" && actionHref) {
       addLink(t("auctionAgendaActionOpen"), actionHref);
@@ -481,6 +479,12 @@ window.createPlateIndexHomeViews = function createPlateIndexHomeViews(deps) {
     let title = "";
     let subtitle = "";
     const chips = [];
+
+    if (currentDataset === "all" && !q && !selectedIssue) {
+      resultsContextEl.hidden = true;
+      resultsContextEl.innerHTML = "";
+      return;
+    }
 
     if (selectedIssue) {
       const label = issueLabelForDate(selectedIssue);
