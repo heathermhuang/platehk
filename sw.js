@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pvrm-static-v132';
+const CACHE_NAME = 'pvrm-static-v133';
 const ASSETS = [
   './',
   './index.html',

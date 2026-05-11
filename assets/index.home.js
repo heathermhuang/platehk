@@ -42,6 +42,25 @@ window.createPlateIndexHomeViews = function createPlateIndexHomeViews(deps) {
     `;
   }
 
+  function renderHeaderFacts(facts) {
+    const items = (facts || []).filter((x) => x && x.v != null && x.v !== "");
+    if (!items.length) return "";
+    return `
+      <span class="home-card-head-facts">
+        ${items
+          .map(
+            (item) => `
+              <span class="home-card-head-fact">
+                <span class="k">${escapeHtml(item.k)}</span>
+                <span class="v">${escapeHtml(item.v)}</span>
+              </span>
+            `
+          )
+          .join("")}
+      </span>
+    `;
+  }
+
   function datasetFactCards() {
     const currentDataset = getCurrentDataset();
     const manifest = getManifest();
@@ -110,7 +129,7 @@ window.createPlateIndexHomeViews = function createPlateIndexHomeViews(deps) {
     `;
   }
 
-  function renderHomeCardCollapsible(cardId, title, note, bodyHtml) {
+  function renderHomeCardCollapsible(cardId, title, note, bodyHtml, headerMetaHtml = "") {
     const chevronSvg = `
       <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
         <path fill="currentColor" d="M12 15.6 5.6 9.2l1.4-1.4 5 5 5-5 1.4 1.4z"></path>
@@ -123,7 +142,10 @@ window.createPlateIndexHomeViews = function createPlateIndexHomeViews(deps) {
             <span class="t home-card-title">${escapeHtml(title)}</span>
             <span class="s home-card-note">${escapeHtml(note)}</span>
           </span>
-          <span class="about-chevron" aria-hidden="true">${chevronSvg}</span>
+          <span class="home-card-summary-side">
+            ${headerMetaHtml}
+            <span class="about-chevron" aria-hidden="true">${chevronSvg}</span>
+          </span>
         </summary>
         <div class="home-card-body">${bodyHtml}</div>
       </details>
@@ -135,7 +157,8 @@ window.createPlateIndexHomeViews = function createPlateIndexHomeViews(deps) {
       "dataset-guide",
       t("datasetGuideTitle"),
       t("datasetGuideNote"),
-      `${renderFactCards(datasetFactCards())}${renderDatasetSwitcher()}`
+      renderDatasetSwitcher(),
+      renderHeaderFacts(datasetFactCards())
     );
   }
 
@@ -299,12 +322,31 @@ window.createPlateIndexHomeViews = function createPlateIndexHomeViews(deps) {
       event[`source_url_${langSuffix}`]
       || event[`source_page_url_${langSuffix}`]
       || official.vrm;
+    const sourcePageHref = event[`source_page_url_${langSuffix}`] || official.vrm;
     const actionHref = event[`action_url_${langSuffix}`] || "";
     const links = [];
-    if (event.type === "tvrm_eauction" && actionHref) {
-      links.push({ text: t("auctionAgendaActionOpen"), href: actionHref });
+    const addLink = (text, href) => {
+      if (!href || links.some((link) => link.href === href)) return;
+      links.push({ text, href });
+    };
+    if (event.type === "pvrm_registration") {
+      addLink(t("auctionAgendaActionApplication"), official.pvrmApplication || detailsHref);
+    } else if (event.type === "pvrm_physical") {
+      addLink(t("auctionAgendaActionAuctionPage"), official.pvrmAuction || sourcePageHref);
+    } else if (event.type === "tvrm_physical") {
+      addLink(t("auctionAgendaActionAuctionPage"), official.tvrmAuction || sourcePageHref);
+    } else if (event.type === "tvrm_eauction") {
+      addLink(t("auctionAgendaActionAuctionPage"), sourcePageHref);
     }
-    links.push({ text: t("auctionAgendaActionDetails"), href: detailsHref });
+    if (event.type === "tvrm_eauction" && actionHref) {
+      addLink(t("auctionAgendaActionOpen"), actionHref);
+    }
+    if (detailsHref) {
+      addLink(
+        event.type === "pvrm_registration" ? t("auctionAgendaActionDetails") : t("auctionAgendaActionHandout"),
+        detailsHref
+      );
+    }
     return {
       ...copy,
       startMs,
@@ -324,7 +366,7 @@ window.createPlateIndexHomeViews = function createPlateIndexHomeViews(deps) {
         startMs: pvrmWindow.startMs,
         endMs: pvrmWindow.endMs,
         dateOnly: true,
-        links: [{ text: t("auctionAgendaActionDetails"), href: official.pvrmApplication }],
+        links: [{ text: t("auctionAgendaActionApplication"), href: official.pvrmApplication }],
       },
     ];
   }
