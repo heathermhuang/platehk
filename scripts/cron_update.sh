@@ -39,6 +39,7 @@ if [[ "$need_repair" -eq 1 ]]; then
 fi
 
 # Rebuild derived datasets and downstream artifacts.
+python3 scripts/build_events.py
 python3 scripts/build_tvrm_legacy_dataset.py
 python3 scripts/build_all_dataset.py
 python3 scripts/build_all_results_preset.py

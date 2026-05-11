@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import unittest
+from datetime import datetime
 from pathlib import Path
 
 
@@ -240,6 +241,32 @@ class GeneratedDataTests(unittest.TestCase):
         self.assertIn("tvrm_legacy", audit["validation"])
         self.assertIn("null_amount_rows", audit["validation"]["pvrm"])
         self.assertIn("overlap_rows_hidden_in_all", audit["validation"]["tvrm_legacy"])
+
+    def test_event_feed_contains_normalized_calendar_events(self) -> None:
+        payload = _load(DATA / "events.json")
+        self.assertEqual(payload["schema_version"], 1)
+        self.assertEqual(payload["timezone"], "Asia/Hong_Kong")
+        self.assertEqual(
+            payload["source_urls"],
+            [
+                "https://www.td.gov.hk/en/public_services/vehicle_registration_mark/index.html",
+                "https://www.td.gov.hk/tc/public_services/vehicle_registration_mark/index.html",
+            ],
+        )
+        self.assertIsInstance(payload["events"], list)
+        self.assertGreaterEqual(len(payload["events"]), 1)
+        event_types = {event["type"] for event in payload["events"]}
+        self.assertIn("pvrm_registration", event_types)
+        allowed = {"pvrm_registration", "tvrm_eauction", "tvrm_physical", "pvrm_physical"}
+        self.assertTrue(event_types.issubset(allowed))
+        for event in payload["events"]:
+            start = datetime.fromisoformat(event["start_at"])
+            end = datetime.fromisoformat(event["end_at"])
+            self.assertLessEqual(start, end)
+            self.assertTrue(event["date_label_en"])
+            self.assertTrue(event["date_label_zh"])
+            self.assertTrue(str(event["source_url_en"]).startswith("https://"))
+            self.assertTrue(str(event["source_url_zh"]).startswith("https://"))
 
 
 if __name__ == "__main__":

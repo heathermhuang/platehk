@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-05-11T09:43:02+00:00",
+  "timezone": "Asia/Hong_Kong",
+  "source_urls": [
+    "https://www.td.gov.hk/en/public_services/vehicle_registration_mark/index.html",
+    "https://www.td.gov.hk/tc/public_services/vehicle_registration_mark/index.html"
+  ],
+  "events": [
+    {
+      "id": "pvrm_registration-2026-05-01",
+      "type": "pvrm_registration",
+      "start_at": "2026-05-01T00:00:00+08:00",
+      "end_at": "2026-05-31T23:59:59+08:00",
+      "date_label_en": "1 May 2026 to 31 May 2026",
+      "date_label_zh": "2026年5月1日至2026年5月31日",
+      "source_page_url_en": "https://www.td.gov.hk/en/public_services/vehicle_registration_mark/index.html",
+      "source_page_url_zh": "https://www.td.gov.hk/tc/public_services/vehicle_registration_mark/index.html",
+      "source_url_en": "https://www.td.gov.hk/en/public_services/vehicle_registration_mark/pvrm_application/index.html",
+      "source_url_zh": "https://www.td.gov.hk/tc/public_services/vehicle_registration_mark/pvrm_application/index.html",
+      "action_url_en": null,
+      "action_url_zh": null,
+      "source_text_en": "Computed from the recurring January, May and September PVRM application windows linked from the TD auction overview.",
+      "meta": {
+        "source": "computed_recurring_window_from_td_main_page"
+      }
+    },
+    {
+      "id": "tvrm_eauction-2026-05-14",
+      "type": "tvrm_eauction",
+      "start_at": "2026-05-14T12:00:00+08:00",
+      "end_at": "2026-05-18T12:00:00+08:00",
+      "date_label_en": "14 May noon to 18 May noon 2026",
+      "date_label_zh": "2026年5月14日中午至5月18日中午",
+      "source_page_url_en": "https://www.td.gov.hk/en/public_services/vehicle_registration_mark/index.html",
+      "source_page_url_zh": "https://www.td.gov.hk/tc/public_services/vehicle_registration_mark/index.html",
+      "source_url_en": "https://www.td.gov.hk/filemanager/en/content_4802/E-Auction%20Handout%20for%2014-18.5.2026.Eng.pdf",
+      "source_url_zh": "https://www.td.gov.hk/filemanager/tc/content_4802/E-Auction%20Handout%20for%2014-18.5.2026.Chin.pdf",
+      "action_url_en": "https://e-auction.td.gov.hk/en",
+      "action_url_zh": "https://e-auction.td.gov.hk/tc",
+      "source_text_en": "14 May noon to 18 May noon 2026",
+      "meta": {
+        "source": "td_coming_auction"
+      }
+    },
+    {
+      "id": "tvrm_physical-2026-05-16-morning",
+      "type": "tvrm_physical",
+      "start_at": "2026-05-16T00:00:00+08:00",
+      "end_at": "2026-05-16T12:59:59+08:00",
+      "date_label_en": "16 May 2026 morning",
+      "date_label_zh": "2026年5月16日上午",
+      "source_page_url_en": "https://www.td.gov.hk/en/public_services/vehicle_registration_mark/index.html",
+      "source_page_url_zh": "https://www.td.gov.hk/tc/public_services/vehicle_registration_mark/index.html",
+      "source_url_en": "https://www.td.gov.hk/filemanager/en/content_4802/TVRM%20Auction%20Handout%20for%2016.5.2026.Eng.pdf",
+      "source_url_zh": "https://www.td.gov.hk/filemanager/tc/content_4802/TVRM%20Auction%20Handout%20for%2016.5.2026.Chin.pdf",
+      "action_url_en": null,
+      "action_url_zh": null,
+      "source_text_en": "16 May 2026 morning",
+      "meta": {
+        "source": "td_coming_auction",
+        "session": "morning"
+      }
+    },
+    {
+      "id": "pvrm_physical-2026-05-16-afternoon",
+      "type": "pvrm_physical",
+      "start_at": "2026-05-16T12:00:00+08:00",
+      "end_at": "2026-05-16T23:59:59+08:00",
+      "date_label_en": "16 May 2026 afternoon",
+      "date_label_zh": "2026年5月16日下午",
+      "source_page_url_en": "https://www.td.gov.hk/en/public_services/vehicle_registration_mark/index.html",
+      "source_page_url_zh": "https://www.td.gov.hk/tc/public_services/vehicle_registration_mark/index.html",
+      "source_url_en": "https://www.td.gov.hk/filemanager/en/content_4802/PVRM%20Auction%20Handout%20for%2016.5.2026%20English.pdf",
+      "source_url_zh": "https://www.td.gov.hk/filemanager/sc/content_4802/PVRM%20Auction%20Handout%20for%2016.5.2026%20Chinese.pdf",
+      "action_url_en": null,
+      "action_url_zh": null,
+      "source_text_en": "16 May 2026 afternoon",
+      "meta": {
+        "source": "td_coming_auction",
+        "session": "afternoon"
+      }
+    }
+  ]
+}

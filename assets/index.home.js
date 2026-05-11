@@ -20,6 +20,7 @@ window.createPlateIndexHomeViews = function createPlateIndexHomeViews(deps) {
     getManifest,
     getIssueDatesDesc,
     getRenderedTotalCount,
+    getEventFeed = () => null,
   } = deps;
 
   function renderFactCards(facts) {
@@ -174,36 +175,222 @@ window.createPlateIndexHomeViews = function createPlateIndexHomeViews(deps) {
     `;
   }
 
-  function renderAllLinksCard() {
+  function hkBoundaryMs(year, monthIndex, day, hour = 0, minute = 0) {
+    return Date.UTC(year, monthIndex, day, hour - 8, minute);
+  }
+
+  function hkDateParts(nowMs) {
+    const parts = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Hong_Kong",
+      year: "numeric",
+      month: "numeric",
+      day: "numeric",
+    }).formatToParts(new Date(nowMs));
+    const out = {};
+    for (const part of parts) {
+      if (part.type !== "literal") out[part.type] = Number(part.value);
+    }
+    return out;
+  }
+
+  function pvrmRegistrationWindow(nowMs) {
+    const { year } = hkDateParts(nowMs);
+    const months = [0, 4, 8];
+    for (const y of [year, year + 1]) {
+      for (const monthIndex of months) {
+        const lastDay = new Date(Date.UTC(y, monthIndex + 1, 0)).getUTCDate();
+        const startMs = hkBoundaryMs(y, monthIndex, 1);
+        const endMs = hkBoundaryMs(y, monthIndex, lastDay, 23, 59);
+        if (nowMs <= endMs) return { startMs, endMs };
+      }
+    }
+    return { startMs: hkBoundaryMs(year + 1, 0, 1), endMs: hkBoundaryMs(year + 1, 0, 31, 23, 59) };
+  }
+
+  function agendaStatus(item, nowMs) {
+    if (nowMs < item.startMs) return { label: t("auctionAgendaStatusUpcoming"), className: "upcoming" };
+    if (nowMs <= item.endMs) return { label: t("auctionAgendaStatusOpen"), className: "open" };
+    return { label: t("auctionAgendaStatusClosed"), className: "closed" };
+  }
+
+  function formatAgendaDate(ms, includeTime = false) {
+    const options = {
+      timeZone: "Asia/Hong_Kong",
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    };
+    if (includeTime) {
+      options.hour = "2-digit";
+      options.minute = "2-digit";
+    }
+    return new Intl.DateTimeFormat(getCurrentLang() === "zh" ? "zh-HK" : "en-HK", options).format(new Date(ms));
+  }
+
+  function formatAgendaRange(item) {
+    if (item.rangeText) return item.rangeText;
+    if (item.dateOnly) return `${formatAgendaDate(item.startMs)} - ${formatAgendaDate(item.endMs)}`;
+    return `${formatAgendaDate(item.startMs, true)} - ${formatAgendaDate(item.endMs, true)}`;
+  }
+
+  function officialAgendaLinks(currentLang) {
+    return {
+      pvrmApplication: currentLang === "zh"
+        ? "https://www.td.gov.hk/tc/public_services/vehicle_registration_mark/pvrm_application/index.html"
+        : "https://www.td.gov.hk/en/public_services/vehicle_registration_mark/pvrm_application/index.html",
+      pvrmAuction: currentLang === "zh"
+        ? "https://www.td.gov.hk/tc/public_services/vehicle_registration_mark/pvrm_auction/index.html"
+        : "https://www.td.gov.hk/en/public_services/vehicle_registration_mark/pvrm_auction/index.html",
+      tvrmAuction: currentLang === "zh"
+        ? "https://www.td.gov.hk/tc/public_services/vehicle_registration_mark/tvrm_auction/index.html"
+        : "https://www.td.gov.hk/en/public_services/vehicle_registration_mark/tvrm_auction/index.html",
+      vrm: currentLang === "zh"
+        ? "https://www.td.gov.hk/tc/public_services/vehicle_registration_mark/index.html"
+        : "https://www.td.gov.hk/en/public_services/vehicle_registration_mark/index.html",
+      eauction: currentLang === "zh" ? "https://e-auction.td.gov.hk/tc" : "https://e-auction.td.gov.hk/en",
+    };
+  }
+
+  function agendaCopyForType(type) {
+    if (type === "pvrm_registration") {
+      return {
+        type: t("auctionAgendaTypeRegistration"),
+        title: t("auctionAgendaPvrmWindowTitle"),
+        body: t("auctionAgendaPvrmWindowBody"),
+      };
+    }
+    if (type === "tvrm_eauction") {
+      return {
+        type: t("auctionAgendaTypeOnline"),
+        title: t("auctionAgendaEauctionTitle"),
+        body: t("auctionAgendaEauctionBody"),
+      };
+    }
+    if (type === "tvrm_physical") {
+      return {
+        type: t("auctionAgendaTypePhysical"),
+        title: t("auctionAgendaTvrmPhysicalTitle"),
+        body: t("auctionAgendaTvrmPhysicalBody"),
+      };
+    }
+    if (type === "pvrm_physical") {
+      return {
+        type: t("auctionAgendaTypePhysical"),
+        title: t("auctionAgendaPvrmPhysicalTitle"),
+        body: t("auctionAgendaPvrmPhysicalBody"),
+      };
+    }
+    return null;
+  }
+
+  function parseEventMs(value) {
+    const ms = Date.parse(value || "");
+    return Number.isFinite(ms) ? ms : null;
+  }
+
+  function agendaItemFromEvent(event, currentLang, official) {
+    const copy = agendaCopyForType(event && event.type);
+    if (!copy) return null;
+    const startMs = parseEventMs(event.start_at);
+    const endMs = parseEventMs(event.end_at);
+    if (startMs == null || endMs == null) return null;
+    const langSuffix = currentLang === "zh" ? "zh" : "en";
+    const detailsHref =
+      event[`source_url_${langSuffix}`]
+      || event[`source_page_url_${langSuffix}`]
+      || official.vrm;
+    const actionHref = event[`action_url_${langSuffix}`] || "";
+    const links = [];
+    if (event.type === "tvrm_eauction" && actionHref) {
+      links.push({ text: t("auctionAgendaActionOpen"), href: actionHref });
+    }
+    links.push({ text: t("auctionAgendaActionDetails"), href: detailsHref });
+    return {
+      ...copy,
+      startMs,
+      endMs,
+      rangeText: event[`date_label_${langSuffix}`] || "",
+      links,
+    };
+  }
+
+  function fallbackAgendaItems(nowMs, official) {
+    const pvrmWindow = pvrmRegistrationWindow(nowMs);
+    return [
+      {
+        type: t("auctionAgendaTypeRegistration"),
+        title: t("auctionAgendaPvrmWindowTitle"),
+        body: t("auctionAgendaPvrmWindowBody"),
+        startMs: pvrmWindow.startMs,
+        endMs: pvrmWindow.endMs,
+        dateOnly: true,
+        links: [{ text: t("auctionAgendaActionDetails"), href: official.pvrmApplication }],
+      },
+    ];
+  }
+
+  function agendaItemsFromFeed(currentLang, nowMs, official) {
+    const feed = getEventFeed ? getEventFeed() : null;
+    const events = feed && Array.isArray(feed.events) ? feed.events : [];
+    return events
+      .map((event) => agendaItemFromEvent(event, currentLang, official))
+      .filter((item) => item && nowMs <= item.endMs)
+      .sort((a, b) => a.startMs - b.startMs);
+  }
+
+  function renderAuctionAgendaCard() {
     const currentLang = getCurrentLang();
-    const links = currentLang === "zh"
-      ? [
-          { text: t("allLinksPvrm"), href: "https://www.td.gov.hk/tc/public_services/vehicle_registration_mark/pvrm_auction/index.html" },
-          { text: t("allLinksTvrm"), href: "https://www.td.gov.hk/tc/public_services/vehicle_registration_mark/tvrm_auction/index.html" },
-          { text: t("allLinksEauction"), href: "https://e-auction.td.gov.hk/" },
-          { text: t("allLinksHistory"), href: "https://www.td.gov.hk/en/about_us/history_of_transport_department/licensing_services/auction_of_vehicle_registration_marks__/index.html" },
-        ]
-      : [
-          { text: t("allLinksPvrm"), href: "https://www.td.gov.hk/en/public_services/vehicle_registration_mark/pvrm_auction/index.html" },
-          { text: t("allLinksTvrm"), href: "https://www.td.gov.hk/en/public_services/vehicle_registration_mark/tvrm_auction/index.html" },
-          { text: t("allLinksEauction"), href: "https://e-auction.td.gov.hk/" },
-          { text: t("allLinksHistory"), href: "https://www.td.gov.hk/en/about_us/history_of_transport_department/licensing_services/auction_of_vehicle_registration_marks__/index.html" },
-        ];
-    return renderHomeCardCollapsible(
-      "all-links",
-      t("allLinksTitle"),
-      t("allLinksNote"),
-      `
-        <div class="about-links">
-          <div class="link-card">
-            <div>
-              ${links
-                .map((it) => `<a href="${it.href}" target="_blank" rel="noopener">${escapeHtml(it.text)}</a>`)
-                .join("")}
-            </div>
+    const nowMs = Date.now();
+    const official = officialAgendaLinks(currentLang);
+    let items = agendaItemsFromFeed(currentLang, nowMs, official);
+    if (!items.length) {
+      items = fallbackAgendaItems(nowMs, official).filter((item) => nowMs <= item.endMs);
+    }
+
+    const bodyHtml = items.length
+      ? `
+        <div class="auction-agenda">
+          <div class="agenda-list">
+            ${items
+              .map((item) => {
+                const status = agendaStatus(item, nowMs);
+                return `
+                  <article class="agenda-item">
+                    <div class="agenda-date">${escapeHtml(formatAgendaRange(item))}</div>
+                    <div class="agenda-main">
+                      <div class="agenda-meta">
+                        <span class="agenda-type">${escapeHtml(item.type)}</span>
+                        <span class="agenda-status ${escapeHtml(status.className)}">${escapeHtml(status.label)}</span>
+                      </div>
+                      <div class="agenda-title">${escapeHtml(item.title)}</div>
+                      <div class="agenda-body">${escapeHtml(item.body)}</div>
+                      <div class="agenda-actions">
+                        ${item.links.map((link) => `<a class="agenda-link" href="${escapeHtml(link.href)}" target="_blank" rel="noopener">${escapeHtml(link.text)}</a>`).join("")}
+                      </div>
+                    </div>
+                  </article>
+                `;
+              })
+              .join("")}
           </div>
+          <div class="agenda-note">${escapeHtml(t("auctionAgendaVerifyNote"))}</div>
         </div>
       `
+      : `
+        <div class="auction-agenda">
+          <div class="agenda-empty">${escapeHtml(t("auctionAgendaEmpty"))}</div>
+          <div class="agenda-actions">
+            <a class="agenda-link" href="${escapeHtml(official.vrm)}" target="_blank" rel="noopener">${escapeHtml(t("auctionAgendaActionDetails"))}</a>
+            <a class="agenda-link" href="${escapeHtml(official.eauction)}" target="_blank" rel="noopener">${escapeHtml(t("auctionAgendaActionOpen"))}</a>
+          </div>
+        </div>
+      `;
+
+    return renderHomeCardCollapsible(
+      "auction-agenda",
+      t("auctionAgendaTitle"),
+      t("auctionAgendaNote"),
+      bodyHtml
     );
   }
 
@@ -220,7 +407,7 @@ window.createPlateIndexHomeViews = function createPlateIndexHomeViews(deps) {
     const currentDataset = getCurrentDataset();
     datasetGuideEl.innerHTML = renderDatasetGuideCard();
     if (currentDataset === "all") {
-      issueGuideEl.innerHTML = renderAllLinksCard();
+      issueGuideEl.innerHTML = renderAuctionAgendaCard();
       issueGuideEl.hidden = false;
       syncHomeCardCollapseState();
       return;

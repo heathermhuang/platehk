@@ -4,6 +4,7 @@
 
 ## 目標
 - 抓到最新 PDF
+- 抓到最新官方開放/即將舉行活動，輸出 `data/events.json`
 - 重新清洗並輸出 `results.slim.json`、分片 `issues/*.json`、`issues.manifest.json`
 - 產出 `data/audit.json` 供 `audit.html` 檢查
 - 確保 `python3 scripts/verify_data_integrity.py` 通過
@@ -24,6 +25,10 @@
 - 直接跑（會抓運輸署 index，下載新 PDF）：
 ```bash
 python3 scripts/build_dataset.py
+```
+- 首頁拍賣日程（會抓運輸署中英文「拍賣取得車牌」總覽頁；PVRM 申請窗口按 1/5/9 月固定規律計算）：
+```bash
+python3 scripts/build_events.py
 ```
 
 2. TVRM（傳統車牌：實體 / 拍牌易）

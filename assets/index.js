@@ -224,6 +224,7 @@ function composeAuctionKey(datasetKey, auctionDate) {
         getManifest: () => manifest,
         getIssueDatesDesc: () => issueDatesDesc,
         getRenderedTotalCount: () => renderedTotalCount,
+        getEventFeed: () => eventFeed,
       });
 
       function forwardUpdateIssueTotal(...args) {
@@ -1002,6 +1003,19 @@ function composeAuctionKey(datasetKey, auctionDate) {
         }
       }
 
+      async function loadEventFeed() {
+        try {
+          const payload = await fetchJsonStrict("./data/events.json", { cache: "no-store" });
+          eventFeed = payload && Array.isArray(payload.events) ? payload : { events: [] };
+        } catch {
+          eventFeed = { events: [] };
+        }
+        if (currentDataset === "all") {
+          renderHomeCards();
+          syncFocusModeChrome();
+        }
+      }
+
       function datasetLabelForKey(key) {
         if (key === "all") return t("datasetAll");
         if (key === "tvrm_physical") return t("datasetTvrmPhysical");
@@ -1142,6 +1156,7 @@ function composeAuctionKey(datasetKey, auctionDate) {
         if (initialState.lang) currentLang = initialState.lang;
         searchHistory = loadSearchHistory();
         currentDataset = initialState.dataset || "all";
+        const eventFeedPromise = loadEventFeed();
 
         buildDatasetOptions();
         datasetEl.value = currentDataset;
@@ -1150,6 +1165,7 @@ function composeAuctionKey(datasetKey, auctionDate) {
         sortEl.value = initialState.sort;
         statusEl.textContent = t("loading");
         await loadDataset(currentDataset);
+        await eventFeedPromise;
         applyLanguage();
         if (initialState.issue && issueDatesDesc.includes(initialState.issue)) {
           issueEl.value = initialState.issue;
@@ -1257,7 +1273,7 @@ function composeAuctionKey(datasetKey, auctionDate) {
           if (location.hostname === "localhost" || location.hostname === "127.0.0.1") return;
           // Avoid sticky cached SW on some static hosts.
           navigator.serviceWorker
-            .register("./sw.js?v=20260405-01", { updateViaCache: "none" })
+            .register("./sw.js?v=20260511-01", { updateViaCache: "none" })
             .catch(() => {});
         });
       }

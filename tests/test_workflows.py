@@ -17,6 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 class WorkflowTests(unittest.TestCase):
     def test_cron_update_rebuilds_unified_all_outputs(self) -> None:
         script = (ROOT / "scripts" / "cron_update.sh").read_text(encoding="utf-8")
+        self.assertIn("python3 scripts/build_events.py", script)
         self.assertIn("python3 scripts/build_all_dataset.py", script)
         self.assertIn("python3 scripts/build_all_results_preset.py", script)
         self.assertIn("python3 scripts/build_all_search_index.py", script)
@@ -216,6 +217,7 @@ class WorkflowTests(unittest.TestCase):
         publish = ROOT / ".tmp" / "cloudflare-public"
         self.assertTrue((publish / "index.html").exists())
         self.assertTrue((publish / "data" / "hot_search" / "manifest.json").exists())
+        self.assertTrue((publish / "data" / "events.json").exists())
         self.assertTrue((publish / "data" / "TVRM auction result (1973-2026).xls").exists())
         self.assertTrue((publish / "api" / "v1" / "all" / "results.chunks.json").exists())
         self.assertTrue((publish / "api" / "v1" / "tvrm_eauction" / "results.chunks.json").exists())

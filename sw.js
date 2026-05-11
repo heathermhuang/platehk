@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pvrm-static-v130';
+const CACHE_NAME = 'pvrm-static-v131';
 const ASSETS = [
   './',
   './index.html',
@@ -30,6 +30,7 @@ const ASSETS = [
   './assets/search.worker.js',
   './assets/favicon.svg',
   './data/auctions.json',
+  './data/events.json',
   './data/all.search.meta.json',
   './data/all.preset.amount_desc.top1000.json',
   './data/all.tvrm_legacy_overlap.json',
@@ -74,6 +75,7 @@ self.addEventListener('fetch', (event) => {
   const isData =
     url.pathname.endsWith('/data/all.search.meta.json') ||
     url.pathname.endsWith('/data/all.tvrm_legacy_overlap.json') ||
+    url.pathname.endsWith('/data/events.json') ||
     url.pathname.endsWith('/data/issues.manifest.json') ||
     url.pathname.endsWith('/data/preset.amount_desc.top1000.json') ||
     url.pathname.endsWith('/data/auctions.json') ||
