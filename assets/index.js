@@ -1273,7 +1273,7 @@ function composeAuctionKey(datasetKey, auctionDate) {
           if (location.hostname === "localhost" || location.hostname === "127.0.0.1") return;
           // Avoid sticky cached SW on some static hosts.
           navigator.serviceWorker
-            .register("./sw.js?v=20260511-03", { updateViaCache: "none" })
+            .register("./sw.js?v=20260511-04", { updateViaCache: "none" })
             .catch(() => {});
         });
       }
