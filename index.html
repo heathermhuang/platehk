@@ -208,6 +208,15 @@
         gap: 12px;
         align-items: start;
       }
+      .home-shelf[data-home-mode="agenda"] {
+        grid-template-columns: 1fr;
+      }
+      .home-shelf[data-home-mode="agenda"] #issueGuide {
+        grid-row: 1;
+      }
+      .home-shelf[data-home-mode="agenda"] #datasetGuide {
+        grid-row: 2;
+      }
       .home-card {
         background: linear-gradient(165deg, #ffffffd9, #ecf4ffd1);
         border: 1px solid var(--line);
@@ -539,7 +548,7 @@
       .auction-agenda {
         display: flex;
         flex-direction: column;
-        gap: 11px;
+        gap: 8px;
       }
       .agenda-list {
         display: flex;
@@ -547,9 +556,9 @@
       }
       .agenda-item {
         display: grid;
-        grid-template-columns: minmax(118px, 0.75fr) minmax(0, 1.5fr);
-        gap: 12px;
-        padding: 12px 0;
+        grid-template-columns: minmax(104px, 0.58fr) minmax(0, 1.42fr);
+        gap: 10px;
+        padding: 9px 0;
         border-top: 1px dashed var(--line);
       }
       .agenda-item:first-child {
@@ -560,17 +569,20 @@
         color: #365771;
         font-size: 12px;
         font-weight: 800;
-        line-height: 1.35;
+        line-height: 1.3;
       }
       .agenda-main {
+        min-width: 0;
+      }
+      .agenda-text {
         min-width: 0;
       }
       .agenda-meta {
         display: flex;
         align-items: center;
-        gap: 7px;
+        gap: 6px;
         flex-wrap: wrap;
-        margin-bottom: 5px;
+        margin-bottom: 4px;
       }
       .agenda-type {
         color: var(--muted);
@@ -606,44 +618,63 @@
       }
       .agenda-title {
         color: #102b43;
-        font-size: 14px;
+        font-size: 13px;
         font-weight: 850;
         line-height: 1.25;
       }
-      .agenda-body,
       .agenda-note,
       .agenda-empty {
         color: var(--muted);
-        font-size: 12px;
-        line-height: 1.5;
-      }
-      .agenda-body {
-        margin-top: 4px;
+        font-size: 11px;
+        line-height: 1.45;
       }
       .agenda-actions {
         display: flex;
         flex-wrap: wrap;
-        gap: 7px;
-        margin-top: 8px;
+        gap: 6px;
+        margin-top: 7px;
       }
       .agenda-link {
         display: inline-flex;
         align-items: center;
-        min-height: 38px;
+        min-height: 32px;
         border: 1px solid var(--line);
-        border-radius: 10px;
-        padding: 7px 10px;
+        border-radius: 9px;
+        padding: 5px 8px;
         background: #ffffffd9;
         color: var(--accent);
-        font-size: 12px;
+        font-size: 11px;
         font-weight: 800;
         line-height: 1.25;
         text-decoration: none;
+        white-space: nowrap;
       }
       .agenda-link:hover {
         background: #ecf6ff;
         border-color: #bfddf7;
         text-decoration: none;
+      }
+      .home-shelf[data-home-mode="agenda"] .agenda-item {
+        grid-template-columns: minmax(170px, 0.26fr) minmax(0, 0.74fr);
+        align-items: center;
+        gap: 16px;
+      }
+      .home-shelf[data-home-mode="agenda"] .agenda-main {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 12px;
+        align-items: center;
+      }
+      .home-shelf[data-home-mode="agenda"] .agenda-meta {
+        margin-bottom: 3px;
+      }
+      .home-shelf[data-home-mode="agenda"] .agenda-actions {
+        justify-content: flex-end;
+        margin-top: 0;
+      }
+      .home-shelf[data-home-mode="agenda"] .agenda-note {
+        border-top: 1px solid var(--line);
+        padding-top: 8px;
       }
       @media (max-width: 860px) {
         .about-grid { grid-template-columns: 1fr; }
@@ -652,6 +683,17 @@
           grid-template-columns: 1fr;
           gap: 6px;
         }
+        .home-shelf[data-home-mode="agenda"] .agenda-item {
+          grid-template-columns: 1fr;
+          gap: 6px;
+        }
+        .home-shelf[data-home-mode="agenda"] .agenda-main {
+          display: block;
+        }
+        .home-shelf[data-home-mode="agenda"] .agenda-actions {
+          justify-content: flex-start;
+          margin-top: 7px;
+        }
       }
       @media (max-width: 700px) {
         .camera-top-btn {
@@ -659,13 +701,9 @@
         }
         .about-facts { grid-template-columns: 1fr; }
         .dataset-switcher-grid { grid-template-columns: 1fr; }
-        .agenda-actions {
-          flex-direction: column;
-        }
         .agenda-link {
           justify-content: center;
-          width: 100%;
-          min-height: 42px;
+          min-height: 34px;
         }
       }
       .controls {
@@ -1376,6 +1414,8 @@
           padding: 22px 16px 34px;
         }
         .topbar {
+          display: grid;
+          grid-template-columns: 1fr;
           align-items: flex-start;
           gap: 10px;
           margin-bottom: 12px;
@@ -1385,18 +1425,34 @@
           gap: 12px;
         }
         .brand-logo {
-          width: 58px;
+          width: 54px;
         }
         h1 {
-          font-size: 28px;
-          line-height: 1.02;
-          letter-spacing: -0.02em;
+          font-size: 26px;
+          line-height: 1.05;
+          letter-spacing: 0;
         }
         .dataset-subtitle {
           font-size: 15px;
         }
         .top-actions {
+          justify-content: flex-end;
+          width: 100%;
           gap: 8px;
+        }
+        .camera-top-btn {
+          min-width: 42px;
+          min-height: 42px;
+          padding: 9px 12px;
+        }
+        .lang-toggle {
+          gap: 4px;
+          padding: 3px;
+        }
+        .lang-toggle button {
+          min-width: 42px;
+          min-height: 42px;
+          padding: 0 11px;
         }
         .home-shelf {
           gap: 9px;
@@ -1926,7 +1982,7 @@
       </div>
     </div>
     <script src="./assets/index.config.js?v=20260405-01"></script>
-    <script src="./assets/index.home.js?v=20260321-02"></script>
+    <script src="./assets/index.home.js?v=20260511-02"></script>
     <script src="./assets/index.offline-data.js?v=20260426-01"></script>
     <script src="./assets/index.data.js?v=20260321-02"></script>
     <script src="./assets/index.state.js?v=20260405-01"></script>

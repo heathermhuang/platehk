@@ -358,12 +358,13 @@ window.createPlateIndexHomeViews = function createPlateIndexHomeViews(deps) {
                   <article class="agenda-item">
                     <div class="agenda-date">${escapeHtml(formatAgendaRange(item))}</div>
                     <div class="agenda-main">
-                      <div class="agenda-meta">
-                        <span class="agenda-type">${escapeHtml(item.type)}</span>
-                        <span class="agenda-status ${escapeHtml(status.className)}">${escapeHtml(status.label)}</span>
+                      <div class="agenda-text">
+                        <div class="agenda-meta">
+                          <span class="agenda-type">${escapeHtml(item.type)}</span>
+                          <span class="agenda-status ${escapeHtml(status.className)}">${escapeHtml(status.label)}</span>
+                        </div>
+                        <div class="agenda-title">${escapeHtml(item.title)}</div>
                       </div>
-                      <div class="agenda-title">${escapeHtml(item.title)}</div>
-                      <div class="agenda-body">${escapeHtml(item.body)}</div>
                       <div class="agenda-actions">
                         ${item.links.map((link) => `<a class="agenda-link" href="${escapeHtml(link.href)}" target="_blank" rel="noopener">${escapeHtml(link.text)}</a>`).join("")}
                       </div>
@@ -405,6 +406,7 @@ window.createPlateIndexHomeViews = function createPlateIndexHomeViews(deps) {
 
   function renderHomeCards() {
     const currentDataset = getCurrentDataset();
+    homeShelfEl.dataset.homeMode = currentDataset === "all" ? "agenda" : "issues";
     datasetGuideEl.innerHTML = renderDatasetGuideCard();
     if (currentDataset === "all") {
       issueGuideEl.innerHTML = renderAuctionAgendaCard();
