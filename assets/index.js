@@ -169,9 +169,9 @@ function composeAuctionKey(datasetKey, auctionDate) {
 
       function logoForDataset() {
         return {
-          src: "./assets/logo.svg",
-          altZh: "PLATE HK 標誌",
-          altEn: "PLATE HK logo",
+          src: "./assets/logo.svg?v=20260512-08",
+          altZh: "香港車牌拍賣資料庫標誌",
+          altEn: "HK Vehicle Registration Marks database logo",
         };
       }
 
@@ -1126,7 +1126,9 @@ function composeAuctionKey(datasetKey, auctionDate) {
         thPdfEl.textContent = t("thPdf");
         disclaimerEl.textContent = t("disclaimer");
         popularLinkEl.textContent = t("popularLink");
-        cameraTopLinkEl.textContent = t("cameraLink");
+        cameraTopLinkEl.setAttribute("aria-label", t("cameraLinkLabel"));
+        cameraTopLinkEl.innerHTML =
+          '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8.2 6.2 9.7 4h4.6l1.5 2.2H19c1.1 0 2 .9 2 2V18c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2V8.2c0-1.1.9-2 2-2h3.2Zm3.8 11a4.1 4.1 0 1 0 0-8.2 4.1 4.1 0 0 0 0 8.2Zm0-1.8a2.3 2.3 0 1 1 0-4.6 2.3 2.3 0 0 1 0 4.6Z"/></svg>';
         termsLinkEl.textContent = t("termsLink");
         privacyLinkEl.textContent = t("privacyLink");
         changelogLinkEl.textContent = t("changelogLink");
@@ -1273,7 +1275,7 @@ function composeAuctionKey(datasetKey, auctionDate) {
           if (location.hostname === "localhost" || location.hostname === "127.0.0.1") return;
           // Avoid sticky cached SW on some static hosts.
           navigator.serviceWorker
-            .register("./sw.js?v=20260511-05", { updateViaCache: "none" })
+            .register("./sw.js?v=20260512-08", { updateViaCache: "none" })
             .catch(() => {});
         });
       }

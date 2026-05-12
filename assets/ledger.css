@@ -1,0 +1,521 @@
+:root {
+  color-scheme: light;
+  --bg: #f4f1e8;
+  --page: #f4f1e8;
+  --panel: #fffaf0;
+  --card: #fffaf0;
+  --surface: #fffaf0;
+  --surface-muted: #e9e3d5;
+  --surface-soft: #f8f4ea;
+  --ink: #1d1b17;
+  --muted: #5f594d;
+  --muted-2: #827a6d;
+  --line: #c9c0ad;
+  --line-strong: #373127;
+  --accent: #3a5d4b;
+  --accent-soft: #f7df78;
+  --accent-ink: #ffffff;
+  --plate: #f0c94d;
+  --plate-fill: #f0c94d;
+  --plate-ink: #171612;
+  --plate-border: #171612;
+  --warning-bg: #fff4cf;
+  --success-bg: #e9f3eb;
+  --success-text: #2f6641;
+  --info-bg: #e9efed;
+  --info-text: #456258;
+  --danger: #94483f;
+}
+
+*,
+*::before,
+*::after {
+  box-shadow: none !important;
+  text-shadow: none !important;
+  letter-spacing: 0 !important;
+}
+
+html {
+  background: var(--page);
+  font-family: "Space Grotesk", "Noto Sans HK", "Avenir Next", system-ui, -apple-system, BlinkMacSystemFont, sans-serif !important;
+  font-feature-settings: "tnum" 1;
+}
+
+body {
+  background: var(--page) !important;
+  color: var(--ink) !important;
+  font-family: inherit !important;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: geometricPrecision;
+}
+
+body::before {
+  display: none !important;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit !important;
+}
+
+a {
+  color: var(--accent) !important;
+  text-underline-offset: 3px;
+}
+
+.wrap {
+  position: relative;
+}
+
+.topbar,
+.top,
+header {
+  border-bottom: 2px solid var(--line-strong);
+  padding-bottom: 14px;
+}
+
+.mark {
+  border: 2px solid var(--line-strong) !important;
+  border-radius: 4px !important;
+  background: var(--surface) !important;
+}
+
+.brand-logo,
+.brand img {
+  width: 52px !important;
+  height: 52px !important;
+  object-fit: contain;
+  padding: 0;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+
+h1,
+.title,
+.brand h1 {
+  color: var(--ink) !important;
+  font-family: "Space Grotesk", "Noto Sans HK", "Avenir Next", system-ui, sans-serif !important;
+  font-size: clamp(22px, 2.05vw, 30px) !important;
+  font-weight: 700 !important;
+  line-height: 1.08 !important;
+}
+
+.brand-titles,
+.titles,
+.brand > div {
+  min-width: 0;
+}
+
+.brand-titles,
+.titles {
+  gap: 2px !important;
+}
+
+.dataset-subtitle,
+.brand .sub {
+  font-size: 12px !important;
+  line-height: 1.25 !important;
+  font-weight: 700 !important;
+  color: var(--muted) !important;
+}
+
+.camera-top-btn {
+  width: 42px;
+  height: 42px;
+  min-width: 42px !important;
+  min-height: 42px !important;
+  padding: 0 !important;
+}
+
+.camera-top-btn svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+  display: block;
+}
+
+h2,
+h3,
+.panel-title,
+.home-card-title,
+.about-title,
+.dataset-switcher-title,
+.agenda-title,
+.issue-title,
+.results-context-title,
+.empty-main,
+.share-title,
+.cell-main,
+.card h1 {
+  color: var(--ink) !important;
+  font-weight: 800 !important;
+}
+
+.dataset-subtitle,
+.sub,
+.meta,
+.panel-note,
+.home-card-note,
+.about-sum .s,
+.about-lede,
+.about-details .content,
+.dataset-switcher-note,
+.dataset-switcher-desc,
+.issue-entry-lede,
+.issue-entry-empty,
+.agenda-note,
+.agenda-empty,
+.cell-sub,
+.empty-sub,
+.footer-info,
+.footer-credit,
+.policy-links,
+.meta-footnote,
+.search-note,
+.issue-subtitle,
+.issue-summary,
+.results-context-subtitle,
+p,
+li {
+  color: var(--muted);
+}
+
+.panel,
+.home-card,
+.about-card,
+.issue-panel,
+.results-context,
+.table-wrap,
+.share-card,
+.card,
+.hero,
+.box,
+.summary-box,
+.metric,
+.stat,
+.toggle,
+.result-card,
+.file-card {
+  border: 1px solid var(--line-strong) !important;
+  border-radius: 4px !important;
+  background: var(--surface) !important;
+  backdrop-filter: none !important;
+}
+
+.home-card-head-fact,
+.fact,
+.link-card,
+.dataset-switcher-card,
+.agenda-item,
+.meta-chip,
+.results-chip,
+.category-pill,
+.badge {
+  border: 1px solid var(--line) !important;
+  border-radius: 4px !important;
+  background: var(--surface) !important;
+}
+
+input,
+select,
+textarea,
+.control-group.query input,
+.controls-secondary select,
+.top a,
+.actions a,
+.actions button,
+button,
+.camera-top-btn,
+.issue-entry-btn,
+.issue-link-btn,
+.agenda-link,
+.search-history-chip,
+.search-history-clear,
+.icon-btn {
+  border: 1px solid var(--line-strong) !important;
+  border-radius: 4px !important;
+  background: var(--surface) !important;
+  color: var(--ink) !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--muted-2) !important;
+}
+
+button:hover:not(:disabled),
+.camera-top-btn:hover,
+.issue-entry-btn:hover,
+.issue-link-btn:hover,
+.agenda-link:hover,
+.search-history-chip:hover,
+.search-history-clear:hover,
+.icon-btn:hover,
+.top a:hover,
+.actions a:hover,
+.dataset-switcher-card:hover {
+  border-color: var(--line-strong) !important;
+  background: var(--surface-muted) !important;
+  transform: none !important;
+}
+
+#reset,
+#bottomPrev,
+#bottomNext,
+#shareDownload,
+.lang-toggle button.active,
+.lang-toggle button[aria-pressed="true"],
+button.primary {
+  border-color: var(--accent) !important;
+  background: var(--accent) !important;
+  color: var(--accent-ink) !important;
+}
+
+.lang-toggle {
+  border: 1px solid var(--line-strong) !important;
+  background: var(--surface) !important;
+  border-radius: 999px !important;
+}
+
+.lang-toggle button {
+  border-radius: 999px !important;
+  border: 0 !important;
+}
+
+.control-label,
+.search-history-label,
+.issue-kicker,
+.results-context-kicker,
+.about-kicker,
+.kicker {
+  color: var(--line-strong) !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  text-transform: uppercase;
+}
+
+.about-kicker,
+.kicker {
+  border: 1px solid var(--line-strong) !important;
+  border-radius: 999px !important;
+  background: var(--accent-soft) !important;
+}
+
+.about-chevron {
+  border: 1px solid var(--line-strong) !important;
+  border-radius: 4px !important;
+  background: var(--surface) !important;
+  color: var(--muted) !important;
+}
+
+.dataset-switcher-card.active,
+.status-badge,
+.filter-chip.active {
+  border-color: var(--line-strong) !important;
+  background: var(--accent-soft) !important;
+  color: var(--ink) !important;
+}
+
+.dataset-switcher-card.active .dataset-switcher-name,
+.dataset-switcher-card.active .dataset-switcher-desc {
+  color: var(--ink) !important;
+}
+
+.agenda-status,
+.badge,
+.results-chip,
+.meta-chip,
+.category-pill {
+  border-radius: 999px !important;
+  border-color: var(--line-strong) !important;
+  background: var(--surface-muted) !important;
+  color: var(--muted) !important;
+  font-weight: 700 !important;
+}
+
+.agenda-status.open,
+.status-badge.ok {
+  background: var(--success-bg) !important;
+  color: var(--success-text) !important;
+  border-color: var(--success-text) !important;
+}
+
+.agenda-status.upcoming {
+  background: var(--info-bg) !important;
+  color: var(--info-text) !important;
+  border-color: var(--info-text) !important;
+}
+
+table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+th,
+td {
+  border-bottom: 1px solid var(--line) !important;
+  color: var(--ink) !important;
+}
+
+th {
+  background: #242118 !important;
+  color: #fff8df !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  text-transform: uppercase;
+}
+
+tbody tr:nth-child(even) td {
+  background: var(--surface-soft) !important;
+}
+
+tbody tr:hover td {
+  background: var(--accent-soft) !important;
+}
+
+td.col-date .cell-main,
+.date {
+  color: var(--accent) !important;
+  font-weight: 800 !important;
+}
+
+th.col-price,
+td.col-price,
+.price-value,
+.price,
+.fact .v,
+.home-card-head-fact .v,
+.stat .v,
+.metric .v,
+code {
+  font-family: "SFMono-Regular", "Roboto Mono", Consolas, "Liberation Mono", monospace !important;
+}
+
+.plate {
+  border: 2px solid var(--plate-border) !important;
+  border-radius: 4px !important;
+  background: var(--plate-fill) !important;
+  color: var(--plate-ink) !important;
+  font-family: "SFMono-Regular", "Roboto Mono", Consolas, "Liberation Mono", monospace !important;
+  font-weight: 700 !important;
+}
+
+.plate.na {
+  border-color: var(--line-strong) !important;
+  background: var(--surface-muted) !important;
+  color: var(--muted) !important;
+}
+
+.price.na {
+  color: var(--danger) !important;
+}
+
+.action-icon-img {
+  opacity: 0.9;
+  filter: grayscale(1) sepia(0.16) saturate(0.58) brightness(0.58);
+}
+
+.share-modal {
+  background: rgba(29, 27, 23, 0.68) !important;
+}
+
+.share-preview {
+  border: 1px solid var(--line-strong) !important;
+  border-radius: 4px !important;
+  background: var(--surface) !important;
+}
+
+.share-head,
+.share-actions {
+  background: var(--surface) !important;
+  backdrop-filter: none !important;
+}
+
+progress {
+  accent-color: var(--accent);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (max-width: 700px) {
+  .topbar {
+    gap: 8px !important;
+    margin-bottom: 10px !important;
+  }
+
+  .brand {
+    gap: 10px !important;
+  }
+
+  h1,
+  .title,
+  .brand h1 {
+    font-size: 19px !important;
+    line-height: 1.08 !important;
+  }
+
+  .brand-logo,
+  .brand img {
+    width: 44px !important;
+    height: 44px !important;
+  }
+
+  .dataset-subtitle,
+  .brand .sub {
+    font-size: 11px !important;
+  }
+
+  .top-actions {
+    gap: 6px !important;
+  }
+
+  .camera-top-btn {
+    width: 38px;
+    height: 38px;
+    min-width: 38px !important;
+    min-height: 38px !important;
+  }
+
+  .camera-top-btn svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .lang-toggle {
+    padding: 3px !important;
+  }
+
+  .lang-toggle button {
+    min-width: 38px !important;
+    min-height: 38px !important;
+    padding: 0 10px !important;
+  }
+
+  .table-wrap {
+    background: transparent !important;
+    border: 0 !important;
+  }
+
+  .table-wrap tbody tr {
+    border: 1px solid var(--line-strong) !important;
+    border-radius: 4px !important;
+    background: var(--surface) !important;
+  }
+
+  .table-wrap tbody tr:nth-child(even) td,
+  .table-wrap tbody tr:hover td {
+    background: transparent !important;
+  }
+
+  .table-wrap td.col-price {
+    border: 1px solid var(--line-strong) !important;
+    border-radius: 4px !important;
+    background: var(--warning-bg) !important;
+  }
+}

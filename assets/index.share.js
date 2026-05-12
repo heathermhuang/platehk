@@ -13,6 +13,22 @@ window.createPlateIndexShareModal = function createPlateIndexShareModal({
   shareSiteUrl,
 }) {
   let currentPosterDataUrl = "";
+  const POSTER = Object.freeze({
+    page: "#f4f1e8",
+    surface: "#fffaf0",
+    surfaceMuted: "#e9e3d5",
+    surfaceSoft: "#f8f4ea",
+    ink: "#1d1b17",
+    muted: "#5f594d",
+    line: "#c9c0ad",
+    lineStrong: "#373127",
+    accent: "#3a5d4b",
+    accentSoft: "#f7df78",
+    plate: "#f0c94d",
+    plateInk: "#171612",
+  });
+  const POSTER_UI_FONT = "'Space Grotesk', 'Noto Sans HK', 'Avenir Next', Helvetica, Arial, sans-serif";
+  const POSTER_MONO_FONT = "'SFMono-Regular', 'Roboto Mono', Consolas, 'Liberation Mono', monospace";
 
   function posterCategoryLabelBilingual(row) {
     const key = row && row.dataset_key ? row.dataset_key : getCurrentDataset();
@@ -70,7 +86,7 @@ window.createPlateIndexShareModal = function createPlateIndexShareModal({
       maxFont = 32,
       minFont = 16,
       maxLines = 2,
-      family = "'Noto Sans HK', Helvetica, Arial, sans-serif",
+      family = POSTER_UI_FONT,
       weight = 700,
     } = {}
   ) {
@@ -99,7 +115,7 @@ window.createPlateIndexShareModal = function createPlateIndexShareModal({
     {
       maxFont = 32,
       minFont = 16,
-      family = "'Noto Sans HK', Helvetica, Arial, sans-serif",
+      family = POSTER_UI_FONT,
       weight = 700,
     } = {}
   ) {
@@ -147,7 +163,7 @@ window.createPlateIndexShareModal = function createPlateIndexShareModal({
       const img = new Image();
       img.onload = () => resolve(img);
       img.onerror = () => reject(new Error("logo load failed"));
-      img.src = "./assets/logo.svg";
+      img.src = "./assets/logo.svg?v=20260512-08";
     });
   }
 
@@ -170,7 +186,7 @@ window.createPlateIndexShareModal = function createPlateIndexShareModal({
     const qctx = canvas.getContext("2d");
     qctx.fillStyle = "#ffffff";
     qctx.fillRect(0, 0, actualSize, actualSize);
-    qctx.fillStyle = "#000000";
+    qctx.fillStyle = POSTER.plateInk;
     for (let row = 0; row < moduleCount; row += 1) {
       for (let col = 0; col < moduleCount; col += 1) {
         if (!qr.isDark(row, col)) continue;
@@ -192,49 +208,18 @@ window.createPlateIndexShareModal = function createPlateIndexShareModal({
     w,
     h,
     r,
-    {
-      from = "rgba(255,255,255,0.72)",
-      to = "rgba(214,231,255,0.28)",
-      stroke = "rgba(255,255,255,0.66)",
-      shadow = "rgba(7,28,58,0.18)",
-      shadowBlur = 30,
-      gloss = true,
-    } = {}
+    { from = POSTER.surface, stroke = POSTER.lineStrong } = {}
   ) {
     ctx.save();
-    const fill = ctx.createLinearGradient(x, y, x + w, y + h);
-    fill.addColorStop(0, from);
-    fill.addColorStop(1, to);
-    ctx.shadowColor = shadow;
-    ctx.shadowBlur = shadowBlur;
-    ctx.shadowOffsetY = 18;
-    roundRectPath(ctx, x, y, w, h, r);
-    ctx.fillStyle = fill;
+    const radius = Math.min(r, 8);
+    roundRectPath(ctx, x, y, w, h, radius);
+    ctx.fillStyle = from;
     ctx.fill();
-    ctx.shadowColor = "transparent";
     ctx.strokeStyle = stroke;
     ctx.lineWidth = 2;
-    roundRectPath(ctx, x, y, w, h, r);
+    roundRectPath(ctx, x, y, w, h, radius);
     ctx.stroke();
-    if (gloss) {
-      const sheen = ctx.createLinearGradient(x, y, x, y + h * 0.55);
-      sheen.addColorStop(0, "rgba(255,255,255,0.52)");
-      sheen.addColorStop(1, "rgba(255,255,255,0)");
-      roundRectPath(ctx, x + 2, y + 2, w - 4, h * 0.52, Math.max(10, r - 2));
-      ctx.fillStyle = sheen;
-      ctx.fill();
-    }
     ctx.restore();
-  }
-
-  function drawPosterOrb(ctx, x, y, radius, inner, outer = "rgba(255,255,255,0)") {
-    const g = ctx.createRadialGradient(x, y, 0, x, y, radius);
-    g.addColorStop(0, inner);
-    g.addColorStop(1, outer);
-    ctx.fillStyle = g;
-    ctx.beginPath();
-    ctx.arc(x, y, radius, 0, Math.PI * 2);
-    ctx.fill();
   }
 
   function drawPosterPill(
@@ -242,21 +227,21 @@ window.createPlateIndexShareModal = function createPlateIndexShareModal({
     x,
     y,
     text,
-    { fill = "rgba(12,39,80,0.72)", color = "#ffffff", maxWidth = 320, fontSize = 22, minFontSize = 15 } = {}
+    { fill = POSTER.lineStrong, color = POSTER.surface, maxWidth = 320, fontSize = 22, minFontSize = 15 } = {}
   ) {
     ctx.save();
-    const usableTextWidth = Math.max(44, maxWidth - 36);
+    const usableTextWidth = Math.max(44, maxWidth - 28);
     const fit = fitPosterText(ctx, text, usableTextWidth, {
       maxFont: fontSize,
       minFont: minFontSize,
       maxLines: 1,
     });
-    ctx.font = `700 ${fit.fontSize}px 'Noto Sans HK', Helvetica, Arial, sans-serif`;
-    const padX = 18;
-    const h = 42;
+    ctx.font = `800 ${fit.fontSize}px ${POSTER_UI_FONT}`;
+    const padX = 14;
+    const h = 38;
     const label = fit.lines[0] || "";
     const w = Math.min(maxWidth, ctx.measureText(label).width + padX * 2);
-    roundRectPath(ctx, x, y, w, h, 21);
+    roundRectPath(ctx, x, y, w, h, 4);
     ctx.fillStyle = fill;
     ctx.fill();
     ctx.fillStyle = color;
@@ -275,42 +260,30 @@ window.createPlateIndexShareModal = function createPlateIndexShareModal({
     h,
     label,
     value,
-    { accent = "#0f1c2b", valueSize = 32, minValueSize = 18 } = {}
+    { accent = POSTER.ink, valueSize = 32, minValueSize = 18 } = {}
   ) {
-    drawGlassPanel(ctx, x, y, w, h, 28, {
-      from: "rgba(255,255,255,0.68)",
-      to: "rgba(220,235,255,0.24)",
-      stroke: "rgba(255,255,255,0.7)",
-      shadow: "rgba(8,29,62,0.12)",
-      shadowBlur: 18,
-    });
+    drawGlassPanel(ctx, x, y, w, h, 4, { from: POSTER.surface, stroke: POSTER.lineStrong });
     ctx.save();
-    ctx.fillStyle = "rgba(26,70,111,0.72)";
-    ctx.font = "700 20px 'Noto Sans HK', Helvetica, Arial, sans-serif";
+    ctx.fillStyle = POSTER.muted;
+    ctx.font = `800 20px ${POSTER_UI_FONT}`;
     ctx.fillText(label, x + 24, y + 34);
     ctx.fillStyle = accent;
     const fit = fitPosterSingleLine(ctx, value, w - 48, {
       maxFont: valueSize,
       minFont: minValueSize,
     });
-    ctx.font = `700 ${fit.fontSize}px 'Noto Sans HK', Helvetica, Arial, sans-serif`;
+    ctx.font = `800 ${fit.fontSize}px ${POSTER_UI_FONT}`;
     ctx.fillText(fit.text, x + 24, y + 90);
     ctx.restore();
   }
 
   function drawPlateCard(ctx, x, y, w, h, title, lines) {
     const compact = h < 220;
-    drawGlassPanel(ctx, x, y, w, h, 30, {
-      from: "rgba(255,255,255,0.72)",
-      to: "rgba(214,231,255,0.26)",
-      stroke: "rgba(255,255,255,0.72)",
-      shadow: "rgba(8,29,60,0.18)",
-      shadowBlur: 22,
-    });
+    drawGlassPanel(ctx, x, y, w, h, 4, { from: POSTER.surface, stroke: POSTER.lineStrong });
 
     drawPosterPill(ctx, x + 14, y + (compact ? 12 : 18), title, {
-      fill: "rgba(15,28,43,0.78)",
-      color: "#f8fbff",
+      fill: POSTER.lineStrong,
+      color: POSTER.surface,
       fontSize: compact ? 18 : 22,
       minFontSize: 13,
       maxWidth: compact ? 220 : 280,
@@ -337,23 +310,16 @@ window.createPlateIndexShareModal = function createPlateIndexShareModal({
     }
     const plateX = plateZoneX + (plateZoneW - plateW) / 2;
     const plateY = plateZoneY + (plateZoneH - plateH) / 2 + 8;
-    const plateFill = ctx.createLinearGradient(plateX, plateY, plateX, plateY + plateH);
-    plateFill.addColorStop(0, "#ffd95f");
-    plateFill.addColorStop(1, "#f0bb17");
-    ctx.fillStyle = plateFill;
-    ctx.strokeStyle = "#111111";
+    ctx.fillStyle = POSTER.plate;
+    ctx.strokeStyle = POSTER.plateInk;
     ctx.lineWidth = 5;
-    roundRectPath(ctx, plateX, plateY, plateW, plateH, Math.max(14, plateH * 0.14));
+    roundRectPath(ctx, plateX, plateY, plateW, plateH, 8);
     ctx.fill();
     ctx.stroke();
 
-    ctx.fillStyle = "rgba(255,255,255,0.42)";
-    roundRectPath(ctx, plateX + 4, plateY + 4, plateW - 8, Math.max(16, plateH * 0.18), 12);
-    ctx.fill();
-
-    ctx.fillStyle = "#111111";
+    ctx.fillStyle = POSTER.plateInk;
     ctx.textAlign = "center";
-    const sharedMaxFont = Math.min(62, plateH * 0.34);
+    const sharedMaxFont = isDouble ? Math.min(96, plateH * 0.34) : Math.min(160, plateH * 0.5);
     const sharedMinFont = 22;
     if (!isDouble) {
       drawPlateLineFit(
@@ -364,7 +330,7 @@ window.createPlateIndexShareModal = function createPlateIndexShareModal({
         plateW - 42,
         sharedMaxFont,
         sharedMinFont,
-        "Helvetica, Arial, sans-serif",
+        POSTER_MONO_FONT,
         700,
         1.06
       );
@@ -383,7 +349,7 @@ window.createPlateIndexShareModal = function createPlateIndexShareModal({
         maxTextW,
         sharedMaxFont,
         sharedMinFont,
-        "Helvetica, Arial, sans-serif",
+        POSTER_MONO_FONT,
         700,
         1.06
       );
@@ -395,7 +361,7 @@ window.createPlateIndexShareModal = function createPlateIndexShareModal({
         maxTextW,
         sharedMaxFont,
         sharedMinFont,
-        "Helvetica, Arial, sans-serif",
+        POSTER_MONO_FONT,
         700,
         1.06
       );
@@ -420,182 +386,148 @@ window.createPlateIndexShareModal = function createPlateIndexShareModal({
       }
     })();
 
-    const g = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-    g.addColorStop(0, "#edf6ff");
-    g.addColorStop(0.5, "#d7ebff");
-    g.addColorStop(1, "#eef2fb");
-    ctx.fillStyle = g;
+    ctx.fillStyle = POSTER.page;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    drawPosterOrb(ctx, 180, 140, 220, "rgba(132,213,255,0.48)");
-    drawPosterOrb(ctx, 1010, 170, 250, "rgba(255,222,143,0.42)");
-    drawPosterOrb(ctx, 930, 930, 260, "rgba(182,198,255,0.28)");
 
     const cardX = 34;
     const cardY = 34;
     const cardW = canvas.width - 68;
     const cardH = canvas.height - 68;
-    drawGlassPanel(ctx, cardX, cardY, cardW, cardH, 42, {
-      from: "rgba(255,255,255,0.64)",
-      to: "rgba(222,235,255,0.24)",
-      stroke: "rgba(255,255,255,0.82)",
-      shadow: "rgba(8,33,69,0.18)",
-      shadowBlur: 44,
-    });
+    drawGlassPanel(ctx, cardX, cardY, cardW, cardH, 4, { from: POSTER.surface, stroke: POSTER.lineStrong });
+    ctx.fillStyle = POSTER.accent;
+    ctx.fillRect(cardX, cardY, 16, cardH);
+    ctx.fillStyle = POSTER.plate;
+    ctx.fillRect(cardX + 16, cardY, 6, cardH);
 
     const logo = await loadPosterLogo();
-    const headerX = cardX + 28;
-    const headerY = cardY + 28;
-    const headerW = cardW - 56;
+    const headerX = cardX + 48;
+    const headerY = cardY + 34;
+    const headerW = cardW - 96;
     const headerH = 128;
-    drawGlassPanel(ctx, headerX, headerY, headerW, headerH, 34, {
-      from: "rgba(255,255,255,0.76)",
-      to: "rgba(229,241,255,0.28)",
-      stroke: "rgba(255,255,255,0.84)",
-      shadow: "rgba(8,29,60,0.16)",
-      shadowBlur: 20,
-    });
-    ctx.drawImage(logo, headerX + 22, headerY + 18, 92, 92);
-    ctx.fillStyle = "#102b43";
-    const zhTitleFit = fitPosterSingleLine(ctx, "香港車牌拍賣結果搜尋", 500, {
-      maxFont: 34,
+    ctx.drawImage(logo, headerX, headerY + 5, 96, 96);
+    ctx.fillStyle = POSTER.ink;
+    const zhTitleFit = fitPosterSingleLine(ctx, "香港車牌拍賣資料庫", 560, {
+      maxFont: 38,
       minFont: 24,
     });
-    ctx.font = `700 ${zhTitleFit.fontSize}px 'Noto Sans HK', Helvetica, Arial, sans-serif`;
-    ctx.fillText(zhTitleFit.text, headerX + 138, headerY + 54);
-    ctx.fillStyle = "#446179";
-    const enTitleFit = fitPosterSingleLine(ctx, "Hong Kong Plate Auction Search", 500, {
-      maxFont: 20,
+    ctx.font = `800 ${zhTitleFit.fontSize}px ${POSTER_UI_FONT}`;
+    ctx.fillText(zhTitleFit.text, headerX + 122, headerY + 43);
+    ctx.fillStyle = POSTER.muted;
+    const enTitleFit = fitPosterSingleLine(ctx, "HK Vehicle Registration Marks Database", 560, {
+      maxFont: 22,
       minFont: 16,
-      family: "Helvetica, Arial, sans-serif",
+      family: POSTER_UI_FONT,
       weight: 600,
     });
-    ctx.font = `600 ${enTitleFit.fontSize}px Helvetica, Arial, sans-serif`;
-    ctx.fillText(enTitleFit.text, headerX + 138, headerY + 90);
+    ctx.font = `700 ${enTitleFit.fontSize}px ${POSTER_UI_FONT}`;
+    ctx.fillText(enTitleFit.text, headerX + 122, headerY + 78);
 
     const priceText = formatPriceText(row);
-    const priceW = 294;
-    const priceH = 94;
-    const priceX = headerX + headerW - priceW - 22;
-    const priceY = headerY + 17;
-    drawGlassPanel(ctx, priceX, priceY, priceW, priceH, 28, {
-      from: "rgba(14,44,79,0.78)",
-      to: "rgba(24,129,193,0.46)",
-      stroke: "rgba(255,255,255,0.38)",
-      shadow: "rgba(9,31,61,0.24)",
-      shadowBlur: 22,
-    });
-    ctx.fillStyle = "rgba(255,255,255,0.72)";
-    ctx.font = "700 18px 'Noto Sans HK', Helvetica, Arial, sans-serif";
-    ctx.fillText("成交價 Price", priceX + 22, priceY + 26);
-    ctx.fillStyle = "#ffffff";
+    const priceW = 306;
+    const priceH = 106;
+    const priceX = headerX + headerW - priceW;
+    const priceY = headerY + 2;
+    drawGlassPanel(ctx, priceX, priceY, priceW, priceH, 4, { from: POSTER.accentSoft, stroke: POSTER.lineStrong });
+    ctx.fillStyle = POSTER.muted;
+    ctx.font = `800 18px ${POSTER_UI_FONT}`;
+    ctx.fillText("成交價 Price", priceX + 22, priceY + 30);
+    ctx.fillStyle = POSTER.ink;
     const priceFit = fitPosterSingleLine(ctx, priceText, priceW - 44, {
-      maxFont: 36,
+      maxFont: 38,
       minFont: 22,
+      family: POSTER_MONO_FONT,
     });
-    ctx.font = `700 ${priceFit.fontSize}px 'Noto Sans HK', Helvetica, Arial, sans-serif`;
-    ctx.fillText(priceFit.text, priceX + 22, priceY + 66);
+    ctx.font = `800 ${priceFit.fontSize}px ${POSTER_MONO_FONT}`;
+    ctx.fillText(priceFit.text, priceX + 22, priceY + 74);
+
+    ctx.strokeStyle = POSTER.lineStrong;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(headerX, headerY + headerH + 2);
+    ctx.lineTo(headerX + headerW, headerY + headerH + 2);
+    ctx.stroke();
 
     const singleText = String(row.single_line || "").trim() || "(n/a)";
     const doubleLines = posterDoubleLines(row).filter((x) => !/^\(?n\/a\)?$/i.test(x));
     const showDouble = doubleLines.length > 0;
-    const stageX = cardX + 28;
-    const stageY = headerY + headerH + 20;
-    const stageW = cardW - 56;
-    const stageH = 520;
-    drawGlassPanel(ctx, stageX, stageY, stageW, stageH, 36, {
-      from: "rgba(255,255,255,0.62)",
-      to: "rgba(227,239,255,0.2)",
-      stroke: "rgba(255,255,255,0.8)",
-      shadow: "rgba(11,39,75,0.1)",
-      shadowBlur: 16,
-    });
-    const stageInnerX = stageX + 22;
-    const stageInnerY = stageY + 22;
-    const stageInnerW = stageW - 44;
-    const stageInnerH = stageH - 44;
-    const gapW = 18;
-    const unifiedCardW = (stageInnerW - gapW) / 2;
-    const unifiedCardH = stageInnerH;
+    const stageX = cardX + 56;
+    const stageY = headerY + headerH + 42;
+    const stageW = cardW - 112;
+    const stageH = 460;
     if (showDouble) {
-      const singleCardX = stageInnerX;
-      const singleCardY = stageInnerY;
+      const gapW = 24;
+      const unifiedCardW = (stageW - gapW) / 2;
       drawPlateCard(
         ctx,
-        singleCardX,
-        singleCardY,
+        stageX,
+        stageY,
         unifiedCardW,
-        unifiedCardH,
+        stageH,
         "單排排列 Single-line",
         [singleText]
       );
-      const doubleCardX = singleCardX + unifiedCardW + gapW;
-      const doubleCardY = stageInnerY;
       drawPlateCard(
         ctx,
-        doubleCardX,
-        doubleCardY,
+        stageX + unifiedCardW + gapW,
+        stageY,
         unifiedCardW,
-        unifiedCardH,
+        stageH,
         "雙排排列 Double-line",
         doubleLines
       );
     } else {
-      const singleCardX = stageInnerX + (stageInnerW - unifiedCardW) / 2;
       drawPlateCard(
         ctx,
-        singleCardX,
-        stageInnerY,
-        unifiedCardW,
-        unifiedCardH,
+        stageX,
+        stageY,
+        stageW,
+        stageH,
         "單排排列 Single-line",
         [singleText]
       );
     }
 
-    const footerTop = stageY + stageH + 20;
+    const footerTop = stageY + stageH + 28;
     const leftColX = stageX;
-    const leftColW = 620;
-    drawPosterMetaCard(ctx, leftColX, footerTop, leftColW, 104, "拍賣日期 Auction Date", formatAuctionDate(row), {
+    const leftColW = 650;
+    drawPosterMetaCard(ctx, leftColX, footerTop, leftColW, 112, "拍賣日期 Auction Date", formatAuctionDate(row), {
       valueSize: 24,
       minValueSize: 18,
     });
     drawPosterMetaCard(
       ctx,
       leftColX,
-      footerTop + 118,
+      footerTop + 126,
       leftColW,
-      104,
+      112,
       "分類 Category",
       posterCategoryLabelBilingual(row),
       { valueSize: 22, minValueSize: 15 }
     );
 
-    const qrPanelW = 280;
-    const qrPanelH = 226;
-    const qrPanelX = cardX + cardW - qrPanelW - 28;
+    const qrPanelW = 272;
+    const qrPanelH = 250;
+    const qrPanelX = cardX + cardW - qrPanelW - 56;
     const qrPanelY = footerTop;
-    drawGlassPanel(ctx, qrPanelX, qrPanelY, qrPanelW, qrPanelH, 30, {
-      from: "rgba(255,255,255,0.74)",
-      to: "rgba(224,238,255,0.28)",
-      stroke: "rgba(255,255,255,0.76)",
-      shadow: "rgba(8,31,63,0.14)",
-      shadowBlur: 20,
-    });
+    drawGlassPanel(ctx, qrPanelX, qrPanelY, qrPanelW, qrPanelH, 4, { from: POSTER.surface, stroke: POSTER.lineStrong });
     const qrSize = 180;
     const qrX = qrPanelX + Math.round((qrPanelW - qrSize) / 2);
     const qrY = qrPanelY + Math.round((qrPanelH - qrSize) / 2);
     ctx.fillStyle = "#ffffff";
-    roundRectPath(ctx, qrX - 10, qrY - 10, qrSize + 20, qrSize + 20, 22);
+    roundRectPath(ctx, qrX - 10, qrY - 10, qrSize + 20, qrSize + 20, 4);
     ctx.fill();
+    ctx.strokeStyle = POSTER.lineStrong;
+    ctx.lineWidth = 2;
+    roundRectPath(ctx, qrX - 10, qrY - 10, qrSize + 20, qrSize + 20, 4);
+    ctx.stroke();
     try {
       const qr = loadPosterQr(shareUrl, qrSize);
       ctx.drawImage(qr, qrX, qrY);
     } catch {
-      ctx.fillStyle = "#f1f1f1";
+      ctx.fillStyle = POSTER.surfaceMuted;
       ctx.fillRect(qrX, qrY, qrSize, qrSize);
-      ctx.fillStyle = "#0f1c2b";
-      ctx.font = "600 22px 'Noto Sans HK', Helvetica, Arial, sans-serif";
+      ctx.fillStyle = POSTER.ink;
+      ctx.font = `700 22px ${POSTER_UI_FONT}`;
       const lines = wrapText(ctx, shareUrl, qrSize - 24);
       let y = qrY + 90;
       for (const ln of lines.slice(0, 3)) {

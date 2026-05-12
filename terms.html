@@ -3,10 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>使用條款 | PVRM</title>
+    <title>使用條款 | Plate.hk</title>
     <meta
       name="description"
-      content="Plate.hk 使用條款：香港車牌拍賣結果搜尋服務之資料來源、使用限制與免責說明。"
+      content="Plate.hk 使用條款：香港車牌拍賣資料庫、公開 API、相機辨識、分享海報、資料來源、使用限制與免責說明。"
     />
     <meta name="robots" content="index,follow,max-image-preview:large" />
     <link rel="canonical" href="https://plate.hk/terms.html" />
@@ -63,10 +63,16 @@
         backdrop-filter: blur(18px) saturate(150%);
       }
       h1 { margin:0; font-size:32px; letter-spacing:-0.01em; }
+      h2 { margin:26px 0 8px; font-size:20px; }
       p { line-height:1.7; margin:10px 0; }
+      ul { margin:8px 0 14px; padding-left:1.3rem; line-height:1.7; }
+      li + li { margin-top:6px; }
       .meta { color:var(--muted); margin-top:6px; }
+      .note { border-left:3px solid var(--accent); padding-left:12px; color:var(--muted); }
       a { color:var(--accent); }
     </style>
+    <link rel="stylesheet" href="./assets/ledger.css?v=20260512-07" />
+
   </head>
   <body>
     <div class="wrap">
@@ -83,35 +89,113 @@
     <script>
       const I18N = {
         zh: {
-          pageTitle: "使用條款 | PVRM",
+          pageTitle: "使用條款 | Plate.hk",
           title: "使用條款",
           back: "← 返回首頁",
-          updated: "最後更新：2026年2月28日",
+          updated: "最後更新：2026年5月12日",
           html: `
-            <p>本網站提供自訂車輛登記號碼（Personalized Vehicle Registration Marks）拍賣結果搜尋服務，資料來源為運輸署公開資訊，僅供一般參考用途。</p>
-            <p>本網站會盡力保持資料準確與更新，但不保證資料在任何時間均完整、無誤或可用。任何差異或爭議，應以運輸署官方網站及原始 PDF 公布結果為準。</p>
-            <p>本網站可能定期重新解析或更正歷史資料，並不代表官方改動；若需要法定或交易用途，請務必以官方公告為準。</p>
-            <p>為提高搜尋一致性，查詢輸入可能在瀏覽器端進行正規化處理（例如轉為大寫、移除空白、字元 I/O 對應 1/0）。</p>
-            <p>本網站可能使用瀏覽器快取與離線機制提升效能；如你在資料更新後仍看到舊結果，可重新整理頁面，最終仍以運輸署原始 PDF 與官方公布為準。</p>
-            <p>你同意不以自動化方式大量抓取、干擾服務運作、或將本網站資料用於非法用途。</p>
-            <p>本網站可能連結至第三方網站（如運輸署、Google）。第三方網站的內容與私隱處理不受本網站控制。</p>
-            <p>本網站可在不另行通知下更新功能、內容、使用條款及私隱政策。</p>
+            <p class="note">使用 Plate.hk 即表示你同意本使用條款。Plate.hk 是民間整理的香港車牌拍賣資料庫，不是運輸署或任何政府部門的官方服務。</p>
+
+            <h2>1. 服務範圍</h2>
+            <p>Plate.hk 提供香港車輛登記號碼拍賣資料的搜尋、瀏覽、分享海報、公開 API、資料審核頁面，以及實驗性相機辨識搜尋功能。資料集可能包括自訂車牌、傳統車牌實體拍賣、拍牌易、歷史拍賣及相關公開文件連結。</p>
+            <p>本網站的目的，是讓使用者更容易查閱已公開的拍賣結果、成交價、拍賣日期、期數及來源文件。網站內容只供一般資訊、研究及參考用途。</p>
+
+            <h2>2. 資料來源與官方資料優先</h2>
+            <p>本網站資料主要整理自運輸署及相關公開來源，包括公開網頁、公告、PDF、拍賣結果及其他官方或半官方資料。Plate.hk 可能會解析、正規化、合併、標示或重新格式化資料，以改善搜尋體驗。</p>
+            <p>雖然我們會盡力保持資料準確、完整和更新，但不保證任何資料、價格、日期、期數、分類、連結或 API 回應在任何時間均正確、完整、即時或可用。如本網站資料與官方資料有任何差異，應以運輸署官方網站、原始 PDF、拍賣公告及政府正式紀錄為準。</p>
+            <p>歷史資料可能因重新解析、資料清理、錯字修正或來源文件更新而調整；這些調整不代表官方紀錄已有更改。</p>
+
+            <h2>3. 不構成官方、法律、財務或估值意見</h2>
+            <p>Plate.hk 不提供法律、財務、投資、估值、稅務、車輛登記或牌照申請意見。任何成交價、排名、排序、搜尋結果或熱門車牌頁面，不應被視為未來拍賣價格、投標策略、資產價值或可註冊性的保證。</p>
+            <p>如你需要作出交易、投標、法律、保險、車輛登記或其他正式決定，請直接查核官方資料，並在需要時尋求合資格專業意見。</p>
+
+            <h2>4. 搜尋、正規化與快取</h2>
+            <p>為提高搜尋一致性，查詢輸入可能在瀏覽器端或伺服器端進行正規化處理，例如轉為大寫、移除空白、處理常見字元差異，以及將 I/O 對應至 1/0 作匹配用途。</p>
+            <p>本網站可能使用瀏覽器快取、Service Worker、分片資料、背景搜尋 Worker、伺服器端 API 或離線資料 fallback 以提升速度及可靠性。你看到的結果可能受快取、網絡狀態、瀏覽器設定或資料更新時間影響。如結果涉及重要用途，請重新整理頁面並查閱官方來源。</p>
+
+            <h2>5. API、自動化與公平使用</h2>
+            <p>公開 API 及資料端點按「可用狀態」提供，可能隨時限制、暫停、變更格式、加入速率限制或停止服務。你不得：</p>
+            <ul>
+              <li>大量抓取、鏡像、重發布或商業化使用資料而未保留來源脈絡或造成服務負擔；</li>
+              <li>繞過速率限制、濫用 API、干擾搜尋、相機 OCR、資料檔案或其他服務；</li>
+              <li>以本網站資料進行騷擾、跟蹤、歧視、身份推斷、侵犯私隱或任何非法用途；</li>
+              <li>嘗試未授權存取、掃描、破壞、逆向工程或影響本網站、主機、API、快取或安全控制。</li>
+            </ul>
+
+            <h2>6. 相機搜尋與 OCR</h2>
+            <p>相機搜尋是實驗性功能。啟動相機預覽需要你的瀏覽器及裝置授權；點擊 AI 辨識時，網站會嘗試只上傳畫面白框內的裁切車牌區域供伺服器端 vision 模型判讀，而不是完整相機畫面。OCR 結果可能錯誤、延遲或不可用。</p>
+            <p>請只在你有權使用相機及拍攝該畫面的情況下使用此功能。不要上傳含有敏感、私人、未授權或與車牌查詢無關的影像。OCR 結果只供搜尋輔助，不應作為正式識別或執法依據。</p>
+
+            <h2>7. 分享海報與使用者輸出</h2>
+            <p>分享海報由瀏覽器根據當前拍賣資料產生，供個人分享和引用。海報可能包含車牌、成交價、拍賣日期、分類、QR code 及網站標誌。你分享或下載海報時，應保留合理來源脈絡，並自行負責其使用方式。</p>
+
+            <h2>8. 知識產權與資料權利</h2>
+            <p>本網站的介面、標誌、排版、程式碼、資料整理方式、衍生索引及呈現方式受相關知識產權保護。原始官方資料、政府公告及第三方內容仍屬其各自權利人所有。除非另有書面許可，你不得移除標示、冒充官方來源，或以會誤導他人的方式重用本網站內容。</p>
+
+            <h2>9. 第三方網站與服務</h2>
+            <p>本網站可能連結或使用第三方服務，包括運輸署、Google Analytics、Google Forms、字體服務、主機/CDN、OCR 或其他基礎設施供應商。第三方網站和服務的內容、可用性、安全及私隱做法不受 Plate.hk 控制。</p>
+
+            <h2>10. 服務變更、可用性與責任限制</h2>
+            <p>本網站按「現狀」及「可用狀態」提供。Plate.hk 可在不另行通知下修改、暫停或停止任何功能、資料、API、頁面、快取策略、連結或本使用條款。</p>
+            <p>在適用法律允許的最大範圍內，Plate.hk 及其維護者不就任何直接、間接、附帶、特殊、懲罰性或後果性損失承擔責任，包括因資料錯誤、服務中斷、快取、OCR 錯誤、第三方服務、使用者決策或未能查核官方資料而引致的損失。</p>
+
+            <h2>11. 適用法律與聯絡</h2>
+            <p>本使用條款受香港特別行政區法律規管，並按其解釋。關於資料錯誤、內容、私隱或使用條款的查詢，可透過首頁底部的 <a href="https://forms.gle/1YFfSmraLp27YneU9" target="_blank" rel="noopener">反饋表格</a> 聯絡網站維護者。</p>
           `,
         },
         en: {
-          pageTitle: "Terms of Use | PVRM",
+          pageTitle: "Terms of Use | Plate.hk",
           title: "Terms of Use",
           back: "← Back to Home",
-          updated: "Last updated: 28 Feb 2026",
+          updated: "Last updated: 12 May 2026",
           html: `
-            <p>This site provides search access to Personalized Vehicle Registration Marks auction results from publicly available Transport Department sources, for general reference only.</p>
-            <p>While reasonable effort is made to keep data accurate and updated, no warranty is made that information is always complete, error-free, or available. In case of discrepancy, the official Transport Department website and original PDF results prevail.</p>
-            <p>Historical data may be re-parsed or corrected from time to time and does not imply official changes; for legal or transactional use, always rely on official publications.</p>
-            <p>For consistency, query input may be normalized in-browser (for example uppercase conversion, space removal, and I/O to 1/0 mapping).</p>
-            <p>This site may use browser caching/offline mechanisms for performance. If stale data appears after an update, refresh the page; official Transport Department publications and source PDFs always prevail.</p>
-            <p>You agree not to use automated bulk scraping, disrupt service operation, or use this site for unlawful purposes.</p>
-            <p>This site may link to third-party websites (such as the Transport Department and Google). Their content and privacy practices are outside this site's control.</p>
-            <p>This site may update features, content, these terms, and its privacy policy without prior notice.</p>
+            <p class="note">By using Plate.hk, you agree to these Terms. Plate.hk is an independently maintained Hong Kong vehicle registration marks database. It is not an official Transport Department or government service.</p>
+
+            <h2>1. Scope of Service</h2>
+            <p>Plate.hk provides search, browsing, share posters, public APIs, audit pages, and experimental camera search for Hong Kong vehicle registration mark auction records. Datasets may include personalized marks, traditional marks from physical auctions, e-Auction records, historical records, and links to public source documents.</p>
+            <p>The service is intended to make published auction results, prices, auction dates, issue information, and source documents easier to review. Content is provided for general information, research, and reference only.</p>
+
+            <h2>2. Data Sources and Official Records</h2>
+            <p>Data is primarily compiled from Transport Department and related public sources, including public web pages, notices, PDFs, auction results, and other official or semi-official materials. Plate.hk may parse, normalize, combine, label, or reformat records to improve search and presentation.</p>
+            <p>Reasonable effort is made to keep information accurate, complete, and current, but Plate.hk does not warrant that any record, price, date, issue, category, link, or API response is always accurate, complete, current, or available. If there is any discrepancy, the official Transport Department website, original PDFs, auction notices, and formal government records prevail.</p>
+            <p>Historical records may be adjusted due to re-parsing, data cleaning, typo correction, or source-document updates. Such changes do not imply that official records have changed.</p>
+
+            <h2>3. No Official, Legal, Financial, or Valuation Advice</h2>
+            <p>Plate.hk does not provide legal, financial, investment, valuation, tax, vehicle registration, licensing, or bidding advice. Prices, rankings, sorting, search results, and popular-plate pages should not be treated as guarantees of future auction prices, bidding strategy, asset value, or registrability.</p>
+            <p>For transactions, bidding, legal matters, insurance, registration, or other formal decisions, check official sources directly and seek qualified professional advice where appropriate.</p>
+
+            <h2>4. Search, Normalization, and Caching</h2>
+            <p>To make search behavior more consistent, queries may be normalized in the browser or on the server, for example by uppercasing, removing spaces, handling common character variants, and matching I/O with 1/0.</p>
+            <p>The site may use browser cache, service workers, sharded datasets, background search workers, server-side APIs, or offline data fallbacks for speed and reliability. Results may be affected by caching, network conditions, browser settings, or data update timing. For important use, refresh the page and verify against official sources.</p>
+
+            <h2>5. APIs, Automation, and Fair Use</h2>
+            <p>Public APIs and data endpoints are provided as available and may be limited, suspended, reformatted, rate-limited, or discontinued at any time. You must not:</p>
+            <ul>
+              <li>bulk scrape, mirror, republish, or commercialize data in a way that removes source context or burdens the service;</li>
+              <li>bypass rate limits, abuse APIs, or disrupt search, camera OCR, data files, or other services;</li>
+              <li>use site data for harassment, stalking, discrimination, identity inference, privacy-invasive profiling, or unlawful purposes;</li>
+              <li>attempt unauthorized access, scanning, disruption, reverse engineering, or interference with the site, hosts, APIs, caches, or security controls.</li>
+            </ul>
+
+            <h2>6. Camera Search and OCR</h2>
+            <p>Camera search is experimental. Camera preview requires browser and device permission. When you tap AI Scan, the site attempts to upload only the cropped plate region inside the on-screen guide frame for server-side vision OCR, not the full camera frame. OCR results may be wrong, delayed, or unavailable.</p>
+            <p>Use this feature only where you have the right to use the camera and capture the scene. Do not upload sensitive, private, unauthorized, or unrelated images. OCR output is only a search aid and must not be used as a formal identification or enforcement record.</p>
+
+            <h2>7. Share Posters and User Outputs</h2>
+            <p>Share posters are generated in the browser from the current auction data for personal sharing and citation. They may include a mark, price, auction date, category, QR code, and Plate.hk branding. You are responsible for how you share, download, or reuse poster output, and should preserve reasonable source context.</p>
+
+            <h2>8. Intellectual Property and Data Rights</h2>
+            <p>The site interface, branding, layout, code, data organization, derived indexes, and presentation are protected by applicable intellectual property rights. Original official data, government publications, and third-party materials remain the property of their respective rights holders. Unless separately permitted in writing, you must not remove attribution, impersonate official sources, or reuse site content in a misleading way.</p>
+
+            <h2>9. Third-Party Websites and Services</h2>
+            <p>The site may link to or use third-party services, including the Transport Department, Google Analytics, Google Forms, font services, hosting/CDN providers, OCR providers, and other infrastructure providers. Plate.hk does not control third-party content, availability, security, or privacy practices.</p>
+
+            <h2>10. Changes, Availability, and Limitation of Liability</h2>
+            <p>The site is provided on an “as is” and “as available” basis. Plate.hk may modify, suspend, or discontinue any feature, dataset, API, page, cache strategy, link, or these Terms without prior notice.</p>
+            <p>To the maximum extent permitted by applicable law, Plate.hk and its maintainers are not liable for direct, indirect, incidental, special, punitive, or consequential losses arising from data errors, service interruption, caching, OCR errors, third-party services, user decisions, or failure to verify official sources.</p>
+
+            <h2>11. Governing Law and Contact</h2>
+            <p>These Terms are governed by and interpreted under the laws of the Hong Kong Special Administrative Region. For data corrections, content, privacy, or Terms enquiries, contact the site maintainer through the <a href="https://forms.gle/1YFfSmraLp27YneU9" target="_blank" rel="noopener">feedback form</a> linked from the homepage footer.</p>
           `,
         },
       };

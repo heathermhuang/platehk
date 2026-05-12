@@ -1,10 +1,20 @@
       const I18N = {
         zh: {
-          pageTitle: "更新日誌 | PVRM",
+          pageTitle: "更新日誌 | Plate.hk",
           title: "更新日誌",
           back: "← 返回首頁",
-          updated: "最後更新：2026年5月11日",
+          updated: "最後更新：2026年5月12日",
           items: [
+            {
+              date: "2026-05-12",
+              title: "Ledger 視覺系統與政策頁更新",
+              points: [
+                "全站套用更平實的 Ledger 視覺方向，改用紙本資料庫感的字體、色彩、邊框、表格與控制元件處理。",
+                "重新設計首頁標誌與分享海報，採用簡化的方形 HONG / KONG 車牌圖案，並移除舊有玻璃感裝飾。",
+                "更新首頁標題為香港車牌拍賣資料庫，英文標題同步改為 HK Vehicle Registration Marks Database。",
+                "擴充使用條款與私隱政策，補充 API、公平使用、快取、Google Analytics、本機儲存、相機 OCR、第三方服務及資料權利說明。"
+              ]
+            },
             {
               date: "2026-05-11",
               title: "拍賣日程與首頁搜尋區整理",
@@ -337,11 +347,21 @@
           ]
         },
         en: {
-          pageTitle: "Changelog | PVRM",
+          pageTitle: "Changelog | Plate.hk",
           title: "Changelog",
           back: "← Back to Home",
-          updated: "Last updated: 11 May 2026",
+          updated: "Last updated: 12 May 2026",
           items: [
+            {
+              date: "2026-05-12",
+              title: "Ledger visual system and policy refresh",
+              points: [
+                "Applied the flatter Ledger visual direction across the site, with calmer database-like typography, color, borders, tables, and controls.",
+                "Redesigned the homepage logo and share poster around a simplified square HONG / KONG plate mark, removing the old glass-style decoration.",
+                "Renamed the homepage title to 香港車牌拍賣資料庫 and the English title to HK Vehicle Registration Marks Database.",
+                "Expanded the Terms and Privacy Policy to cover APIs, fair use, caching, Google Analytics, local storage, camera OCR, third-party services, and data rights."
+              ]
+            },
             {
               date: "2026-05-11",
               title: "Auction calendar and homepage search cleanup",

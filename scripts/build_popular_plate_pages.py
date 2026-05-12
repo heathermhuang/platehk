@@ -384,6 +384,7 @@ def render_page(entries_by_norm: dict[str, dict], entry: dict, related: list[dic
         .plate {{ min-width: 0; width: 100%; font-size: 28px; }}
       }}
     </style>
+    <link rel="stylesheet" href="../assets/ledger.css?v=20260512-07" />
   </head>
   <body>
     <div class="wrap">
@@ -485,6 +486,7 @@ def render_index(entries: list[dict]) -> str:
       @media (max-width: 900px) {{ .grid {{ grid-template-columns: repeat(2, minmax(0,1fr)); }} }}
       @media (max-width: 620px) {{ .grid {{ grid-template-columns: 1fr; }} }}
     </style>
+    <link rel="stylesheet" href="../assets/ledger.css?v=20260512-07" />
   </head>
   <body>
     <div class="wrap">

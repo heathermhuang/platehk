@@ -3,10 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>私隱政策 | PVRM</title>
+    <title>私隱政策 | Plate.hk</title>
     <meta
       name="description"
-      content="Plate.hk 私隱政策：說明香港車牌拍賣搜尋網站如何處理分析數據、Cookie 與相關私隱安排。"
+      content="Plate.hk 私隱政策：說明香港車牌拍賣資料庫如何處理搜尋、瀏覽器儲存、Google Analytics、相機 OCR、API 與第三方服務。"
     />
     <meta name="robots" content="index,follow,max-image-preview:large" />
     <link rel="canonical" href="https://plate.hk/privacy.html" />
@@ -63,10 +63,16 @@
         backdrop-filter: blur(18px) saturate(150%);
       }
       h1 { margin:0; font-size:32px; letter-spacing:-0.01em; }
+      h2 { margin:26px 0 8px; font-size:20px; }
       p { line-height:1.7; margin:10px 0; }
+      ul { margin:8px 0 14px; padding-left:1.3rem; line-height:1.7; }
+      li + li { margin-top:6px; }
       .meta { color:var(--muted); margin-top:6px; }
+      .note { border-left:3px solid var(--accent); padding-left:12px; color:var(--muted); }
       a { color:var(--accent); }
     </style>
+    <link rel="stylesheet" href="./assets/ledger.css?v=20260512-07" />
+
   </head>
   <body>
     <div class="wrap">
@@ -83,33 +89,133 @@
     <script>
       const I18N = {
         zh: {
-          pageTitle: "私隱政策 | PVRM",
+          pageTitle: "私隱政策 | Plate.hk",
           title: "私隱政策",
           back: "← 返回首頁",
-          updated: "最後更新：2026年2月28日",
+          updated: "最後更新：2026年5月12日",
           html: `
-            <p>本網站遵循香港《個人資料（私隱）條例》（第486章）處理個人資料，並按網站性質採取資料最小化原則。</p>
-            <p>本網站不提供帳戶註冊，不主動收集姓名、身分證號碼或聯絡資料。車牌搜尋在瀏覽器端進行，網站本身不建立個人檔案。</p>
-            <p>為提升搜尋一致性，使用者輸入的車牌查詢會在瀏覽器端自動正規化（例如轉大寫、移除多餘空白、字母 I/O 對應 1/0）。此處理僅用於即時搜尋，不會建立可識別個人身分的使用者檔案。</p>
-            <p>資料審核頁面與公開 API 僅包含運輸署已公開的拍賣資料與 PDF 連結，不包含使用者個人資料或本機路徑資訊。</p>
-            <p>本網站使用 Google Analytics（gtag）了解流量與使用情況。相關技術資料（例如 IP 位址、裝置與瀏覽器資料、Cookie）可能由 Google 於香港以外地區處理。請參閱 Google 的私隱政策與條款。</p>
-            <p>本網站會採取合理保安措施保護系統與資料，並只在達成網站營運、統計分析與改善服務所需期間內保留資料。</p>
-            <p>如你需要行使查閱或更正資料權利（按條例第486章及資料保障原則），可透過頁面底部網站擁有人聯絡方式提出要求。</p>
+            <p class="note">Plate.hk 按香港《個人資料（私隱）條例》（第486章）及資料保障原則，以資料最小化、用途限制及合理保安為基本方向處理資料。本政策說明我們在網站、API、分享海報及相機搜尋中如何處理資料。</p>
+
+            <h2>1. 本政策適用範圍</h2>
+            <p>本政策適用於 plate.hk 網站、搜尋頁、車牌詳情頁、熱門車牌頁、公開 API、資料審核頁、相機搜尋頁及分享海報功能。本政策不適用於第三方網站或服務，例如運輸署、Google、Google Forms、瀏覽器供應商、裝置作業系統或外部連結。</p>
+
+            <h2>2. 我們處理的資料類別</h2>
+            <p>Plate.hk 不提供帳戶註冊，亦不要求你提供姓名、身分證號碼、電話、電郵地址或付款資料以使用搜尋功能。視乎你如何使用網站，我們可能處理以下資料：</p>
+            <ul>
+              <li><strong>搜尋及偏好資料：</strong>你輸入的車牌查詢、所選資料集、排序、期數、語言及頁面狀態。部分資料只在瀏覽器端即時使用，部分可能寫入網址參數或瀏覽器本機儲存，以便保留搜尋狀態。</li>
+              <li><strong>瀏覽器本機資料：</strong>搜尋記錄、最近使用的資料集、介紹面板狀態、Service Worker 快取、靜態資產及公開資料快取可能儲存在你的裝置。你可透過瀏覽器設定清除。</li>
+              <li><strong>技術及伺服器資料：</strong>當你載入頁面、使用 API 或讀取資料檔案時，主機、CDN 或伺服器可能記錄 IP 位址、時間、請求 URL、HTTP 狀態、使用者代理、參照頁及錯誤資訊，以維持服務、安全、防濫用及除錯。</li>
+              <li><strong>分析資料：</strong>在 plate.hk 或 www.plate.hk 上，網站可能載入 Google Analytics，以了解流量、頁面使用、裝置/瀏覽器類型、概略地區及互動情況。若瀏覽器傳送 Do Not Track 訊號，網站程式會避免載入 Google Analytics。</li>
+              <li><strong>相機 OCR 資料：</strong>相機預覽在你的裝置上啟動。只有當你點擊 AI 辨識時，網站才會嘗試上傳畫面白框內的裁切車牌區域供伺服器端 vision OCR 判讀，而不是完整相機畫面。</li>
+              <li><strong>反饋資料：</strong>如你透過 Google Forms 或其他外部渠道提交反饋，該資料會按該第三方服務的私隱政策處理，並可能由網站維護者用於回覆、修正資料或改善服務。</li>
+            </ul>
+
+            <h2>3. 公開拍賣資料</h2>
+            <p>本網站展示的車牌、成交價、拍賣日期、期數、分類、PDF 連結及相關紀錄，主要來自運輸署及其他公開來源。這些資料並非由使用者提交作個人帳戶用途。即使資料來自公開來源，網站仍會避免把它用作建立個人使用者檔案。</p>
+
+            <h2>4. 使用目的</h2>
+            <p>我們會把資料用於以下目的，或與以下目的直接相關的用途：</p>
+            <ul>
+              <li>提供搜尋、排序、篩選、車牌詳情、熱門車牌、分享海報及公開 API；</li>
+              <li>記住語言、資料集、搜尋狀態或本機搜尋記錄，改善使用體驗；</li>
+              <li>執行相機 OCR、搜尋匹配及查詢正規化；</li>
+              <li>監察網站可用性、修復錯誤、改善資料品質及回應反饋；</li>
+              <li>分析整體流量及功能使用情況，不以建立個人身份檔案為目的；</li>
+              <li>維持安全、防止濫用、調查異常流量、保護 API 及遵守法律要求。</li>
+            </ul>
+
+            <h2>5. Cookie、Google Analytics 與本機儲存</h2>
+            <p>Google Analytics 可能使用 Cookie 或類似技術量度流量及使用情況。相關資料可能由 Google 在香港以外地區處理。你可參閱 <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google 私隱政策</a>、<a href="https://policies.google.com/technologies/cookies" target="_blank" rel="noopener">Google Cookie 說明</a> 及 <a href="https://support.google.com/analytics/answer/6004245" target="_blank" rel="noopener">Google Analytics 私隱與資料保護資料</a>。</p>
+            <p>除第三方分析外，網站也可能使用 localStorage、瀏覽器快取及 Service Worker 快取保存搜尋體驗及公開資料。這些資料儲存在你的瀏覽器或裝置，你可透過瀏覽器設定、清除網站資料或私密瀏覽模式管理。</p>
+
+            <h2>6. 相機權限與影像處理</h2>
+            <p>相機權限由你的瀏覽器和裝置控制。Plate.hk 無法在你未授權或未點擊相關功能時啟動相機。相機 OCR 功能只應上傳裁切後的車牌區域作即時辨識；請避免把人物、私人物件、敏感環境或無關影像放入辨識框內。</p>
+            <p>OCR 影像及結果可能由伺服器、OCR/vision 基礎設施或安全防濫用系統短暫處理。除非為排錯、安全、防濫用或法律需要，我們不打算把相機影像用作建立可識別個人的長期檔案。</p>
+
+            <h2>7. 分享、披露與跨境處理</h2>
+            <p>我們不出售個人資料。為營運網站，我們可能與或透過以下類型的服務處理資料：主機、CDN、Cloudflare/DreamHost 或其他基礎設施、Google Analytics、Google Forms、字體服務、OCR/vision 供應商、安全及除錯工具。這些供應商可能在香港以外地區處理資料，並按其自身條款及私隱政策運作。</p>
+            <p>如法律、法院命令、監管要求、安全事故調查、濫用防止或保護網站及使用者權益所需，我們亦可能披露必要資料。</p>
+
+            <h2>8. 保留與刪除</h2>
+            <p>瀏覽器本機資料由你的裝置保留，直至你清除網站資料、瀏覽器快取或 localStorage。伺服器、分析及安全紀錄只會在達成營運、統計、除錯、安全、防濫用或法律目的所需期間保留，之後刪除、覆寫或彙總化。Google Analytics 的保留及刪除亦受 Google 及該分析資源設定影響。</p>
+
+            <h2>9. 保安</h2>
+            <p>我們採取合理技術及管理措施保護網站和資料，例如 HTTPS、瀏覽器安全標頭、來源限制、速率限制、防濫用檢查、最小化資料收集及只向需要處理的人員或服務提供必要資料。不過，任何互聯網服務都不能保證絕對安全。</p>
+
+            <h2>10. 你的權利與選擇</h2>
+            <p>在香港《個人資料（私隱）條例》下，你可在適用情況下要求查閱或更正我們持有的個人資料。由於 Plate.hk 不設帳戶，且大部分搜尋資料保留在你的瀏覽器，我們可能沒有足夠資料識別你或找出與你相關的伺服器紀錄。提出要求時，請提供足夠資料讓我們合理核實及處理。</p>
+            <p>你亦可透過瀏覽器設定封鎖 Cookie、清除網站資料、使用私密瀏覽、停用相機權限、避免提交反饋表格，或啟用 Do Not Track 訊號。</p>
+
+            <h2>11. 兒童</h2>
+            <p>本網站不是面向兒童的服務，亦不刻意收集兒童個人資料。如你認為兒童資料被不當提交，請聯絡網站維護者。</p>
+
+            <h2>12. 政策更新與聯絡</h2>
+            <p>我們可能不時更新本政策，以反映功能、資料處理、供應商或法律要求的變更。重大更新會以本頁最後更新日期反映。私隱、查閱、更正或資料刪除查詢，可透過首頁底部的 <a href="https://forms.gle/1YFfSmraLp27YneU9" target="_blank" rel="noopener">反饋表格</a> 聯絡網站維護者。</p>
           `,
         },
         en: {
-          pageTitle: "Privacy Policy | PVRM",
+          pageTitle: "Privacy Policy | Plate.hk",
           title: "Privacy Policy",
           back: "← Back to Home",
-          updated: "Last updated: 28 Feb 2026",
+          updated: "Last updated: 12 May 2026",
           html: `
-            <p>This site handles personal data with reference to Hong Kong's Personal Data (Privacy) Ordinance (Cap. 486) and applies a data minimisation approach appropriate to this service.</p>
-            <p>No user account is required. The site does not intentionally collect direct identifiers such as name, HKID number, or contact details. Plate search is processed in-browser and this site does not build individual user profiles.</p>
-            <p>For consistent search behavior, plate queries are normalized in-browser (for example uppercase conversion, extra-space removal, and I/O to 1/0 mapping). This is used only for real-time matching and does not create personally identifiable user profiles.</p>
-            <p>The audit page and public API only include publicly released Transport Department auction data and PDF links, and do not include user personal data or local filesystem paths.</p>
-            <p>This site uses Google Analytics (gtag) for traffic and usage analytics. Technical data (for example IP address, browser/device information, and cookies) may be processed by Google outside Hong Kong. Please refer to Google's own privacy notice and terms.</p>
-            <p>Reasonable safeguards are applied to protect systems and data. Data is retained only as needed for site operation, analytics, and service improvement.</p>
-            <p>For data access or correction requests under Cap. 486 and related data protection principles, contact the site operator via the footer contact channel.</p>
+            <p class="note">Plate.hk handles data with reference to Hong Kong’s Personal Data (Privacy) Ordinance (Cap. 486) and the Data Protection Principles, using data minimisation, purpose limitation, and reasonable security as baseline practices. This policy explains how data is handled across the website, APIs, share posters, and camera search.</p>
+
+            <h2>1. Scope</h2>
+            <p>This policy applies to plate.hk, including search pages, mark detail pages, popular-plate pages, public APIs, audit pages, camera search, and share-poster features. It does not apply to third-party websites or services, such as the Transport Department, Google, Google Forms, browser vendors, device operating systems, or external links.</p>
+
+            <h2>2. Categories of Data We Handle</h2>
+            <p>Plate.hk does not require an account and does not ask for your name, HKID number, phone number, email address, or payment details to use search. Depending on how you use the site, we may handle the following categories of data:</p>
+            <ul>
+              <li><strong>Search and preference data:</strong> plate queries, selected dataset, sort order, issue filter, language, and page state. Some data is used only in the browser, while some may be written to URL parameters or local browser storage to preserve search state.</li>
+              <li><strong>Browser-local data:</strong> search history, recently used dataset, intro-panel state, service worker cache, static assets, and public-data cache may be stored on your device. You can clear this through browser settings.</li>
+              <li><strong>Technical and server data:</strong> when you load pages, use APIs, or fetch data files, hosting, CDN, or server systems may log IP address, time, request URL, HTTP status, user agent, referrer, and error information for operation, security, abuse prevention, and debugging.</li>
+              <li><strong>Analytics data:</strong> on plate.hk or www.plate.hk, the site may load Google Analytics to understand traffic, page usage, device/browser type, approximate geography, and interactions. If your browser sends a Do Not Track signal, the site code avoids loading Google Analytics.</li>
+              <li><strong>Camera OCR data:</strong> camera preview runs on your device. Only when you tap AI Scan does the site attempt to upload the cropped plate region inside the guide frame for server-side vision OCR, not the full camera frame.</li>
+              <li><strong>Feedback data:</strong> if you submit feedback through Google Forms or another external channel, that data is handled under the third-party service’s privacy policy and may be used by the site maintainer to reply, correct data, or improve the service.</li>
+            </ul>
+
+            <h2>3. Public Auction Data</h2>
+            <p>Marks, prices, auction dates, issues, categories, PDF links, and related records displayed on the site are primarily compiled from Transport Department and other public sources. This information is not collected from users for account purposes. Even where data is publicly available, Plate.hk avoids using it to build individual user profiles.</p>
+
+            <h2>4. Purposes of Use</h2>
+            <p>We use data for the following purposes, or directly related purposes:</p>
+            <ul>
+              <li>providing search, sorting, filtering, mark details, popular-plate pages, share posters, and public APIs;</li>
+              <li>remembering language, dataset, search state, or local search history to improve usability;</li>
+              <li>performing camera OCR, search matching, and query normalization;</li>
+              <li>monitoring availability, fixing bugs, improving data quality, and responding to feedback;</li>
+              <li>understanding aggregate traffic and feature usage, without intending to build personal identity profiles;</li>
+              <li>maintaining security, preventing abuse, investigating abnormal traffic, protecting APIs, and complying with legal obligations.</li>
+            </ul>
+
+            <h2>5. Cookies, Google Analytics, and Local Storage</h2>
+            <p>Google Analytics may use cookies or similar technologies to measure traffic and usage. Related data may be processed by Google outside Hong Kong. You can review the <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google Privacy Policy</a>, <a href="https://policies.google.com/technologies/cookies" target="_blank" rel="noopener">Google cookie information</a>, and <a href="https://support.google.com/analytics/answer/6004245" target="_blank" rel="noopener">Google Analytics privacy and data protection information</a>.</p>
+            <p>Separate from third-party analytics, the site may use localStorage, browser cache, and service worker cache to preserve the search experience and public data. This data is stored in your browser or device. You can manage it through browser settings, clearing site data, or private browsing mode.</p>
+
+            <h2>6. Camera Permission and Image Processing</h2>
+            <p>Camera permission is controlled by your browser and device. Plate.hk cannot start camera preview unless you grant permission and use the feature. The camera OCR feature is designed to upload only the cropped plate area for immediate recognition; avoid placing people, private objects, sensitive locations, or unrelated images inside the recognition frame.</p>
+            <p>OCR images and results may be processed transiently by servers, OCR/vision infrastructure, or security/abuse-prevention systems. Except where needed for debugging, security, abuse prevention, or legal reasons, we do not intend to use camera images to create long-term identifiable profiles.</p>
+
+            <h2>7. Sharing, Disclosure, and International Processing</h2>
+            <p>We do not sell personal data. To operate the site, data may be handled with or through hosting, CDN, Cloudflare/DreamHost or other infrastructure providers, Google Analytics, Google Forms, font services, OCR/vision providers, security tools, and debugging tools. These providers may process data outside Hong Kong and operate under their own terms and privacy policies.</p>
+            <p>We may also disclose necessary data where required by law, court order, regulatory request, security incident investigation, abuse prevention, or to protect the site and users.</p>
+
+            <h2>8. Retention and Deletion</h2>
+            <p>Browser-local data remains on your device until you clear site data, browser cache, or localStorage. Server, analytics, and security records are retained only as long as needed for operation, statistics, debugging, security, abuse prevention, or legal purposes, and are then deleted, overwritten, or aggregated. Google Analytics retention and deletion are also affected by Google and the analytics property settings.</p>
+
+            <h2>9. Security</h2>
+            <p>We apply reasonable technical and administrative safeguards, such as HTTPS, browser security headers, origin checks, rate limits, abuse-prevention checks, data minimisation, and limiting access to services or people that need the data. No internet service can be guaranteed absolutely secure.</p>
+
+            <h2>10. Your Rights and Choices</h2>
+            <p>Under Hong Kong’s Personal Data (Privacy) Ordinance, you may request access to or correction of personal data we hold about you where applicable. Because Plate.hk has no accounts and most search data stays in your browser, we may not have enough information to identify you or locate related server records. Please provide enough information for reasonable verification and handling.</p>
+            <p>You can also block cookies, clear site data, use private browsing, disable camera permission, avoid submitting feedback forms, or enable a Do Not Track signal through your browser.</p>
+
+            <h2>11. Children</h2>
+            <p>The site is not directed to children and does not knowingly collect children’s personal data. If you believe children’s data has been submitted inappropriately, contact the site maintainer.</p>
+
+            <h2>12. Updates and Contact</h2>
+            <p>We may update this policy to reflect changes in features, data handling, providers, or legal requirements. Material updates will be reflected by the last-updated date on this page. For privacy, access, correction, or deletion enquiries, contact the site maintainer through the <a href="https://forms.gle/1YFfSmraLp27YneU9" target="_blank" rel="noopener">feedback form</a> linked from the homepage footer.</p>
           `,
         },
       };

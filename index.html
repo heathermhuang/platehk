@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>香港車牌拍賣結果搜尋 | Plate.hk</title>
+    <title>香港車牌拍賣資料庫 | Plate.hk</title>
     <meta
       name="description"
       content="搜尋香港車牌拍賣結果（自訂車牌 PVRM、傳統車牌 TVRM 實體拍賣、拍牌易 E-Auction），可按車牌、成交價及拍賣日期查詢，並連結官方 PDF 來源。"
@@ -17,7 +17,7 @@
     <link rel="alternate" hreflang="x-default" href="https://plate.hk/" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Plate.hk" />
-    <meta property="og:title" content="香港車牌拍賣結果搜尋 | Plate.hk" />
+    <meta property="og:title" content="香港車牌拍賣資料庫 | Plate.hk" />
     <meta
       property="og:description"
       content="搜尋香港車牌拍賣結果（PVRM / TVRM / 拍牌易），支援按車牌、成交價、日期查詢並連結官方 PDF。"
@@ -26,15 +26,15 @@
     <meta property="og:locale" content="zh_HK" />
     <meta property="og:locale:alternate" content="en" />
     <meta property="og:image" content="https://plate.hk/assets/logo.svg" />
-    <meta property="og:image:alt" content="Plate.hk logo" />
+    <meta property="og:image:alt" content="HK Vehicle Registration Marks database logo" />
     <meta name="twitter:card" content="summary" />
-    <meta name="twitter:title" content="香港車牌拍賣結果搜尋 | Plate.hk" />
+    <meta name="twitter:title" content="香港車牌拍賣資料庫 | Plate.hk" />
     <meta
       name="twitter:description"
       content="搜尋香港車牌拍賣結果（PVRM / TVRM / 拍牌易），支援按車牌、成交價、日期查詢並連結官方 PDF。"
     />
     <meta name="twitter:image" content="https://plate.hk/assets/logo.svg" />
-    <meta name="twitter:image:alt" content="Plate.hk logo" />
+    <meta name="twitter:image:alt" content="HK Vehicle Registration Marks database logo" />
     <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg" />
     <link rel="dns-prefetch" href="//fonts.googleapis.com" />
     <link rel="dns-prefetch" href="//fonts.gstatic.com" />
@@ -43,7 +43,7 @@
         "@context": "https://schema.org",
         "@type": "WebSite",
         "name": "Plate.hk",
-        "alternateName": "香港車牌拍賣結果搜尋",
+        "alternateName": "香港車牌拍賣資料庫",
         "url": "https://plate.hk/",
         "inLanguage": ["zh-HK", "en"],
         "potentialAction": {
@@ -1939,19 +1939,25 @@
         }
       }
     </style>
+    <link rel="stylesheet" href="./assets/ledger.css?v=20260512-07" />
+
   </head>
   <body>
     <div class="wrap">
       <div class="topbar">
         <div class="brand">
-          <img class="brand-logo" id="brandLogo" src="./assets/logo.svg" alt="PLATE HK logo" />
+          <img class="brand-logo" id="brandLogo" src="./assets/logo.svg?v=20260512-08" alt="HK Vehicle Registration Marks database logo" />
           <div class="brand-titles">
             <h1 id="titleMain"></h1>
             <div class="dataset-subtitle" id="titleDataset"></div>
           </div>
         </div>
         <div class="top-actions">
-          <a class="camera-top-btn" id="cameraTopLink" href="./camera.html">📷</a>
+          <a class="camera-top-btn" id="cameraTopLink" href="./camera.html" aria-label="相機搜尋">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M8.2 6.2 9.7 4h4.6l1.5 2.2H19c1.1 0 2 .9 2 2V18c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2V8.2c0-1.1.9-2 2-2h3.2Zm3.8 11a4.1 4.1 0 1 0 0-8.2 4.1 4.1 0 0 0 0 8.2Zm0-1.8a2.3 2.3 0 1 1 0-4.6 2.3 2.3 0 0 1 0 4.6Z"/>
+            </svg>
+          </a>
           <div class="lang-toggle" role="group" aria-label="Language">
             <button id="langZh" type="button" aria-pressed="true">繁</button>
             <button id="langEn" type="button" aria-pressed="false">EN</button>
@@ -2059,7 +2065,7 @@
         </div>
       </div>
     </div>
-    <script src="./assets/index.config.js?v=20260405-01"></script>
+    <script src="./assets/index.config.js?v=20260512-02"></script>
     <script src="./assets/index.home.js?v=20260511-05"></script>
     <script src="./assets/index.offline-data.js?v=20260426-01"></script>
     <script src="./assets/index.data.js?v=20260321-02"></script>
@@ -2068,7 +2074,7 @@
     <script src="./assets/index.present.js?v=20260328-06"></script>
     <script src="./assets/vendor/qrcode-generator.js?v=20260503-01"></script>
     <script src="./assets/index.webmcp.js?v=20260418-01"></script>
-    <script src="./assets/index.share.js?v=20260503-01"></script>
-    <script src="./assets/index.js?v=20260405-01"></script>
+    <script src="./assets/index.share.js?v=20260512-08"></script>
+    <script src="./assets/index.js?v=20260512-08"></script>
   </body>
 </html>
