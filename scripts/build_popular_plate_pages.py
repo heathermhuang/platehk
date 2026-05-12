@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import html
 import json
-import shutil
 from collections import defaultdict
 from datetime import date
 from pathlib import Path
@@ -15,6 +14,7 @@ TODAY = date.today().isoformat()
 MAX_PAGES = 800
 INDEX_LINKS = 420
 TABLE_ROWS = 18
+LEDGER_CSS_VERSION = "20260512-09"
 
 DATASETS = {
     "pvrm": {
@@ -311,7 +311,7 @@ def render_page(entries_by_norm: dict[str, dict], entry: dict, related: list[dic
     <title>{html.escape(og_title)}</title>
     <meta name="description" content="{html.escape(desc)}" />
     <meta name="robots" content="index,follow,max-image-preview:large" />
-    <meta name="theme-color" content="#eaf1fb" />
+    <meta name="theme-color" content="#f4f1e8" />
     <link rel="canonical" href="{canonical}" />
     <meta property="og:type" content="article" />
     <meta property="og:title" content="{html.escape(og_title)}" />
@@ -325,38 +325,23 @@ def render_page(entries_by_norm: dict[str, dict], entry: dict, related: list[dic
     <meta name="twitter:image" content="https://plate.hk/assets/logo.svg" />
     <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg" />
     <script type="application/ld+json">{json.dumps(ld_json, ensure_ascii=False)}</script>
+    <link rel="stylesheet" href="../assets/ledger.css?v={LEDGER_CSS_VERSION}" />
     <style>
       :root {{
-        --bg:#eaf1fb; --panel:#f8fbffd6; --line:#d5e3f4; --ink:#0f1c2b; --muted:#5a6878; --accent:#1080c3;
+        --bg:#f4f1e8; --panel:#fffaf0; --line:#c9c0ad; --ink:#1d1b17; --muted:#5f594d; --accent:#3a5d4b;
       }}
       * {{ box-sizing:border-box; }}
-      body {{
-        margin:0; color:var(--ink); font-family:"Space Grotesk","Noto Sans HK",sans-serif;
-        background:
-          radial-gradient(circle at 12% 8%, #d6f3ff 0, transparent 30%),
-          radial-gradient(circle at 92% -4%, #d7f9ee 0, transparent 24%),
-          radial-gradient(circle at 82% 86%, #dde7ff 0, transparent 26%),
-          linear-gradient(180deg, #f4f9ff 0%, var(--bg) 100%);
-      }}
-      .wrap {{ max-width: 1040px; margin: 0 auto; padding: 28px 18px 56px; }}
-      .hero, .card {{
-        background: var(--panel);
-        border:1px solid var(--line);
-        border-radius:18px;
-        padding:18px;
-        box-shadow: inset 0 1px 0 #ffffffa6, 0 20px 46px rgba(11,39,75,.16);
-        backdrop-filter: blur(18px) saturate(150%);
-      }}
-      .hero h1 {{ margin: 10px 0 0; font-size: 34px; }}
-      .lede {{ color: var(--muted); line-height: 1.75; margin-top: 10px; font-size: 15px; }}
+      body {{ margin:0; color:var(--ink); font-family:"Space Grotesk","Noto Sans HK",sans-serif; }}
+      .wrap {{ max-width: 1080px; margin: 0 auto; padding: 28px 18px 56px; }}
+      .hero, .card {{ padding:18px; }}
+      .hero h1 {{ margin: 12px 0 0; font-size: clamp(28px, 4vw, 44px) !important; }}
+      .lede {{ color: var(--muted); line-height: 1.75; margin-top: 10px; font-size: 15px; max-width: 74ch; }}
       .plate {{
         display:inline-flex; align-items:center; justify-content:center; min-width: 220px; min-height: 82px;
-        border-radius: 16px; padding: 12px 20px; background: linear-gradient(180deg,#ffe56d,#f9c200);
-        border: 1px solid #d1a800; box-shadow: inset 0 2px 0 rgba(255,255,255,.55), 0 18px 36px rgba(0,0,0,.12);
-        font-size: 34px; font-weight: 900; letter-spacing: .08em; color:#171717;
+        padding: 12px 20px; font-size: 34px; font-weight: 900; color:#171717;
       }}
       .meta {{ display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap:12px; margin-top:16px; }}
-      .metric {{ background:#ffffffd9; border:1px solid var(--line); border-radius:16px; padding:14px; }}
+      .metric {{ background:var(--panel); border:1px solid var(--line); border-radius:4px; padding:14px; }}
       .metric .k {{ color:var(--muted); font-size:12px; text-transform:uppercase; font-weight:800; }}
       .metric .v {{ margin-top:6px; font-size:20px; font-weight:800; }}
       .grid {{ display:grid; grid-template-columns: 1.25fr .75fr; gap:14px; margin-top:14px; }}
@@ -365,17 +350,16 @@ def render_page(entries_by_norm: dict[str, dict], entry: dict, related: list[dic
       th, td {{ text-align:left; padding: 12px 10px; border-top:1px solid var(--line); vertical-align: top; }}
       td span {{ color:var(--muted); font-size:12px; }}
       .actions {{ display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }}
-      .btn, .pill {{ display:inline-flex; align-items:center; justify-content:center; text-decoration:none; border-radius:999px; }}
-      .btn {{ padding:11px 14px; font-weight:800; }}
-      .btn.primary {{ background:linear-gradient(135deg,#0c6ea8,#0f87b7); color:#fff; }}
-      .btn.ghost {{ background:#fff; color:var(--accent); border:1px solid #bfddf7; }}
+      .btn, .pill {{ display:inline-flex; align-items:center; justify-content:center; text-decoration:none; border-radius:4px !important; border:1px solid var(--line-strong) !important; }}
+      .btn {{ padding:11px 14px; font-weight:800; background:var(--surface) !important; color:var(--ink) !important; }}
+      .btn.primary {{ background:var(--accent) !important; color:var(--accent-ink) !important; border-color:var(--accent) !important; }}
       .pills {{ display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }}
-      .pill {{ padding:8px 11px; background:#fff; color:var(--accent); border:1px solid #bfddf7; }}
+      .pill {{ padding:8px 11px; background:var(--surface) !important; color:var(--accent) !important; }}
       .facts {{ margin-top:12px; padding-left: 20px; color: var(--muted); line-height: 1.7; }}
       .dataset-breakdown {{ display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }}
       .dataset-chip {{
-        display:flex; flex-direction:column; gap:4px; background:#ffffffd9; border:1px solid var(--line);
-        border-radius:14px; padding:10px 12px; min-width: 160px;
+        display:flex; flex-direction:column; gap:4px; background:var(--surface); border:1px solid var(--line);
+        border-radius:4px; padding:10px 12px; min-width: 160px;
       }}
       .dataset-chip span {{ color:var(--muted); font-size:12px; }}
       a {{ color:var(--accent); }}
@@ -384,7 +368,6 @@ def render_page(entries_by_norm: dict[str, dict], entry: dict, related: list[dic
         .plate {{ min-width: 0; width: 100%; font-size: 28px; }}
       }}
     </style>
-    <link rel="stylesheet" href="../assets/ledger.css?v=20260512-07" />
   </head>
   <body>
     <div class="wrap">
@@ -445,14 +428,13 @@ def render_page(entries_by_norm: dict[str, dict], entry: dict, related: list[dic
 
 
 def render_index(entries: list[dict]) -> str:
-    top_cards = "".join(
-        f"""
+    top_cards = "\n".join(
+        f"""\
         <a class="card" href="./{item['plate_norm']}.html">
           <div class="plate">{html.escape(item['plate_display'])}</div>
           <div class="price">{html.escape(money(item['top_row'].get('amount_hkd')))}</div>
           <div class="meta">{item['count']} records · {html.escape(classify_plate(item['plate_norm'])[1])}</div>
-        </a>
-        """
+        </a>"""
         for item in entries[:INDEX_LINKS]
     )
     return f"""<!doctype html>
@@ -470,23 +452,33 @@ def render_index(entries: list[dict]) -> str:
     <meta property="og:url" content="https://plate.hk/plates/index.html" />
     <meta property="og:image" content="https://plate.hk/assets/logo.svg" />
     <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg" />
+    <link rel="stylesheet" href="../assets/ledger.css?v={LEDGER_CSS_VERSION}" />
     <style>
-      :root {{ --bg:#eaf1fb; --panel:#f8fbffd6; --line:#d5e3f4; --ink:#0f1c2b; --muted:#5a6878; --accent:#1080c3; }}
+      :root {{ --bg:#f4f1e8; --panel:#fffaf0; --line:#c9c0ad; --ink:#1d1b17; --muted:#5f594d; --accent:#3a5d4b; }}
       * {{ box-sizing:border-box; }}
-      body {{ margin:0; color:var(--ink); font-family:"Space Grotesk","Noto Sans HK",sans-serif;
-        background: radial-gradient(circle at 12% 8%, #d6f3ff 0, transparent 30%), radial-gradient(circle at 92% -4%, #d7f9ee 0, transparent 24%), radial-gradient(circle at 82% 86%, #dde7ff 0, transparent 26%), linear-gradient(180deg, #f4f9ff 0%, var(--bg) 100%); }}
+      body {{ margin:0; color:var(--ink); font-family:"Space Grotesk","Noto Sans HK",sans-serif; }}
       .wrap {{ max-width: 1120px; margin:0 auto; padding:28px 18px 56px; }}
-      .hero {{ background: var(--panel); border:1px solid var(--line); border-radius:18px; padding:18px; box-shadow: inset 0 1px 0 #ffffffa6, 0 20px 46px rgba(11,39,75,.16); }}
-      .lede {{ color:var(--muted); line-height:1.75; margin-top:10px; }}
-      .grid {{ display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:12px; margin-top:14px; }}
-      .card {{ display:block; text-decoration:none; color:inherit; background:#ffffffd9; border:1px solid var(--line); border-radius:16px; padding:14px; box-shadow:0 12px 30px rgba(12,40,80,.08); }}
-      .plate {{ font-size:24px; font-weight:900; }}
-      .price {{ margin-top:8px; color:#102b43; font-weight:800; }}
-      .meta {{ margin-top:6px; color:var(--muted); font-size:13px; line-height:1.45; }}
-      @media (max-width: 900px) {{ .grid {{ grid-template-columns: repeat(2, minmax(0,1fr)); }} }}
+      .hero {{ padding:18px; }}
+      .hero h1 {{ margin:12px 0 0; font-size:clamp(24px, 3vw, 34px) !important; }}
+      .hero a {{ display:inline-flex; align-items:center; font-size:14px; }}
+      .lede {{ color:var(--muted); line-height:1.72; margin-top:12px; max-width:78ch; }}
+      .grid {{ display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap:10px; margin-top:14px; }}
+      .card {{
+        display:flex; min-height:112px; flex-direction:column; align-items:flex-start; gap:8px;
+        text-decoration:none; color:inherit; padding:12px;
+      }}
+      .card:hover {{ background:var(--surface-muted) !important; }}
+      .card .plate {{
+        display:inline-flex; width:auto; min-width:58px; max-width:100%; height:34px;
+        align-items:center; justify-content:center; padding:0 10px;
+        font-size:22px; line-height:1; overflow:hidden;
+      }}
+      .card .price {{ color:var(--ink); font-weight:800; font-size:14px; line-height:1.2; margin:0; }}
+      .card .meta {{ color:var(--muted); font-size:12px; line-height:1.4; margin:0; }}
+      @media (max-width: 980px) {{ .grid {{ grid-template-columns: repeat(3, minmax(0,1fr)); }} }}
+      @media (max-width: 760px) {{ .grid {{ grid-template-columns: repeat(2, minmax(0,1fr)); }} }}
       @media (max-width: 620px) {{ .grid {{ grid-template-columns: 1fr; }} }}
     </style>
-    <link rel="stylesheet" href="../assets/ledger.css?v=20260512-07" />
   </head>
   <body>
     <div class="wrap">
@@ -509,9 +501,11 @@ def build():
     entries = build_plate_data()
     entries_by_norm = {entry["plate_norm"]: entry for entry in entries}
 
-    if OUT.exists():
-        shutil.rmtree(OUT)
     OUT.mkdir(parents=True, exist_ok=True)
+    for old_page in OUT.glob("*.html"):
+        if " " in old_page.name:
+            continue
+        old_page.unlink()
 
     manifest = []
     for idx, entry in enumerate(entries):

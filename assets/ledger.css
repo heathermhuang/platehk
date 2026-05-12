@@ -376,6 +376,138 @@ tbody tr:hover td {
   background: var(--accent-soft) !important;
 }
 
+@media (min-width: 701px) {
+  #resultsTable {
+    min-width: 900px !important;
+    table-layout: fixed;
+  }
+
+  #resultsTable thead,
+  #resultsTable tbody {
+    display: block;
+  }
+
+  #resultsTable thead tr,
+  #resultsTable tbody tr {
+    display: grid;
+    grid-template-columns: 170px minmax(112px, 1fr) minmax(112px, 1fr) 160px minmax(150px, 0.82fr) 92px;
+    align-items: stretch;
+  }
+
+  .table-wrap.mode-dataset #resultsTable thead tr,
+  .table-wrap.mode-dataset #resultsTable tbody tr {
+    grid-template-columns: 170px minmax(112px, 1fr) minmax(112px, 1fr) 160px 92px;
+  }
+
+  .table-wrap.mode-issue #resultsTable thead tr,
+  .table-wrap.mode-issue #resultsTable tbody tr {
+    grid-template-columns: minmax(118px, 1fr) minmax(118px, 1fr) 158px 92px;
+  }
+
+  #resultsTable th,
+  #resultsTable td {
+    display: flex;
+    min-width: 0 !important;
+    width: auto !important;
+    align-items: center;
+    padding: 8px 10px !important;
+    line-height: 1.25;
+  }
+
+  #resultsTable th {
+    min-height: 40px;
+  }
+
+  #resultsTable td {
+    min-height: 54px;
+  }
+
+  #resultsTable .empty-row td {
+    display: block;
+    grid-column: 1 / -1;
+    min-height: 0;
+  }
+
+  #resultsTable td.col-single,
+  #resultsTable td.col-double {
+    justify-content: flex-start;
+  }
+
+  #resultsTable td.col-price,
+  #resultsTable th.col-price {
+    justify-content: flex-end;
+    text-align: right;
+  }
+
+  #resultsTable td.col-category {
+    justify-content: flex-start;
+  }
+
+  #resultsTable td.col-source,
+  #resultsTable th.col-source {
+    justify-content: flex-end;
+  }
+
+  #resultsTable .cell-stack {
+    gap: 2px;
+  }
+
+  #resultsTable td.col-date .cell-main {
+    font-size: 15px;
+    line-height: 1.2;
+    white-space: nowrap;
+  }
+
+  #resultsTable .plate {
+    width: auto !important;
+    min-width: 92px;
+    min-height: 34px;
+    padding: 4px 12px;
+    font-size: 14px;
+    line-height: 1;
+  }
+
+  #resultsTable .plate.double {
+    min-height: 38px;
+  }
+
+  #resultsTable .price-value,
+  #resultsTable .price.na {
+    font-size: 15px;
+    line-height: 1.1;
+  }
+
+  #resultsTable .category-pill {
+    padding: 4px 9px;
+    font-size: 12px;
+    line-height: 1.2;
+  }
+
+  #resultsTable .row-actions {
+    width: 100%;
+    gap: 6px;
+    justify-content: flex-end;
+  }
+
+  #resultsTable .icon-btn,
+  #resultsTable .row-share-btn {
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    min-height: 36px !important;
+  }
+
+  #resultsTable .action-icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  #resultsTable .action-icon-img {
+    width: 14px;
+    height: 14px;
+  }
+}
+
 td.col-date .cell-main,
 .date {
   color: var(--accent) !important;
