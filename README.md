@@ -11,6 +11,8 @@ Open-source search, audit, and publishing pipeline for Hong Kong vehicle registr
 
 Plate.hk turns Transport Department source documents into a searchable static website, a public JSON API, SEO landing pages, and Cloudflare-ready deployment artifacts. The repository covers personalized marks, traditional TVRM auctions, E-Auction records, historical legacy ranges, and camera-assisted lookup.
 
+The current public UI uses a flat Ledger visual system: compact auction-record tables, square Hong Kong plate branding, dense generated plate pages, and bilingual legal/policy pages designed to stay calm and source-first rather than decorative.
+
 ## Live project
 
 - Site: [https://plate.hk/](https://plate.hk/)
@@ -30,6 +32,7 @@ Plate.hk turns Transport Department source documents into a searchable static we
 - Verifiable source links back to official Transport Department documents
 - Static-first architecture with Cloudflare Worker APIs and prebuilt JSON shards
 - Built-in audit surface for source coverage, parse quality, and release confidence
+- Flat Ledger UI tuned for auction records, compact tables, generated plate pages, and share posters
 
 ## Product Preview
 
@@ -44,6 +47,7 @@ Plate.hk turns Transport Department source documents into a searchable static we
 - OAuth 2.0 client-credentials discovery for protected OCR access
 - OAuth Protected Resource Metadata for agent auth discovery
 - MCP Server Card plus a streamable HTTP `/mcp` transport for agent tool discovery
+- Bilingual Terms and Privacy pages that document analytics, OCR, APIs, share posters, local storage, and source verification boundaries
 - Build scripts for ingestion, normalization, validation, and release packaging
 
 ## Data Coverage
@@ -108,6 +112,16 @@ The current production shape is:
 - SEO pages under `plates/` expose popular plate result pages to search engines
 
 The repository also keeps legacy PHP and shared-host tooling where needed for compatibility, migration, and admin-side workflows.
+
+## Frontend and Design System
+
+The production frontend is intentionally static-first and style-light:
+
+- `assets/ledger.css` carries the current flat Ledger visual layer across the homepage, policy pages, camera page, API/audit pages, and generated plate pages
+- `assets/logo.svg` and `assets/favicon.svg` use a square Hong Kong-style plate mark with centered `HONG / KONG` text
+- Search result rows are tuned as dense auction ledger records on desktop and readable cards on mobile
+- `assets/index.share.js` generates branded share posters in-browser from the current row data
+- `scripts/build_popular_plate_pages.py` regenerates the `plates/` SEO pages with the same Ledger styling
 
 ```mermaid
 flowchart LR
