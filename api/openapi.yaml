@@ -123,7 +123,9 @@ paths:
     post:
       summary: OCR a cropped Hong Kong plate image
       description: |
-        Protected OCR endpoint.
+        Protected OCR endpoint for Hong Kong vehicle registration marks.
+        If Macau or Mainland China plates are visible, the endpoint ignores them
+        and returns an empty `plate` with `ignored_plate_type`.
         Browser clients can continue using the same-origin `vision_session` flow, while machine clients can send a bearer token with the `vision:ocr` scope.
       security:
         - BearerToken: []
@@ -147,6 +149,32 @@ paths:
       responses:
         "200":
           description: OCR result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  plate:
+                    type: string
+                    description: Normalized Hong Kong registration mark, or empty when no HK plate was detected.
+                  raw_text:
+                    type: string
+                  confidence:
+                    type: number
+                    minimum: 0
+                    maximum: 1
+                  note:
+                    type: string
+                  model:
+                    type: string
+                  plate_type:
+                    type: string
+                    enum: [hong_kong, macau, mainland_china, not_hk, unknown]
+                  is_hong_kong_plate:
+                    type: boolean
+                  ignored_plate_type:
+                    type: string
+                    enum: [macau, mainland_china, not_hk]
         "403":
           description: Missing or invalid authorization
 components:

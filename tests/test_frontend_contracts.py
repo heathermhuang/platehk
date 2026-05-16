@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import re
 import unittest
 from pathlib import Path
@@ -68,8 +69,12 @@ class FrontendContractsTests(unittest.TestCase):
     def test_plate_normalization_ignores_q_in_main_and_worker(self) -> None:
         index_js = (ROOT / "assets" / "index.js").read_text(encoding="utf-8")
         worker = (ROOT / "assets" / "search.worker.js").read_text(encoding="utf-8")
+        camera_js = (ROOT / "assets" / "camera.js").read_text(encoding="utf-8")
         self.assertIn('.replace(/Q/g, "")', index_js)
         self.assertIn(".replace(/Q/g, '')", worker)
+        self.assertIn('.replace(/I/g, "1")', camera_js)
+        self.assertIn('.replace(/O/g, "0")', camera_js)
+        self.assertIn('.replace(/Q/g, "")', camera_js)
 
     def test_logo_wordmark_uses_plate_hk(self) -> None:
         logo = (ROOT / "assets" / "logo.svg").read_text(encoding="utf-8")
@@ -84,8 +89,10 @@ class FrontendContractsTests(unittest.TestCase):
         self.assertIn('id="startBtn"', camera)
         self.assertIn('id="aiScanBtn"', camera)
         self.assertIn('id="candidateList"', camera)
+        self.assertIn('id="brandHomeLink"', camera)
         self.assertIn('./assets/camera.js', camera)
         self.assertIn("./api/vision_plate.php", camera_js)
+        self.assertIn("brandHomeLinkEl.href", camera_js)
         self.assertIn('id="cameraTopLink"', index)
 
     def test_app_pages_use_external_scripts(self) -> None:
@@ -112,6 +119,23 @@ class FrontendContractsTests(unittest.TestCase):
             for script_path in script_paths:
                 self.assertIn(script_path, html, f"{html_name}: {script_path}")
 
+    def test_public_footers_link_to_github_repository(self) -> None:
+        repo_url = "https://github.com/heathermhuang/platehk"
+        for html_name in ["index.html", "landing.html", "camera.html"]:
+            html = (ROOT / html_name).read_text(encoding="utf-8")
+            self.assertIn(repo_url, html, html_name)
+            self.assertIn('target="_blank"', html, html_name)
+            self.assertIn('rel="noopener"', html, html_name)
+
+        index_config = (ROOT / "assets" / "index.config.js").read_text(encoding="utf-8")
+        index_js = (ROOT / "assets" / "index.js").read_text(encoding="utf-8")
+        landing_js = (ROOT / "assets" / "landing.js").read_text(encoding="utf-8")
+        camera_js = (ROOT / "assets" / "camera.js").read_text(encoding="utf-8")
+        self.assertIn("githubUrl", index_config)
+        self.assertIn("githubLinkEl.href", index_js)
+        self.assertIn('q("github").href', landing_js)
+        self.assertIn("githubEl.href", camera_js)
+
     def test_index_config_does_not_redeclare_global_i18n_symbols(self) -> None:
         index_config = (ROOT / "assets" / "index.config.js").read_text(encoding="utf-8")
         index_js = (ROOT / "assets" / "index.js").read_text(encoding="utf-8")
@@ -134,6 +158,58 @@ class FrontendContractsTests(unittest.TestCase):
         self.assertIn("require_vision_session_token", endpoint)
         self.assertIn("issue_vision_session_token()", token_endpoint)
         self.assertIn("enforce_same_origin_request()", token_endpoint)
+        self.assertIn("Hong Kong registration marks do not use the letters I, O, or Q", endpoint)
+        self.assertIn("香港車牌不使用英文字母 I、O、Q", endpoint)
+
+    def test_camera_vision_ignores_non_hong_kong_plate_formats(self) -> None:
+        camera_js = (ROOT / "assets" / "camera.js").read_text(encoding="utf-8")
+        endpoint = (ROOT / "api" / "vision_plate.php").read_text(encoding="utf-8")
+        worker_api = (ROOT / "cloudflare-worker" / "src" / "api.mjs").read_text(encoding="utf-8")
+
+        for source in [endpoint, worker_api]:
+            self.assertIn("M-12-34", source)
+            self.assertIn("MA-12-34", source)
+            self.assertIn("粤Z1234港", source)
+            self.assertIn("plate_type", source)
+            self.assertIn("is_hong_kong_plate", source)
+            self.assertIn("ignored_plate_type", source)
+
+        self.assertIn("ignoredPlateTypeFromPayload", camera_js)
+        self.assertIn("nonHongKongPlateIgnored", camera_js)
+        self.assertIn("modelPlate ? latestRawText : \"\"", camera_js)
+
+    def test_plate_search_preserves_hk_ioq_normalization_rule(self) -> None:
+        camera_js = (ROOT / "assets" / "camera.js").read_text(encoding="utf-8")
+        index_js = (ROOT / "assets" / "index.js").read_text(encoding="utf-8")
+        index_state_js = (ROOT / "assets" / "index.state.js").read_text(encoding="utf-8")
+        search_worker = (ROOT / "assets" / "search.worker.js").read_text(encoding="utf-8")
+        worker_lib = (ROOT / "cloudflare-worker" / "src" / "lib.mjs").read_text(encoding="utf-8")
+        api_lib = (ROOT / "api" / "lib.php").read_text(encoding="utf-8")
+        worker_api = (ROOT / "cloudflare-worker" / "src" / "api.mjs").read_text(encoding="utf-8")
+
+        for source in [index_js, index_state_js, search_worker, worker_lib, api_lib]:
+            self.assertRegex(source, re.compile(r'I["\']?,\s*["\']1|/I/g,\s*["\']1["\']|replaceAll\("I", "1"\)'))
+            self.assertRegex(source, re.compile(r'O["\']?,\s*["\']0|/O/g,\s*["\']0["\']|replaceAll\("O", "0"\)'))
+            self.assertRegex(source, re.compile(r'Q["\']?,\s*["\']["\']|/Q/g,\s*["\']["\']|replaceAll\("Q", ""\)'))
+
+        self.assertIn('.replace(/I/g, "1")', camera_js)
+        self.assertIn('.replace(/O/g, "0")', camera_js)
+        self.assertIn('.replace(/Q/g, "")', camera_js)
+        self.assertIn("IRIS LAM should normalize as 1R1SLAM", worker_api)
+        self.assertIn("IRIS LAM 時，plate 應正規化為 1R1SLAM", worker_api)
+
+    def test_cloudflare_deploy_checks_required_vision_secret(self) -> None:
+        package = json.loads((ROOT / "package.json").read_text(encoding="utf-8"))
+        wrangler = json.loads((ROOT / "wrangler.jsonc").read_text(encoding="utf-8"))
+        script = (ROOT / "scripts" / "check_cloudflare_worker_secrets.mjs").read_text(encoding="utf-8")
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+
+        self.assertIn("cf:secrets:check", package["scripts"])
+        self.assertIn("cf:secrets:check", package["scripts"]["cf:deploy"])
+        self.assertIn("OPENAI_API_KEY", wrangler["secrets"]["required"])
+        self.assertIn("OPENAI_API_KEY", script)
+        self.assertIn("wrangler secret put OPENAI_API_KEY", script)
+        self.assertIn("wrangler secret put OPENAI_API_KEY", readme)
 
     def test_public_read_endpoints_are_rate_limited(self) -> None:
         for name in ["search.php", "results.php", "issues.php", "issue.php", "health.php"]:

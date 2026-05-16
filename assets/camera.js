@@ -8,7 +8,7 @@
           tips: [
             "把車牌放在中央框內，盡量保持水平、避免強反光與背景文字。",
             "系統會把 I→1、O→0，並自動忽略香港車牌不會使用的 Q。",
-            "點一下 AI 辨識會把框內車牌圖像送到伺服器端 vision 模型判讀，再回傳搜尋結果。"
+            "點一下 AI 辨識會把框內車牌圖像送到伺服器端 vision 模型判讀；如同時看到澳門或內地車牌，系統只會搜尋香港車牌。"
           ],
           m1k: "輸入方式",
           m1v: "手機相機",
@@ -17,7 +17,7 @@
           m3k: "搜尋資料源",
           m3v: "本站 API",
           m4k: "最佳情境",
-          m4v: "白天 / 正面 / 單牌",
+          m4v: "白天 / 正面 / 單一香港牌",
           privacyNote: "點擊 AI 辨識時，本站只會上傳白框內裁切後的車牌圖像供伺服器端 vision 模型判讀，不會上傳整個相機畫面。",
           guideLeft: "把車牌放進框內",
           guideRight: "對準後會自動 AI 辨識",
@@ -37,7 +37,7 @@
           detectedHintReady: "把車牌放進白框就會自動辨識，也可手動點 AI 辨識",
           detectedHintSingle: "可直接點候選或手動修正",
           detectedHintDetected: (q) => `目前穩定候選：${q}`,
-          manualPlaceholder: "手動輸入車牌，例如 HK88 或 L1BERTY",
+          manualPlaceholder: "手動輸入車牌，例如 HK88 或 1R1S LAM",
           manualSearch: "手動搜尋",
           ocrMetaIdle: "尚未送出 AI 辨識。",
           ocrMetaFmt: (text, confidence) => `OCR 原文：${text || "—"}；信心 ${confidence}%`,
@@ -64,10 +64,15 @@
           visionRateLimited: "辨識請求過於頻繁，請稍等片刻再試。",
           visionCooldownActive: (seconds) => `辨識過於頻繁，系統會在 ${seconds} 秒後再接受新請求。`,
           visionOriginDenied: "此辨識請求來源不被接受，請從本站重新打開相機頁。",
+          nonHongKongPlateIgnored: (label) => `偵測到${label}，已略過；請把香港車牌放進框內。`,
+          foreignPlateMacau: "澳門車牌",
+          foreignPlateMainland: "內地車牌",
+          foreignPlateGeneric: "非香港車牌",
           searchRateLimited: (seconds) => seconds ? `搜尋請求過於頻繁，請在 ${seconds} 秒後再試。` : "搜尋請求過於頻繁，請稍後再試。",
           backHome: "返回搜尋首頁",
           apiDoc: "API 文檔",
           changelog: "更新日誌",
+          github: "GitHub",
         },
         en: {
           title: "Camera Plate Search",
@@ -77,8 +82,8 @@
             "This first version is a mobile web prototype: camera preview, OCR, Hong Kong plate normalization, then a direct lookup against the {site} auction API. It is designed to validate the workflow before building a native app.",
           tips: [
             "Keep the plate inside the center frame, level, with limited glare and minimal background text.",
-            "The recognizer maps I→1, O→0, and drops Q because Hong Kong plates do not use it.",
-            "Tap AI Scan to send only the cropped plate region to the server-side vision model, then search the result."
+            "The recognizer maps I→1, O→0, and drops Q because Hong Kong plates do not use them.",
+            "Tap AI Scan to send only the cropped plate region to the server-side vision model. If Macau or Mainland China plates are also visible, only the Hong Kong plate is searched."
           ],
           m1k: "Input",
           m1v: "Phone camera",
@@ -87,7 +92,7 @@
           m3k: "Search source",
           m3v: "Site API",
           m4k: "Best case",
-          m4v: "Daylight / front view / single target",
+          m4v: "Daylight / front view / single HK plate",
           privacyNote: "When you tap AI Scan, only the cropped plate region inside the frame is uploaded for server-side vision OCR, not the full camera view.",
           guideLeft: "Place the plate inside the frame",
           guideRight: "Auto AI scan when aligned",
@@ -107,7 +112,7 @@
           detectedHintReady: "Place the plate inside the frame to auto-scan, or tap AI Scan manually",
           detectedHintSingle: "Tap a candidate or correct it manually",
           detectedHintDetected: (q) => `Current stable candidate: ${q}`,
-          manualPlaceholder: "Type a plate manually, e.g. HK88 or L1BERTY",
+          manualPlaceholder: "Type a plate manually, e.g. HK88 or 1R1S LAM",
           manualSearch: "Search manually",
           ocrMetaIdle: "No AI scan sent yet.",
           ocrMetaFmt: (text, confidence) => `OCR raw text: ${text || "—"}; confidence ${confidence}%`,
@@ -134,10 +139,15 @@
           visionRateLimited: "Too many AI scan requests. Please wait a moment and try again.",
           visionCooldownActive: (seconds) => `Too many scans. New AI requests will be accepted again in ${seconds} seconds.`,
           visionOriginDenied: "This scan request origin was rejected. Please reopen the camera page from this site.",
+          nonHongKongPlateIgnored: (label) => `${label} detected and ignored. Place the Hong Kong plate inside the frame.`,
+          foreignPlateMacau: "Macau plate",
+          foreignPlateMainland: "Mainland China plate",
+          foreignPlateGeneric: "Non-Hong Kong plate",
           searchRateLimited: (seconds) => seconds ? `Too many search requests. Please try again in ${seconds} seconds.` : "Too many search requests. Please try again shortly.",
           backHome: "Back to search home",
           apiDoc: "API Docs",
           changelog: "Changelog",
+          github: "GitHub",
         },
       };
 
@@ -193,8 +203,10 @@
       const cameraEmptyEl = document.getElementById("cameraEmpty");
       const canvasEl = document.getElementById("ocrCanvas");
       const backHomeEl = document.getElementById("backHome");
+      const brandHomeLinkEl = document.getElementById("brandHomeLink");
       const apiDocEl = document.getElementById("apiDoc");
       const changelogEl = document.getElementById("changelog");
+      const githubEl = document.getElementById("github");
       const langZhEl = document.getElementById("langZh");
       const langEnEl = document.getElementById("langEn");
 
@@ -228,6 +240,29 @@
           .replace(/O/g, "0")
           .replace(/Q/g, "")
           .trim();
+      }
+
+      function normalizeVisionPlateType(type) {
+        const value = String(type || "").toLowerCase().replace(/[\s-]+/g, "_");
+        if (value === "macau" || value === "macao") return "macau";
+        if (value === "mainland" || value === "mainland_china" || value === "china" || value === "prc") return "mainland_china";
+        if (value === "not_hk" || value === "non_hk" || value === "not_hong_kong" || value === "unknown") return "not_hk";
+        return "";
+      }
+
+      function ignoredPlateTypeFromPayload(payload) {
+        const ignored = normalizeVisionPlateType(payload?.ignored_plate_type || "");
+        if (ignored) return ignored;
+        const plateType = normalizeVisionPlateType(payload?.plate_type || "");
+        if (plateType && plateType !== "not_hk") return plateType;
+        if (payload?.is_hong_kong_plate === false) return "not_hk";
+        return "";
+      }
+
+      function ignoredPlateLabel(type) {
+        if (type === "macau") return t("foreignPlateMacau");
+        if (type === "mainland_china") return t("foreignPlateMainland");
+        return t("foreignPlateGeneric");
       }
 
       function datasetLabel(key) {
@@ -324,9 +359,12 @@
 
       function updateNavLinks() {
         openSearchLinkEl.href = `./index.html?lang=${currentLang}`;
+        brandHomeLinkEl.href = `./index.html?lang=${currentLang}`;
+        brandHomeLinkEl.setAttribute("aria-label", t("backHome"));
         backHomeEl.href = `./index.html?lang=${currentLang}`;
         apiDocEl.href = `./api.html?lang=${currentLang}`;
         changelogEl.href = `./changelog.html?lang=${currentLang}`;
+        githubEl.href = "https://github.com/heathermhuang/platehk";
       }
 
       function siteBrand() {
@@ -366,6 +404,7 @@
         backHomeEl.textContent = t("backHome");
         apiDocEl.textContent = t("apiDoc");
         changelogEl.textContent = t("changelog");
+        githubEl.textContent = t("github");
         updateNavLinks();
         renderCandidates(latestCandidates);
         updateLangButtons();
@@ -675,21 +714,37 @@
             }
             throw new Error(t("visionFailed"));
           }
+          const ignoredPlateType = ignoredPlateTypeFromPayload(payload);
           const modelPlate = normalizePlate(payload?.plate || "");
           latestRawText = normalizePlate(payload?.raw_text || modelPlate);
           latestConfidence = Math.round(Math.max(0, Math.min(100, Number(payload?.confidence || 0) * 100)));
           ocrMetaEl.textContent = t("ocrMetaFmt")(latestRawText, latestConfidence);
+          if (ignoredPlateType) {
+            const ignoredMessage = t("nonHongKongPlateIgnored")(ignoredPlateLabel(ignoredPlateType));
+            ocrMetaEl.textContent = latestRawText
+              ? `${ignoredMessage} ${t("ocrMetaFmt")(latestRawText, latestConfidence)}`
+              : ignoredMessage;
+            setDetectedPlate("--", ignoredMessage);
+            renderCandidates([]);
+            setStatus("warn", t("statusError"));
+            return;
+          }
           const primaryPlate =
-            latestRawText && latestRawText !== modelPlate && latestConfidence < 85
+            modelPlate && latestRawText && latestRawText !== modelPlate && latestConfidence < 85
               ? latestRawText
-              : (modelPlate || latestRawText);
+              : modelPlate;
           if (!primaryPlate) {
             setDetectedPlate("--", t("detectedHintIdle"));
             renderCandidates([]);
             setStatus("warn", t("statusError"));
             return;
           }
-          renderCandidates(Array.from(new Set([primaryPlate, modelPlate, latestRawText].filter(Boolean))));
+          const candidates = Array.from(new Set([
+            primaryPlate,
+            modelPlate,
+            modelPlate ? latestRawText : "",
+          ].filter(Boolean)));
+          renderCandidates(candidates);
           setDetectedPlate(primaryPlate, t("detectedHintDetected")(primaryPlate));
           setStatus("ok", t("statusDetected"));
           await searchPlate(primaryPlate);

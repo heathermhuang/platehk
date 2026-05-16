@@ -614,6 +614,55 @@ async function handleOauthToken(request, env) {
   }
 }
 
+const MAINLAND_PLATE_PROVINCE_CHARS = "京津沪滬渝冀豫云雲辽遼黑湘皖鲁魯新苏蘇浙赣贛鄂桂甘晋晉蒙陕陝吉闽閩贵貴粤粵青藏川宁寧琼瓊";
+
+function visionPlateTypeFromModel(value) {
+  const type = String(value || "").toLowerCase().trim().replace(/[\s-]+/g, "_");
+  if (type === "macau" || type === "macao") return "macau";
+  if (type === "mainland" || type === "mainland_china" || type === "china" || type === "prc") return "mainland_china";
+  if (type === "not_hk" || type === "non_hk" || type === "not_hong_kong" || type === "unknown") return "not_hk";
+  if (type === "hong_kong" || type === "hk") return "hong_kong";
+  return "";
+}
+
+function visionBooleanOrNull(value) {
+  if (typeof value === "boolean") return value;
+  const normalized = String(value ?? "").toLowerCase().trim();
+  if (normalized === "true" || normalized === "yes" || normalized === "1") return true;
+  if (normalized === "false" || normalized === "no" || normalized === "0") return false;
+  return null;
+}
+
+function visionContainsMainlandPlateSignal(value) {
+  const text = String(value || "").toUpperCase().replace(/[\s.\-·–—]+/gu, "");
+  const provinceRe = new RegExp(`[${MAINLAND_PLATE_PROVINCE_CHARS}][A-Z][A-Z0-9]{4,6}[港澳]?`, "u");
+  const suffixRe = /[港澳]$/u;
+  const provinceOnlyRe = new RegExp(`[${MAINLAND_PLATE_PROVINCE_CHARS}]`, "u");
+  return provinceRe.test(text) || (suffixRe.test(text) && provinceOnlyRe.test(text));
+}
+
+function visionContainsMacauPlateSignal(value) {
+  const text = String(value || "").toUpperCase();
+  if (/(?:^|[^A-Z0-9])M[A-Z]?\s*[-·–—]\s*\d{2}\s*[-·–—]\s*\d{2}(?:[^A-Z0-9]|$)/u.test(text)) return true;
+  const hasMacauContext = /MACAU|MACAO|澳門|澳门/u.test(text);
+  return hasMacauContext && /(?:^|[^A-Z0-9])M[A-Z]?\s*\d{4}(?:[^A-Z0-9]|$)/u.test(text);
+}
+
+function visionNonHongKongPlateType(plateText, rawText, note, modelType, isHongKongPlate) {
+  const type = visionPlateTypeFromModel(modelType);
+  if (type === "macau" || type === "mainland_china") return type;
+  const plateNorm = normalizeQuery(plateText);
+  const rawNorm = normalizeQuery(rawText);
+  if (visionContainsMainlandPlateSignal(plateText)) return "mainland_china";
+  if (visionContainsMacauPlateSignal(plateText)) return "macau";
+  const scanRawForForeign = !plateNorm || plateNorm === rawNorm || isHongKongPlate === false;
+  const rawContext = `${rawText || ""} ${note || ""}`;
+  if (scanRawForForeign && visionContainsMainlandPlateSignal(rawContext)) return "mainland_china";
+  if (scanRawForForeign && visionContainsMacauPlateSignal(rawContext)) return "macau";
+  if (isHongKongPlate === false) return "not_hk";
+  return "";
+}
+
 async function handleVisionPlate(request, env) {
   const methodErr = requireMethod(request, "POST");
   if (methodErr) return methodErr;
@@ -646,8 +695,8 @@ async function handleVisionPlate(request, env) {
   }
 
   const prompt = lang === "en"
-    ? "Read the Hong Kong vehicle registration mark from this cropped plate image. Return JSON only with keys: plate, confidence, raw_text, reasoning_note. Normalize by removing spaces, converting I to 1, O to 0, and dropping Q. If uncertain, still return your best guess and lower confidence."
-    : "讀取這張已裁切的香港車牌圖像，只回傳 JSON，鍵為 plate、confidence、raw_text、reasoning_note。正規化規則：移除空格，把 I 轉成 1，把 O 轉成 0，刪除 Q。如不完全確定，也請回傳最佳猜測並降低 confidence。";
+    ? "Read the Hong Kong vehicle registration mark from this cropped plate image. If multiple plates are visible, choose the Hong Kong plate only and ignore Macau plates such as M-12-34 or MA-12-34 and Mainland China plates such as 粤Z1234港, 粵Z1234澳, or province-character plates. Return JSON only with keys: plate, confidence, raw_text, reasoning_note, plate_type, is_hong_kong_plate. Hong Kong registration marks do not use the letters I, O, or Q. Normalize HK marks by removing spaces, converting I to 1, converting O to 0, and dropping Q. Example: visible text like IRIS LAM should normalize as 1R1SLAM. If no Hong Kong plate is visible, return an empty plate, confidence 0, plate_type macau/mainland_china/not_hk, and is_hong_kong_plate false."
+    : "讀取這張已裁切的香港車牌圖像；如同時出現多個車牌，只選香港車牌，並忽略澳門車牌（例如 M-12-34 或 MA-12-34）及內地車牌（例如 粤Z1234港、粵Z1234澳 或省份漢字開頭的車牌）。只回傳 JSON，鍵為 plate、confidence、raw_text、reasoning_note、plate_type、is_hong_kong_plate。香港車牌不使用英文字母 I、O、Q。香港車牌正規化規則：移除空格，把 I 轉成 1，把 O 轉成 0，刪除 Q。例如畫面像 IRIS LAM 時，plate 應正規化為 1R1SLAM。如畫面沒有香港車牌，plate 請回傳空字串、confidence 為 0、plate_type 為 macau/mainland_china/not_hk，並把 is_hong_kong_plate 設為 false。";
   const resp = await httpPostJson(env, `${baseUrl}/responses`, {
     model: visionModel,
     input: [{
@@ -657,7 +706,7 @@ async function handleVisionPlate(request, env) {
         { type: "input_image", image_url: imageDataUrl, detail: "high" },
       ],
     }],
-    max_output_tokens: 140,
+    max_output_tokens: 190,
   }, timeoutSeconds);
   if (resp.status < 200 || resp.status >= 300 || !resp.json) {
     console.error("[vision_plate] upstream_error", resp.status, String(resp.body).slice(0, 800));
@@ -685,16 +734,35 @@ async function handleVisionPlate(request, env) {
   } catch {
     return jsonResponse({ error: "vision_invalid_output" }, 502);
   }
-  const plate = normalizeQuery(parsed.plate || "");
-  const rawText = normalizeQuery(parsed.raw_text || plate);
+  const rawPlateText = String(parsed.plate || "");
+  const rawTextOriginal = String(parsed.raw_text || rawPlateText);
   const confidence = Math.max(0, Math.min(1, Number(parsed.confidence || 0)));
   const note = String(parsed.reasoning_note || "").slice(0, 160);
+  const plateType = visionPlateTypeFromModel(parsed.plate_type || "");
+  const isHongKongPlate = visionBooleanOrNull(parsed.is_hong_kong_plate);
+  const ignoredPlateType = visionNonHongKongPlateType(rawPlateText, rawTextOriginal, note, plateType, isHongKongPlate);
+  if (ignoredPlateType) {
+    return jsonResponse({
+      plate: "",
+      raw_text: normalizeQuery(rawTextOriginal),
+      confidence: 0,
+      note: note || ignoredPlateType,
+      model: visionModel,
+      plate_type: ignoredPlateType,
+      is_hong_kong_plate: false,
+      ignored_plate_type: ignoredPlateType,
+    });
+  }
+  const plate = normalizeQuery(rawPlateText);
+  const rawText = normalizeQuery(rawTextOriginal);
   return jsonResponse({
     plate,
     raw_text: rawText,
     confidence,
     note,
     model: visionModel,
+    plate_type: plateType || (plate ? "hong_kong" : "unknown"),
+    is_hong_kong_plate: Boolean(plate) && plateType !== "not_hk",
   });
 }
 
