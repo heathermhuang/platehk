@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 import random
-import shutil
 import subprocess
 import time
 import unittest
@@ -34,25 +33,6 @@ class WorkflowTests(unittest.TestCase):
             timeout=60,
         )
         self.assertIn("[all] Data integrity OK", proc.stdout)
-
-    @unittest.skipUnless(shutil.which("php"), "php executable is required for PHP workflow checks")
-    def test_php_issue_selector_supports_all_auction_keys(self) -> None:
-        proc = subprocess.run(
-            [
-                "php",
-                "-r",
-                "require 'api/lib.php'; echo json_encode(parse_issue_selector('all', 'pvrm::2026-03-28'));",
-            ],
-            cwd=ROOT,
-            check=True,
-            capture_output=True,
-            text=True,
-            timeout=10,
-        )
-        payload = json.loads(proc.stdout)
-        self.assertEqual(payload["dataset"], "pvrm")
-        self.assertEqual(payload["auction_date"], "2026-03-28")
-        self.assertEqual(payload["auction_key"], "pvrm::2026-03-28")
 
     def test_run_local_serves_root_without_db_health_dependency(self) -> None:
         port = random.randint(18080, 18999)

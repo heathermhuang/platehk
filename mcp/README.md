@@ -3,8 +3,8 @@
 目標：讓 AI 與第三方開發者以「工具」方式存取車牌拍賣資料，不需要下載全量 JSON。
 
 本 repo 提供兩種方式：
-1) **靜態 Open Data API**（見 `api/`）  
-2) **伺服器端搜尋 API（MySQL）**（見 `server/`，提供 `/api/search`）
+1) **靜態 Open Data API**（見 `api/v1/`）
+2) **Cloudflare Worker 搜尋 API**（提供 `/api/search`、`/api/issues`、`/api/issue`）
 
 現在 Worker 已提供一個最小可用的 HTTP MCP 端點：
 - `/mcp`
@@ -12,7 +12,7 @@
 - `/.well-known/mcp-server-card`
 
 MCP 服務設計仍建議保持薄薄的 proxy：
-- 優先呼叫伺服器端 `/api/search`（不需要掃描分片 JSON，延遲最低）
+- 優先呼叫 Worker `/api/search`（不需要掃描分片 JSON，延遲最低）
 - 若後端不可用，再 fallback 到 `/api/v1/...` 的分片資料
 
 ## Tools（建議）

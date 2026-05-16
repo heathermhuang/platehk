@@ -1,6 +1,6 @@
-# Open API (Static)
+# Open API
 
-這個專案本身是純靜態站，最穩定、最容易部署的方式是提供「靜態 Open Data API」：
+這個專案的公開資料以靜態 JSON 發布，動態搜尋與相機 OCR 由 Cloudflare Worker 提供：
 
 - `GET /api/v1/index.json`
 - `GET /api/v1/pvrm/issues.manifest.json`
@@ -23,7 +23,7 @@
 資料 schema 以 `api/openapi.yaml` 為準。
 
 ## 為什麼是靜態 API
-- 不需要資料庫、不需要伺服器
+- 公開資料不需要資料庫
 - CDN 友好，成本低
 - AI / 第三方開發者可以直接抓 JSON 分片（issue shards）
 
@@ -40,27 +40,3 @@ python3 scripts/build_public_api.py
 ```
 
 就會把現有 `data/` 內容複製到 `api/v1/`，確保外部使用者有穩定路徑。
-
-## Shared host（PHP + MySQL）搜尋 API
-若你使用 shared hosting，無法跑長駐後端（FastAPI/Node），可以在同一個網站底下部署 PHP API：
-- `/api/health`
-- `/api/search`
-- `/api/issues`
-- `/api/issue`
-
-程式碼在 `api/*.php`，並由 `api/.htaccess` 提供乾淨路徑。
-
-### 自動同步到 MySQL（推薦）
-上傳新的靜態資料（`api/v1/...`）後，可用 cron 跑 CLI 腳本自動 upsert 到 MySQL：
-
-```bash
-php /home/<user>/<site-root>/api/admin/sync.php
-```
-
-安全性：
-- `api/admin/` 已透過 `.htaccess` 禁止 web access
-- `sync.php` 只允許 CLI 執行（非 CLI 會返回 404）
-
-### 常見錯誤：#1071 key too long
-若匯入 `server/schema.sql` 時遇到 `#1071 - Specified key was too long`，原因通常是把超長 `pdf_url` 放在 UNIQUE KEY（utf8mb4 下會超過 InnoDB key 長度限制）。
-本 repo 最新 schema 已改用 `pdf_url_hash BINARY(20)` 參與唯一鍵，請重新匯入新版 schema。

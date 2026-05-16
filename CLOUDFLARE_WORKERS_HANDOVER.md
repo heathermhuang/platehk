@@ -1,15 +1,15 @@
 # Cloudflare Workers Handover for Claude Code
 
-This project now has a full Cloudflare Workers runtime for the public site on `pvrm.hk`:
+This project now has a full Cloudflare Workers runtime for the public site:
 - static frontend files are served from Workers Assets
-- `/api/*.php` compatibility routes are served by the Worker
+- `/api/*` dynamic routes are served by the Worker
 - public data is served from `api/v1/*` static assets
 - search/results/issues/issue are driven from static JSON and chunked dataset files
 - OCR remains server-side and calls OpenAI from the Worker
 - protected OCR now also has OAuth 2.0 discovery and token issuance for machine clients
 - worker now exposes a minimal streamable HTTP MCP endpoint at `/mcp`
 
-DreamHost is no longer required for the `pvrm.hk` runtime path.
+The old hosted runtime is no longer part of the repository.
 
 ## What is already prepared
 
@@ -60,6 +60,13 @@ Recommended:
 - `OAUTH_JWT_PRIVATE_JWK`
 - `OAUTH_JWKS_JSON`
 
+Set and verify the required camera OCR secret before deployment:
+
+```bash
+wrangler secret put OPENAI_API_KEY
+npm run cf:secrets:check
+```
+
 ## Commands
 
 Install:
@@ -86,13 +93,7 @@ Deploy:
 npm run cf:deploy
 ```
 
-## Route compatibility
-
-The Worker intentionally supports both:
-- `/api/search.php?...`
-- `/api/search?...`
-
-That preserves current frontend behavior without forcing a front-end rewrite during migration.
+`npm run cf:deploy` builds the public assets, verifies required Worker secrets, then deploys.
 
 ## Important follow-up work for Claude Code
 
@@ -108,7 +109,7 @@ That preserves current frontend behavior without forcing a front-end rewrite dur
    - `/api/vision_session`
    - `/api/vision_plate`
 3. Validate Service Worker behavior under the new host and asset origin.
-4. Update the frontend to prefer clean Worker routes after production parity is confirmed.
+4. Keep public API docs and OpenAPI examples aligned to the clean Worker routes.
 
 ## Risk notes
 
@@ -118,4 +119,3 @@ That preserves current frontend behavior without forcing a front-end rewrite dur
   - short-query throttling
   - cache behavior
   - OCR token/session enforcement
-- `plate.hk` cutover should keep a rollback plan until Worker parity is verified on `pvrm.hk`.

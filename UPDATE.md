@@ -50,33 +50,31 @@ python3 scripts/build_audit_report.py
 - `sw.js` 的 `CACHE_NAME`
 - `index.html` 的 `./sw.js?v=...`
 
-## 伺服器端搜尋（MySQL）
-若要在 shared host 上提供 MySQL + Search API（PHP）：
-1. 先用 `server/schema.sql` 建表（phpMyAdmin 匯入）
-2. 本機生成資料匯入檔：
-```bash
-python3 scripts/export_mysql_dump.py
-```
-會生成 `server/dump.sql`
-3. 用 phpMyAdmin 匯入 `server/dump.sql`
-4. 上傳 `api/` 目錄到站點（含 `api/.htaccess`、`api/*.php`、`api/config.php`）
-5. 前端會在使用者輸入搜尋時偵測 `/api/health`；可用則用 `/api/search`，不可用則 fallback 靜態分片掃描。
+## Cloudflare Worker 部署
+本專案目前只維護 Cloudflare Worker + Static Assets runtime。資料更新後：
 
-### 自動更新（建議）
-讓更新變成「只要上傳新 JSON，DB 自動同步」：
-1. 本機更新資料並生成靜態 API：
-```bash
-./scripts/run_offline_review.sh
-python3 scripts/build_public_api.py
-```
-2. 透過 SFTP 上傳更新內容到網站（至少包含 `api/v1/` 與 `data/`）
-3. 在 DreamHost Cron Jobs 新增一條（路徑按你的實際 web root 調整）：
-```bash
-php /home/<user>/<site-root>/api/admin/sync.php
-```
-它會讀取站上 `api/v1/*` 的分片 JSON，將新增期數 upsert 到 MySQL，不需要每次匯入整個 SQL dump。
+1. 重新生成網站與公開 API：
 
-### 常見錯誤：#1071 key too long
-若在匯入 `server/schema.sql` 時看到 `#1071 - Specified key was too long`：
-- 請使用本 repo 最新版 `server/schema.sql`（已改用 `pdf_url_hash BINARY(20)` 作為唯一鍵的一部分，避免 utf8mb4 索引長度限制）
-- 若你已建立了失敗的 `vrm_result` 表，先在 phpMyAdmin 刪除該表再重新匯入 schema
+```bash
+./scripts/build_site.sh
+```
+
+2. 建立 Cloudflare 靜態資產輸出：
+
+```bash
+npm run build:cloudflare:assets
+```
+
+3. 確認必要 Worker secret 已設定，然後部署：
+
+```bash
+npm run cf:secrets:check
+npm run cf:deploy
+```
+
+4. 部署後驗證：
+- `/api/search?dataset=all&q=88&page=1&page_size=5&sort=amount_desc`
+- `/api/issues?dataset=all`
+- `/api/vision_session`
+- `/api/vision_plate` 的 POST-only / token / rate-limit 行為
+- 首頁搜尋、期數深連結、相機頁與 `audit.html`

@@ -10,7 +10,6 @@ ROOT = Path(__file__).resolve().parents[1]
 
 TEXT_EXTENSIONS = {
     ".py",
-    ".php",
     ".js",
     ".html",
     ".css",
@@ -25,18 +24,20 @@ TEXT_EXTENSIONS = {
     ".toml",
 }
 
+FINDER_DUPLICATE_RE = re.compile(r" \d+(?:\.[^.]+)?$")
+
 PATTERNS = [
     ("openai_api_key", re.compile(r"\bsk-(?:proj-)?[A-Za-z0-9_-]{20,}\b")),
     ("aws_access_key_id", re.compile(r"\bAKIA[0-9A-Z]{16}\b")),
     ("private_key", re.compile(r"-----BEGIN (?:RSA|DSA|EC|OPENSSH|PGP) PRIVATE KEY-----")),
+    ("local_user_path", re.compile(r"\b(?:file://)?/Users/[A-Za-z0-9._-]+(?:/|\b)")),
 ]
 
 ALLOW_SUBSTRINGS = {
     "OPENAI_API_KEY_HERE",
     "CHANGE_ME",
-    "example_database",
-    "example_user",
-    "db.example.com",
+    "/Users/<name>",
+    "/Users/...",
 }
 
 
@@ -55,6 +56,10 @@ def tracked_files() -> list[Path]:
         if rel.parts[:1] in {(".github",), (".git",), (".venv",), (".tmp",)}:
             continue
         if "data" in rel.parts or "plates" in rel.parts or "assets/vendor" in rel.as_posix():
+            continue
+        if any(FINDER_DUPLICATE_RE.search(part) for part in rel.parts):
+            continue
+        if rel.parts[:2] == ("api", "v1"):
             continue
         if rel.suffix.lower() not in TEXT_EXTENSIONS:
             continue

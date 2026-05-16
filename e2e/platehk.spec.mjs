@@ -116,7 +116,7 @@ test.describe("Plate.hk public API", () => {
     });
     expect(oversizedPage.status()).toBe(400);
 
-    const visionGet = await request.get("/api/vision_plate.php");
+    const visionGet = await request.get("/api/vision_plate");
     expect([400, 405]).toContain(visionGet.status());
   });
 });

@@ -26,14 +26,7 @@ if [[ "$FAST" -eq 1 ]]; then
     scripts/build_tvrm_dataset.py \
     scripts/build_tvrm_legacy_dataset.py \
     scripts/verify_data_integrity.py \
-    scripts/build_audit_report.py \
-    scripts/export_mysql_dump.py
-  if command -v php >/dev/null 2>&1; then
-    php -l api/lib.php >/dev/null
-    php -l api/admin/sync.php >/dev/null
-  else
-    echo "Skipping PHP syntax checks: php executable not found."
-  fi
+    scripts/build_audit_report.py
   bash -n scripts/run_local.sh
   bash -n scripts/stop_local.sh
   bash -n scripts/build_site.sh
@@ -51,7 +44,7 @@ echo "Smoke package: $SMOKE_PATH"
 echo "[3/3] Release checklist"
 cat <<'EOF'
 - If data changed, run ./scripts/build_site.sh first.
-- Deploy data/, api/v1/, index.html, api.html, audit.html, sw.js, and assets/.
+- Deploy with `npm run cf:deploy` so Worker code and static assets ship together.
 - Hard refresh once after deploy to activate the new service worker cache.
 - Verify issue links, all-datasets search, and audit filters on the live site.
 EOF

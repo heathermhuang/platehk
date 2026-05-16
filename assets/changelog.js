@@ -40,7 +40,7 @@
               date: "2026-03-26",
               title: "Cloudflare Workers 全站運行打通",
               points: [
-                "Cloudflare Workers 臨時站已可直接提供前端與公開 API，不再依賴 DreamHost 的網站 runtime。",
+                "Cloudflare Workers runtime 已可直接提供前端與公開 API，移除舊 hosted runtime 依賴。",
                 "整理 Worker 靜態資料輸出與相容路由，讓搜尋、期數與歷史資料都能在新環境正常運作。",
                 "同步收掉殘留的舊回源設定，讓後續正式切換主域名更簡單。",
                 "海報 QR 改為站內生成，並再收斂一輪手機版搜尋與結果排版。"
@@ -219,9 +219,9 @@
                 "修復部分舊 PDF 的（n/a）欄位因亂碼導致被誤當成雙行內容的問題，避免污染雙行資料。",
                 "新增靜態開放 API（/api/v1/...），提供 issues 分片、manifest、每期 metadata 與 top1000，並提供 OpenAPI 描述檔。",
                 "新增 MCP 服務設計文件（tools 介面、快取與索引建議），方便 AI 與第三方程式存取。",
-                "新增 MySQL 伺服器端搜尋 API（/api/search，以 shared host 的 PHP 提供），並在前端偵測可用時優先使用，避免搜尋時載入大量分片 JSON。",
-                "新增 CLI 同步腳本（api/admin/sync.php）：上傳新靜態 JSON 後可由 DreamHost cron 自動 upsert 到 MySQL，免去手動匯入整包 SQL。",
-                "修復 MySQL schema 在 utf8mb4 下因 UNIQUE KEY 含超長 pdf_url 導致的 #1071 key too long（改用 pdf_url_hash）。",
+                "新增伺服器端搜尋 API（/api/search），避免搜尋時載入大量分片 JSON。",
+                "新增資料同步流程：上傳新靜態 JSON 後可更新伺服器端搜尋資料，免去手動重建整包資料。",
+                "修復伺服器端搜尋資料結構在長 source URL 下的唯一鍵限制問題。",
                 "資料審核頁不再輸出本機絕對路徑（例如 /Users/...），避免洩露個人資訊。 ",
                 "改善 audit 頁面在超長檔名下的排版，並修復中英文切換。"
               ]
@@ -387,7 +387,7 @@
               date: "2026-03-26",
               title: "Cloudflare Workers full-site runtime completed",
               points: [
-                "The Cloudflare Workers staging site can now serve both the frontend and the public API without relying on DreamHost at runtime.",
+                "The Cloudflare Workers runtime can now serve both the frontend and the public API without the old hosted runtime.",
                 "Cleaned up the Worker data path and compatibility routes so search, issue pages, and historical data all work in the new environment.",
                 "Removed the remaining fallback proxy configuration to make the future primary-domain cutover simpler."
               ]
@@ -556,9 +556,9 @@
                 "Fixed legacy PDF (n/a) cells being extracted as garbled text and incorrectly treated as double-line content.",
                 "Added a static public API under /api/v1/... (issue shards, manifests, metadata, presets) with an OpenAPI spec.",
                 "Added MCP service design document (tool surface + caching/indexing guidance) to make AI/third-party integration easier.",
-                "Added a MySQL-backed server-side search API (/api/search) implemented via PHP for shared hosting, plus frontend auto-detection via /api/health to avoid loading many shards during search.",
-                "Added a CLI sync script (api/admin/sync.php): after uploading new static JSON, DreamHost cron can upsert new issues into MySQL automatically (no full SQL re-import needed).",
-                "Fixed a MySQL utf8mb4 schema issue where a UNIQUE KEY with long pdf_url exceeded index length limits (#1071) by switching to pdf_url_hash.",
+                "Added a server-side search API (/api/search) to avoid loading many shards during search.",
+                "Added a data sync flow so new static JSON can update server-side search data without rebuilding a full data import.",
+                "Fixed a server-side search data structure issue around long source URLs in unique keys.",
                 "Removed absolute local filesystem paths (e.g. /Users/...) from the audit report to avoid leaking personal info.",
                 "Improved audit page layout for very long PDF filenames and fixed language switching."
               ]

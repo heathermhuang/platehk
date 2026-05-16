@@ -209,10 +209,7 @@ window.createPlateIndexDataFlow = function createPlateIndexDataFlow({
       return await staticApiJson(endpoint, params, signal);
     }
     const apiBase = (await resolveApiBase()) || "./api";
-    let resp = await fetch(`${apiBase}/${endpoint}.php?${params.toString()}`, { cache: "no-store", signal });
-    if (!resp.ok && apiBase === "./api") {
-      resp = await fetch(`./api/${endpoint}?${params.toString()}`, { cache: "no-store", signal });
-    }
+    const resp = await fetch(`${apiBase}/${endpoint}?${params.toString()}`, { cache: "no-store", signal });
     if (!resp.ok) {
       const retryAfter = Number(resp.headers.get("Retry-After") || 0) || 0;
       const contentType = String(resp.headers.get("Content-Type") || "").toLowerCase();

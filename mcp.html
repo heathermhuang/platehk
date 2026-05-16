@@ -91,8 +91,8 @@
 
             <h2>服務架構</h2>
             <ul>
-              <li>靜態 Open Data API（見 <code>api/</code>）</li>
-              <li>伺服器端搜尋 API（MySQL，提供 <code>/api/search</code>）</li>
+              <li>靜態 Open Data API（見 <code>api/v1/</code>）</li>
+              <li>Cloudflare Worker 搜尋 API（提供 <code>/api/search</code>）</li>
               <li>Worker 現已提供最小可用的 streamable HTTP MCP 端點：<code>/mcp</code></li>
               <li>MCP Server Card 會同時發布在 <code>/.well-known/mcp/server-card.json</code> 與 <code>/.well-known/mcp-server-card</code></li>
             </ul>
@@ -141,8 +141,8 @@
 
             <h2>Service Layout</h2>
             <ul>
-              <li>Static Open Data API (see <code>api/</code>)</li>
-              <li>Server-side search API (MySQL, exposes <code>/api/search</code>)</li>
+              <li>Static Open Data API (see <code>api/v1/</code>)</li>
+              <li>Cloudflare Worker search API (exposes <code>/api/search</code>)</li>
               <li>The Worker now exposes a minimal streamable HTTP MCP endpoint at <code>/mcp</code></li>
               <li>The MCP Server Card is published at both <code>/.well-known/mcp/server-card.json</code> and <code>/.well-known/mcp-server-card</code></li>
             </ul>

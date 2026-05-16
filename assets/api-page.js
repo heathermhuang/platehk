@@ -5,7 +5,7 @@
           back: "← 返回首頁",
           updated: "最後更新：2026年3月20日",
           html: `
-            <p>本專案提供靜態 Open Data API（適合純靜態部署與 CDN）。</p>
+            <p>本專案提供靜態 Open Data API，並以 Cloudflare Worker 提供搜尋與相機辨識端點。</p>
             <p><code>Base URL: https://plate.hk/api/v1</code></p>
             <div class="box">
               <div><code>GET https://plate.hk/api/v1/index.json</code></div>
@@ -20,7 +20,7 @@
 
             <p>另外，相機辨識頁會使用站內動態 API，把白框內裁切後的車牌圖像送到伺服器端 vision 模型判讀：</p>
             <div class="box">
-              <div><code>POST https://plate.hk/api/vision_plate.php</code></div>
+              <div><code>POST https://plate.hk/api/vision_plate</code></div>
               <div><code>{"image_data_url":"data:image/jpeg;base64,...","lang":"zh"}</code></div>
             </div>
             <p>此 endpoint 不屬於公開靜態 Open Data API；它依賴伺服器端 OpenAI key，且只回傳單次車牌辨識結果。</p>
@@ -36,7 +36,7 @@
 
             <h2>為什麼是靜態 API</h2>
             <ul>
-              <li>不需要資料庫、不需要伺服器</li>
+              <li>公開資料不需要資料庫</li>
               <li>CDN 友好、成本低</li>
               <li>AI / 第三方可直接抓 JSON 分片</li>
             </ul>
@@ -59,7 +59,7 @@
           back: "← Back to Home",
           updated: "Last updated: 20 Mar 2026",
           html: `
-            <p>This project ships a static Open Data API suitable for CDN/static hosting.</p>
+            <p>This project ships a static Open Data API, with Cloudflare Worker endpoints for search and camera recognition.</p>
             <p><code>Base URL: https://plate.hk/api/v1</code></p>
             <div class="box">
               <div><code>GET https://plate.hk/api/v1/index.json</code></div>
@@ -74,7 +74,7 @@
 
             <p>The camera search page also uses a dynamic server-side vision endpoint that receives only the cropped plate region inside the guide frame:</p>
             <div class="box">
-              <div><code>POST https://plate.hk/api/vision_plate.php</code></div>
+              <div><code>POST https://plate.hk/api/vision_plate</code></div>
               <div><code>{"image_data_url":"data:image/jpeg;base64,...","lang":"en"}</code></div>
             </div>
             <p>This endpoint is separate from the public static Open Data API. It requires a server-side OpenAI key and returns a single plate recognition result.</p>
@@ -90,7 +90,7 @@
 
             <h2>Why Static API</h2>
             <ul>
-              <li>No database, no server</li>
+              <li>No database is required for public data</li>
               <li>CDN-friendly and low cost</li>
               <li>AI/third parties can fetch shards directly</li>
             </ul>

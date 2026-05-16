@@ -485,31 +485,6 @@ async function handleResults(request, env, ctx) {
   });
 }
 
-function buildSearchBranch(datasetClause, issueClause, dedupeClause, matchCondition, rank) {
-  return `
-    SELECT
-      r.id,
-      r.dataset,
-      r.auction_date,
-      a.auction_date_label,
-      a.is_lny,
-      r.single_line,
-      r.double_top,
-      r.double_bottom,
-      r.amount_hkd,
-      r.pdf_url,
-      ${rank} AS match_rank
-    FROM vrm_result r
-    LEFT JOIN vrm_auction a
-      ON a.dataset = r.dataset
-     AND a.auction_date = r.auction_date
-    WHERE ${datasetClause}
-      ${issueClause}
-      AND ${matchCondition}
-      ${dedupeClause}
-  `;
-}
-
 async function handleSearch(request, env, ctx) {
   const methodErr = requireGetLike(request);
   if (methodErr) return methodErr;
@@ -768,7 +743,7 @@ async function handleVisionPlate(request, env) {
 
 export async function handleApiRequest(request, env, ctx) {
   const url = new URL(request.url);
-  const route = url.pathname.replace(/^\/api\//, "").replace(/\.php$/, "");
+  const route = url.pathname.replace(/^\/api\//, "");
   try {
     if (route.startsWith("v1/") || route === "openapi.yaml") return await env.ASSETS.fetch(request);
     if (route === "health") return await handleHealth(request, env, ctx);

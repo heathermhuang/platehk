@@ -2,13 +2,11 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-WITH_SQL=0
 
 for arg in "$@"; do
   case "$arg" in
-    --with-sql) WITH_SQL=1 ;;
     *)
-      echo "Usage: $0 [--with-sql]" >&2
+      echo "Usage: $0" >&2
       exit 1
       ;;
   esac
@@ -28,9 +26,5 @@ python3 scripts/build_popular_plate_pages.py
 python3 scripts/build_public_api.py
 python3 scripts/build_audit_report.py
 python3 scripts/verify_data_integrity.py
-
-if [[ "$WITH_SQL" -eq 1 ]]; then
-  python3 scripts/export_mysql_dump.py
-fi
 
 echo "Build completed."

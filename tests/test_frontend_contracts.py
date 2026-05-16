@@ -91,7 +91,7 @@ class FrontendContractsTests(unittest.TestCase):
         self.assertIn('id="candidateList"', camera)
         self.assertIn('id="brandHomeLink"', camera)
         self.assertIn('./assets/camera.js', camera)
-        self.assertIn("./api/vision_plate.php", camera_js)
+        self.assertIn("./api/vision_plate", camera_js)
         self.assertIn("brandHomeLinkEl.href", camera_js)
         self.assertIn('id="cameraTopLink"', index)
 
@@ -147,26 +147,25 @@ class FrontendContractsTests(unittest.TestCase):
         self.assertIn("window.PLATE_INDEX_CONFIG", index_js)
 
     def test_vision_api_endpoint_exists(self) -> None:
-        endpoint = (ROOT / "api" / "vision_plate.php").read_text(encoding="utf-8")
-        token_endpoint = (ROOT / "api" / "vision_session.php").read_text(encoding="utf-8")
-        self.assertIn("enforce_post_request()", endpoint)
-        self.assertIn("/responses", endpoint)
-        self.assertIn("input_image", endpoint)
-        self.assertIn("enforce_json_content_type()", endpoint)
-        self.assertIn("enforce_same_origin_request()", endpoint)
-        self.assertIn("enforce_rate_limit(", endpoint)
-        self.assertIn("require_vision_session_token", endpoint)
-        self.assertIn("issue_vision_session_token()", token_endpoint)
-        self.assertIn("enforce_same_origin_request()", token_endpoint)
-        self.assertIn("Hong Kong registration marks do not use the letters I, O, or Q", endpoint)
-        self.assertIn("香港車牌不使用英文字母 I、O、Q", endpoint)
+        worker_api = (ROOT / "cloudflare-worker" / "src" / "api.mjs").read_text(encoding="utf-8")
+        worker_lib = (ROOT / "cloudflare-worker" / "src" / "lib.mjs").read_text(encoding="utf-8")
+        self.assertIn("async function handleVisionPlate(", worker_api)
+        self.assertIn("/responses", worker_api)
+        self.assertIn("input_image", worker_api)
+        self.assertIn("requireJsonContentType(request)", worker_api)
+        self.assertIn("sameOriginError(request)", worker_api)
+        self.assertIn("requireVisionSessionToken(request, env", worker_api)
+        self.assertIn("async function handleVisionSession(", worker_api)
+        self.assertIn("issueVisionSessionToken(request, env)", worker_api)
+        self.assertIn("export async function issueVisionSessionToken(", worker_lib)
+        self.assertIn("Hong Kong registration marks do not use the letters I, O, or Q", worker_api)
+        self.assertIn("香港車牌不使用英文字母 I、O、Q", worker_api)
 
     def test_camera_vision_ignores_non_hong_kong_plate_formats(self) -> None:
         camera_js = (ROOT / "assets" / "camera.js").read_text(encoding="utf-8")
-        endpoint = (ROOT / "api" / "vision_plate.php").read_text(encoding="utf-8")
         worker_api = (ROOT / "cloudflare-worker" / "src" / "api.mjs").read_text(encoding="utf-8")
 
-        for source in [endpoint, worker_api]:
+        for source in [worker_api]:
             self.assertIn("M-12-34", source)
             self.assertIn("MA-12-34", source)
             self.assertIn("粤Z1234港", source)
@@ -184,10 +183,9 @@ class FrontendContractsTests(unittest.TestCase):
         index_state_js = (ROOT / "assets" / "index.state.js").read_text(encoding="utf-8")
         search_worker = (ROOT / "assets" / "search.worker.js").read_text(encoding="utf-8")
         worker_lib = (ROOT / "cloudflare-worker" / "src" / "lib.mjs").read_text(encoding="utf-8")
-        api_lib = (ROOT / "api" / "lib.php").read_text(encoding="utf-8")
         worker_api = (ROOT / "cloudflare-worker" / "src" / "api.mjs").read_text(encoding="utf-8")
 
-        for source in [index_js, index_state_js, search_worker, worker_lib, api_lib]:
+        for source in [index_js, index_state_js, search_worker, worker_lib]:
             self.assertRegex(source, re.compile(r'I["\']?,\s*["\']1|/I/g,\s*["\']1["\']|replaceAll\("I", "1"\)'))
             self.assertRegex(source, re.compile(r'O["\']?,\s*["\']0|/O/g,\s*["\']0["\']|replaceAll\("O", "0"\)'))
             self.assertRegex(source, re.compile(r'Q["\']?,\s*["\']["\']|/Q/g,\s*["\']["\']|replaceAll\("Q", ""\)'))
@@ -212,14 +210,16 @@ class FrontendContractsTests(unittest.TestCase):
         self.assertIn("wrangler secret put OPENAI_API_KEY", readme)
 
     def test_public_read_endpoints_are_rate_limited(self) -> None:
-        for name in ["search.php", "results.php", "issues.php", "issue.php", "health.php"]:
-            endpoint = (ROOT / "api" / name).read_text(encoding="utf-8")
-            self.assertIn("enforce_public_read_rate_limit(", endpoint, name)
-        search = (ROOT / "api" / "search.php").read_text(encoding="utf-8")
-        results = (ROOT / "api" / "results.php").read_text(encoding="utf-8")
-        self.assertIn("enforce_public_page_size('search', $page_size, 200)", search)
-        self.assertIn("enforce_public_search_window($dataset, $qn, $page, $page_size)", search)
-        self.assertIn("enforce_public_page_size('results', $page_size, 200)", results)
+        worker_api = (ROOT / "cloudflare-worker" / "src" / "api.mjs").read_text(encoding="utf-8")
+        worker_lib = (ROOT / "cloudflare-worker" / "src" / "lib.mjs").read_text(encoding="utf-8")
+        self.assertIn("enforcePublicReadRateLimit(request, `issues:${dataset}`", worker_api)
+        self.assertIn("enforcePublicReadRateLimit(request, `issue:${dataset}`", worker_api)
+        self.assertIn("enforcePublicReadRateLimit(request, `results:${dataset}`", worker_api)
+        self.assertIn("enforcePublicReadRateLimit(request, `search:${dataset}`", worker_api)
+        self.assertIn('enforcePageSize("search", pageSize, 200)', worker_api)
+        self.assertIn('enforcePageSize("results", pageSize, 200)', worker_api)
+        self.assertIn("enforceSearchWindow(dataset, query, page)", worker_api)
+        self.assertIn("export function enforcePublicReadRateLimit(", worker_lib)
 
     def test_frontend_maps_rate_limited_api_states_to_readable_messages(self) -> None:
         index_config = (ROOT / "assets" / "index.config.js").read_text(encoding="utf-8")
@@ -239,23 +239,21 @@ class FrontendContractsTests(unittest.TestCase):
         self.assertIn("ensureVisionSessionToken()", camera_js)
         self.assertIn("vision_token: visionToken", camera_js)
 
-    def test_config_example_uses_placeholders_not_live_secrets(self) -> None:
-        example = (ROOT / "api" / "config.local.php.example").read_text(encoding="utf-8")
-        self.assertIn("OPENAI_API_KEY_HERE", example)
-        self.assertIn("CHANGE_ME", example)
-        self.assertIn("db.example.com", example)
-        self.assertIn("example_database", example)
-        self.assertNotIn("sk-proj-", example)
+    def test_no_legacy_php_runtime_files_remain(self) -> None:
+        self.assertFalse(list((ROOT / "api").glob("*.php")))
+        self.assertFalse(list((ROOT / "api").glob("**/*.php")))
+        self.assertFalse((ROOT / ".htaccess").exists())
+        self.assertFalse((ROOT / "api" / ".htaccess").exists())
+        self.assertFalse((ROOT / "server").exists())
 
-    def test_htaccess_hardening_blocks_sensitive_files_and_unused_ocr_sources(self) -> None:
-        root_htaccess = (ROOT / ".htaccess").read_text(encoding="utf-8")
-        api_htaccess = (ROOT / "api" / ".htaccess").read_text(encoding="utf-8")
-        self.assertIn("config\\\\.local\\\\.php", root_htaccess)
-        self.assertIn("\\\\.env", root_htaccess)
-        self.assertIn("config\\\\.local", api_htaccess)
-        self.assertNotIn("api.qrserver.com", root_htaccess)
-        self.assertNotIn("cdn.jsdelivr.net", root_htaccess)
-        self.assertNotIn("tessdata.projectnaptha.com", root_htaccess)
+    def test_worker_hardening_blocks_sensitive_files_and_unused_ocr_sources(self) -> None:
+        worker = (ROOT / "cloudflare-worker" / "src" / "index.mjs").read_text(encoding="utf-8")
+        self.assertIn("securityHeadersForAsset(", worker)
+        self.assertIn("content-security-policy", worker)
+        self.assertIn("x-content-type-options", worker)
+        self.assertNotIn("api.qrserver.com", worker)
+        self.assertNotIn("cdn.jsdelivr.net", worker)
+        self.assertNotIn("tessdata.projectnaptha.com", worker)
 
     def test_share_poster_uses_local_qr_generator(self) -> None:
         html = (ROOT / "index.html").read_text(encoding="utf-8")
@@ -328,16 +326,16 @@ class FrontendContractsTests(unittest.TestCase):
         self.assertIn("OAUTH_JWT_PRIVATE_JWK", dev_vars)
         self.assertIn("OAUTH_JWKS_JSON", dev_vars)
 
-    def test_security_logging_and_ci_scaffolding_exist(self) -> None:
-        api_lib = (ROOT / "api" / "lib.php").read_text(encoding="utf-8")
+    def test_security_ci_and_worker_guardrails_exist(self) -> None:
+        worker_lib = (ROOT / "cloudflare-worker" / "src" / "lib.mjs").read_text(encoding="utf-8")
         workflow = (ROOT / ".github" / "workflows" / "security.yml").read_text(encoding="utf-8")
         check_security = (ROOT / "scripts" / "check_security.sh").read_text(encoding="utf-8")
         secrets_scan = (ROOT / "scripts" / "scan_repo_secrets.py").read_text(encoding="utf-8")
         summarize_security = (ROOT / "scripts" / "summarize_security_events.py").read_text(encoding="utf-8")
         gitignore = (ROOT / ".gitignore").read_text(encoding="utf-8")
-        self.assertIn("security_log_event(", api_lib)
-        self.assertIn("enforce_public_search_window(", api_lib)
-        self.assertIn("enforce_public_page_size(", api_lib)
+        self.assertIn("enforceSearchWindow(", worker_lib)
+        self.assertIn("enforcePageSize(", worker_lib)
+        self.assertIn("enforcePublicReadRateLimit(", worker_lib)
         self.assertIn("pip_audit", check_security)
         self.assertIn('"ls-files"', secrets_scan)
         self.assertIn("Top events:", summarize_security)

@@ -477,7 +477,7 @@
       async function ensureVisionSessionToken() {
         const now = Math.floor(Date.now() / 1000);
         if (visionSessionToken && visionSessionExpiresAt - now > 20) return visionSessionToken;
-        const resp = await fetch("./api/vision_session.php", {
+        const resp = await fetch("./api/vision_session", {
           method: "GET",
           cache: "no-store",
           credentials: "same-origin",
@@ -633,7 +633,7 @@
         try {
           setStatus("", t("statusSearching"));
           const mode = q.length >= 3 ? "&mode=exact_prefix" : "";
-          const resp = await fetch(`./api/search.php?dataset=all&q=${encodeURIComponent(q)}&page=1&page_size=5&sort=amount_desc${mode}`, {
+          const resp = await fetch(`./api/search?dataset=all&q=${encodeURIComponent(q)}&page=1&page_size=5&sort=amount_desc${mode}`, {
             cache: "no-store",
             signal: searchAbort.signal,
           });
@@ -681,7 +681,7 @@
           ocrMetaEl.textContent = visionSendingText();
           renderCandidates([]);
           const visionToken = await ensureVisionSessionToken();
-          const resp = await fetch("./api/vision_plate.php", {
+          const resp = await fetch("./api/vision_plate", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
