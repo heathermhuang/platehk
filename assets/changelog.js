@@ -3,8 +3,18 @@
           pageTitle: "更新日誌 | Plate.hk",
           title: "更新日誌",
           back: "← 返回首頁",
-          updated: "最後更新：2026年5月12日",
+          updated: "最後更新：2026年5月19日",
           items: [
+            {
+              date: "2026-05-19",
+              title: "同步 5 月最新拍賣資料",
+              points: [
+                "補上 PVRM 最新兩期官方結果：2026年5月2日及 2026年5月16日下午，並更新各期成交記錄與拍賣總額。",
+                "補上拍牌易最新一期官方結果：2026年5月14日至2026年5月18日，重建相關資料分片、跨資料集輸出與公開 API。",
+                "重新整理首頁拍賣日程，保留 2026年5月的 PVRM 申請窗口，並更新下一期拍牌易時段為 2026年5月28日中午至6月1日中午。",
+                "同步重建 audit、熱門查詢快取、搜尋索引與 SEO plate 頁面，讓站點與資料鏡像保持一致。"
+              ]
+            },
             {
               date: "2026-05-12",
               title: "Ledger 視覺系統與政策頁更新",
@@ -350,8 +360,18 @@
           pageTitle: "Changelog | Plate.hk",
           title: "Changelog",
           back: "← Back to Home",
-          updated: "Last updated: 12 May 2026",
+          updated: "Last updated: 19 May 2026",
           items: [
+            {
+              date: "2026-05-19",
+              title: "May auction data refresh",
+              points: [
+                "Added the latest official PVRM results for 2 May 2026 and the afternoon session of 16 May 2026, including issue pages and sale totals.",
+                "Added the latest official E-Auction result for 14-18 May 2026 and rebuilt the related dated issues, aggregate outputs, and public API payloads.",
+                "Refreshed the homepage auction calendar to keep the May 2026 PVRM application window and move the next E-Auction slot to 28 May noon through 1 June noon 2026.",
+                "Rebuilt the audit output, hot-search caches, search indexes, and generated plate pages so the site and data mirrors stay aligned."
+              ]
+            },
             {
               date: "2026-05-12",
               title: "Ledger visual system and policy refresh",
