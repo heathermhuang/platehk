@@ -3,8 +3,17 @@
           pageTitle: "更新日誌 | Plate.hk",
           title: "更新日誌",
           back: "← 返回首頁",
-          updated: "最後更新：2026年5月19日",
+          updated: "最後更新：2026年5月27日",
           items: [
+            {
+              date: "2026-05-27",
+              title: "同步 6 月拍賣日程",
+              points: [
+                "運輸署於 2026年5月26日更新主拍賣頁後，補上新一輪拍牌易時段：2026年6月11日中午至6月15日中午。",
+                "把即將舉行的傳統車牌實體拍賣加入日程：2026年6月13日。",
+                "修復 event feed 對多個即將舉行拍牌易 PDF 的中英文配對，避免中文連結被後一個檔案覆蓋。"
+              ]
+            },
             {
               date: "2026-05-19",
               title: "同步 5 月最新拍賣資料",
@@ -360,8 +369,17 @@
           pageTitle: "Changelog | Plate.hk",
           title: "Changelog",
           back: "← Back to Home",
-          updated: "Last updated: 19 May 2026",
+          updated: "Last updated: 27 May 2026",
           items: [
+            {
+              date: "2026-05-27",
+              title: "June auction calendar sync",
+              points: [
+                "After the Transport Department updated the main auction page on 26 May 2026, added the newly listed E-Auction window for 11 June noon through 15 June noon 2026.",
+                "Added the upcoming traditional physical auction scheduled for 13 June 2026 to the event feed.",
+                "Fixed event-feed matching for multiple upcoming E-Auction PDFs so the Chinese handout links no longer get overwritten by a later listing."
+              ]
+            },
             {
               date: "2026-05-19",
               title: "May auction data refresh",

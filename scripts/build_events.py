@@ -97,6 +97,16 @@ def parse_physical_session(text: str) -> Optional[tuple[datetime, datetime, str]
     return start, end, session
 
 
+def parse_physical_date(text: str) -> Optional[tuple[datetime, datetime]]:
+    m = re.search(r"\b(\d{1,2})\s+([A-Za-z]+)\s+(20\d{2})\b", text or "", re.IGNORECASE)
+    if not m:
+        return None
+    day, month_name, year = m.groups()
+    start = hk_datetime(int(year), month_number(month_name), int(day), 0)
+    end = hk_datetime(int(year), month_number(month_name), int(day), 23, 59, 59)
+    return start, end
+
+
 def zh_date(dt: datetime) -> str:
     return f"{dt.year}年{dt.month}月{dt.day}日"
 
@@ -109,6 +119,15 @@ def absolute_url(href: str) -> str:
     if (href or "").strip().lower().startswith("javascript:"):
         return ""
     return normalize_url(urljoin(BASE_URL, href or ""))
+
+
+def pdf_signature(href: str) -> str:
+    path = urlsplit(absolute_url(href)).path.rsplit("/", 1)[-1]
+    signature = unquote(path).lower()
+    signature = re.sub(r"\.(eng|chin|chi)(?=\.pdf$)", "", signature)
+    signature = re.sub(r"_(eng|chin|chi)(?=\.pdf$)", "", signature)
+    signature = re.sub(r"[ _]+", "", signature)
+    return signature
 
 
 def pvrm_recurring_window(now: datetime) -> tuple[datetime, datetime]:
@@ -212,8 +231,8 @@ def classify_coming_link(text: str, href: str) -> Optional[tuple[str, str]]:
     return None
 
 
-def scrape_coming_link_lookup(soup: BeautifulSoup) -> dict[tuple[str, str], dict[str, str]]:
-    out: dict[tuple[str, str], dict[str, str]] = {}
+def scrape_coming_link_records(soup: BeautifulSoup) -> list[dict[str, Any]]:
+    out: list[dict[str, Any]] = []
     for a in soup.find_all("a", href=True):
         text = normalize_space(a.get_text(" ", strip=True))
         href = a["href"].strip()
@@ -222,32 +241,60 @@ def scrape_coming_link_lookup(soup: BeautifulSoup) -> dict[tuple[str, str], dict
         classified = classify_coming_link(text, href)
         if not classified:
             continue
-        out[classified] = {"text": text, "url": absolute_url(href)}
+        kind, session_hint = classified
+        abs_url = absolute_url(href)
+        eauction_range = parse_eauction_noon_range(text) if kind == "tvrm_eauction" else None
+        session_parsed = parse_physical_session(text) if kind != "tvrm_eauction" else None
+        date_parsed = None
+        session = session_hint
+        start = None
+        end = None
+        if session_parsed:
+            start, end, session = session_parsed
+        else:
+            date_parsed = parse_physical_date(text) if kind != "tvrm_eauction" else None
+            if date_parsed:
+                start, end = date_parsed
+            elif eauction_range:
+                start, end = eauction_range
+        out.append(
+            {
+                "kind": kind,
+                "session": session,
+                "text": text,
+                "url": abs_url,
+                "signature": pdf_signature(href),
+                "start": start,
+                "end": end,
+            }
+        )
     return out
 
 
 def scrape_coming_auction_events(now: datetime, soup_en: BeautifulSoup, soup_zh: BeautifulSoup) -> list[dict[str, Any]]:
-    zh_lookup = scrape_coming_link_lookup(soup_zh)
+    zh_records = scrape_coming_link_records(soup_zh)
     events: list[dict[str, Any]] = []
 
-    for a in soup_en.find_all("a", href=True):
-        text = normalize_space(a.get_text(" ", strip=True))
-        href = a["href"].strip()
-        if not text or ".pdf" not in href.lower() or "content_4802" not in href.lower():
+    for record in scrape_coming_link_records(soup_en):
+        kind_from_link = record["kind"]
+        start = record["start"]
+        end = record["end"]
+        session = record["session"]
+        text = record["text"]
+        abs_url = record["url"]
+        if not start or not end:
             continue
-
-        abs_url = absolute_url(href)
-        classified = classify_coming_link(text, href)
-        if not classified:
-            continue
-        kind_from_link, session_from_link = classified
+        zh = next(
+            (
+                candidate
+                for candidate in zh_records
+                if candidate["kind"] == kind_from_link
+                and candidate["signature"] == record["signature"]
+            ),
+            None,
+        )
 
         if kind_from_link == "tvrm_eauction":
-            parsed = parse_eauction_noon_range(text)
-            if not parsed:
-                continue
-            start, end = parsed
-            zh = zh_lookup.get((kind_from_link, ""))
             events.append(
                 make_event(
                     kind="tvrm_eauction",
@@ -267,14 +314,6 @@ def scrape_coming_auction_events(now: datetime, soup_en: BeautifulSoup, soup_zh:
             )
             continue
 
-        parsed = parse_physical_session(text)
-        if not parsed:
-            continue
-        start, end, session = parsed
-        if kind_from_link not in {"pvrm_physical", "tvrm_physical"}:
-            continue
-
-        zh = zh_lookup.get((kind_from_link, session_from_link)) or zh_lookup.get((kind_from_link, session))
         session_zh = "上午" if session == "morning" else "下午"
         events.append(
             make_event(
@@ -287,9 +326,9 @@ def scrape_coming_auction_events(now: datetime, soup_en: BeautifulSoup, soup_zh:
                 source_url_en=abs_url,
                 source_url_zh=(zh or {}).get("url") or abs_url,
                 date_label_en=text,
-                date_label_zh=(zh or {}).get("text") or f"{zh_date(start)}{session_zh}",
+                date_label_zh=(zh or {}).get("text") or (f"{zh_date(start)}{session_zh}" if session else zh_date(start)),
                 suffix=session,
-                meta={"source": "td_coming_auction", "session": session},
+                meta={"source": "td_coming_auction", **({"session": session} if session else {})},
             )
         )
 

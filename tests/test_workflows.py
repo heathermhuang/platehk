@@ -23,6 +23,98 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn("python3 scripts/build_hot_search_cache.py", script)
         self.assertIn("python3 scripts/build_public_api.py", script)
 
+    def test_tvrm_scraper_recognizes_current_eauction_url_patterns(self) -> None:
+        import sys
+
+        sys.path.insert(0, str(ROOT / "scripts"))
+        import build_tvrm_dataset
+
+        cross_month = (
+            "https://www.td.gov.hk/filemanager/tc/content_4804/"
+            "E-Auction%20Result%20Handout%2030%20April-4%20May%20%202026.Chin.pdf"
+        )
+        underscore_suffix = (
+            "https://www.td.gov.hk/filemanager/sc/content_4804/"
+            "E-Auction%20Result%20Handout%2026-30%20March%202026_ch.pdf"
+        )
+
+        self.assertEqual(build_tvrm_dataset.classify_pdf_kind(cross_month, ""), "eauction")
+        self.assertEqual(build_tvrm_dataset.extract_date_from_href(cross_month), "2026-04-30")
+        self.assertEqual(build_tvrm_dataset.classify_pdf_kind(underscore_suffix, ""), "eauction")
+        self.assertEqual(build_tvrm_dataset.extract_date_from_href(underscore_suffix), "2026-03-26")
+        self.assertIsNone(
+            build_tvrm_dataset.classify_pdf_kind(
+                "https://www.td.gov.hk/filemanager/tc/content_4804/G%20Notes%20TVRM%20Auction_Rev%204%202025_chi.pdf",
+                "傳統車輛登記號碼拍賣重要事項須知",
+            )
+        )
+
+    def test_build_events_matches_multiple_eauction_windows_to_their_zh_links(self) -> None:
+        import sys
+
+        from bs4 import BeautifulSoup
+
+        sys.path.insert(0, str(ROOT / "scripts"))
+        import build_events
+
+        html_en = """
+        <ul>
+          <li><a href="/filemanager/en/content_4802/E-Auction%20Handout%20for%2028.5-1.6.2026.Eng.pdf">28 May noon to 1 June noon 2026</a></li>
+          <li><a href="/filemanager/en/content_4802/E-Auction%20Handout%20for%2011-15.6.2026.Eng.pdf">11 June noon to 15 June noon 2026</a></li>
+        </ul>
+        """
+        html_zh = """
+        <ul>
+          <li><a href="/filemanager/tc/content_4802/E-Auction%20Handout%20for%2028.5-1.6.2026.Chin.pdf">2026年5月28日中午至6月1日中午</a></li>
+          <li><a href="/filemanager/tc/content_4802/E-Auction%20Handout%20for%2011-15.6.2026.Chin.pdf">2026年6月11日中午至6月15日中午</a></li>
+        </ul>
+        """
+
+        events = build_events.scrape_coming_auction_events(
+            build_events.hk_datetime(2026, 5, 27),
+            BeautifulSoup(html_en, "html.parser"),
+            BeautifulSoup(html_zh, "html.parser"),
+        )
+
+        eauctions = [event for event in events if event["type"] == "tvrm_eauction"]
+        self.assertEqual(len(eauctions), 2)
+        self.assertEqual(eauctions[0]["date_label_zh"], "2026年5月28日中午至6月1日中午")
+        self.assertTrue(eauctions[0]["source_url_zh"].endswith("28.5-1.6.2026.Chin.pdf"))
+        self.assertEqual(eauctions[1]["date_label_zh"], "2026年6月11日中午至6月15日中午")
+        self.assertTrue(eauctions[1]["source_url_zh"].endswith("11-15.6.2026.Chin.pdf"))
+
+    def test_build_events_keeps_unsessioned_physical_auction_dates(self) -> None:
+        import sys
+
+        from bs4 import BeautifulSoup
+
+        sys.path.insert(0, str(ROOT / "scripts"))
+        import build_events
+
+        html_en = """
+        <ul>
+          <li><a href="/filemanager/en/content_4802/TVRM%20Auction%20Handout%20for%2013.6.2026.Eng.pdf">13 June 2026</a></li>
+        </ul>
+        """
+        html_zh = """
+        <ul>
+          <li><a href="/filemanager/tc/content_4802/TVRM%20Auction%20Handout%20for%2013.6.2026.Chin.pdf">2026年6月13日</a></li>
+        </ul>
+        """
+
+        events = build_events.scrape_coming_auction_events(
+            build_events.hk_datetime(2026, 5, 27),
+            BeautifulSoup(html_en, "html.parser"),
+            BeautifulSoup(html_zh, "html.parser"),
+        )
+
+        self.assertEqual(len(events), 1)
+        event = events[0]
+        self.assertEqual(event["type"], "tvrm_physical")
+        self.assertEqual(event["date_label_en"], "13 June 2026")
+        self.assertEqual(event["date_label_zh"], "2026年6月13日")
+        self.assertEqual(event["id"], "tvrm_physical-2026-06-13")
+
     def test_verify_data_integrity_checks_all_dataset(self) -> None:
         proc = subprocess.run(
             ["python3", "scripts/verify_data_integrity.py"],
