@@ -3,8 +3,17 @@
           pageTitle: "更新日誌 | Plate.hk",
           title: "更新日誌",
           back: "← 返回首頁",
-          updated: "最後更新：2026年6月10日",
+          updated: "最後更新：2026年6月11日",
           items: [
+            {
+              date: "2026-06-11",
+              title: "修正拍牌易重複成交記錄並重新發佈",
+              points: [
+                "核對運輸署官方結果頁後，最新結果仍為 PVRM / TVRM 實體 2026年5月16日，以及拍牌易 2026年5月28日至6月1日，沒有新增官方結果期數。",
+                "清理拍牌易資料中因中英文手冊同時入庫而重複的成交記錄，修正 2026年5月28日至6月1日等期數的筆數、總表統計與車牌摘要。",
+                "重新發佈目前已在倉庫內的 6 月下旬日程 feed，確保 production `data/events.json` 也包含 2026年6月25日至6月29日拍牌易與 2026年6月27日實體拍賣。"
+              ]
+            },
             {
               date: "2026-06-10",
               title: "同步 6 月下旬拍賣日程",
@@ -387,8 +396,17 @@
           pageTitle: "Changelog | Plate.hk",
           title: "Changelog",
           back: "← Back to Home",
-          updated: "Last updated: 27 May 2026",
+          updated: "Last updated: 11 June 2026",
           items: [
+            {
+              date: "2026-06-11",
+              title: "Deduped E-Auction rows and republished current feeds",
+              points: [
+                "After checking the Transport Department result pages, the latest official result issues are still 16 May 2026 for PVRM / physical TVRM and 28 May to 1 June 2026 for E-Auction, with no newer published result set yet.",
+                "Removed duplicated E-Auction sale rows that were being counted twice when both English and Chinese handouts existed for the same issue, correcting issue counts, aggregate totals, and plate summaries.",
+                "Republished the already-committed late-June event feed so production `data/events.json` also includes the 25-29 June 2026 E-Auction window and the 27 June 2026 physical auction."
+              ]
+            },
             {
               date: "2026-05-27",
               title: "June auction calendar sync",

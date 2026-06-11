@@ -13,6 +13,9 @@ fi
 
 cd "${ROOT_DIR}"
 
+RUNTIME="${PVRM_LOCAL_RUNTIME:-node}"
+WRANGLER_LOG_DIR="${HOME:-}/.wrangler/logs"
+
 if [[ ! -f ".tmp/cloudflare-public/index.html" \
    || ! -f ".tmp/cloudflare-public/api/v1/index.json" \
    || ! -f ".tmp/cloudflare-public/api/v1/all/issues.manifest.json" ]]; then
@@ -43,7 +46,16 @@ start_node_shim() {
   echo "${PID}" > "${PID_FILE}"
 }
 
-if [[ "${PVRM_LOCAL_RUNTIME:-auto}" == "node" ]]; then
+if [[ "${RUNTIME}" == "wrangler" ]] && ! mkdir -p "${WRANGLER_LOG_DIR}" >/dev/null 2>&1; then
+  echo "Wrangler log directory is not writable: ${WRANGLER_LOG_DIR}" >&2
+  exit 1
+fi
+
+if [[ "${RUNTIME}" == "auto" ]] && ! mkdir -p "${WRANGLER_LOG_DIR}" >/dev/null 2>&1; then
+  RUNTIME="node"
+fi
+
+if [[ "${RUNTIME}" == "node" ]]; then
   start_node_shim
 else
   start_wrangler
@@ -51,7 +63,7 @@ fi
 
 sleep 3
 
-if ! curl -sS "http://127.0.0.1:${PORT}/" >/dev/null 2>&1 && [[ "${PVRM_LOCAL_RUNTIME:-auto}" == "auto" ]]; then
+if ! curl --max-time 2 -sS "http://127.0.0.1:${PORT}/" >/dev/null 2>&1 && [[ "${RUNTIME}" == "auto" ]]; then
   if kill "${PID}" >/dev/null 2>&1; then
     wait "${PID}" 2>/dev/null || true
   fi
@@ -63,7 +75,7 @@ if ! curl -sS "http://127.0.0.1:${PORT}/" >/dev/null 2>&1 && [[ "${PVRM_LOCAL_RU
   sleep 1
 fi
 
-if curl -sS "http://127.0.0.1:${PORT}/" >/dev/null 2>&1; then
+if curl --max-time 2 -sS "http://127.0.0.1:${PORT}/" >/dev/null 2>&1; then
   echo "PVRM started: http://127.0.0.1:${PORT}"
   echo "PID: ${PID}  Log: ${LOG_FILE}"
 else

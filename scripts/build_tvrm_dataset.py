@@ -61,6 +61,25 @@ def normalize_url(url: str) -> str:
     return urlunsplit((parts.scheme, parts.netloc, path, query, parts.fragment))
 
 
+def classify_pdf_kind(abs_url: str, around_text: str) -> Optional[str]:
+    decoded_url = unquote(abs_url or "")
+    haystack = f"{around_text or ''} {decoded_url}"
+    if re.search(r"Notes|重要事項|須知|map|路線|指示圖", haystack, re.IGNORECASE):
+        return None
+
+    if re.search(r"E-Auction|網上|Online Vehicle Registration Marks|拍牌易", haystack, re.IGNORECASE):
+        return "eauction"
+    if re.search(r"E-Auction\s*Result\s*Handout|Online_Auction_Result_NSRM", decoded_url, re.IGNORECASE):
+        return "eauction"
+
+    if re.search(r"TVRMs?\s+Auction\s+Result\s+Handout|tvrm_auction_result_", decoded_url, re.IGNORECASE):
+        return "physical"
+    if re.search(r"實體車輛登記號碼拍賣結果|傳統車輛登記號碼拍賣結果|auction result", haystack, re.IGNORECASE):
+        return "physical"
+
+    return None
+
+
 def request_bytes(url: str) -> bytes:
     url = normalize_url(url)
     return subprocess.check_output(["curl", "-L", "-s", url], timeout=60)
@@ -184,19 +203,7 @@ def scrape_index_seed_pdfs() -> list[AuctionPdf]:
         parent_text = normalize_space(a.parent.get_text(" ", strip=True) if a.parent else "")
         around = f"{label} {parent_text}"
 
-        kind = None
-        if re.search(r"E-Auction|網上|Online Vehicle Registration Marks|拍牌易", around, re.IGNORECASE):
-            kind = "eauction"
-        # New index entries may have date-only anchor text; detect e-auction by filename pattern.
-        if re.search(r"E-Auction\s*Result\s*Handout|Online_Auction_Result_NSRM", abs_url, re.IGNORECASE):
-            kind = "eauction"
-        if re.search(r"實體|TVRM|傳統車輛登記號碼拍賣結果|auction result", around, re.IGNORECASE):
-            # The page contains both; when ambiguous, prefer physical if filename looks like tvrm_auction_result_...
-            if "tvrm_auction_result_" in abs_url.lower():
-                kind = "physical"
-            elif kind is None:
-                kind = "physical"
-
+        kind = classify_pdf_kind(abs_url, around)
         if kind is None:
             # Skip unrelated PDFs (notes, maps, etc.)
             continue
@@ -282,13 +289,25 @@ def discover_eauction_by_thursdays(start: date, end: date) -> list[AuctionPdf]:
         d2 = d + timedelta(days=4)  # Monday
         # Guard: keep most candidates within same month; if cross-month, still try both month names.
         candidates = []
+        suffixes = {
+            "tc": [".Chin.pdf", "_ch.pdf", "_chi.pdf"],
+            "sc": [".Chin.pdf", "_ch.pdf", "_chi.pdf"],
+            "en": [".Eng.pdf", "_en.pdf"],
+        }
+
+        def add_candidate(folder: str, filename: str) -> None:
+            candidates.append(f"{BASE_URL}/filemanager/{folder}/content_4804/{quote(filename)}")
+
         for month_name, year in {(MONTH_EN[d.month - 1], d.year), (MONTH_EN[d2.month - 1], d2.year)}:
-            candidates.append(
-                f"{BASE_URL}/filemanager/tc/content_4804/E-Auction%20Result%20Handout%20{d.day}-{d2.day}%20{month_name}%20{year}.Chin.pdf"
-            )
-            candidates.append(
-                f"{BASE_URL}/filemanager/en/content_4804/E-Auction%20Result%20Handout%20{d.day}-{d2.day}%20{month_name}%20{year}.Eng.pdf"
-            )
+            for folder, folder_suffixes in suffixes.items():
+                for suffix in folder_suffixes:
+                    add_candidate(folder, f"E-Auction Result Handout {d.day}-{d2.day} {month_name} {year}{suffix}")
+        if d.month != d2.month or d.year != d2.year:
+            for folder, folder_suffixes in suffixes.items():
+                for suffix in folder_suffixes:
+                    add_candidate(folder, f"E-Auction Result Handout {d.day} {MONTH_EN[d.month - 1]}-{d2.day} {MONTH_EN[d2.month - 1]} {d2.year}{suffix}")
+                    # TD has published at least one cross-month handout with a double space before the year.
+                    add_candidate(folder, f"E-Auction Result Handout {d.day} {MONTH_EN[d.month - 1]}-{d2.day} {MONTH_EN[d2.month - 1]}  {d2.year}{suffix}")
         for url in candidates:
             if request_head_ok(url):
                 # date_iso for e-auction is a range; store start date to key issue, and we'll refine label from PDF text.
@@ -539,6 +558,37 @@ def parse_eauction_pdf_rows(pdf_path: Path, source: AuctionPdf) -> tuple[list[di
     return list(uniq.values()), date_label
 
 
+def dedupe_issue_rows(rows: list[dict]) -> list[dict]:
+    """Drop duplicate rows for the same issue across bilingual/mirrored PDFs."""
+    uniq: dict[tuple[str, str, str, Optional[int]], dict] = {}
+    for row in rows:
+        key = (
+            str(row.get("auction_date") or ""),
+            str(row.get("single_line") or ""),
+            json.dumps(row.get("double_line"), ensure_ascii=False, separators=(",", ":")),
+            row.get("amount_hkd"),
+        )
+        existing = uniq.get(key)
+        if existing is None:
+            uniq[key] = row
+            continue
+
+        existing_url = str(existing.get("pdf_url") or "")
+        row_url = str(row.get("pdf_url") or "")
+        # Prefer Traditional Chinese URLs when the row is otherwise identical.
+        if "/tc/" in row_url and "/tc/" not in existing_url:
+            uniq[key] = row
+
+    return sorted(
+        uniq.values(),
+        key=lambda row: (
+            -(row["amount_hkd"] if row.get("amount_hkd") is not None else -1),
+            str(row.get("auction_date") or ""),
+            str(row.get("single_line") or ""),
+        ),
+    )
+
+
 def extract_start_date_from_zh_range(label: Optional[str]) -> Optional[str]:
     if not label:
         return None
@@ -699,7 +749,7 @@ def build_one(
 
     manifest_items = []
     for date_iso in issue_dates_desc:
-        rows = by_issue[date_iso]
+        rows = dedupe_issue_rows(by_issue[date_iso])
         (issues_dir / f"{date_iso}.json").write_text(
             json.dumps(rows, ensure_ascii=False, separators=(",", ":")), encoding="utf-8"
         )

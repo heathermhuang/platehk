@@ -4,6 +4,8 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
+export PYTHONPYCACHEPREFIX="${PYTHONPYCACHEPREFIX:-/tmp/pvrm-pyc}"
+
 FAST=0
 for arg in "$@"; do
   case "$arg" in
