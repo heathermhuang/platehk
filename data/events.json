@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-10T09:25:33+00:00",
+  "generated_at": "2026-06-12T08:59:44+00:00",
   "timezone": "Asia/Hong_Kong",
   "source_urls": [
     "https://www.td.gov.hk/en/public_services/vehicle_registration_mark/index.html",
@@ -53,7 +53,7 @@
       "source_page_url_en": "https://www.td.gov.hk/en/public_services/vehicle_registration_mark/index.html",
       "source_page_url_zh": "https://www.td.gov.hk/tc/public_services/vehicle_registration_mark/index.html",
       "source_url_en": "https://www.td.gov.hk/filemanager/en/content_4802/E-Auction%20Handout%20for%2025-29.6.2026.Eng.pdf",
-      "source_url_zh": "https://www.td.gov.hk/filemanager/tc/content_4802/E-Auction%20Handout%20for%2025-29.6.2026.Chin.pdf",
+      "source_url_zh": "https://www.td.gov.hk/filemanager/sc/content_4802/E-Auction%20Handout%20for%2025-29.6.2026.Chi.pdf",
       "action_url_en": "https://e-auction.td.gov.hk/en",
       "action_url_zh": "https://e-auction.td.gov.hk/tc",
       "source_text_en": "25 June noon to 29 June noon 2026",

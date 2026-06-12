@@ -3,8 +3,17 @@
           pageTitle: "更新日誌 | Plate.hk",
           title: "更新日誌",
           back: "← 返回首頁",
-          updated: "最後更新：2026年6月11日",
+          updated: "最後更新：2026年6月12日",
           items: [
+            {
+              date: "2026-06-12",
+              title: "重新發佈日程 feed 以修正 production 漂移",
+              points: [
+                "再次核對運輸署官方來源後，最新結果仍為 PVRM / TVRM 實體 2026年5月16日，以及拍牌易 2026年5月28日至6月1日，沒有新增官方結果期數。",
+                "TVRM 增量探索確認沒有比現有 manifests 更晚的新實體或拍牌易結果 PDF；這次更新只重建 `data/events.json` 以刷新生成時間與同步 live feed。",
+                "production `api/v1/index.json` 已與本地資料一致；這次重新部署主要是把 `plate.hk/data/events.json` 從 2026-06-10 版本推進到最新 5 項日程 feed。"
+              ]
+            },
             {
               date: "2026-06-11",
               title: "修正拍牌易重複成交記錄並重新發佈",
@@ -396,8 +405,17 @@
           pageTitle: "Changelog | Plate.hk",
           title: "Changelog",
           back: "← Back to Home",
-          updated: "Last updated: 11 June 2026",
+          updated: "Last updated: 12 June 2026",
           items: [
+            {
+              date: "2026-06-12",
+              title: "Republished the event feed to clear production drift",
+              points: [
+                "After rechecking the official Transport Department sources, the latest result issues are still 16 May 2026 for PVRM / physical TVRM and 28 May to 1 June 2026 for E-Auction, with no newer official result release yet.",
+                "Incremental TVRM discovery confirmed there are no newer physical or E-Auction result PDFs beyond the current manifests, so this refresh only rebuilt `data/events.json` to update the generated timestamp and live feed payload.",
+                "Production `api/v1/index.json` was already aligned with local data; this redeploy is mainly to move `plate.hk/data/events.json` forward from the 2026-06-10 build to the current 5-event feed."
+              ]
+            },
             {
               date: "2026-06-11",
               title: "Deduped E-Auction rows and republished current feeds",
