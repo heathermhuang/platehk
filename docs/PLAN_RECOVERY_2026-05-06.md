@@ -1,4 +1,4 @@
-<!-- /autoplan restore point: /Users/heatherm/.gstack/projects/heathermhuang-platehk/main-autoplan-restore-20260506-234624.md -->
+<!-- /autoplan restore point: <local gstack artifact> -->
 # Plate.hk Recovery Plan
 
 Date: 2026-05-06
@@ -161,7 +161,7 @@ Verification:
 - `node --check assets/index.data.js`
 - `node --check assets/index.js`
 - `node --check assets/index.share.js`
-- Local browser check for `file:///Users/heatherm/Documents/Codex/PVRM/index.html`
+- Local browser check for `file://<repo>/index.html`
 - Production or local Worker poster generation decoded with OpenCV QRCodeDetector.
 - Mobile viewport smoke check around `390px`, `400px`, and `472px`.
 
@@ -274,7 +274,7 @@ Verification:
 Here is what `/autoplan` is working with:
 
 - Active plan artifact: `docs/PLAN_RECOVERY_2026-05-06.md`.
-- Restore point: `/Users/heatherm/.gstack/projects/heathermhuang-platehk/main-autoplan-restore-20260506-234624.md`.
+- Restore point: `<local gstack artifact>`.
 - Repository: `heathermhuang/platehk`, current branch `main`.
 - Worktree status: very dirty, with source edits, generated artifacts, duplicate generated suffix files, and deletions mixed together.
 - Product surface: Plate.hk, a static and PHP-backed Hong Kong plate auction data/search experience.
