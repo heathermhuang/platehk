@@ -194,12 +194,14 @@ const INDEX_I18N = {
           changelogLink: "更新日誌",
           auditLink: "資料審核",
           apiLink: "API 文檔",
+          githubLink: "GitHub",
           feedbackLink: "反饋表格",
           termsUrl: "./terms.html?lang=zh",
           privacyUrl: "./privacy.html?lang=zh",
           changelogUrl: "./changelog.html?lang=zh",
           auditUrl: "./audit.html?lang=zh",
           apiUrl: "./api.html?lang=zh",
+          githubUrl: "https://github.com/heathermhuang/platehk",
           feedbackUrl: "https://forms.gle/1YFfSmraLp27YneU9",
         },
         en: {
@@ -397,12 +399,14 @@ const INDEX_I18N = {
           changelogLink: "Changelog",
           auditLink: "Data Audit",
           apiLink: "API Docs",
+          githubLink: "GitHub",
           feedbackLink: "Feedback Form",
           termsUrl: "./terms.html?lang=en",
           privacyUrl: "./privacy.html?lang=en",
           changelogUrl: "./changelog.html?lang=en",
           auditUrl: "./audit.html?lang=en",
           apiUrl: "./api.html?lang=en",
+          githubUrl: "https://github.com/heathermhuang/platehk",
           feedbackUrl: "https://forms.gle/1YFfSmraLp27YneU9",
         },
       };
@@ -419,6 +423,7 @@ const INDEX_I18N = {
       const changelogLinkEl = document.getElementById("changelogLink");
       const auditLinkEl = document.getElementById("auditLink");
       const apiLinkEl = document.getElementById("apiLink");
+      const githubLinkEl = document.getElementById("githubLink");
       const feedbackLinkEl = document.getElementById("feedbackLink");
       const titleMainEl = document.getElementById("titleMain");
       const titleDatasetEl = document.getElementById("titleDataset");

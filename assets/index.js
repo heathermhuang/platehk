@@ -1134,6 +1134,7 @@ function composeAuctionKey(datasetKey, auctionDate) {
         changelogLinkEl.textContent = t("changelogLink");
         auditLinkEl.textContent = t("auditLink");
         apiLinkEl.textContent = t("apiLink");
+        githubLinkEl.textContent = t("githubLink");
         feedbackLinkEl.textContent = t("feedbackLink");
         cameraTopLinkEl.href = `./camera.html?lang=${currentLang}`;
         popularLinkEl.href = `./plates/index.html?lang=${currentLang}`;
@@ -1142,6 +1143,7 @@ function composeAuctionKey(datasetKey, auctionDate) {
         changelogLinkEl.href = t("changelogUrl");
         auditLinkEl.href = t("auditUrl");
         apiLinkEl.href = t("apiUrl");
+        githubLinkEl.href = t("githubUrl");
         feedbackLinkEl.href = t("feedbackUrl");
         updatedAtEl.textContent = `${t("updatePrefix")}${formatLastUpdated(lastUpdatedDate)}`;
         renderSearchHistory();

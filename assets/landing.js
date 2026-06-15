@@ -24,6 +24,7 @@
           terms: "使用條款",
           privacy: "私隱政策",
           changelog: "更新日誌",
+          github: "GitHub",
           feedback: "反饋表格",
         },
         en: {
@@ -47,6 +48,7 @@
           terms: "Terms of Use",
           privacy: "Privacy Policy",
           changelog: "Changelog",
+          github: "GitHub",
           feedback: "Feedback Form",
         },
       };
@@ -84,6 +86,7 @@
         q("terms").textContent = t.terms;
         q("privacy").textContent = t.privacy;
         q("changelog").textContent = t.changelog;
+        q("github").textContent = t.github;
         q("feedback").textContent = t.feedback;
 
         // Keep language in deep links.
@@ -101,6 +104,7 @@
         q("terms").href = withLang("./terms.html");
         q("privacy").href = withLang("./privacy.html");
         q("changelog").href = withLang("./changelog.html");
+        q("github").href = "https://github.com/heathermhuang/platehk";
         q("feedback").href = "https://forms.gle/1YFfSmraLp27YneU9";
       };
 
