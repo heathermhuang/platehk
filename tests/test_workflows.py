@@ -37,11 +37,17 @@ class WorkflowTests(unittest.TestCase):
             "https://www.td.gov.hk/filemanager/sc/content_4804/"
             "E-Auction%20Result%20Handout%2026-30%20March%202026_ch.pdf"
         )
+        single_physical = (
+            "https://www.td.gov.hk/filemanager/sc/content_4804/"
+            "TVRMs%20Auction%20Result%20Handout%2025%20April%202026_TC.pdf"
+        )
 
         self.assertEqual(build_tvrm_dataset.classify_pdf_kind(cross_month, ""), "eauction")
         self.assertEqual(build_tvrm_dataset.extract_date_from_href(cross_month), "2026-04-30")
         self.assertEqual(build_tvrm_dataset.classify_pdf_kind(underscore_suffix, ""), "eauction")
         self.assertEqual(build_tvrm_dataset.extract_date_from_href(underscore_suffix), "2026-03-26")
+        self.assertEqual(build_tvrm_dataset.classify_pdf_kind(single_physical, ""), "physical")
+        self.assertEqual(build_tvrm_dataset.extract_date_from_href(single_physical), "2026-04-25")
         self.assertIsNone(
             build_tvrm_dataset.classify_pdf_kind(
                 "https://www.td.gov.hk/filemanager/tc/content_4804/G%20Notes%20TVRM%20Auction_Rev%204%202025_chi.pdf",

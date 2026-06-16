@@ -137,6 +137,15 @@ def extract_date_from_href(href: str) -> Optional[str]:
                     return date(int(y), mth, int(d1)).isoformat()
                 except ValueError:
                     return None
+        single_date = re.search(r"\b(\d{1,2})\s+([A-Za-z]+)\s+(20\d{2})\b", normalized)
+        if single_date:
+            d1, mon, y = single_date.groups()
+            mth = month_map.get(mon.lower())
+            if mth:
+                try:
+                    return date(int(y), mth, int(d1)).isoformat()
+                except ValueError:
+                    return None
         return None
     y, mth, d = map(int, m.groups())
     try:
@@ -620,10 +629,35 @@ def build_one(
     slim_rows: list[dict] = []
     meta: list[dict] = []
     source_updates: dict[str, str] = {}
+    sources_tsv = base / "sources.tsv"
+    existing_sources: dict[str, str] = {}
+    if sources_tsv.exists():
+        for line in sources_tsv.read_text(encoding="utf-8", errors="replace").splitlines():
+            if "\t" not in line:
+                continue
+            fn, url = line.split("\t", 1)
+            fn = fn.strip()
+            url = url.strip()
+            if fn and url:
+                existing_sources[fn] = url
+
+    def source_filename_rank(filename: str) -> tuple[int, int, str]:
+        exists = (pdf_dir / filename).exists()
+        return (
+            0 if exists else 1,
+            1 if filename.startswith("1970-01-01_") else 0,
+            filename,
+        )
+
+    existing_file_by_url: dict[str, str] = {}
+    for fn, url in existing_sources.items():
+        current = existing_file_by_url.get(url)
+        if current is None or source_filename_rank(fn) < source_filename_rank(current):
+            existing_file_by_url[url] = fn
 
     for idx, pdf in enumerate(pdfs, start=1):
         # e-auction seed date might be placeholder; we will keep it as "start date" key.
-        fname = local_pdf_name(pdf.date_iso, pdf.pdf_url)
+        fname = existing_file_by_url.get(pdf.pdf_url) or local_pdf_name(pdf.date_iso, pdf.pdf_url)
         source_updates[fname] = pdf.pdf_url
         pdf_path = pdf_dir / fname
         if not pdf_path.exists():
@@ -724,18 +758,18 @@ def build_one(
     (base / "auctions.json").write_text(json.dumps(meta, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
 
     # Keep filename->url mapping for downstream re-parsers.
-    sources_tsv = base / "sources.tsv"
     merged_sources: dict[str, str] = {}
-    if sources_tsv.exists():
-        for line in sources_tsv.read_text(encoding="utf-8", errors="replace").splitlines():
-            if "\t" not in line:
-                continue
-            fn, url = line.split("\t", 1)
-            fn = fn.strip()
-            url = url.strip()
-            if fn and url:
-                merged_sources[fn] = url
-    merged_sources.update(source_updates)
+    source_by_url: dict[str, str] = {}
+    for fn, url in existing_sources.items():
+        current = source_by_url.get(url)
+        if current is None or source_filename_rank(fn) < source_filename_rank(current):
+            source_by_url[url] = fn
+    for fn, url in source_updates.items():
+        current = source_by_url.get(url)
+        if current is None or source_filename_rank(fn) < source_filename_rank(current):
+            source_by_url[url] = fn
+    for url, fn in source_by_url.items():
+        merged_sources[fn] = url
     sources_tsv.write_text(
         "\n".join(f"{fn}\t{url}" for fn, url in sorted(merged_sources.items())) + "\n",
         encoding="utf-8",

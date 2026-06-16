@@ -3,8 +3,19 @@
           pageTitle: "更新日誌 | Plate.hk",
           title: "更新日誌",
           back: "← 返回首頁",
-          updated: "最後更新：2026年6月15日",
+          updated: "最後更新：2026年6月16日",
           items: [
+            {
+              date: "2026-06-16",
+              title: "同步 6 月 TVRM 實體與拍牌易結果",
+              points: [
+                "補上運輸署最新 TVRM 實體拍賣官方結果：2026年6月13日，共 81 筆成交記錄，拍賣所得 HK$1,177,000。",
+                "補上最新拍牌易官方結果：2026年6月11日至6月15日，共 220 筆成交記錄，拍賣所得 HK$1,423,000。",
+                "重建跨資料集輸出、公開 API、熱門查詢快取、SEO plate 頁與 audit；`api/v1/index.json` 現在顯示 all 最新期數為 2026年6月13日，總筆數 212,366。",
+                "運輸署主拍賣頁已移除已完結的 2026年6月11日至6月15日拍牌易時段，因此 `data/events.json` 已同步為 3 項日程 feed。",
+                "修正 TVRM PDF 來源 URL 的英文日期解析，避免同一官方 PDF 以 `1970-01-01` placeholder 檔名重複入庫。"
+              ]
+            },
             {
               date: "2026-06-15",
               title: "重新發佈日程 feed，移除已完結實體拍賣",
@@ -414,8 +425,19 @@
           pageTitle: "Changelog | Plate.hk",
           title: "Changelog",
           back: "← Back to Home",
-          updated: "Last updated: 15 June 2026",
+          updated: "Last updated: 16 June 2026",
           items: [
+            {
+              date: "2026-06-16",
+              title: "Synced June TVRM physical and E-Auction results",
+              points: [
+                "Added the latest official TVRM physical auction result for 13 June 2026, with 81 sale rows and HK$1,177,000 in proceeds.",
+                "Added the latest official E-Auction result for 11-15 June 2026, with 220 sale rows and HK$1,423,000 in proceeds.",
+                "Rebuilt the combined dataset, public API, hot-search cache, SEO plate pages, and audit output; `api/v1/index.json` now reports all latest issue 13 June 2026 and 212,366 total rows.",
+                "The Transport Department auction overview no longer lists the ended 11-15 June 2026 E-Auction window, so `data/events.json` now has 3 events.",
+                "Fixed English-date parsing for TVRM PDF source URLs so the same official PDF is not reintroduced under a `1970-01-01` placeholder filename."
+              ]
+            },
             {
               date: "2026-06-15",
               title: "Republished the event feed after the physical auction ended",
