@@ -339,6 +339,10 @@ class FrontendContractsTests(unittest.TestCase):
         self.assertIn("pip_audit", check_security)
         self.assertIn('"ls-files"', secrets_scan)
         self.assertIn("Top events:", summarize_security)
+        self.assertIn("actions/checkout@v6", workflow)
+        self.assertIn("actions/setup-python@v6", workflow)
+        self.assertIn("python-version: \"3.12\"", workflow)
+        self.assertIn("sys.version_info < (3, 12)", workflow)
         self.assertIn("pip-audit", workflow)
         self.assertIn("security-events.log", gitignore)
 

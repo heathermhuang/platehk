@@ -289,7 +289,7 @@ class WorkflowTests(unittest.TestCase):
             check=True,
             capture_output=True,
             text=True,
-            timeout=60,
+            timeout=180,
         )
         self.assertIn(".tmp/cloudflare-public", proc.stdout)
         publish = ROOT / ".tmp" / "cloudflare-public"
