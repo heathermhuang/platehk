@@ -342,6 +342,7 @@ class FrontendContractsTests(unittest.TestCase):
         self.assertIn("actions/checkout@v6", workflow)
         self.assertIn("actions/setup-python@v6", workflow)
         self.assertIn("python-version: \"3.12\"", workflow)
+        self.assertIn("PYTHON_BIN: python", workflow)
         self.assertIn("sys.version_info < (3, 12)", workflow)
         self.assertIn("pip-audit", workflow)
         self.assertIn("security-events.log", gitignore)

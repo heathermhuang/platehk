@@ -36,4 +36,5 @@ jobs:
       - name: Run local verification suite
         env:
           CHECK_SECURITY_SKIP_DEPS: "1"
+          PYTHON_BIN: python
         run: ./scripts/check_site.sh
