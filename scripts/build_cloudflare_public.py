@@ -31,7 +31,6 @@ ROOT_FILES = [
 
 ROOT_DIRS = [
     "assets",
-    "data",
     "plates",
     "mcp",
 ]
@@ -48,9 +47,42 @@ API_V1_DATASETS = [
     "tvrm_legacy",
 ]
 
+DATA_ROOT_FILES = [
+    "TVRM auction result (1973-2026).xls",
+    "TVRM auction result (2006-2026).xlsx",
+    "all.prefix1.top200.json",
+    "all.preset.amount_desc.top1000.json",
+    "all.search.meta.json",
+    "all.short_exact.json",
+    "all.tvrm_legacy_overlap.json",
+    "audit.json",
+    "auctions.json",
+    "events.json",
+    "issues.manifest.json",
+    "popular_plates_manifest.json",
+    "preset.amount_desc.top1000.json",
+    "tvrm_eauction/auctions.json",
+    "tvrm_eauction/issues.manifest.json",
+    "tvrm_eauction/preset.amount_desc.top1000.json",
+    "tvrm_legacy/auctions.json",
+    "tvrm_legacy/issues.manifest.json",
+    "tvrm_legacy/preset.amount_desc.top1000.json",
+    "tvrm_physical/auctions.json",
+    "tvrm_physical/issues.manifest.json",
+    "tvrm_physical/preset.amount_desc.top1000.json",
+]
+
+DATA_ROOT_DIRS = [
+    "all.bigram",
+    "all.char1",
+    "all.prefix2",
+    "hot_search",
+]
+
 IGNORE_BULKY_PATTERNS = (
     ".DS_Store",
     "__pycache__",
+    "all",
     "pdfs",
     "results.json",
     "results.slim.json",
@@ -75,7 +107,7 @@ IGNORE_BULKY_PATTERNS = (
 )
 
 
-def copy_path(src: Path, dst: Path, *, allow_hidden: bool = False) -> None:
+def copy_path(src: Path, dst: Path, *, allow_hidden: bool = False, ignore_patterns: tuple[str, ...] = ()) -> None:
     if src.name.startswith(".") and not allow_hidden:
         return
     if src.is_dir():
@@ -83,7 +115,7 @@ def copy_path(src: Path, dst: Path, *, allow_hidden: bool = False) -> None:
             src,
             dst,
             dirs_exist_ok=True,
-            ignore=shutil.ignore_patterns(*IGNORE_BULKY_PATTERNS),
+            ignore=shutil.ignore_patterns(*IGNORE_BULKY_PATTERNS, *ignore_patterns),
         )
         return
     dst.parent.mkdir(parents=True, exist_ok=True)
@@ -93,6 +125,15 @@ def copy_path(src: Path, dst: Path, *, allow_hidden: bool = False) -> None:
 def write_json(path: Path, value) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(value, ensure_ascii=False, separators=(",", ":")))
+
+
+def copy_public_data_files() -> None:
+    data_root = ROOT / "data"
+    target_data = TARGET / "data"
+    for rel in DATA_ROOT_FILES:
+        copy_path(data_root / rel, target_data / rel)
+    for rel in DATA_ROOT_DIRS:
+        copy_path(data_root / rel, target_data / rel)
 
 
 def build_results_chunks(dataset: str) -> None:
@@ -159,6 +200,8 @@ def main() -> None:
 
     for rel in ROOT_DIRS:
         copy_path(ROOT / rel, TARGET / rel)
+
+    copy_public_data_files()
 
     for rel in SPECIAL_ROOT_DIRS:
         copy_path(ROOT / rel, TARGET / rel, allow_hidden=True)

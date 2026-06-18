@@ -3,8 +3,17 @@
           pageTitle: "更新日誌 | Plate.hk",
           title: "更新日誌",
           back: "← 返回首頁",
-          updated: "最後更新：2026年6月16日",
+          updated: "最後更新：2026年6月17日",
           items: [
+            {
+              date: "2026-06-17",
+              title: "同步 7 月初傳統車牌實體拍賣日程",
+              points: [
+                "核對運輸署官方結果頁後，最新結果仍為 PVRM 2026年5月16日、TVRM 實體 2026年6月13日，以及拍牌易 2026年6月11日至6月15日，沒有新增官方結果期數。",
+                "運輸署主拍賣頁已新增 2026年7月4日傳統車牌實體拍賣，因此 `data/events.json` 已重建為 4 項日程 feed。",
+                "production `api/v1/index.json` 的資料集期數保持一致；這次重新部署只同步日程 feed、更新日誌與 service worker 快取版本。"
+              ]
+            },
             {
               date: "2026-06-16",
               title: "同步 6 月 TVRM 實體與拍牌易結果",
@@ -425,8 +434,17 @@
           pageTitle: "Changelog | Plate.hk",
           title: "Changelog",
           back: "← Back to Home",
-          updated: "Last updated: 16 June 2026",
+          updated: "Last updated: 17 June 2026",
           items: [
+            {
+              date: "2026-06-17",
+              title: "Synced the early-July TVRM physical auction calendar",
+              points: [
+                "After checking the official Transport Department result pages, the latest result issues remain PVRM 16 May 2026, TVRM physical 13 June 2026, and E-Auction 11-15 June 2026, with no newer official result release yet.",
+                "The Transport Department auction overview now lists a 4 July 2026 traditional physical auction, so `data/events.json` was rebuilt as a 4-event feed.",
+                "Production `api/v1/index.json` remains aligned with the dataset manifests; this redeploy only syncs the event feed, changelog, and service worker cache version."
+              ]
+            },
             {
               date: "2026-06-16",
               title: "Synced June TVRM physical and E-Auction results",
