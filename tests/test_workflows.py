@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import importlib.util
 import json
 import random
 import subprocess
+import tempfile
 import time
 import unittest
 import urllib.request
@@ -306,6 +308,21 @@ class WorkflowTests(unittest.TestCase):
         self.assertFalse((publish / "data" / "pdfs").exists())
         self.assertFalse((publish / "data" / "tvrm_physical" / "pdfs").exists())
         self.assertFalse((publish / "data" / "tvrm_eauction" / "pdfs").exists())
+
+    def test_build_cloudflare_public_skips_missing_optional_data_dirs(self) -> None:
+        spec = importlib.util.spec_from_file_location(
+            "build_cloudflare_public",
+            ROOT / "scripts" / "build_cloudflare_public.py",
+        )
+        self.assertIsNotNone(spec)
+        self.assertIsNotNone(spec.loader)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "publish" / "data" / "missing-index"
+            module.copy_optional_path(Path(tmp) / "missing-index", target)
+            self.assertFalse(target.exists())
 
     def test_release_ready_script_runs(self) -> None:
         proc = subprocess.run(

@@ -122,6 +122,12 @@ def copy_path(src: Path, dst: Path, *, allow_hidden: bool = False, ignore_patter
     shutil.copy2(src, dst)
 
 
+def copy_optional_path(src: Path, dst: Path, *, allow_hidden: bool = False, ignore_patterns: tuple[str, ...] = ()) -> None:
+    if not src.exists():
+        return
+    copy_path(src, dst, allow_hidden=allow_hidden, ignore_patterns=ignore_patterns)
+
+
 def write_json(path: Path, value) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(value, ensure_ascii=False, separators=(",", ":")))
@@ -133,7 +139,7 @@ def copy_public_data_files() -> None:
     for rel in DATA_ROOT_FILES:
         copy_path(data_root / rel, target_data / rel)
     for rel in DATA_ROOT_DIRS:
-        copy_path(data_root / rel, target_data / rel)
+        copy_optional_path(data_root / rel, target_data / rel)
 
 
 def build_results_chunks(dataset: str) -> None:
