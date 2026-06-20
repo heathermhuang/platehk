@@ -22,11 +22,14 @@ if [[ "$FAST" -eq 1 ]]; then
   python3 -m py_compile \
     scripts/build_all_search_index.py \
     scripts/build_all_short_exact_index.py \
+    scripts/build_events.py \
     scripts/build_dataset.py \
     scripts/merge_tvrm_exact_workbook.py \
     scripts/build_public_api.py \
     scripts/build_tvrm_dataset.py \
     scripts/build_tvrm_legacy_dataset.py \
+    scripts/check_duplicate_generated_artifacts.py \
+    scripts/check_production_freshness.py \
     scripts/verify_data_integrity.py \
     scripts/build_audit_report.py
   bash -n scripts/run_local.sh
@@ -34,6 +37,7 @@ if [[ "$FAST" -eq 1 ]]; then
   bash -n scripts/build_site.sh
   bash -n scripts/package_release.sh
   bash -n scripts/release_ready.sh
+  python3 scripts/check_duplicate_generated_artifacts.py
   echo "Checks completed."
 else
   ./scripts/check_site.sh

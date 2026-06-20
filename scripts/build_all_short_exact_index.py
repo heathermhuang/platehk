@@ -8,6 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "data"
+POPULAR_MANIFEST = DATA / "popular_plates_manifest.json"
 OUT_SHORT = DATA / "all.short_exact.json"
 OUT_PREFIX1 = DATA / "all.prefix1.top200.json"
 OUT_TVRM_DEDUPE = DATA / "all.tvrm_legacy_overlap.json"
@@ -16,7 +17,24 @@ OUT_CHAR1_DIR = DATA / "all.char1"
 OUT_BIGRAM_DIR = DATA / "all.bigram"
 OUT_PREFIX2_DIR = DATA / "all.prefix2"
 
-MAX_PREFIX1_ROWS = 200
+MAX_PREFIX1_ROWS = 600
+MAX_PREFIX2_ROWS = 1000
+MIN_PREFIX2_TOTAL_TO_PUBLISH = 1000
+MAX_CHAR1_ROWS = 600
+MAX_COMPLETE_BIGRAM_ROWS = 500
+MAX_POPULAR_INDEX_QUERIES = 240
+CURATED_INDEX_QUERIES = [
+    "88",
+    "8888",
+    "HK",
+    "AA",
+    "AB",
+    "XX",
+    "VV",
+    "A1",
+    "HK88",
+    "HK8",
+]
 
 
 def load_json(path: Path):
@@ -92,8 +110,37 @@ def iter_all_rows():
         yield row
 
 
-def trim_bucket(rows: list[dict], limit: int) -> list[dict]:
-    rows.sort(key=compare_rows)
+def targeted_query_tokens() -> tuple[set[str], set[str]]:
+    values: list[str] = []
+    values.extend(CURATED_INDEX_QUERIES)
+    if POPULAR_MANIFEST.exists():
+        for item in load_json(POPULAR_MANIFEST)[:MAX_POPULAR_INDEX_QUERIES]:
+            values.append(str(item.get("plate_norm") or item.get("plate_display") or ""))
+
+    prefix2: set[str] = set()
+    bigrams: set[str] = set()
+    for value in values:
+        norm = normalize_plate(value)
+        if len(norm) >= 2:
+            prefix2.add(norm[:2])
+        for idx in range(0, max(0, len(norm) - 1)):
+            token = norm[idx : idx + 2]
+            if len(token) == 2:
+                bigrams.add(token)
+    return prefix2, bigrams
+
+
+def compare_rows_for_query(query: str):
+    def _key(row: dict) -> tuple:
+        norm = plate_norm_for_row(row)
+        rank = 0 if norm == query else 1
+        return (rank, *compare_rows(row))
+
+    return _key
+
+
+def trim_bucket(rows: list[dict], limit: int, query: str = "") -> list[dict]:
+    rows.sort(key=compare_rows_for_query(query) if query else compare_rows)
     del rows[limit:]
     return rows
 
@@ -102,11 +149,18 @@ def build() -> int:
     short_exact: dict[str, list[dict]] = {}
     prefix1_rows: dict[str, list[dict]] = {}
     prefix1_totals: dict[str, int] = {}
+    prefix2_rows: dict[str, list[dict]] = {}
+    prefix2_totals: dict[str, int] = {}
+    char1_rows: dict[str, list[dict]] = {}
+    char1_totals: dict[str, int] = {}
+    bigram_rows: dict[str, list[dict]] = {}
+    bigram_totals: dict[str, int] = {}
 
     legacy_overlap_exact_keys: set[str] = set()
     legacy_overlap_coarse_keys: set[str] = set()
     legacy_overlap_rows = 0
     overlap_samples: list[dict] = []
+    target_prefix2, target_bigrams = targeted_query_tokens()
 
     physical = load_json(DATA / "tvrm_physical" / "results.slim.json")
     eauction = load_json(DATA / "tvrm_eauction" / "results.slim.json")
@@ -160,12 +214,46 @@ def build() -> int:
             bucket = prefix1_rows.setdefault(prefix, [])
             bucket.append(row)
             if len(bucket) > MAX_PREFIX1_ROWS * 2:
-                trim_bucket(bucket, MAX_PREFIX1_ROWS)
+                trim_bucket(bucket, MAX_PREFIX1_ROWS, prefix)
+
+        prefix2 = norm[:2]
+        if len(prefix2) == 2 and prefix2 in target_prefix2:
+            prefix2_totals[prefix2] = prefix2_totals.get(prefix2, 0) + 1
+            bucket = prefix2_rows.setdefault(prefix2, [])
+            bucket.append(row)
+            if len(bucket) > MAX_PREFIX2_ROWS * 2:
+                trim_bucket(bucket, MAX_PREFIX2_ROWS, prefix2)
+
+        for char in sorted(set(norm)):
+            char1_totals[char] = char1_totals.get(char, 0) + 1
+            bucket = char1_rows.setdefault(char, [])
+            bucket.append(row)
+            if len(bucket) > MAX_CHAR1_ROWS * 2:
+                trim_bucket(bucket, MAX_CHAR1_ROWS, char)
+
+        for token in sorted({norm[idx : idx + 2] for idx in range(0, max(0, len(norm) - 1)) if len(norm[idx : idx + 2]) == 2}):
+            if token not in target_bigrams:
+                continue
+            bigram_totals[token] = bigram_totals.get(token, 0) + 1
+            bucket = bigram_rows.setdefault(token, [])
+            if len(bucket) <= MAX_COMPLETE_BIGRAM_ROWS:
+                bucket.append(row)
 
     for q, rows in short_exact.items():
-        rows.sort(key=compare_rows)
+        rows.sort(key=compare_rows_for_query(q))
     for q, rows in prefix1_rows.items():
-        trim_bucket(rows, MAX_PREFIX1_ROWS)
+        trim_bucket(rows, MAX_PREFIX1_ROWS, q)
+    for q, rows in prefix2_rows.items():
+        trim_bucket(rows, MAX_PREFIX2_ROWS, q)
+    for q, rows in char1_rows.items():
+        trim_bucket(rows, MAX_CHAR1_ROWS, q)
+    complete_bigram_rows = {
+        q: rows
+        for q, rows in bigram_rows.items()
+        if bigram_totals.get(q, 0) <= MAX_COMPLETE_BIGRAM_ROWS
+    }
+    for q, rows in complete_bigram_rows.items():
+        rows.sort(key=compare_rows_for_query(q))
 
     OUT_SHORT.write_text(json.dumps(short_exact, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     OUT_PREFIX1.write_text(
@@ -185,6 +273,36 @@ def build() -> int:
             shutil.rmtree(path)
         path.mkdir(parents=True, exist_ok=True)
 
+    publishable_prefix2_rows = {
+        q: rows
+        for q, rows in prefix2_rows.items()
+        if prefix2_totals.get(q, 0) >= MIN_PREFIX2_TOTAL_TO_PUBLISH
+    }
+
+    for q, rows in sorted(publishable_prefix2_rows.items()):
+        (OUT_PREFIX2_DIR / f"{q}.json").write_text(
+            json.dumps(
+                {
+                    "total": prefix2_totals.get(q, len(rows)),
+                    "cached_rows": len(rows),
+                    "rows": rows,
+                },
+                ensure_ascii=False,
+                separators=(",", ":"),
+            ),
+            encoding="utf-8",
+        )
+    for q, rows in sorted(char1_rows.items()):
+        (OUT_CHAR1_DIR / f"{q}.json").write_text(
+            json.dumps(rows, ensure_ascii=False, separators=(",", ":")),
+            encoding="utf-8",
+        )
+    for q, rows in sorted(complete_bigram_rows.items()):
+        (OUT_BIGRAM_DIR / f"{q}.json").write_text(
+            json.dumps(rows, ensure_ascii=False, separators=(",", ":")),
+            encoding="utf-8",
+        )
+
     OUT_TVRM_DEDUPE.write_text(
         json.dumps(
             {
@@ -202,9 +320,14 @@ def build() -> int:
         json.dumps(
             {
                 "prefix1_keys": len(prefix1_rows),
-                "prefix2_keys": 0,
-                "char1_keys": 0,
-                "bigram_keys": 0,
+                "prefix1_cached_rows_per_key": MAX_PREFIX1_ROWS,
+                "prefix2_keys": len(publishable_prefix2_rows),
+                "prefix2_cached_rows_per_key": MAX_PREFIX2_ROWS,
+                "prefix2_min_total_to_publish": MIN_PREFIX2_TOTAL_TO_PUBLISH,
+                "char1_keys": len(char1_rows),
+                "char1_cached_rows_per_key": MAX_CHAR1_ROWS,
+                "bigram_keys": len(complete_bigram_rows),
+                "bigram_max_complete_rows": MAX_COMPLETE_BIGRAM_ROWS,
                 "short_exact_keys": len(short_exact),
                 "legacy_overlap_keys": len(legacy_overlap_coarse_keys),
                 "legacy_overlap_exact_keys": len(legacy_overlap_exact_keys),

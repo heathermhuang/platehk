@@ -86,14 +86,29 @@ class GeneratedDataTests(unittest.TestCase):
 
         self.assertEqual(meta["short_exact_keys"], len(short_exact))
         self.assertGreater(meta["prefix1_keys"], 20)
-        self.assertEqual(meta["char1_keys"], 0)
-        self.assertEqual(meta["bigram_keys"], 0)
+        self.assertGreater(meta["prefix1_cached_rows_per_key"], 200)
+        self.assertGreater(meta["prefix2_keys"], 0)
+        self.assertGreater(meta["char1_keys"], 20)
+        self.assertGreater(meta["bigram_keys"], 0)
         self.assertIn("A", prefix1)
         self.assertGreater(prefix1["A"]["total"], 0)
         self.assertGreater(len(prefix1["A"]["rows"]), 0)
         for row in prefix1["A"]["rows"][:50]:
             plate = _normalize_plate(row.get("single_line") or row.get("double_line"))
             self.assertTrue(plate.startswith("A"))
+
+        char_rows = _load(DATA / "all.char1" / "A.json")
+        self.assertGreater(len(char_rows), 0)
+        for row in char_rows[:50]:
+            plate = _normalize_plate(row.get("single_line") or row.get("double_line"))
+            self.assertIn("A", plate)
+
+        prefix2_payload = _load(DATA / "all.prefix2" / "HK.json")
+        self.assertGreaterEqual(prefix2_payload["total"], prefix2_payload["cached_rows"])
+        self.assertGreater(len(prefix2_payload["rows"]), 0)
+        for row in prefix2_payload["rows"][:50]:
+            plate = _normalize_plate(row.get("single_line") or row.get("double_line"))
+            self.assertTrue(plate.startswith("HK"))
 
     def test_public_api_index_includes_legacy_dataset(self) -> None:
         index = _load(ROOT / "api" / "v1" / "index.json")

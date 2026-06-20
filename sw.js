@@ -82,6 +82,7 @@ self.addEventListener('fetch', (event) => {
     url.pathname.includes('/data/issues/') ||
     url.pathname.includes('/data/all.char1/') ||
     url.pathname.includes('/data/all.bigram/') ||
+    url.pathname.includes('/data/all.prefix2/') ||
     url.pathname.includes('/data/tvrm_physical/') ||
     url.pathname.includes('/data/tvrm_eauction/') ||
     url.pathname.includes('/data/tvrm_legacy/');

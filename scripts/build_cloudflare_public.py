@@ -2,7 +2,11 @@
 from __future__ import annotations
 
 import json
+import hashlib
+import importlib.util
+import re
 import shutil
+import subprocess
 from pathlib import Path
 
 
@@ -31,7 +35,6 @@ ROOT_FILES = [
 
 ROOT_DIRS = [
     "assets",
-    "plates",
     "mcp",
 ]
 
@@ -95,10 +98,13 @@ IGNORE_BULKY_PATTERNS = (
     "* 2",
     "* 3",
     "* 4",
+    "* [2-9]",
     "* 2.json",
     "* 3.json",
+    "* 4.json",
     "* 2.*",
     "* 3.*",
+    "* [2-9].*",
     "* [0-9].html",
     "* 2.html",
     "* 3.html",
@@ -116,10 +122,33 @@ def copy_path(src: Path, dst: Path, *, allow_hidden: bool = False, ignore_patter
             dst,
             dirs_exist_ok=True,
             ignore=shutil.ignore_patterns(*IGNORE_BULKY_PATTERNS, *ignore_patterns),
+            copy_function=copy_file_bytes,
         )
         return
     dst.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(src, dst)
+    copy_file_bytes(src, dst)
+
+
+def copy_file_bytes(src: str | Path, dst: str | Path) -> str:
+    src_path = Path(src)
+    dst_path = Path(dst)
+    dst_path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        subprocess.run(
+            ["cp", "-c", str(src_path), str(dst_path)],
+            check=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=10,
+        )
+        return str(dst_path)
+    except subprocess.TimeoutExpired as exc:
+        raise RuntimeError(f"Timed out clone-copying {src_path}; the file may be cloud-evicted.") from exc
+    except (OSError, subprocess.CalledProcessError):
+        pass
+    with src_path.open("rb") as fsrc, dst_path.open("wb") as fdst:
+        shutil.copyfileobj(fsrc, fdst, length=1024 * 1024)
+    return str(dst_path)
 
 
 def copy_optional_path(src: Path, dst: Path, *, allow_hidden: bool = False, ignore_patterns: tuple[str, ...] = ()) -> None:
@@ -140,6 +169,27 @@ def copy_public_data_files() -> None:
         copy_path(data_root / rel, target_data / rel)
     for rel in DATA_ROOT_DIRS:
         copy_optional_path(data_root / rel, target_data / rel)
+
+
+def copy_plate_pages() -> None:
+    target_plates = TARGET / "plates"
+    target_plates.mkdir(parents=True, exist_ok=True)
+    spec = importlib.util.spec_from_file_location(
+        "build_popular_plate_pages",
+        ROOT / "scripts" / "build_popular_plate_pages.py",
+    )
+    if spec is None or spec.loader is None:
+        raise RuntimeError("Unable to load build_popular_plate_pages.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    entries = module.build_plate_data()
+    entries_by_norm = {entry["plate_norm"]: entry for entry in entries}
+    for idx, entry in enumerate(entries):
+        related = entries[max(0, idx - 4): idx] + entries[idx + 1: idx + 5]
+        page = module.render_page(entries_by_norm, entry, related)
+        (target_plates / f"{entry['plate_norm']}.html").write_text(page, encoding="utf-8")
+    (target_plates / "index.html").write_text(module.render_index(entries), encoding="utf-8")
 
 
 def build_results_chunks(dataset: str) -> None:
@@ -196,6 +246,32 @@ def prune_oversized_assets() -> None:
         write_json(publish_index_path, publish_index)
 
 
+def publish_fingerprint() -> str:
+    digest = hashlib.sha256()
+    for path in sorted(p for p in TARGET.rglob("*") if p.is_file() and p.name != "sw.js"):
+        rel = path.relative_to(TARGET).as_posix()
+        digest.update(rel.encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(path.read_bytes())
+        digest.update(b"\0")
+    return digest.hexdigest()[:12]
+
+
+def stamp_service_worker_cache_name() -> None:
+    sw_path = TARGET / "sw.js"
+    if not sw_path.exists():
+        return
+    source = sw_path.read_text(encoding="utf-8")
+    fingerprint = publish_fingerprint()
+    stamped = re.sub(
+        r"const CACHE_NAME = ['\"][^'\"]+['\"];",
+        f"const CACHE_NAME = 'pvrm-static-{fingerprint}';",
+        source,
+        count=1,
+    )
+    sw_path.write_text(stamped, encoding="utf-8")
+
+
 def main() -> None:
     if TARGET.exists():
         shutil.rmtree(TARGET)
@@ -206,6 +282,8 @@ def main() -> None:
 
     for rel in ROOT_DIRS:
         copy_path(ROOT / rel, TARGET / rel)
+
+    copy_plate_pages()
 
     copy_public_data_files()
 
@@ -222,6 +300,7 @@ def main() -> None:
         copy_path(ROOT / "api" / "v1" / dataset, api_v1_dir / dataset)
         build_results_chunks(dataset)
     prune_oversized_assets()
+    stamp_service_worker_cache_name()
 
     print(f"Built Cloudflare publish directory at {TARGET}")
 

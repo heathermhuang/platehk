@@ -96,6 +96,8 @@ Open [http://127.0.0.1:8080](http://127.0.0.1:8080), then stop the server with:
 | Rebuild all site assets and generated data | `./scripts/build_site.sh` |
 | Run syntax checks and tests | `./scripts/check_site.sh` |
 | Run secrets and dependency security checks | `./scripts/check_security.sh` |
+| Check generated duplicate artifacts | `python3 scripts/check_duplicate_generated_artifacts.py` |
+| Compare production freshness against local outputs | `python3 scripts/check_production_freshness.py --fail-on-drift` |
 | Build Cloudflare static publish directory | `python3 scripts/build_cloudflare_public.py` |
 | Start local Cloudflare Worker dev | `npm run cf:dev` |
 | Check Cloudflare Worker secrets | `npm run cf:secrets:check` |
@@ -179,6 +181,7 @@ These are the artifacts most contributors need to understand:
 | `data/tvrm_legacy/issues.manifest.json` and `data/tvrm_legacy/issues/*.json` | Historical year-range TVRM shards |
 | `data/all.search.meta.json` | Aggregate search metadata |
 | `data/all.prefix1.top200.json` | Lightweight preview index for broad “all plates” queries |
+| `data/all.prefix2/`, `data/all.char1/`, and `data/all.bigram/` | Bounded helper indexes for fast short-query search paths |
 | `data/hot_search/` | Cached results for high-frequency queries such as `88`, `8888`, and `HK` |
 | `data/all.tvrm_legacy_overlap.json` | Deduplication hints for cross-dataset aggregation |
 | `data/audit.json` | Audit view payload listing source coverage and parse quality |

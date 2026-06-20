@@ -112,13 +112,60 @@ async function dedupeAllIndexRows(env, request, rows) {
   });
 }
 
-async function loadAllPrefix1Rows(env, request, query, sort) {
+async function loadAllPrefix1Rows(env, request, query, page, pageSize, sort) {
   const decoded = await getStaticJson(env, request.url, "./data/all.prefix1.top200.json");
   const bucket = decoded?.[query];
-  if (!bucket || !Array.isArray(bucket.rows)) return { total: 0, rows: [] };
+  if (!bucket || !Array.isArray(bucket.rows)) return null;
+  const cachedRows = bucket.rows.length;
+  const total = Number(bucket.total || cachedRows);
+  const offset = (page - 1) * pageSize;
+  if (offset >= cachedRows && total > cachedRows) return null;
   const rows = await dedupeAllIndexRows(env, request, bucket.rows);
   rows.sort((a, b) => compareSearchRows(a, b, sort, query));
-  return { total: rows.length, rows };
+  return { total, rows };
+}
+
+function rowsFromIndexPayload(decoded) {
+  if (Array.isArray(decoded)) {
+    return {
+      total: decoded.length,
+      cachedRows: decoded.length,
+      rows: decoded,
+    };
+  }
+  if (!decoded || typeof decoded !== "object" || !Array.isArray(decoded.rows)) {
+    return null;
+  }
+  return {
+    total: Number(decoded.total || decoded.rows.length),
+    cachedRows: Number(decoded.cached_rows || decoded.rows.length),
+    rows: decoded.rows,
+  };
+}
+
+async function loadAllPrefix2Rows(env, request, query, page, pageSize, sort) {
+  if (sort !== "amount_desc") return null;
+  const decoded = rowsFromIndexPayload(
+    await getStaticJson(env, request.url, `./data/all.prefix2/${encodeURIComponent(query)}.json`)
+  );
+  if (!decoded) return null;
+  const offset = (page - 1) * pageSize;
+  if (offset >= decoded.cachedRows && decoded.total > decoded.cachedRows) return null;
+  const rows = await dedupeAllIndexRows(env, request, decoded.rows);
+  rows.sort((a, b) => compareSearchRows(a, b, sort, query));
+  return { total: decoded.total, rows };
+}
+
+async function loadAllCompleteBigramRows(env, request, query, sort) {
+  const token = query.slice(0, 2);
+  if (token.length !== 2) return null;
+  const decoded = rowsFromIndexPayload(
+    await getStaticJson(env, request.url, `./data/all.bigram/${encodeURIComponent(token)}.json`)
+  );
+  if (!decoded || decoded.total !== decoded.cachedRows) return null;
+  const rows = await dedupeAllIndexRows(env, request, decoded.rows);
+  const matched = sortSearchMatches(collectSearchMatches(rows, query, ""), sort, query);
+  return { total: matched.length, rows: matched };
 }
 
 async function loadHotSearchCache(env, request, query, page, pageSize, sort) {
@@ -401,19 +448,53 @@ async function searchStaticAll(env, request, query, issue, sort, mode, page, pag
   }
   const hotPayload = await loadHotSearchCache(env, request, query, page, pageSize, sort);
   if (hotPayload) return hotPayload;
-  if (query.length === 1) {
-    const prefixPayload = await loadAllPrefix1Rows(env, request, query, sort);
-    return buildPagedSearchPayload(
-      "all",
-      query,
-      null,
-      mode,
-      sort,
-      page,
-      pageSize,
-      prefixPayload.rows,
-      Number(prefixPayload.total || 0),
-    );
+  if (query.length === 1 && sort === "amount_desc") {
+    const prefixPayload = await loadAllPrefix1Rows(env, request, query, page, pageSize, sort);
+    if (prefixPayload) {
+      return buildPagedSearchPayload(
+        "all",
+        query,
+        null,
+        mode,
+        sort,
+        page,
+        pageSize,
+        prefixPayload.rows,
+        Number(prefixPayload.total || 0),
+      );
+    }
+  }
+  if (query.length === 2) {
+    const prefix2Payload = await loadAllPrefix2Rows(env, request, query, page, pageSize, sort);
+    if (prefix2Payload) {
+      return buildPagedSearchPayload(
+        "all",
+        query,
+        null,
+        mode,
+        sort,
+        page,
+        pageSize,
+        prefix2Payload.rows,
+        Number(prefix2Payload.total || 0),
+      );
+    }
+  }
+  if (query.length > 2) {
+    const bigramPayload = await loadAllCompleteBigramRows(env, request, query, sort);
+    if (bigramPayload) {
+      return buildPagedSearchPayload(
+        "all",
+        query,
+        null,
+        mode,
+        sort,
+        page,
+        pageSize,
+        bigramPayload.rows,
+        Number(bigramPayload.total || 0),
+      );
+    }
   }
   const rows = await loadDatasetAllRows(env, request.url, "all");
   const matched = sortSearchMatches(

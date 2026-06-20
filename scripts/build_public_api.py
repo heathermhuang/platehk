@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import copy
 import json
 import shutil
+import subprocess
 from datetime import date
 from pathlib import Path
 
@@ -30,9 +32,32 @@ def _write_json(p: Path, obj) -> None:
     p.write_text(json.dumps(obj, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
 
 
+def _without_generated_at(obj):
+    value = copy.deepcopy(obj)
+    if isinstance(value, dict):
+        value.pop("generated_at", None)
+    return value
+
+
 def _copy(src: Path, dst: Path) -> None:
     dst.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(src, dst)
+    if dst.exists():
+        dst.unlink()
+    try:
+        subprocess.run(
+            ["cp", "-c", str(src), str(dst)],
+            check=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=10,
+        )
+        return
+    except subprocess.TimeoutExpired as exc:
+        raise RuntimeError(f"Timed out clone-copying {src}; the file may be cloud-evicted.") from exc
+    except (OSError, subprocess.CalledProcessError):
+        pass
+    with src.open("rb") as fsrc, dst.open("wb") as fdst:
+        shutil.copyfileobj(fsrc, fdst, length=1024 * 1024)
 
 
 def build() -> int:
@@ -49,8 +74,6 @@ def build() -> int:
     # Build a stable API tree that mirrors the existing data files.
     for key, base in DATASETS.items():
         out = API / key
-        if out.exists():
-            shutil.rmtree(out)
         out.mkdir(parents=True, exist_ok=True)
 
         manifest = _read_json(base / "issues.manifest.json")
@@ -58,6 +81,12 @@ def build() -> int:
         manifest_issues = manifest.get("issues") or []
         latest_issue = manifest_issues[0] if manifest_issues else {}
         issue_key_field = "auction_key" if key == "all" else "auction_date"
+        expected_root_files = {
+            "issues.manifest.json",
+            "auctions.json",
+            "results.slim.json",
+            "preset.amount_desc.top1000.json",
+        }
 
         # Copy core files
         _copy(base / "issues.manifest.json", out / "issues.manifest.json")
@@ -66,9 +95,18 @@ def build() -> int:
         _copy(base / "preset.amount_desc.top1000.json", out / "preset.amount_desc.top1000.json")
         if (base / "plates.json").exists():
             _copy(base / "plates.json", out / "plates.json")
+            expected_root_files.add("plates.json")
+        elif (out / "plates.json").exists():
+            (out / "plates.json").unlink()
+        for stale in out.glob("*.json"):
+            if stale.name not in expected_root_files:
+                stale.unlink()
 
-        # Copy per-issue shards
-        issues_dir = base / "issues"
+        # Copy only manifest-listed per-issue shards. This avoids carrying
+        # Finder/iCloud duplicate files such as " 2.json" into the public API.
+        expected_issue_files = set()
+        issues_out = out / "issues"
+        issues_out.mkdir(parents=True, exist_ok=True)
         for item in manifest.get("issues", []):
             f = item.get("file")
             if not f:
@@ -76,7 +114,11 @@ def build() -> int:
             src = base / f
             dst = out / f
             if src.exists():
+                expected_issue_files.add(dst.name)
                 _copy(src, dst)
+        for stale in issues_out.glob("*.json"):
+            if stale.name not in expected_issue_files:
+                stale.unlink()
 
         index["datasets"][key] = {
             "base": f"/api/v1/{key}",
@@ -100,7 +142,13 @@ def build() -> int:
             "pdfs_listed": len(auctions),
         }
 
-    _write_json(API / "index.json", index)
+    index_path = API / "index.json"
+    if index_path.exists():
+        existing_index = _read_json(index_path)
+        if _without_generated_at(existing_index) == _without_generated_at(index):
+            index["generated_at"] = existing_index.get("generated_at") or index["generated_at"]
+
+    _write_json(index_path, index)
     return 0
 
 

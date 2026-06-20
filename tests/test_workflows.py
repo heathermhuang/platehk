@@ -4,6 +4,7 @@ import importlib.util
 import json
 import random
 import subprocess
+import sys
 import tempfile
 import time
 import unittest
@@ -24,6 +25,9 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn("python3 scripts/build_all_search_index.py", script)
         self.assertIn("python3 scripts/build_hot_search_cache.py", script)
         self.assertIn("python3 scripts/build_public_api.py", script)
+
+        build_site = (ROOT / "scripts" / "build_site.sh").read_text(encoding="utf-8")
+        self.assertIn("python3 scripts/build_events.py", build_site)
 
     def test_tvrm_scraper_recognizes_current_eauction_url_patterns(self) -> None:
         import sys
@@ -133,6 +137,69 @@ class WorkflowTests(unittest.TestCase):
             timeout=60,
         )
         self.assertIn("[all] Data integrity OK", proc.stdout)
+
+    def test_duplicate_generated_artifact_gate_checks_tracked_files(self) -> None:
+        proc = subprocess.run(
+            ["python3", "scripts/check_duplicate_generated_artifacts.py"],
+            cwd=ROOT,
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        self.assertIn("No duplicate generated artifacts found", proc.stdout)
+
+    def test_duplicate_generated_artifact_checker_can_clean_working_tree_scope(self) -> None:
+        with tempfile.TemporaryDirectory(dir=ROOT) as tmp_dir:
+            tmp_root = Path(tmp_dir)
+            rel_root = tmp_root.relative_to(ROOT).as_posix()
+            duplicate = tmp_root / "sample 2.json"
+            duplicate.write_text("{}", encoding="utf-8")
+
+            proc = subprocess.run(
+                [
+                    "python3",
+                    "scripts/check_duplicate_generated_artifacts.py",
+                    "--scope",
+                    "working-tree",
+                    "--root",
+                    rel_root,
+                    "--delete",
+                ],
+                cwd=ROOT,
+                check=True,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+
+            self.assertIn("Deleted 1 duplicate generated artifacts", proc.stdout)
+            self.assertFalse(duplicate.exists())
+
+    def test_production_freshness_normalizes_publish_pruned_all_plates_asset(self) -> None:
+        spec = importlib.util.spec_from_file_location(
+            "check_production_freshness",
+            ROOT / "scripts" / "check_production_freshness.py",
+        )
+        self.assertIsNotNone(spec)
+        self.assertIsNotNone(spec.loader)
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = module
+        spec.loader.exec_module(module)
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_root = Path(tmp_dir)
+            plates = tmp_root / "api" / "v1" / "all" / "plates.json"
+            plates.parent.mkdir(parents=True)
+            plates.write_text("{}", encoding="utf-8")
+            value = {"datasets": {"all": {"files": {"plates": "/api/v1/all/plates.json", "auctions": "x"}}}}
+
+            normalized, notes = module.normalize_api_index_for_publish(tmp_root, value, max_asset_bytes=1)
+
+        self.assertNotIn("plates", normalized["datasets"]["all"]["files"])
+        self.assertIn("auctions", normalized["datasets"]["all"]["files"])
+        self.assertEqual(value["datasets"]["all"]["files"]["plates"], "/api/v1/all/plates.json")
+        self.assertTrue(notes)
 
     def test_run_local_serves_root_without_db_health_dependency(self) -> None:
         port = random.randint(18080, 18999)
@@ -301,8 +368,11 @@ class WorkflowTests(unittest.TestCase):
         self.assertTrue((publish / "data" / "TVRM auction result (1973-2026).xls").exists())
         self.assertTrue((publish / "api" / "v1" / "all" / "results.chunks.json").exists())
         self.assertTrue((publish / "api" / "v1" / "tvrm_eauction" / "results.chunks.json").exists())
+        self.assertTrue((publish / "data" / "all.prefix2" / "HK.json").exists())
         self.assertTrue((publish / ".well-known" / "api-catalog.json").exists())
         self.assertTrue((publish / ".well-known" / "agent-skills" / "index.json").exists())
+        sw = (publish / "sw.js").read_text(encoding="utf-8")
+        self.assertRegex(sw, r"const CACHE_NAME = 'pvrm-static-[0-9a-f]{12}';")
         self.assertFalse(list((publish / "plates").glob("* [0-9].html")))
         self.assertFalse((publish / "data" / "results.json").exists())
         self.assertFalse((publish / "data" / "pdfs").exists())
