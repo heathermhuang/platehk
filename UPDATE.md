@@ -50,6 +50,28 @@ python3 scripts/build_audit_report.py
 - `sw.js` 的 `CACHE_NAME`
 - `index.html` 的 `./sw.js?v=...`
 
+## 雲端自動更新（GitHub Actions）
+
+`.github/workflows/auto-update.yml` 會每日 `00:40 UTC`（香港時間 `08:40`）在 GitHub Actions 執行，不需要本機長開：
+
+1. 安裝 Python / Node 依賴
+2. 執行 `scripts/cron_update.sh`
+3. 執行 `scripts/check_site.sh`
+4. 比對 `https://plate.hk/data/events.json` 及 `https://plate.hk/api/v1/index.json`
+5. 如有資料變更，提交並 push 生成檔案
+6. 如有資料變更或 production drift，部署 Cloudflare Worker + Static Assets
+7. 部署後再次執行 production freshness check
+
+GitHub repository secrets:
+- `CLOUDFLARE_API_TOKEN`：必需；token 需要有部署 Worker 及讀取 Worker secrets 的權限
+- `CLOUDFLARE_ACCOUNT_ID`：可選；如 Wrangler 不能自動推斷帳戶才需要設定
+
+GitHub Actions repository setting 需要允許 workflow token 有 read/write contents 權限，否則自動提交資料更新時會被 GitHub 拒絕。
+
+`OPENAI_API_KEY` 仍然只應設定為 Cloudflare Worker secret；GitHub Actions 只會透過 `npm run cf:secrets:check` 確認它已存在，不需要把 OpenAI key 放進 GitHub secrets。
+
+可在 GitHub Actions 手動執行 `Auto Update Data`，並選擇 `incremental` 或 `full` mode。
+
 ## Cloudflare Worker 部署
 本專案目前只維護 Cloudflare Worker + Static Assets runtime。資料更新後：
 

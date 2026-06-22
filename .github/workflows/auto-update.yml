@@ -1,0 +1,173 @@
+name: Auto Update Data
+
+on:
+  schedule:
+    # 08:40 Hong Kong time.
+    - cron: "40 0 * * *"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Update mode"
+        type: choice
+        required: true
+        default: incremental
+        options:
+          - incremental
+          - full
+      deploy:
+        description: "Deploy to Cloudflare when data changed or production drifted"
+        type: boolean
+        required: true
+        default: true
+
+concurrency:
+  group: platehk-auto-update
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    name: Refresh generated data
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      CI: "1"
+      CHECK_SECURITY_SKIP_DEPS: "1"
+      PYTHONPYCACHEPREFIX: /tmp/pvrm-pycache
+      WRANGLER_SEND_METRICS: "false"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install Python dependencies
+        run: |
+          python --version
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Run updater
+        env:
+          MODE: ${{ github.event.inputs.mode || 'incremental' }}
+        run: bash scripts/cron_update.sh
+
+      - name: Run local verification
+        env:
+          PYTHON_BIN: python
+        run: ./scripts/check_site.sh
+
+      - name: Compare generated output with production
+        id: freshness
+        run: |
+          set +e
+          python scripts/check_production_freshness.py --base-url https://plate.hk --fail-on-drift
+          status=$?
+          set -e
+          case "$status" in
+            0)
+              echo "drift=false" >> "$GITHUB_OUTPUT"
+              ;;
+            2)
+              echo "drift=true" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              exit "$status"
+              ;;
+          esac
+
+      - name: Stage generated changes
+        id: changes
+        run: |
+          git add \
+            api/v1 \
+            assets \
+            data \
+            plates \
+            index.html \
+            landing.html \
+            audit.html \
+            api.html \
+            camera.html \
+            changelog.html \
+            terms.html \
+            privacy.html \
+            mcp.html \
+            robots.txt \
+            sitemap.xml \
+            llms.txt \
+            agent.md \
+            skill.md \
+            sw.js
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "No generated data changes."
+            exit 0
+          fi
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Check Cloudflare deploy credentials
+        if: ${{ github.event.inputs.deploy != 'false' && (steps.changes.outputs.changed == 'true' || steps.freshness.outputs.drift == 'true') }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          if [ -z "${CLOUDFLARE_API_TOKEN:-}" ]; then
+            echo "::error::Set the CLOUDFLARE_API_TOKEN repository secret so the scheduled updater can deploy without a local machine."
+            exit 1
+          fi
+
+      - name: Commit generated changes
+        if: ${{ steps.changes.outputs.changed == 'true' }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Auto-update PlateHK data ($(date -u +%Y-%m-%d))"
+          git push
+
+      - name: Deploy to Cloudflare
+        if: ${{ github.event.inputs.deploy != 'false' && (steps.changes.outputs.changed == 'true' || steps.freshness.outputs.drift == 'true') }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npm run cf:deploy
+
+      - name: Verify production after deploy
+        if: ${{ github.event.inputs.deploy != 'false' && (steps.changes.outputs.changed == 'true' || steps.freshness.outputs.drift == 'true') }}
+        run: |
+          for attempt in 1 2 3 4 5; do
+            if python scripts/check_production_freshness.py --base-url https://plate.hk --fail-on-drift; then
+              exit 0
+            fi
+            echo "Production is not fresh yet; retrying in 20 seconds (attempt ${attempt}/5)."
+            sleep 20
+          done
+          python scripts/check_production_freshness.py --base-url https://plate.hk --fail-on-drift
+
+      - name: Write summary
+        if: always()
+        run: |
+          {
+            echo "### PlateHK auto-update"
+            echo ""
+            echo "- Data changes committed: ${{ steps.changes.outputs.changed || 'unknown' }}"
+            echo "- Production drift before deploy: ${{ steps.freshness.outputs.drift || 'unknown' }}"
+            echo "- Deploy input enabled: ${{ github.event.inputs.deploy != 'false' }}"
+            echo "- Mode: ${{ github.event.inputs.mode || 'incremental' }}"
+          } >> "$GITHUB_STEP_SUMMARY"
