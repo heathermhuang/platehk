@@ -18,13 +18,24 @@ python3 scripts/build_dataset.py
 python3 scripts/sync_lny_urls_to_tvrm_physical.py
 
 # TVRM default path is incremental-safe inventory merge; keep full legacy re-parse for manual repair only.
-before_phy_issues="$(python3 - <<'PY'\nimport json\nfrom pathlib import Path\np=Path('data/tvrm_physical/issues.manifest.json')\nprint(json.loads(p.read_text()).get('issue_count',0) if p.exists() else 0)\nPY\n)"
-before_ea_issues="$(python3 - <<'PY'\nimport json\nfrom pathlib import Path\np=Path('data/tvrm_eauction/issues.manifest.json')\nprint(json.loads(p.read_text()).get('issue_count',0) if p.exists() else 0)\nPY\n)"
+issue_count() {
+  python3 - "$1" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+p = Path(sys.argv[1])
+print(json.loads(p.read_text()).get("issue_count", 0) if p.exists() else 0)
+PY
+}
+
+before_phy_issues="$(issue_count data/tvrm_physical/issues.manifest.json)"
+before_ea_issues="$(issue_count data/tvrm_eauction/issues.manifest.json)"
 
 python3 scripts/build_tvrm_dataset.py
 
-after_phy_issues="$(python3 - <<'PY'\nimport json\nfrom pathlib import Path\np=Path('data/tvrm_physical/issues.manifest.json')\nprint(json.loads(p.read_text()).get('issue_count',0) if p.exists() else 0)\nPY\n)"
-after_ea_issues="$(python3 - <<'PY'\nimport json\nfrom pathlib import Path\np=Path('data/tvrm_eauction/issues.manifest.json')\nprint(json.loads(p.read_text()).get('issue_count',0) if p.exists() else 0)\nPY\n)"
+after_phy_issues="$(issue_count data/tvrm_physical/issues.manifest.json)"
+after_ea_issues="$(issue_count data/tvrm_eauction/issues.manifest.json)"
 
 need_repair=0
 if [[ "$MODE" == "full" ]]; then
