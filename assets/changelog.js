@@ -3,8 +3,17 @@
           pageTitle: "更新日誌 | Plate.hk",
           title: "更新日誌",
           back: "← 返回首頁",
-          updated: "最後更新：2026年6月23日",
+          updated: "最後更新：2026年6月26日",
           items: [
+            {
+              date: "2026-06-26",
+              title: "同步 7 月拍牌易日程並修正雲端更新流程",
+              points: [
+                "運輸署主拍賣頁已新增下一輪拍牌易時段：2026年7月9日中午至7月13日中午，因此 `data/events.json` 已重建為 6 項日程 feed。",
+                "GitHub Actions scheduled updater 現在會先提交已產生的資料更新，再檢查 Cloudflare 部署憑證，避免缺少部署 secret 時遺失官方日程更新。",
+                "官方結果期數仍未變更：PVRM 最新為 2026年5月16日、TVRM 實體為 2026年6月13日、拍牌易為 2026年6月11日至6月15日。"
+              ]
+            },
             {
               date: "2026-06-23",
               title: "同步 7 月中傳統車牌實體拍賣日程",
@@ -443,8 +452,17 @@
           pageTitle: "Changelog | Plate.hk",
           title: "Changelog",
           back: "← Back to Home",
-          updated: "Last updated: 23 June 2026",
+          updated: "Last updated: 26 June 2026",
           items: [
+            {
+              date: "2026-06-26",
+              title: "Synced the July E-Auction calendar and fixed cloud update flow",
+              points: [
+                "The Transport Department auction overview now lists the next E-Auction window from 9 July noon to 13 July noon 2026, so `data/events.json` was rebuilt as a 6-event feed.",
+                "The GitHub Actions scheduled updater now commits generated data before checking Cloudflare deploy credentials, so missing deploy secrets no longer discard official calendar updates.",
+                "Official result issues are unchanged: latest PVRM remains 16 May 2026, TVRM physical remains 13 June 2026, and E-Auction remains 11-15 June 2026."
+              ]
+            },
             {
               date: "2026-06-23",
               title: "Synced the mid-July TVRM physical auction calendar",
