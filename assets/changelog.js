@@ -3,8 +3,17 @@
           pageTitle: "更新日誌 | Plate.hk",
           title: "更新日誌",
           back: "← 返回首頁",
-          updated: "最後更新：2026年6月29日",
+          updated: "最後更新：2026年6月30日",
           items: [
+            {
+              date: "2026-06-30",
+              title: "同步 6 月下旬拍牌易結果",
+              points: [
+                "補上運輸署最新拍牌易官方結果：2026年6月25日至6月29日，共 219 筆成交記錄，拍賣所得 HK$1,683,000。",
+                "TVRM e-auction 期數增至 29 期，總筆數增至 5,439；跨資料集公開 API 現在共有 754 期及 212,646 筆記錄。",
+                "重建跨資料集輸出、公開 API、熱門查詢快取、SEO plate 頁、audit 與 4 項日程 feed，並同步 production `data/events.json` / `api/v1/index.json` 漂移。"
+              ]
+            },
             {
               date: "2026-06-29",
               title: "修正 5 月拍牌易期數標籤並重新發佈資料",
@@ -461,8 +470,17 @@
           pageTitle: "Changelog | Plate.hk",
           title: "Changelog",
           back: "← Back to Home",
-          updated: "Last updated: 26 June 2026",
+          updated: "Last updated: 30 June 2026",
           items: [
+            {
+              date: "2026-06-30",
+              title: "Synced late-June E-Auction results",
+              points: [
+                "Added the latest official E-Auction result for 25-29 June 2026, with 219 sale rows and HK$1,683,000 in proceeds.",
+                "TVRM e-auction now has 29 issues and 5,439 rows; the combined public API now has 754 issues and 212,646 rows.",
+                "Rebuilt the combined dataset, public API, hot-search cache, SEO plate pages, audit output, and 4-event feed, then resynced drifted production `data/events.json` / `api/v1/index.json`."
+              ]
+            },
             {
               date: "2026-06-26",
               title: "Synced the July E-Auction calendar and fixed cloud update flow",
