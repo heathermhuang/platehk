@@ -31,7 +31,8 @@ if [[ "$FAST" -eq 1 ]]; then
     scripts/check_duplicate_generated_artifacts.py \
     scripts/check_production_freshness.py \
     scripts/verify_data_integrity.py \
-    scripts/build_audit_report.py
+    scripts/build_audit_report.py \
+    scripts/auto_heal_update.py
   bash -n scripts/run_local.sh
   bash -n scripts/stop_local.sh
   bash -n scripts/build_site.sh

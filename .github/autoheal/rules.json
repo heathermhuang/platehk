@@ -1,0 +1,122 @@
+{
+  "version": 1,
+  "rules": [
+    {
+      "id": "missing_cloudflare_credentials",
+      "priority": 100,
+      "status": "blocked",
+      "action": "alert_human",
+      "confidence": "high",
+      "deploy_required": false,
+      "summary": "Cloudflare deploy credentials are missing or unusable.",
+      "patterns": [
+        "Set the CLOUDFLARE_API_TOKEN",
+        "CLOUDFLARE_API_TOKEN GitHub Actions repository secret",
+        "CLOUDFLARE_API_TOKEN is required",
+        "Authentication error.*Cloudflare"
+      ]
+    },
+    {
+      "id": "workflow_shell_syntax_regression",
+      "priority": 90,
+      "status": "escalate",
+      "action": "escalate_llm_repair",
+      "confidence": "high",
+      "deploy_required": false,
+      "summary": "The updater shell or workflow syntax regressed and needs a code patch.",
+      "patterns": [
+        "syntax error near unexpected token",
+        "bash: .*syntax error",
+        "scripts/cron_update.sh: line [0-9]+: syntax error"
+      ]
+    },
+    {
+      "id": "tvrm_issue_count_shrank",
+      "priority": 80,
+      "status": "repairable",
+      "action": "run_full_update",
+      "confidence": "high",
+      "deploy_required": true,
+      "summary": "Incremental TVRM output appears to have lost historical issues; rerun in full repair mode.",
+      "patterns": [
+        "unexpectedly shrinks historical issues",
+        "issue_count.*shrank",
+        "historical issues.*shrank"
+      ]
+    },
+    {
+      "id": "production_freshness_drift_log",
+      "priority": 70,
+      "status": "repairable",
+      "action": "run_incremental_update",
+      "confidence": "medium",
+      "deploy_required": true,
+      "summary": "Production freshness drift was detected in logs; rebuild and deploy generated outputs.",
+      "patterns": [
+        "Production freshness drift detected",
+        "Treat this as a deploy trigger"
+      ]
+    },
+    {
+      "id": "cloud_evicted_copy_timeout",
+      "priority": 65,
+      "status": "repairable",
+      "action": "retry_auto_update",
+      "confidence": "medium",
+      "deploy_required": false,
+      "summary": "A generated file copy timed out, likely because the local checkout has cloud-evicted files; retry on a clean runner or checkout.",
+      "patterns": [
+        "Timed out clone-copying",
+        "file may be cloud-evicted",
+        "compressed,dataless"
+      ]
+    },
+    {
+      "id": "transient_network_or_source_fetch",
+      "priority": 60,
+      "status": "repairable",
+      "action": "retry_auto_update",
+      "confidence": "medium",
+      "deploy_required": false,
+      "summary": "The failure looks like a transient network, upstream, or fetch error; retry the deterministic updater once.",
+      "patterns": [
+        "curl: \\([0-9]+\\)",
+        "Connection timed out",
+        "Failed to connect",
+        "Temporary failure in name resolution",
+        "HTTP 5[0-9][0-9]",
+        "Remote end closed connection"
+      ]
+    },
+    {
+      "id": "local_listener_permission",
+      "priority": 50,
+      "status": "repairable",
+      "action": "retry_auto_update",
+      "confidence": "medium",
+      "deploy_required": false,
+      "summary": "Local verification hit an environment listener permission issue; retry the cloud updater.",
+      "patterns": [
+        "listen EPERM",
+        "operation not permitted 127\\.0\\.0\\.1"
+      ]
+    },
+    {
+      "id": "unknown_parser_or_source_shape",
+      "priority": 10,
+      "status": "escalate",
+      "action": "escalate_llm_repair",
+      "confidence": "low",
+      "deploy_required": false,
+      "summary": "The updater failed in parser/source-shape code and needs a reviewed code patch with fixtures.",
+      "patterns": [
+        "Traceback \\(most recent call last\\)",
+        "cannot determine auction date",
+        "ValueError:",
+        "AttributeError:",
+        "IndexError:",
+        "json.decoder.JSONDecodeError"
+      ]
+    }
+  ]
+}

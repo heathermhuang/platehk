@@ -72,6 +72,37 @@ GitHub Actions repository setting 需要允許 workflow token 有 read/write con
 
 可在 GitHub Actions 手動執行 `Auto Update Data`，並選擇 `incremental` 或 `full` mode。
 
+## 自動修復（Auto Heal）
+
+`.github/workflows/auto-heal.yml` 是 `Auto Update Data` 的保護層，不是另一個每日更新器。正常情況仍然由 `Auto Update Data` 每日更新；`Auto Heal Data` 只在以下情況介入：
+
+- `Auto Update Data` 失敗
+- 每日 10:15 HKT 的 production freshness audit 發現 live JSON 與 `main` 生成輸出不一致
+- 維護者手動 dispatch repair mode
+
+修復決策由 `scripts/auto_heal_update.py` 讀取 `.github/autoheal/rules.json` 產生 `logs/autoheal/plan.json`：
+
+```bash
+python scripts/auto_heal_update.py classify \
+  --log-file logs/autoheal/failed.log \
+  --freshness-json logs/autoheal/freshness.json \
+  --output logs/autoheal/plan.json
+```
+
+目前自動修復只允許 deterministic actions：
+
+- `run_events_repair`：只有 `data/events.json` drift 時，跑 `scripts/build_events.py` 加上公開 API / audit 重建
+- `run_incremental_update`：生成輸出或 `api/v1/index.json` drift 時，跑 `MODE=incremental bash scripts/cron_update.sh`
+- `run_full_update`：TVRM issue count 縮水等歷史資料保護觸發時，跑 `MODE=full bash scripts/cron_update.sh`
+- `retry_auto_update`：網絡、上游暫時錯誤或 runner 環境錯誤時，重試 deterministic updater
+
+以下情況不會自動改 code 或部署：
+
+- Cloudflare / GitHub secrets、權限、token 缺失：`alert_human`
+- shell syntax、parser traceback、TD source shape 未分類變更：`escalate_llm_repair`
+
+LLM 只應在 `escalate_llm_repair` 後作為 PR 修復助手使用：根據失敗 logs、TD HTML/PDF fixture、相關 parser code 建 PR，並附 regression test。不要讓 LLM 直接每日更新資料、直接 push parser patch 到 `main`，或繞過 `scripts/check_site.sh` / production freshness check。
+
 ## Cloudflare Worker 部署
 本專案目前只維護 Cloudflare Worker + Static Assets runtime。資料更新後：
 
