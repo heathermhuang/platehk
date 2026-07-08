@@ -203,7 +203,9 @@ class FrontendContractsTests(unittest.TestCase):
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
 
         self.assertIn("cf:secrets:check", package["scripts"])
+        self.assertIn("cf:deploy:ci", package["scripts"])
         self.assertIn("cf:secrets:check", package["scripts"]["cf:deploy"])
+        self.assertNotIn("cf:secrets:check", package["scripts"]["cf:deploy:ci"])
         self.assertIn("OPENAI_API_KEY", wrangler["secrets"]["required"])
         self.assertIn("OPENAI_API_KEY", script)
         self.assertIn("wrangler secret put OPENAI_API_KEY", script)

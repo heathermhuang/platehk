@@ -122,6 +122,7 @@ class AutoHealUpdateTests(unittest.TestCase):
         self.assertIn("scripts/auto_heal_update.py classify", workflow)
         self.assertIn("Stop for human or LLM repair", workflow)
         self.assertIn("steps.plan.outputs.status == 'escalate'", workflow)
+        self.assertIn("npm run cf:deploy:ci", workflow)
 
 
 if __name__ == "__main__":

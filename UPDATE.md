@@ -63,12 +63,12 @@ python3 scripts/build_audit_report.py
 7. 部署後再次執行 production freshness check
 
 GitHub repository secrets:
-- `CLOUDFLARE_API_TOKEN`：必需；token 需要有部署 Worker 及讀取 Worker secrets 的權限
+- `CLOUDFLARE_API_TOKEN`：必需；token 需要有部署 Worker / Static Assets 的權限
 - `CLOUDFLARE_ACCOUNT_ID`：可選；如 Wrangler 不能自動推斷帳戶才需要設定
 
 GitHub Actions repository setting 需要允許 workflow token 有 read/write contents 權限，否則自動提交資料更新時會被 GitHub 拒絕。
 
-`OPENAI_API_KEY` 仍然只應設定為 Cloudflare Worker secret；GitHub Actions 只會透過 `npm run cf:secrets:check` 確認它已存在，不需要把 OpenAI key 放進 GitHub secrets。
+`OPENAI_API_KEY` 仍然只應設定為 Cloudflare Worker secret；不要把 OpenAI key 放進 GitHub secrets。手動部署可用 `npm run cf:secrets:check` 確認 Worker secret 存在；GitHub Actions 只使用 `CLOUDFLARE_API_TOKEN` 執行 `npm run cf:deploy:ci`，避免每日自動更新被 `wrangler secret list` 的輸出格式或登入狀態阻塞。
 
 可在 GitHub Actions 手動執行 `Auto Update Data`，並選擇 `incremental` 或 `full` mode。
 
@@ -123,6 +123,12 @@ npm run build:cloudflare:assets
 ```bash
 npm run cf:secrets:check
 npm run cf:deploy
+```
+
+GitHub Actions 使用較窄的 CI 部署命令，避免自動更新因 secret-list 查詢逾時而卡住：
+
+```bash
+npm run cf:deploy:ci
 ```
 
 4. 部署後驗證：

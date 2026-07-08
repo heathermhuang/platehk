@@ -17,6 +17,12 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class WorkflowTests(unittest.TestCase):
+    def test_scheduled_workflows_use_ci_deploy_command(self) -> None:
+        for workflow_name in ["auto-update.yml", "auto-heal.yml"]:
+            workflow = (ROOT / ".github" / "workflows" / workflow_name).read_text(encoding="utf-8")
+            self.assertIn("run: npm run cf:deploy:ci", workflow)
+            self.assertNotIn("run: npm run cf:deploy\n", workflow)
+
     def test_cron_update_rebuilds_unified_all_outputs(self) -> None:
         script = (ROOT / "scripts" / "cron_update.sh").read_text(encoding="utf-8")
         self.assertIn("python3 scripts/build_events.py", script)

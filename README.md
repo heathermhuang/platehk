@@ -102,6 +102,7 @@ Open [http://127.0.0.1:8080](http://127.0.0.1:8080), then stop the server with:
 | Start local Cloudflare Worker dev | `npm run cf:dev` |
 | Check Cloudflare Worker secrets | `npm run cf:secrets:check` |
 | Deploy Cloudflare Worker | `npm run cf:deploy` |
+| Deploy Cloudflare Worker from CI | `npm run cf:deploy:ci` |
 | Build release archive | `./scripts/package_release.sh` |
 | Fast release smoke check | `./scripts/release_ready.sh --fast` |
 
