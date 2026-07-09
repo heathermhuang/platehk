@@ -120,8 +120,13 @@ class AutoHealUpdateTests(unittest.TestCase):
         self.assertIn("workflow_run:", workflow)
         self.assertIn("Auto Update Data", workflow)
         self.assertIn("scripts/auto_heal_update.py classify", workflow)
+        self.assertIn("issues: write", workflow)
+        self.assertIn("Open human repair issue", workflow)
         self.assertIn("Stop for human or LLM repair", workflow)
         self.assertIn("steps.plan.outputs.status == 'escalate'", workflow)
+        self.assertIn("actions/upload-artifact@v4", workflow)
+        self.assertIn("dry_run", workflow)
+        self.assertIn("github.event.inputs.dry_run != 'true'", workflow)
         self.assertIn("npm run cf:deploy:ci", workflow)
 
 

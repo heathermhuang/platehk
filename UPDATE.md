@@ -80,6 +80,8 @@ GitHub Actions repository setting 需要允許 workflow token 有 read/write con
 - 每日 10:15 HKT 的 production freshness audit 發現 live JSON 與 `main` 生成輸出不一致
 - 維護者手動 dispatch repair mode
 
+手動演練 deterministic repair 時，使用 `dry_run=true`。Dry run 會執行 repair command、`scripts/check_site.sh`、staged-diff 檢查及 evidence artifact，但不會 commit、push 或部署。
+
 修復決策由 `scripts/auto_heal_update.py` 讀取 `.github/autoheal/rules.json` 產生 `logs/autoheal/plan.json`：
 
 ```bash
@@ -100,6 +102,8 @@ python scripts/auto_heal_update.py classify \
 
 - Cloudflare / GitHub secrets、權限、token 缺失：`alert_human`
 - shell syntax、parser traceback、TD source shape 未分類變更：`escalate_llm_repair`
+
+當 classification 是 `alert_human` 或 `escalate_llm_repair`，workflow 會建立或更新 GitHub Issue，並上傳 `autoheal-evidence-<run_id>` artifact，內容包含 failed log、freshness JSON 及 repair plan。
 
 LLM 只應在 `escalate_llm_repair` 後作為 PR 修復助手使用：根據失敗 logs、TD HTML/PDF fixture、相關 parser code 建 PR，並附 regression test。不要讓 LLM 直接每日更新資料、直接 push parser patch 到 `main`，或繞過 `scripts/check_site.sh` / production freshness check。
 

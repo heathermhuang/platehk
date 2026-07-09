@@ -26,6 +26,11 @@ on:
         type: boolean
         required: true
         default: true
+      dry_run:
+        description: "Run repair and verification without committing or deploying"
+        type: boolean
+        required: true
+        default: false
 
 concurrency:
   group: platehk-auto-heal
@@ -34,6 +39,7 @@ concurrency:
 permissions:
   actions: read
   contents: write
+  issues: write
 
 jobs:
   heal:
@@ -102,6 +108,46 @@ jobs:
           echo "action=${action}" >> "$GITHUB_OUTPUT"
           echo "status=repairable" >> "$GITHUB_OUTPUT"
           echo "deploy_required=true" >> "$GITHUB_OUTPUT"
+
+      - name: Open human repair issue
+        if: ${{ steps.plan.outputs.status == 'blocked' || steps.plan.outputs.status == 'escalate' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set +e
+          title="PlateHK auto-heal needs repair: ${{ steps.plan.outputs.classification }}"
+          issue_body="logs/autoheal/repair-issue.md"
+          {
+            echo "Auto-heal could not complete deterministic recovery."
+            echo ""
+            echo "- Run: ${RUN_URL}"
+            echo "- Classification: ${{ steps.plan.outputs.classification }}"
+            echo "- Status: ${{ steps.plan.outputs.status }}"
+            echo "- Action: ${{ steps.plan.outputs.action }}"
+            echo "- Confidence: ${{ steps.plan.outputs.confidence }}"
+            echo ""
+            echo "Next steps:"
+            echo "1. Inspect the autoheal evidence artifact from this run."
+            echo "2. If this is credentials or permissions, fix the GitHub/Cloudflare setting and rerun Auto Heal."
+            echo "3. If this is parser or source-shape drift, create a branch/PR with a fixture and regression test."
+            echo "4. Do not let an LLM patch main directly; use the PR path and keep deterministic checks green."
+            echo ""
+            echo "Plan:"
+            echo '```json'
+            cat logs/autoheal/plan.json 2>/dev/null || true
+            echo '```'
+          } > "$issue_body"
+
+          issue_number="$(gh issue list --repo "$REPOSITORY" --state open --search "${title} in:title" --json number --jq '.[0].number // ""' 2>/dev/null)"
+          if [ -n "$issue_number" ]; then
+            gh issue comment "$issue_number" --repo "$REPOSITORY" --body-file "$issue_body" \
+              || echo "::warning::Could not comment on existing auto-heal issue."
+          else
+            gh issue create --repo "$REPOSITORY" --title "$title" --body-file "$issue_body" \
+              || echo "::warning::Could not create auto-heal issue."
+          fi
 
       - name: Stop for human or LLM repair
         if: ${{ steps.plan.outputs.status == 'blocked' || steps.plan.outputs.status == 'escalate' }}
@@ -195,7 +241,7 @@ jobs:
 
       - name: Commit generated changes
         id: commit
-        if: ${{ steps.changes.outputs.changed == 'true' }}
+        if: ${{ steps.changes.outputs.changed == 'true' && (github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run != 'true') }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -204,7 +250,7 @@ jobs:
           echo "committed=true" >> "$GITHUB_OUTPUT"
 
       - name: Check Cloudflare deploy credentials
-        if: ${{ github.event.inputs.deploy != 'false' && (steps.changes.outputs.changed == 'true' || steps.plan.outputs.deploy_required == 'true' || steps.override.outputs.deploy_required == 'true') }}
+        if: ${{ github.event.inputs.deploy != 'false' && (github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run != 'true') && (steps.changes.outputs.changed == 'true' || steps.plan.outputs.deploy_required == 'true' || steps.override.outputs.deploy_required == 'true') }}
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -215,14 +261,14 @@ jobs:
           fi
 
       - name: Deploy to Cloudflare
-        if: ${{ github.event.inputs.deploy != 'false' && (steps.changes.outputs.changed == 'true' || steps.plan.outputs.deploy_required == 'true' || steps.override.outputs.deploy_required == 'true') }}
+        if: ${{ github.event.inputs.deploy != 'false' && (github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run != 'true') && (steps.changes.outputs.changed == 'true' || steps.plan.outputs.deploy_required == 'true' || steps.override.outputs.deploy_required == 'true') }}
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: npm run cf:deploy:ci
 
       - name: Verify production after deploy
-        if: ${{ github.event.inputs.deploy != 'false' && (steps.changes.outputs.changed == 'true' || steps.plan.outputs.deploy_required == 'true' || steps.override.outputs.deploy_required == 'true') }}
+        if: ${{ github.event.inputs.deploy != 'false' && (github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run != 'true') && (steps.changes.outputs.changed == 'true' || steps.plan.outputs.deploy_required == 'true' || steps.override.outputs.deploy_required == 'true') }}
         run: |
           for attempt in 1 2 3 4 5; do
             if python scripts/check_production_freshness.py --base-url https://plate.hk --fail-on-drift; then
@@ -242,6 +288,7 @@ jobs:
             echo "- Classification: ${{ steps.plan.outputs.classification || 'unknown' }}"
             echo "- Plan status: ${{ steps.plan.outputs.status || 'unknown' }}"
             echo "- Action: ${{ steps.override.outputs.action || steps.plan.outputs.action || 'unknown' }}"
+            echo "- Dry run: ${{ github.event.inputs.dry_run || 'false' }}"
             echo "- Generated data changed: ${{ steps.changes.outputs.changed || 'false' }}"
             echo "- Generated data committed: ${{ steps.commit.outputs.committed || 'false' }}"
             echo "- Deploy requested by plan: ${{ steps.override.outputs.deploy_required || steps.plan.outputs.deploy_required || 'false' }}"
@@ -251,3 +298,12 @@ jobs:
             cat logs/autoheal/plan.json 2>/dev/null || true
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload auto-heal evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: autoheal-evidence-${{ github.run_id }}
+          path: logs/autoheal/
+          if-no-files-found: ignore
+          retention-days: 14

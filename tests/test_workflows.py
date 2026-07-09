@@ -23,6 +23,15 @@ class WorkflowTests(unittest.TestCase):
             self.assertIn("run: npm run cf:deploy:ci", workflow)
             self.assertNotIn("run: npm run cf:deploy\n", workflow)
 
+    def test_auto_heal_supports_safe_repair_drills(self) -> None:
+        workflow = (ROOT / ".github" / "workflows" / "auto-heal.yml").read_text(encoding="utf-8")
+
+        self.assertIn("dry_run:", workflow)
+        self.assertIn("Run repair and verification without committing or deploying", workflow)
+        self.assertIn("steps.changes.outputs.changed == 'true' && (github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run != 'true')", workflow)
+        self.assertIn("Open human repair issue", workflow)
+        self.assertIn("autoheal-evidence-${{ github.run_id }}", workflow)
+
     def test_cron_update_rebuilds_unified_all_outputs(self) -> None:
         script = (ROOT / "scripts" / "cron_update.sh").read_text(encoding="utf-8")
         self.assertIn("python3 scripts/build_events.py", script)
