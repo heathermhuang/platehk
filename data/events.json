@@ -1,48 +1,12 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-12T04:42:11+00:00",
+  "generated_at": "2026-07-13T04:45:34+00:00",
   "timezone": "Asia/Hong_Kong",
   "source_urls": [
     "https://www.td.gov.hk/en/public_services/vehicle_registration_mark/index.html",
     "https://www.td.gov.hk/tc/public_services/vehicle_registration_mark/index.html"
   ],
   "events": [
-    {
-      "id": "tvrm_eauction-2026-07-09",
-      "type": "tvrm_eauction",
-      "start_at": "2026-07-09T12:00:00+08:00",
-      "end_at": "2026-07-13T12:00:00+08:00",
-      "date_label_en": "9 July noon to 13 July noon 2026",
-      "date_label_zh": "2026年7月9日中午至7月13日中午",
-      "source_page_url_en": "https://www.td.gov.hk/en/public_services/vehicle_registration_mark/index.html",
-      "source_page_url_zh": "https://www.td.gov.hk/tc/public_services/vehicle_registration_mark/index.html",
-      "source_url_en": "https://www.td.gov.hk/filemanager/en/content_4802/E-Auction%20Handout%20for%209-13.7.2026.Eng.pdf",
-      "source_url_zh": "https://www.td.gov.hk/filemanager/tc/content_4802/E-Auction%20Handout%20for%209-13.7.2026.Chin.pdf",
-      "action_url_en": "https://e-auction.td.gov.hk/en",
-      "action_url_zh": "https://e-auction.td.gov.hk/tc",
-      "source_text_en": "9 July noon to 13 July noon 2026",
-      "meta": {
-        "source": "td_coming_auction"
-      }
-    },
-    {
-      "id": "tvrm_physical-2026-07-12",
-      "type": "tvrm_physical",
-      "start_at": "2026-07-12T00:00:00+08:00",
-      "end_at": "2026-07-12T23:59:59+08:00",
-      "date_label_en": "12 July 2026",
-      "date_label_zh": "2026年7月12日",
-      "source_page_url_en": "https://www.td.gov.hk/en/public_services/vehicle_registration_mark/index.html",
-      "source_page_url_zh": "https://www.td.gov.hk/tc/public_services/vehicle_registration_mark/index.html",
-      "source_url_en": "https://www.td.gov.hk/filemanager/en/content_4802/TVRM%20Auction%20Handout%20for%2012.7.2026.Eng.pdf",
-      "source_url_zh": "https://www.td.gov.hk/filemanager/tc/content_4802/TVRM%20Auction%20Handout%20for%2012.7.2026.Chin.pdf",
-      "action_url_en": null,
-      "action_url_zh": null,
-      "source_text_en": "12 July 2026",
-      "meta": {
-        "source": "td_coming_auction"
-      }
-    },
     {
       "id": "tvrm_eauction-2026-07-23",
       "type": "tvrm_eauction",
