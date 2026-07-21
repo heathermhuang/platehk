@@ -17,6 +17,7 @@ logs/
 logs/security-events.log
 review_findings.md
 .gstack/
+.private/
 
 # Local duplicate/scratch artifacts produced by agent/browser workflows.
 * [0-9].*

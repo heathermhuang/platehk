@@ -1,0 +1,385 @@
+name: Cloud LLM Repair
+
+on:
+  workflow_run:
+    workflows:
+      - Auto Heal Data
+    types:
+      - completed
+  workflow_dispatch:
+
+concurrency:
+  group: platehk-cloud-llm-repair-${{ github.event.workflow_run.id || github.run_id }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  connection_test:
+    name: Test custom LLM connection
+    if: ${{ github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout without credentials
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Require custom provider credentials
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_RESPONSES_API_ENDPOINT: ${{ secrets.OPENAI_RESPONSES_API_ENDPOINT }}
+        run: |
+          if [ -z "${OPENAI_API_KEY:-}" ] || [ -z "${OPENAI_RESPONSES_API_ENDPOINT:-}" ]; then
+            echo "::error::Set OPENAI_API_KEY and OPENAI_RESPONSES_API_ENDPOINT first."
+            exit 1
+          fi
+
+      - name: Make one read-only model request
+        uses: openai/codex-action@v1
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          responses-api-endpoint: ${{ secrets.OPENAI_RESPONSES_API_ENDPOINT }}
+          model: gpt-5.6-sol
+          prompt: >-
+            Connection test only. Do not inspect or change repository files.
+            Reply exactly: PlateHK cloud LLM connection OK
+          codex-args: '["--ephemeral"]'
+          permission-profile: ":read-only"
+          safety-strategy: drop-sudo
+
+  inspect_escalation:
+    name: Inspect auto-heal escalation
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      issues: read
+    outputs:
+      should_run: ${{ steps.plan.outputs.should_run }}
+      classification: ${{ steps.plan.outputs.classification }}
+      issue_number: ${{ steps.plan.outputs.issue_number }}
+      issue_url: ${{ steps.plan.outputs.issue_url }}
+    steps:
+      - name: Download auto-heal evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+          AUTOHEAL_RUN_ID: ${{ github.event.workflow_run.id }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          mkdir -p logs/autoheal
+          gh run download "$AUTOHEAL_RUN_ID" \
+            --repo "$REPOSITORY" \
+            --name "autoheal-evidence-${AUTOHEAL_RUN_ID}" \
+            --dir logs/autoheal
+
+      - name: Gate cloud LLM execution
+        id: plan
+        run: |
+          python - "$GITHUB_OUTPUT" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          output = Path(sys.argv[1])
+          plan = json.loads(Path("logs/autoheal/plan.json").read_text(encoding="utf-8"))
+          issue_path = Path("logs/autoheal/issue.json")
+          issue = json.loads(issue_path.read_text(encoding="utf-8")) if issue_path.exists() else {}
+          should_run = plan.get("action") == "escalate_llm_repair" and plan.get("status") == "escalate"
+          with output.open("a", encoding="utf-8") as fh:
+              fh.write(f"should_run={'true' if should_run else 'false'}\n")
+              fh.write(f"classification={plan.get('classification', 'unknown')}\n")
+              fh.write(f"issue_number={issue.get('number', '')}\n")
+              fh.write(f"issue_url={issue.get('url', '')}\n")
+          PY
+
+  generate_patch:
+    name: Generate repair patch with Codex
+    needs: inspect_escalation
+    if: ${{ needs.inspect_escalation.outputs.should_run == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      has_patch: ${{ steps.diff.outputs.has_patch }}
+    steps:
+      - name: Checkout failing revision without credentials
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Download auto-heal evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+          AUTOHEAL_RUN_ID: ${{ github.event.workflow_run.id }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          mkdir -p logs/autoheal
+          gh run download "$AUTOHEAL_RUN_ID" \
+            --repo "$REPOSITORY" \
+            --name "autoheal-evidence-${AUTOHEAL_RUN_ID}" \
+            --dir logs/autoheal
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies before exposing the API key
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          npm ci
+
+      - name: Require dedicated cloud LLM credential
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_RESPONSES_API_ENDPOINT: ${{ secrets.OPENAI_RESPONSES_API_ENDPOINT }}
+        run: |
+          if [ -z "${OPENAI_API_KEY:-}" ]; then
+            echo "::error::Set a dedicated OPENAI_API_KEY GitHub Actions secret for Cloud LLM Repair."
+            exit 1
+          fi
+          if [ -z "${OPENAI_RESPONSES_API_ENDPOINT:-}" ]; then
+            echo "::error::Set OPENAI_RESPONSES_API_ENDPOINT to the provider's complete HTTPS /responses endpoint."
+            exit 1
+          fi
+
+      - name: Generate minimal repair patch
+        id: codex
+        uses: openai/codex-action@v1
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          responses-api-endpoint: ${{ secrets.OPENAI_RESPONSES_API_ENDPOINT }}
+          model: gpt-5.6-sol
+          prompt-file: .github/codex/prompts/autoheal-repair.md
+          output-file: logs/autoheal/codex-output.md
+          codex-args: '["--ephemeral"]'
+          permission-profile: ":workspace"
+          safety-strategy: drop-sudo
+          allow-bots: true
+
+      - name: Serialize patch artifact
+        id: diff
+        run: |
+          git add -N .
+          git diff --binary HEAD > codex.patch
+          if [ -s codex.patch ]; then
+            echo "has_patch=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_patch=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Codex completed without producing a patch."
+          fi
+
+      - name: Upload Codex output and patch
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cloud-llm-repair-${{ github.run_id }}
+          path: |
+            codex.patch
+            logs/autoheal/codex-output.md
+          if-no-files-found: ignore
+          retention-days: 14
+
+  validate_patch:
+    name: Validate repair without LLM credentials
+    needs:
+      - inspect_escalation
+      - generate_patch
+    if: ${{ needs.generate_patch.outputs.has_patch == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - name: Checkout failing revision without credentials
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Download generated patch
+        uses: actions/download-artifact@v4
+        with:
+          name: cloud-llm-repair-${{ github.run_id }}
+
+      - name: Apply patch
+        run: git apply --index codex.patch
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          npm ci
+
+      - name: Validate proposed repair
+        env:
+          PYTHON_BIN: python
+          PYTHONPYCACHEPREFIX: /tmp/pvrm-pycache
+        run: |
+          git diff --cached --check
+          python scripts/scan_repo_secrets.py
+          ./scripts/check_site.sh
+
+  open_draft_pr:
+    name: Open draft repair PR
+    needs:
+      - inspect_escalation
+      - generate_patch
+      - validate_patch
+    if: ${{ needs.validate_patch.result == 'success' }}
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: write
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Checkout failing revision
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+
+      - name: Download validated patch
+        uses: actions/download-artifact@v4
+        with:
+          name: cloud-llm-repair-${{ github.run_id }}
+
+      - name: Apply and publish draft repair PR
+        id: pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+          AUTOHEAL_RUN_ID: ${{ github.event.workflow_run.id }}
+          BASE_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          CLASSIFICATION: ${{ needs.inspect_escalation.outputs.classification }}
+          ISSUE_NUMBER: ${{ needs.inspect_escalation.outputs.issue_number }}
+        run: |
+          git apply --index codex.patch
+          branch="codex/autoheal-${AUTOHEAL_RUN_ID}-${GITHUB_RUN_ID}"
+          git switch -c "$branch"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Draft auto-heal repair for ${CLASSIFICATION}"
+          git push --set-upstream origin "$branch"
+
+          base="${BASE_BRANCH:-main}"
+          {
+            echo "Cloud Codex generated this minimal repair after deterministic auto-heal stopped."
+            echo
+            echo "- Classification: \`${CLASSIFICATION}\`"
+            echo "- Auto-heal run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${AUTOHEAL_RUN_ID}"
+            echo "- Validation: secret scan and \`scripts/check_site.sh\` passed in a separate job without the OpenAI key."
+            echo
+            echo "This PR is intentionally draft and must be reviewed before merge."
+          } > pr-body.md
+
+          pr_url="$(gh pr create \
+            --repo "$GITHUB_REPOSITORY" \
+            --base "$base" \
+            --head "$branch" \
+            --draft \
+            --title "Draft auto-heal repair: ${CLASSIFICATION}" \
+            --body-file pr-body.md)"
+          echo "url=${pr_url}" >> "$GITHUB_OUTPUT"
+
+          if [ -n "$ISSUE_NUMBER" ]; then
+            gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" \
+              --body "Cloud Codex produced a validated draft repair PR: ${pr_url}"
+          fi
+
+      - name: Notify Telegram about draft repair PR
+        continue-on-error: true
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TELEGRAM_MESSAGE_THREAD_ID: ${{ secrets.TELEGRAM_MESSAGE_THREAD_ID }}
+          TELEGRAM_TEXT: |-
+            PlateHK cloud LLM repair is ready for review.
+            Classification: ${{ needs.inspect_escalation.outputs.classification }}
+            The PR is draft and was not merged automatically.
+          TELEGRAM_LINK: ${{ steps.pr.outputs.url }}
+        run: >-
+          python scripts/notify_telegram.py send --optional
+          --text-env TELEGRAM_TEXT --link-env TELEGRAM_LINK
+          --link-label "Review draft PR"
+
+  report_failure:
+    name: Report cloud LLM failure
+    needs:
+      - inspect_escalation
+      - generate_patch
+      - validate_patch
+      - open_draft_pr
+    if: >-
+      ${{ always() && needs.inspect_escalation.outputs.should_run == 'true' &&
+          (needs.generate_patch.result == 'failure' ||
+           needs.generate_patch.outputs.has_patch != 'true' ||
+           needs.validate_patch.result == 'failure' ||
+           needs.open_draft_pr.result == 'failure') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Comment on repair issue
+        if: ${{ needs.inspect_escalation.outputs.issue_number != '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ needs.inspect_escalation.outputs.issue_number }}
+        run: >-
+          gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY"
+          --body "Cloud LLM repair did not produce a validated draft PR. Inspect run ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}."
+
+      - name: Notify Telegram about cloud LLM failure
+        continue-on-error: true
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TELEGRAM_MESSAGE_THREAD_ID: ${{ secrets.TELEGRAM_MESSAGE_THREAD_ID }}
+          TELEGRAM_TEXT: |-
+            PlateHK cloud LLM repair needs human follow-up.
+            Classification: ${{ needs.inspect_escalation.outputs.classification }}
+            Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          TELEGRAM_LINK: ${{ needs.inspect_escalation.outputs.issue_url }}
+        run: >-
+          python scripts/notify_telegram.py send --optional
+          --text-env TELEGRAM_TEXT --link-env TELEGRAM_LINK
+          --link-label "Open repair issue"

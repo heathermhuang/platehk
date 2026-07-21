@@ -28,6 +28,7 @@ FINDER_DUPLICATE_RE = re.compile(r" \d+(?:\.[^.]+)?$")
 
 PATTERNS = [
     ("openai_api_key", re.compile(r"\bsk-(?:proj-)?[A-Za-z0-9_-]{20,}\b")),
+    ("telegram_bot_token", re.compile(r"\b\d{8,12}:[A-Za-z0-9_-]{30,}\b")),
     ("aws_access_key_id", re.compile(r"\bAKIA[0-9A-Z]{16}\b")),
     ("private_key", re.compile(r"-----BEGIN (?:RSA|DSA|EC|OPENSSH|PGP) PRIVATE KEY-----")),
     ("local_user_path", re.compile(r"\b(?:file://)?/Users/[A-Za-z0-9._-]+(?:/|\b)")),
@@ -53,7 +54,7 @@ def tracked_files() -> list[Path]:
         if not raw:
             continue
         rel = Path(raw.decode("utf-8", errors="replace"))
-        if rel.parts[:1] in {(".github",), (".git",), (".venv",), (".tmp",)}:
+        if rel.parts[:1] in {(".git",), (".venv",), (".tmp",)}:
             continue
         if "data" in rel.parts or "plates" in rel.parts or "assets/vendor" in rel.as_posix():
             continue

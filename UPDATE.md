@@ -68,7 +68,7 @@ GitHub repository secrets:
 
 GitHub Actions repository setting 需要允許 workflow token 有 read/write contents 權限，否則自動提交資料更新時會被 GitHub 拒絕。
 
-`OPENAI_API_KEY` 仍然只應設定為 Cloudflare Worker secret；不要把 OpenAI key 放進 GitHub secrets。手動部署可用 `npm run cf:secrets:check` 確認 Worker secret 存在；GitHub Actions 只使用 `CLOUDFLARE_API_TOKEN` 執行 `npm run cf:deploy:ci`，避免每日自動更新被 `wrangler secret list` 的輸出格式或登入狀態阻塞。
+每日 `Auto Update Data` 和 deterministic `Auto Heal Data` 都不使用 LLM，也不需要 OpenAI key。網站 camera API 使用的 `OPENAI_API_KEY` 仍然只應設定為 Cloudflare Worker secret。手動部署可用 `npm run cf:secrets:check` 確認 Worker secret 存在；日常 GitHub Actions 更新只使用 `CLOUDFLARE_API_TOKEN` 執行 `npm run cf:deploy:ci`，避免每日自動更新被 `wrangler secret list` 的輸出格式或登入狀態阻塞。
 
 可在 GitHub Actions 手動執行 `Auto Update Data`，並選擇 `incremental` 或 `full` mode。
 
@@ -103,9 +103,57 @@ python scripts/auto_heal_update.py classify \
 - Cloudflare / GitHub secrets、權限、token 缺失：`alert_human`
 - shell syntax、parser traceback、TD source shape 未分類變更：`escalate_llm_repair`
 
-當 classification 是 `alert_human` 或 `escalate_llm_repair`，workflow 會建立或更新 GitHub Issue，並上傳 `autoheal-evidence-<run_id>` artifact，內容包含 failed log、freshness JSON 及 repair plan。
+當 classification 是 `alert_human` 或 `escalate_llm_repair`，workflow 會建立或更新 GitHub Issue，並上傳 `autoheal-evidence-<run_id>` artifact，內容包含 failed log、freshness JSON、repair plan 及 issue metadata。
 
-LLM 只應在 `escalate_llm_repair` 後作為 PR 修復助手使用：根據失敗 logs、TD HTML/PDF fixture、相關 parser code 建 PR，並附 regression test。不要讓 LLM 直接每日更新資料、直接 push parser patch 到 `main`，或繞過 `scripts/check_site.sh` / production freshness check。
+### Cloud LLM repair
+
+`.github/workflows/cloud-llm-repair.yml` 只會在 `Auto Heal Data` 失敗後讀取 evidence artifact；只有 plan 同時是 `status=escalate` 及 `action=escalate_llm_repair` 才會在 GitHub-hosted runner 啟動 `openai/codex-action@v1`。一般成功、production drift、可重試網絡錯誤及 credentials/permissions blocker 都不會啟動 LLM。
+
+Cloud LLM 權限分成三個 jobs：
+
+1. `generate_patch` 只有 repository read permission，在 `drop-sudo` + workspace permission profile 下生成 patch artifact
+2. `validate_patch` 不取得 OpenAI key，套用 patch 後執行 secret scan 及完整 `scripts/check_site.sh`
+3. `open_draft_pr` 只在 validation 成功後取得 repository write permission，建立 `codex/autoheal-*` branch 和 draft PR；不會 auto-merge
+
+Cloud LLM 使用 `gpt-5.6-sol`，並需要以下 GitHub Actions repository secrets：
+
+- `OPENAI_API_KEY`：custom provider 的 API key；請使用獨立、受限及有 budget cap 的 key
+- `OPENAI_RESPONSES_API_ENDPOINT`：完整 HTTPS Responses API endpoint，例如 provider 給你的 base URL 是 `https://llm.example.com/v1`，這裡應填 `https://llm.example.com/v1/responses`
+
+Custom provider 必須真正支援 OpenAI-compatible Responses API 及 `gpt-5.6-sol` model slug；只有 `/chat/completions` 的 provider 不能用於這個 workflow。這兩個 secrets 只供 failure-triggered `Cloud LLM Repair` 使用，不會供每日 updater 使用，也不要重用 Cloudflare Worker 的 production key。
+
+本機 credential template 是 `.private/platehk-ops.env`。`.private/` 已被 Git ignore；不要把內容貼入 chat。填寫後執行：
+
+```bash
+chmod 600 .private/platehk-ops.env
+python3 scripts/configure_github_ops_secrets.py
+```
+
+installer 不會在 command line 或輸出顯示 secret value；它只會把已填的欄位透過 `gh secret set` 的 stdin 寫入 `heathermhuang/platehk`。可以分兩次執行：第一次設定 OpenAI endpoint/key 與 replacement Telegram token；完成 Telegram chat discovery 後填入 chat ID，再執行一次。
+
+Workflow push 到 GitHub 後，可在 Actions 手動執行 `Cloud LLM Repair`。手動 dispatch 只會啟動 `Test custom LLM connection`：使用 read-only permission profile 呼叫一次 `gpt-5.6-sol`，不會讀取 failure evidence、修改 repository、開 PR 或部署。日常自動路徑仍然只會在 Auto Heal 明確產生 `escalate_llm_repair` 後使用 LLM。
+
+LLM 只應在 `escalate_llm_repair` 後作為 PR 修復助手使用：根據失敗 logs、fixture 和相關 parser code 建 draft PR，並附 regression test。不要讓 LLM 直接每日更新資料、直接 push parser patch 到 `main`、auto-merge，或繞過 `scripts/check_site.sh` / production freshness check。
+
+### Telegram issue notifications
+
+Auto-heal repair issue、cloud LLM draft PR 結果，以及之後的人手 issue/comment activity 可以送到 Telegram。設定以下 GitHub Actions repository secrets：
+
+- `TELEGRAM_BOT_TOKEN`：由 BotFather 建立的 bot token
+- `TELEGRAM_CHAT_ID`：接收通知的 private chat、group 或 channel ID
+- `TELEGRAM_MESSAGE_THREAD_ID`：可選；forum group 的 topic ID
+
+不要把 bot token 貼入 issue、chat、workflow input 或 logs。如果 token 曾經顯示在這些地方，先在 BotFather revoke/regenerate，然後把 replacement token 直接寫入 GitHub secret。
+
+初次設定次序：
+
+1. 先在 `.private/platehk-ops.env` 填入 replacement `TELEGRAM_BOT_TOKEN`，再執行 `python3 scripts/configure_github_ops_secrets.py`
+2. 在目標 private chat 對 bot 送出 `/start`，或在目標 group 送出一個 bot 可見訊息
+3. 手動執行 `Auto-heal Issue Telegram`，選擇 `discover`；在 workflow summary 複製正確 chat ID
+4. 把該 ID 寫入本機 template 的 `TELEGRAM_CHAT_ID`；如有需要再加 `TELEGRAM_MESSAGE_THREAD_ID`，然後重新執行 installer
+5. 再手動執行同一 workflow，選擇 `test` 驗證送達
+
+`.github/workflows/auto-heal.yml` 直接送出首次 repair issue 通知，因為 `GITHUB_TOKEN` 建立的 issue 不會再觸發另一個 workflow；`.github/workflows/issue-telegram.yml` 負責之後由人手產生的 issue/comment activity；Cloud LLM workflow 會直接通知 draft PR 成功或失敗。Telegram 目前是 notification + GitHub deep-link，不接受 privileged repair/deploy commands。
 
 ## Cloudflare Worker 部署
 本專案目前只維護 Cloudflare Worker + Static Assets runtime。資料更新後：

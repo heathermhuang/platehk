@@ -110,6 +110,7 @@ jobs:
           echo "deploy_required=true" >> "$GITHUB_OUTPUT"
 
       - name: Open human repair issue
+        id: repair_issue
         if: ${{ steps.plan.outputs.status == 'blocked' || steps.plan.outputs.status == 'escalate' }}
         env:
           GH_TOKEN: ${{ github.token }}
@@ -145,9 +146,48 @@ jobs:
             gh issue comment "$issue_number" --repo "$REPOSITORY" --body-file "$issue_body" \
               || echo "::warning::Could not comment on existing auto-heal issue."
           else
-            gh issue create --repo "$REPOSITORY" --title "$title" --body-file "$issue_body" \
+            issue_url="$(gh issue create --repo "$REPOSITORY" --title "$title" --body-file "$issue_body" 2>/dev/null)" \
               || echo "::warning::Could not create auto-heal issue."
+            if [ -n "${issue_url:-}" ]; then
+              issue_number="$(gh issue view "$issue_url" --repo "$REPOSITORY" --json number --jq '.number' 2>/dev/null)"
+            fi
           fi
+
+          issue_url="${issue_url:-}"
+          if [ -n "$issue_number" ] && [ -z "$issue_url" ]; then
+            issue_url="$(gh issue view "$issue_number" --repo "$REPOSITORY" --json url --jq '.url' 2>/dev/null)"
+          fi
+
+          python - "$issue_number" "$issue_url" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          Path("logs/autoheal/issue.json").write_text(
+              json.dumps({"number": sys.argv[1], "url": sys.argv[2]}, indent=2) + "\n",
+              encoding="utf-8",
+          )
+          PY
+          echo "number=${issue_number}" >> "$GITHUB_OUTPUT"
+          echo "url=${issue_url}" >> "$GITHUB_OUTPUT"
+
+      - name: Notify Telegram about repair issue
+        if: ${{ steps.plan.outputs.status == 'blocked' || steps.plan.outputs.status == 'escalate' }}
+        continue-on-error: true
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TELEGRAM_MESSAGE_THREAD_ID: ${{ secrets.TELEGRAM_MESSAGE_THREAD_ID }}
+          TELEGRAM_TEXT: |-
+            PlateHK auto-heal needs attention.
+            Classification: ${{ steps.plan.outputs.classification }}
+            Action: ${{ steps.plan.outputs.action }}
+            Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          TELEGRAM_LINK: ${{ steps.repair_issue.outputs.url }}
+        run: >-
+          python scripts/notify_telegram.py send --optional
+          --text-env TELEGRAM_TEXT --link-env TELEGRAM_LINK
+          --link-label "Open repair issue"
 
       - name: Stop for human or LLM repair
         if: ${{ steps.plan.outputs.status == 'blocked' || steps.plan.outputs.status == 'escalate' }}
