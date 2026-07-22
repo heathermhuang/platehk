@@ -42,10 +42,18 @@ class CloudEscalationTests(unittest.TestCase):
 
     def test_autoheal_and_issue_activity_have_telegram_notifications(self) -> None:
         autoheal = (ROOT / ".github" / "workflows" / "auto-heal.yml").read_text(encoding="utf-8")
+        updater = (ROOT / ".github" / "workflows" / "auto-update.yml").read_text(encoding="utf-8")
         issue_workflow = (ROOT / ".github" / "workflows" / "issue-telegram.yml").read_text(encoding="utf-8")
 
         self.assertIn("logs/autoheal/issue.json", autoheal)
         self.assertIn("Notify Telegram about repair issue", autoheal)
+        self.assertIn("Snapshot database before update", updater)
+        self.assertIn("Build Telegram update report", updater)
+        self.assertIn("Send Telegram update report", updater)
+        self.assertIn("build_update_telegram_report.py report", updater)
+        self.assertIn("notify_telegram.py send", updater)
+        self.assertIn("--text-file", updater)
+        self.assertNotIn("OPENAI_API_KEY", updater)
         self.assertIn("issue_comment:", issue_workflow)
         self.assertIn("workflow_dispatch:", issue_workflow)
         self.assertIn("Discover Telegram chat ID", issue_workflow)

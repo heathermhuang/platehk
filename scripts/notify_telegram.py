@@ -8,6 +8,7 @@ import sys
 import urllib.error
 import urllib.parse
 import urllib.request
+from pathlib import Path
 from typing import Any, Callable
 
 
@@ -19,6 +20,34 @@ def normalize_text(value: str, *, limit: int = MAX_MESSAGE_LENGTH) -> str:
     if len(text) <= limit:
         return text
     return text[: max(0, limit - 1)].rstrip() + "…"
+
+
+def normalize_message_text(value: str, *, limit: int = MAX_MESSAGE_LENGTH) -> str:
+    lines = [" ".join(line.split()) for line in str(value or "").splitlines()]
+    normalized_lines: list[str] = []
+    for line in lines:
+        if not line and (not normalized_lines or not normalized_lines[-1]):
+            continue
+        normalized_lines.append(line)
+    text = "\n".join(normalized_lines).strip()
+    if len(text) <= limit:
+        return text
+    return text[: max(0, limit - 1)].rstrip() + "…"
+
+
+def resolve_send_text(
+    *,
+    text: str = "",
+    text_env: str = "",
+    text_file: str = "",
+    env: dict[str, str] | None = None,
+) -> str:
+    values = env or os.environ
+    if text_file:
+        return Path(text_file).read_text(encoding="utf-8")
+    if text_env:
+        return values.get(text_env, "")
+    return text
 
 
 def build_issue_event_message(env: dict[str, str] | None = None) -> tuple[str, str]:
@@ -54,7 +83,7 @@ def send_message(
 ) -> dict[str, Any]:
     payload: dict[str, str] = {
         "chat_id": chat_id,
-        "text": normalize_text(text),
+        "text": normalize_message_text(text),
         "disable_web_page_preview": "true",
     }
     if message_thread_id:
@@ -162,8 +191,10 @@ def format_chat_candidates(candidates: list[dict[str, str]]) -> str:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Send optional PlateHK operations notifications to Telegram.")
     parser.add_argument("command", choices=["send", "issue-event", "discover-chat"])
-    parser.add_argument("--text", default="", help="Message text for the send command.")
-    parser.add_argument("--text-env", help="Read message text from this environment variable.")
+    text_source = parser.add_mutually_exclusive_group()
+    text_source.add_argument("--text", default="", help="Message text for the send command.")
+    text_source.add_argument("--text-env", help="Read message text from this environment variable.")
+    text_source.add_argument("--text-file", help="Read message text from this UTF-8 file.")
     parser.add_argument("--link", default="", help="Optional URL for an inline button.")
     parser.add_argument("--link-env", help="Read the inline-button URL from this environment variable.")
     parser.add_argument("--link-label", default="Open GitHub")
@@ -202,7 +233,15 @@ def main() -> int:
     if args.command == "issue-event":
         text, link = build_issue_event_message()
     else:
-        text = os.environ.get(args.text_env, "") if args.text_env else args.text
+        try:
+            text = resolve_send_text(
+                text=args.text,
+                text_env=args.text_env or "",
+                text_file=args.text_file or "",
+            )
+        except OSError as exc:
+            print(f"Telegram message file could not be read: {exc}", file=sys.stderr)
+            return 1
         link = os.environ.get(args.link_env, "") if args.link_env else args.link
 
     if not text.strip():

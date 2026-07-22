@@ -64,6 +64,11 @@ jobs:
       - name: Install Node dependencies
         run: npm ci
 
+      - name: Snapshot database before update
+        run: >-
+          python scripts/build_update_telegram_report.py snapshot
+          --output "$RUNNER_TEMP/platehk-before-update.json"
+
       - name: Run updater
         env:
           MODE: ${{ github.event.inputs.mode || 'incremental' }}
@@ -163,6 +168,49 @@ jobs:
           done
           python scripts/check_production_freshness.py --base-url https://plate.hk --fail-on-drift
 
+      - name: Build Telegram update report
+        id: telegram_report
+        if: ${{ success() }}
+        continue-on-error: true
+        env:
+          GENERATED_CHANGED: ${{ steps.changes.outputs.changed || 'false' }}
+          GENERATED_COMMITTED: ${{ steps.commit.outputs.committed || 'false' }}
+          DEPLOY_ENABLED: ${{ github.event.inputs.deploy != 'false' }}
+          DRIFT_BEFORE: ${{ steps.freshness.outputs.drift || 'false' }}
+          UPDATE_MODE: ${{ github.event.inputs.mode || 'incremental' }}
+        run: |
+          python scripts/build_update_telegram_report.py report \
+            --before "$RUNNER_TEMP/platehk-before-update.json" \
+            --output "$RUNNER_TEMP/platehk-update-report.txt" \
+            --generated-changed "$GENERATED_CHANGED" \
+            --committed "$GENERATED_COMMITTED" \
+            --deploy-enabled "$DEPLOY_ENABLED" \
+            --drift-before "$DRIFT_BEFORE" \
+            --mode "$UPDATE_MODE" \
+            --commit-sha "$(git rev-parse HEAD)"
+          {
+            echo "### Telegram update report"
+            echo ""
+            echo '```text'
+            cat "$RUNNER_TEMP/platehk-update-report.txt"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Send Telegram update report
+        id: telegram_notify
+        if: ${{ steps.telegram_report.outcome == 'success' }}
+        continue-on-error: true
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TELEGRAM_MESSAGE_THREAD_ID: ${{ secrets.TELEGRAM_MESSAGE_THREAD_ID }}
+          TELEGRAM_LINK: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: >-
+          python scripts/notify_telegram.py send
+          --text-file "$RUNNER_TEMP/platehk-update-report.txt"
+          --link-env TELEGRAM_LINK
+          --link-label "View update run"
+
       - name: Write summary
         if: always()
         run: |
@@ -174,4 +222,5 @@ jobs:
             echo "- Production drift before deploy: ${{ steps.freshness.outputs.drift || 'unknown' }}"
             echo "- Deploy input enabled: ${{ github.event.inputs.deploy != 'false' }}"
             echo "- Mode: ${{ github.event.inputs.mode || 'incremental' }}"
+            echo "- Telegram report: ${{ steps.telegram_notify.outcome || 'not-run' }}"
           } >> "$GITHUB_STEP_SUMMARY"

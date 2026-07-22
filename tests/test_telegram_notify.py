@@ -108,6 +108,20 @@ class TelegramNotifyTests(unittest.TestCase):
         self.assertLessEqual(len(text), self.module.MAX_MESSAGE_LENGTH)
         self.assertTrue(text.endswith("…"))
 
+    def test_message_normalization_preserves_report_line_breaks(self) -> None:
+        text = self.module.normalize_message_text("Title\n\n  New   plates:  30  \nDone")
+
+        self.assertEqual(text, "Title\n\nNew plates: 30\nDone")
+
+    def test_send_text_can_be_loaded_from_utf8_file(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "report.txt"
+            path.write_text("New plate records: +30\n", encoding="utf-8")
+
+            text = self.module.resolve_send_text(text_file=str(path))
+
+        self.assertEqual(text, "New plate records: +30\n")
+
     def test_get_updates_discovers_unique_private_and_group_chat_ids(self) -> None:
         updates = [
             {
