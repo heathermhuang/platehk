@@ -4,13 +4,14 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "Discover TELEGRAM_CHAT_ID or test configured delivery"
+        description: "Discover chat, test delivery, or replay the latest data-update summary"
         type: choice
         required: true
         default: discover
         options:
           - discover
           - test
+          - update-summary
   issues:
     types:
       - opened
@@ -34,6 +35,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
+          fetch-depth: 0
           persist-credentials: false
 
       - name: Send Telegram configuration test
@@ -56,6 +58,52 @@ jobs:
         run: >-
           python scripts/notify_telegram.py discover-chat
           --summary-file "$GITHUB_STEP_SUMMARY"
+
+      - name: Build latest update summary
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'update-summary' }}
+        run: |
+          update_commit="$(git log --format=%H --grep='^Auto-update PlateHK data (' -n 1)"
+          if [ -z "$update_commit" ]; then
+            echo "::error::No Auto-update PlateHK data commit was found."
+            exit 1
+          fi
+          before_commit="$(git rev-parse "${update_commit}^")"
+          git worktree add --detach "$RUNNER_TEMP/platehk-report-before" "$before_commit"
+          python scripts/build_update_telegram_report.py snapshot \
+            --root "$RUNNER_TEMP/platehk-report-before" \
+            --output "$RUNNER_TEMP/platehk-before-update.json"
+          python scripts/check_production_freshness.py \
+            --base-url https://plate.hk \
+            --fail-on-drift
+          python scripts/build_update_telegram_report.py report \
+            --before "$RUNNER_TEMP/platehk-before-update.json" \
+            --output "$RUNNER_TEMP/platehk-update-report.txt" \
+            --generated-changed true \
+            --committed true \
+            --deploy-enabled true \
+            --drift-before true \
+            --mode replay-latest \
+            --commit-sha "$update_commit"
+          {
+            echo "### Latest update summary replay"
+            echo ""
+            echo '```text'
+            cat "$RUNNER_TEMP/platehk-update-report.txt"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Send latest update summary
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'update-summary' }}
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TELEGRAM_MESSAGE_THREAD_ID: ${{ secrets.TELEGRAM_MESSAGE_THREAD_ID }}
+          TELEGRAM_LINK: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: >-
+          python scripts/notify_telegram.py send
+          --text-file "$RUNNER_TEMP/platehk-update-report.txt"
+          --link-env TELEGRAM_LINK
+          --link-label "View replay run"
 
       - name: Send issue activity to Telegram
         if: ${{ github.event_name != 'workflow_dispatch' }}
