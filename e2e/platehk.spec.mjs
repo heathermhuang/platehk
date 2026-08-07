@@ -44,6 +44,20 @@ async function runAxe(page) {
   expect(blocking).toEqual([]);
 }
 
+function futureAuctionEvents(count) {
+  const baseStart = Date.now() + 86_400_000;
+  return Array.from({ length: count }, (_, index) => ({
+    id: `test-event-${index + 1}`,
+    type: index === 0 ? "pvrm_registration" : "tvrm_physical",
+    start_at: new Date(baseStart + (index * 86_400_000)).toISOString(),
+    end_at: new Date(baseStart + ((index + 1) * 86_400_000)).toISOString(),
+    date_label_en: `Test event ${index + 1}`,
+    date_label_zh: `測試日程 ${index + 1}`,
+    source_page_url_en: "https://www.td.gov.hk/en/",
+    source_page_url_zh: "https://www.td.gov.hk/tc/",
+  }));
+}
+
 test.describe("Plate.hk public API", () => {
   test("serves dataset, search, issue and agent discovery contracts", async ({ request }) => {
     const indexResp = await request.get("/api/v1/index.json");
@@ -122,6 +136,91 @@ test.describe("Plate.hk public API", () => {
 });
 
 test.describe("Plate.hk browser journeys", () => {
+  test("shows at most four auction events in the desktop calendar slider", async ({ page }, testInfo) => {
+    test.skip(!testInfo.project.name.includes("desktop"), "Desktop-only calendar behavior");
+    const errors = collectBrowserErrors(page);
+    await page.route("**/data/events.json", (route) => route.fulfill({ json: { events: futureAuctionEvents(6) } }));
+
+    await page.goto("/?lang=en");
+    const slider = page.locator("[data-agenda-slider]");
+    await expect(slider).toBeVisible();
+    await expect(slider.locator(".agenda-item")).toHaveCount(6);
+    await expect(slider.locator("[data-agenda-range]")).toHaveText("1–4 / 6");
+    await expect(slider.locator("[data-agenda-previous]")).toBeDisabled();
+
+    const listBox = await slider.locator(".agenda-list").boundingBox();
+    const fifthBox = await slider.locator(".agenda-item").nth(4).boundingBox();
+    expect(fifthBox.x).toBeGreaterThanOrEqual(listBox.x + listBox.width);
+
+    await slider.locator("[data-agenda-next]").click();
+    await expect(slider.locator("[data-agenda-range]")).toHaveText("2–5 / 6");
+    await expect.poll(async () => slider.locator(".agenda-item").nth(4).evaluate((item) => {
+      const list = item.closest(".agenda-list");
+      const itemRect = item.getBoundingClientRect();
+      const listRect = list.getBoundingClientRect();
+      return itemRect.left >= listRect.left - 1 && itemRect.right <= listRect.right + 1;
+    })).toBe(true);
+
+    await slider.locator("[data-agenda-next]").click();
+    await expect(slider.locator("[data-agenda-range]")).toHaveText("3–6 / 6");
+    await expect(slider.locator("[data-agenda-next]")).toBeDisabled();
+    await expect(slider.locator("[data-agenda-previous]")).toBeEnabled();
+    await slider.locator("[data-agenda-previous]").click();
+    await expect(slider.locator("[data-agenda-range]")).toHaveText("2–5 / 6");
+
+    await slider.locator(".agenda-list").evaluate((list) => list.scrollTo({ left: list.scrollWidth, behavior: "auto" }));
+    await expect(slider.locator("[data-agenda-range]")).toHaveText("3–6 / 6");
+
+    await page.locator("#langZh").click();
+    await expect(page.locator("[data-agenda-slider]")).toHaveCount(1);
+    await expect(page.locator("[data-agenda-range]")).toHaveText("1–4 / 6");
+    await expect(page.locator("[data-agenda-previous]")).toHaveAttribute("aria-label", "顯示較早的拍賣日程");
+    await page.locator("[data-agenda-next]").click();
+    await expect(page.locator("[data-agenda-range]")).toHaveText("2–5 / 6");
+
+    await page.setViewportSize({ width: 800, height: 900 });
+    await expect(page.locator(".agenda-slider-controls")).toBeHidden();
+    await expect.poll(async () => page.locator(".agenda-list").evaluate((list) => ({
+      scrollLeft: list.scrollLeft,
+      hasHorizontalOverflow: list.scrollWidth > list.clientWidth + 1,
+    }))).toEqual({ scrollLeft: 0, hasHorizontalOverflow: false });
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect.poll(async () => page.locator(".agenda-item").evaluateAll((items) => {
+      const first = items[0].getBoundingClientRect();
+      return items.slice(1).every((item) => item.getBoundingClientRect().top > first.top);
+    })).toBe(true);
+
+    await page.setViewportSize({ width: 1366, height: 900 });
+    await expect(page.locator(".agenda-slider-controls")).toBeVisible();
+    await expect(page.locator("[data-agenda-range]")).toHaveText("1–4 / 6");
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.locator(".agenda-list").evaluate((list) => {
+      const nativeScrollTo = list.scrollTo.bind(list);
+      list.scrollTo = (options) => {
+        list.dataset.lastScrollBehavior = options.behavior;
+        nativeScrollTo(options);
+      };
+    });
+    await page.locator("[data-agenda-next]").click();
+    await expect(page.locator(".agenda-list")).toHaveAttribute("data-last-scroll-behavior", "auto");
+    await expectNoBrowserErrors(errors);
+  });
+
+  test("does not create a desktop slider for exactly four auction events", async ({ page }, testInfo) => {
+    test.skip(!testInfo.project.name.includes("desktop"), "Desktop-only calendar behavior");
+    const errors = collectBrowserErrors(page);
+    await page.route("**/data/events.json", (route) => route.fulfill({ json: { events: futureAuctionEvents(4) } }));
+
+    await page.goto("/?lang=en");
+    const agenda = page.locator(".auction-agenda");
+    await expect(agenda.locator(".agenda-item")).toHaveCount(4);
+    await expect(agenda.locator("[data-agenda-slider]")).toHaveCount(0);
+    await expect(agenda.locator(".agenda-slider-controls")).toHaveCount(0);
+    await expect(agenda.locator(".agenda-list")).toHaveJSProperty("scrollWidth", await agenda.locator(".agenda-list").evaluate((list) => list.clientWidth));
+    await expectNoBrowserErrors(errors);
+  });
+
   test("searches all datasets, opens an issue view and generates a share poster", async ({ page }) => {
     const errors = collectBrowserErrors(page);
 

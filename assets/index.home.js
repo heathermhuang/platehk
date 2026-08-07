@@ -23,6 +23,8 @@ window.createPlateIndexHomeViews = function createPlateIndexHomeViews(deps) {
     getEventFeed = () => null,
   } = deps;
 
+  let disposeAgendaSlider = () => {};
+
   function renderFactCards(facts) {
     const items = (facts || []).filter((x) => x && x.v != null && x.v !== "");
     if (!items.length) return "";
@@ -378,6 +380,95 @@ window.createPlateIndexHomeViews = function createPlateIndexHomeViews(deps) {
       .sort((a, b) => a.startMs - b.startMs);
   }
 
+  function initAgendaSlider() {
+    disposeAgendaSlider();
+    disposeAgendaSlider = () => {};
+
+    const slider = issueGuideEl.querySelector("[data-agenda-slider]");
+    if (!slider) return;
+    const list = slider.querySelector(".agenda-list");
+    const items = Array.from(slider.querySelectorAll(".agenda-item"));
+    const previousButton = slider.querySelector("[data-agenda-previous]");
+    const nextButton = slider.querySelector("[data-agenda-next]");
+    const range = slider.querySelector("[data-agenda-range]");
+    if (!list || !previousButton || !nextButton || !range || items.length <= 4) return;
+
+    const desktopQuery = window.matchMedia("(min-width: 1101px)");
+    const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const maxStartIndex = items.length - 4;
+    let startIndex = 0;
+    let scrollFrame = null;
+
+    function updateControls() {
+      previousButton.disabled = startIndex === 0;
+      nextButton.disabled = startIndex === maxStartIndex;
+      range.textContent = t("auctionAgendaSliderRange")(
+        startIndex + 1,
+        Math.min(startIndex + 4, items.length),
+        items.length
+      );
+    }
+
+    function scrollToStart(nextStartIndex, smooth = true) {
+      startIndex = Math.max(0, Math.min(nextStartIndex, maxStartIndex));
+      updateControls();
+      if (!desktopQuery.matches) return;
+      const target = items[startIndex];
+      const targetLeft = target.getBoundingClientRect().left - list.getBoundingClientRect().left + list.scrollLeft;
+      list.scrollTo({
+        left: targetLeft,
+        behavior: smooth && !reducedMotionQuery.matches ? "smooth" : "auto",
+      });
+    }
+
+    function syncIndexFromScroll() {
+      if (!desktopQuery.matches) return;
+      const listLeft = list.getBoundingClientRect().left;
+      let closestIndex = 0;
+      let closestDistance = Number.POSITIVE_INFINITY;
+      items.forEach((item, index) => {
+        const distance = Math.abs(item.getBoundingClientRect().left - listLeft);
+        if (distance < closestDistance) {
+          closestDistance = distance;
+          closestIndex = index;
+        }
+      });
+      startIndex = Math.min(closestIndex, maxStartIndex);
+      updateControls();
+    }
+
+    function handleScroll() {
+      if (scrollFrame != null) cancelAnimationFrame(scrollFrame);
+      scrollFrame = requestAnimationFrame(syncIndexFromScroll);
+    }
+
+    function handleViewportChange() {
+      if (!desktopQuery.matches) {
+        startIndex = 0;
+        list.scrollLeft = 0;
+        updateControls();
+        return;
+      }
+      scrollToStart(startIndex, false);
+    }
+
+    const handlePrevious = () => scrollToStart(startIndex - 1);
+    const handleNext = () => scrollToStart(startIndex + 1);
+    previousButton.addEventListener("click", handlePrevious);
+    nextButton.addEventListener("click", handleNext);
+    list.addEventListener("scroll", handleScroll, { passive: true });
+    desktopQuery.addEventListener("change", handleViewportChange);
+    updateControls();
+
+    disposeAgendaSlider = () => {
+      previousButton.removeEventListener("click", handlePrevious);
+      nextButton.removeEventListener("click", handleNext);
+      list.removeEventListener("scroll", handleScroll);
+      desktopQuery.removeEventListener("change", handleViewportChange);
+      if (scrollFrame != null) cancelAnimationFrame(scrollFrame);
+    };
+  }
+
   function renderAuctionAgendaCard() {
     const currentLang = getCurrentLang();
     const nowMs = Date.now();
@@ -387,32 +478,46 @@ window.createPlateIndexHomeViews = function createPlateIndexHomeViews(deps) {
       items = fallbackAgendaItems(nowMs, official).filter((item) => nowMs <= item.endMs);
     }
 
+    const hasSlider = items.length > 4;
     const bodyHtml = items.length
       ? `
         <div class="auction-agenda">
-          <div class="agenda-list">
-            ${items
-              .map((item) => {
-                const status = agendaStatus(item, nowMs);
-                return `
-                  <article class="agenda-item">
-                    <div class="agenda-date">${escapeHtml(formatAgendaRange(item))}</div>
-                    <div class="agenda-main">
-                      <div class="agenda-text">
-                        <div class="agenda-meta">
-                          <span class="agenda-type">${escapeHtml(item.type)}</span>
-                          <span class="agenda-status ${escapeHtml(status.className)}">${escapeHtml(status.label)}</span>
+          <div class="agenda-slider${hasSlider ? " has-slider" : ""}"${hasSlider ? " data-agenda-slider" : ""}>
+            <div class="agenda-list"${hasSlider ? ` id="auctionAgendaList" tabindex="0" aria-label="${escapeHtml(t("auctionAgendaTitle"))}"` : ""}>
+              ${items
+                .map((item) => {
+                  const status = agendaStatus(item, nowMs);
+                  return `
+                    <article class="agenda-item">
+                      <div class="agenda-date">${escapeHtml(formatAgendaRange(item))}</div>
+                      <div class="agenda-main">
+                        <div class="agenda-text">
+                          <div class="agenda-meta">
+                            <span class="agenda-type">${escapeHtml(item.type)}</span>
+                            <span class="agenda-status ${escapeHtml(status.className)}">${escapeHtml(status.label)}</span>
+                          </div>
+                          <div class="agenda-title">${escapeHtml(item.title)}</div>
                         </div>
-                        <div class="agenda-title">${escapeHtml(item.title)}</div>
+                        <div class="agenda-actions">
+                          ${item.links.map((link) => `<a class="agenda-link" href="${escapeHtml(link.href)}" target="_blank" rel="noopener">${escapeHtml(link.text)}</a>`).join("")}
+                        </div>
                       </div>
-                      <div class="agenda-actions">
-                        ${item.links.map((link) => `<a class="agenda-link" href="${escapeHtml(link.href)}" target="_blank" rel="noopener">${escapeHtml(link.text)}</a>`).join("")}
-                      </div>
-                    </div>
-                  </article>
-                `;
-              })
-              .join("")}
+                    </article>
+                  `;
+                })
+                .join("")}
+            </div>
+            ${hasSlider ? `
+              <div class="agenda-slider-controls" role="group" aria-label="${escapeHtml(t("auctionAgendaSliderControls"))}">
+                <button class="agenda-slider-button" type="button" data-agenda-previous aria-controls="auctionAgendaList" aria-label="${escapeHtml(t("auctionAgendaSliderPrevious"))}">
+                  <span aria-hidden="true">←</span>
+                </button>
+                <span class="agenda-slider-range" data-agenda-range aria-live="polite"></span>
+                <button class="agenda-slider-button" type="button" data-agenda-next aria-controls="auctionAgendaList" aria-label="${escapeHtml(t("auctionAgendaSliderNext"))}">
+                  <span aria-hidden="true">→</span>
+                </button>
+              </div>
+            ` : ""}
           </div>
           <div class="agenda-note">${escapeHtml(t("auctionAgendaVerifyNote"))}</div>
         </div>
@@ -445,6 +550,8 @@ window.createPlateIndexHomeViews = function createPlateIndexHomeViews(deps) {
   }
 
   function renderHomeCards() {
+    disposeAgendaSlider();
+    disposeAgendaSlider = () => {};
     const currentDataset = getCurrentDataset();
     homeShelfEl.dataset.homeMode = currentDataset === "all" ? "agenda" : "issues";
     datasetGuideEl.innerHTML = renderDatasetGuideCard();
@@ -452,6 +559,7 @@ window.createPlateIndexHomeViews = function createPlateIndexHomeViews(deps) {
       issueGuideEl.innerHTML = renderAuctionAgendaCard();
       issueGuideEl.hidden = false;
       syncHomeCardCollapseState();
+      initAgendaSlider();
       return;
     }
     issueGuideEl.innerHTML = renderIssueGuideCard();
