@@ -10,15 +10,17 @@ const searchIndexMeta = {
   row_metadata: [
     ["pvrm", "pvrm::2026-01-01", "2026-01-01", "2026年1月1日", null, null, false, "https://example.test/pvrm.pdf", null, null, null, null],
     ["tvrm_physical", "tvrm_physical::2026-02-02", "2026-02-02", "2026年2月2日", "day", null, false, "https://example.test/tvrm.pdf", null, null, null, null],
+    ["tvrm_legacy", "tvrm_legacy::2000-01-01", "2000-01-01", "2000-2006", "year_range", "2000-2006", false, "https://example.test/legacy.xls", "https://example.test/legacy.xls", "xls", "xls_legacy_year_range", "2000-2009"],
   ],
   result_states: [[null, null], ["sold", "sold"]],
-  prefix_counts: { H: 2, D: 1 },
-  bigram_counts: { HU: 4, UA: 2, AN: 3, NG: 4, DR: 1, RH: 1 },
+  prefix_counts: { H: 2, D: 1, K: 1 },
+  bigram_counts: { HU: 4, UA: 2, AN: 3, NG: 4, DR: 1, RH: 1, KL: 1, L7: 2, 77: 3 },
 };
 const compactSearchRows = [
   [0, "HUANG", null, 100000, 1],
   [1, "DR HUANG", ["DR", "HUANG"], 200000, 1],
 ];
+const legacySearchRows = [[2, "KL 777", null, 28000, 1]];
 let marketPayload = {
   schema_version: 1,
   source: "28car",
@@ -55,8 +57,11 @@ const env = {
       if (decodeURIComponent(url.pathname) === "/api/v1/all/search-index/bigram/UA.json") {
         return Response.json({ rows: compactSearchRows });
       }
+      if (decodeURIComponent(url.pathname) === "/api/v1/all/search-index/bigram/KL.json") {
+        return Response.json({ rows: legacySearchRows });
+      }
       if (decodeURIComponent(url.pathname) === "/data/all.tvrm_legacy_overlap.json") {
-        return Response.json({ keys: [], exact_keys: [] });
+        return Response.json({ keys: ['["KL777",28000]'], exact_keys: [] });
       }
       if (decodeURIComponent(url.pathname) === "/_market/28car/T.json") {
         return Response.json(marketPayload);
@@ -98,6 +103,29 @@ assert.equal(datasetSearchResponse.status, 200);
 const datasetSearch = await datasetSearchResponse.json();
 assert.equal(datasetSearch.total, 1);
 assert.equal(datasetSearch.rows[0].dataset_key, "pvrm");
+
+const legacyDatasetResponse = await worker.fetch(
+  new Request("https://legacy-search.plate.hk/api/search?dataset=tvrm_legacy&q=KL777&page=1&page_size=20&sort=amount_desc", {
+    headers: { "cf-connecting-ip": "192.0.2.22" },
+  }),
+  env,
+  ctx,
+);
+assert.equal(legacyDatasetResponse.status, 200);
+const legacyDatasetSearch = await legacyDatasetResponse.json();
+assert.equal(legacyDatasetSearch.total, 1);
+assert.equal(legacyDatasetSearch.rows[0].single_line, "KL 777");
+
+const unifiedOverlapResponse = await worker.fetch(
+  new Request("https://overlap-search.plate.hk/api/search?dataset=all&q=KL777&page=1&page_size=20&sort=amount_desc", {
+    headers: { "cf-connecting-ip": "192.0.2.23" },
+  }),
+  env,
+  ctx,
+);
+assert.equal(unifiedOverlapResponse.status, 200);
+const unifiedOverlapSearch = await unifiedOverlapResponse.json();
+assert.equal(unifiedOverlapSearch.total, 0);
 
 const signalResponse = await worker.fetch(
   new Request("https://plate.hk/api/market_signal?plate=TEST8", {

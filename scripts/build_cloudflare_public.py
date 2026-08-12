@@ -251,6 +251,39 @@ def build_complete_search_index(rows: list[dict], dataset_dir: Path) -> None:
         write_json(bigram_dir / f"{token}.json", {"rows": bucket})
 
 
+def load_complete_search_index_rows() -> list[dict]:
+    """Load every child dataset row before unified-view overlap filtering."""
+    rows: list[dict] = []
+    for dataset in API_V1_DATASETS:
+        if dataset == "all":
+            continue
+        source = ROOT / "api" / "v1" / dataset / "results.slim.json"
+        if not source.exists():
+            continue
+        auctions_source = ROOT / "api" / "v1" / dataset / "auctions.json"
+        auctions = json.loads(auctions_source.read_text()) if auctions_source.exists() else []
+        auctions_by_date = {
+            str(auction.get("auction_date") or ""): auction
+            for auction in auctions
+            if isinstance(auction, dict)
+        }
+        for source_row in json.loads(source.read_text()):
+            row = dict(source_row)
+            auction_date = str(row.get("auction_date") or "")
+            auction = auctions_by_date.get(auction_date, {})
+            row["dataset_key"] = dataset
+            row["auction_key"] = f"{dataset}::{auction_date}" if auction_date else ""
+            for key in ("auction_date_label", "date_precision", "year_range"):
+                if row.get(key) is None and auction.get(key) is not None:
+                    row[key] = auction[key]
+            row["is_lny"] = bool(row.get("is_lny") if row.get("is_lny") is not None else auction.get("is_lny"))
+            for key in ("pdf_url", "source_url", "source_format", "source_type", "source_sheet"):
+                if not row.get(key) and auction.get(key):
+                    row[key] = auction[key]
+            rows.append(row)
+    return rows
+
+
 def copy_public_data_files() -> None:
     data_root = ROOT / "data"
     target_data = TARGET / "data"
@@ -371,8 +404,6 @@ def build_results_chunks(dataset: str) -> None:
             "end": idx + len(chunk) - 1,
         })
     write_json(dataset_dir / "results.chunks.json", manifest)
-    if dataset == "all":
-        build_complete_search_index(rows, dataset_dir)
 
 
 def prune_oversized_assets() -> None:
@@ -452,6 +483,7 @@ def main(*, require_market_snapshot: bool = False) -> None:
     for dataset in API_V1_DATASETS:
         copy_path(ROOT / "api" / "v1" / dataset, api_v1_dir / dataset)
         build_results_chunks(dataset)
+    build_complete_search_index(load_complete_search_index_rows(), api_v1_dir / "all")
     prune_oversized_assets()
     stamp_service_worker_cache_name()
 
