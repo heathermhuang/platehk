@@ -18,10 +18,35 @@ ROOT = Path(__file__).resolve().parents[1]
 
 class WorkflowTests(unittest.TestCase):
     def test_scheduled_workflows_use_ci_deploy_command(self) -> None:
+        package = json.loads((ROOT / "package.json").read_text(encoding="utf-8"))
+        self.assertIn("--require-market-snapshot", package["scripts"]["cf:deploy"])
+        self.assertIn("--require-market-snapshot", package["scripts"]["cf:deploy:ci"])
         for workflow_name in ["auto-update.yml", "auto-heal.yml"]:
             workflow = (ROOT / ".github" / "workflows" / workflow_name).read_text(encoding="utf-8")
             self.assertIn("run: npm run cf:deploy:ci", workflow)
             self.assertNotIn("run: npm run cf:deploy\n", workflow)
+
+    def test_market_refresh_and_broker_notification_workflows_are_wired(self) -> None:
+        auto_update = (ROOT / ".github" / "workflows" / "auto-update.yml").read_text(encoding="utf-8")
+        scrape_marker = "python scripts/scrape_28car_market.py"
+        updater_marker = "run: bash scripts/cron_update.sh"
+        self.assertIn('cron: "40 0 * * *"', auto_update)
+        self.assertIn("--max-pages 0", auto_update)
+        self.assertIn("--require-complete", auto_update)
+        self.assertLess(auto_update.index(scrape_marker), auto_update.index(updater_marker))
+
+        notifications = (ROOT / ".github" / "workflows" / "broker-notifications.yml").read_text(encoding="utf-8")
+        self.assertIn('cron: "*/5 * * * *"', notifications)
+        self.assertIn("BROKER_NOTIFY_TOKEN: ${{ secrets.BROKER_NOTIFY_TOKEN }}", notifications)
+        self.assertIn("TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}", notifications)
+        self.assertIn("https://plate.hk/api/internal/broker_notifications", notifications)
+
+        auto_heal = (ROOT / ".github" / "workflows" / "auto-heal.yml").read_text(encoding="utf-8")
+        self.assertIn("python scripts/scrape_28car_market.py", auto_heal)
+        self.assertIn("--require-complete", auto_heal)
+        self.assertLess(auto_heal.index("python scripts/scrape_28car_market.py"), auto_heal.index("Execute deterministic repair"))
+        for workflow in (auto_update, auto_heal):
+            self.assertIn("python scripts/check_market_production.py --base-url https://plate.hk", workflow)
 
     def test_auto_heal_supports_safe_repair_drills(self) -> None:
         workflow = (ROOT / ".github" / "workflows" / "auto-heal.yml").read_text(encoding="utf-8")
@@ -386,6 +411,7 @@ class WorkflowTests(unittest.TestCase):
         self.assertTrue((publish / "data" / "all.prefix2" / "HK.json").exists())
         self.assertTrue((publish / ".well-known" / "api-catalog.json").exists())
         self.assertTrue((publish / ".well-known" / "agent-skills" / "index.json").exists())
+        self.assertFalse((publish / "data" / "market" / "28car.active.json").exists())
         sw = (publish / "sw.js").read_text(encoding="utf-8")
         self.assertRegex(sw, r"const CACHE_NAME = 'pvrm-static-[0-9a-f]{12}';")
         self.assertFalse(list((publish / "plates").glob("* [0-9].html")))
@@ -408,6 +434,69 @@ class WorkflowTests(unittest.TestCase):
             target = Path(tmp) / "publish" / "data" / "missing-index"
             module.copy_optional_path(Path(tmp) / "missing-index", target)
             self.assertFalse(target.exists())
+
+    def test_private_market_snapshot_is_sharded_and_rejects_extra_fields(self) -> None:
+        spec = importlib.util.spec_from_file_location(
+            "build_cloudflare_public_market_test",
+            ROOT / "scripts" / "build_cloudflare_public.py",
+        )
+        self.assertIsNotNone(spec)
+        self.assertIsNotNone(spec.loader)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+
+        offer = {
+            "listing_id": "n12",
+            "source_url": "https://m.28car.com/num_dsp.php?h_vid=12",
+            "price_type": "fixed",
+            "asking_price_hkd": 80000,
+            "first_seen_at": "2026-08-12T00:00:00Z",
+            "last_seen_at": "2026-08-12T00:00:00Z",
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_root = Path(tmp)
+            source = tmp_root / "data" / "market" / "28car.active.json"
+            source.parent.mkdir(parents=True)
+            payload = {
+                "schema_version": 1,
+                "source": "28car",
+                "scraped_at": "2026-08-12T00:00:00Z",
+                "fresh_for_hours": 72,
+                "coverage": {"complete": True},
+                "signal_count": 1,
+                "plate_count": 1,
+                "signals": {"JZ": [offer]},
+            }
+            source.write_text(json.dumps(payload), encoding="utf-8")
+            module.ROOT = tmp_root
+            module.TARGET = tmp_root / "publish"
+            module.copy_private_market_signals()
+
+            manifest = json.loads((module.TARGET / "_market" / "28car" / "manifest.json").read_text())
+            shard = json.loads((module.TARGET / "_market" / "28car" / "J.json").read_text())
+            self.assertNotIn("signals", manifest)
+            self.assertEqual(shard["signals"]["JZ"], [offer])
+            self.assertFalse((module.TARGET / "data" / "market" / "28car.active.json").exists())
+
+            payload["signals"]["JZ"][0]["seller"] = "must not publish"
+            source.write_text(json.dumps(payload), encoding="utf-8")
+            with self.assertRaisesRegex(RuntimeError, "Non-allowlisted"):
+                module.copy_private_market_signals()
+
+    def test_deploy_publish_requires_a_complete_fresh_private_market_snapshot(self) -> None:
+        spec = importlib.util.spec_from_file_location(
+            "build_cloudflare_public_deploy_market_test",
+            ROOT / "scripts" / "build_cloudflare_public.py",
+        )
+        self.assertIsNotNone(spec)
+        self.assertIsNotNone(spec.loader)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            module.ROOT = Path(tmp)
+            with self.assertRaisesRegex(RuntimeError, "required for deploys"):
+                module.copy_private_market_signals(required=True)
 
     def test_release_ready_script_runs(self) -> None:
         proc = subprocess.run(

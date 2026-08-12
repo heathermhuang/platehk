@@ -3,7 +3,7 @@ import { spawnSync } from "node:child_process";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
-export const REQUIRED_SECRETS = ["OPENAI_API_KEY"];
+export const REQUIRED_SECRETS = ["OPENAI_API_KEY", "BROKER_NOTIFY_TOKEN"];
 const WRANGLER_BIN = process.env.WRANGLER_BIN || "wrangler";
 const DEFAULT_TIMEOUT_MS = 60000;
 
@@ -140,7 +140,7 @@ export function main() {
   if (missing.length) {
     fail(
       `Missing Cloudflare Worker secret(s): ${missing.join(", ")}`,
-      "Set the OpenAI key without committing it: `wrangler secret put OPENAI_API_KEY`.",
+      "Set missing values without committing them: `wrangler secret put OPENAI_API_KEY` and `wrangler secret put BROKER_NOTIFY_TOKEN`.",
     );
   }
 

@@ -4,13 +4,14 @@ This document captures the current application threat model, attack surface, and
 
 ## Assessment Date
 
-- Reviewed: 2026-05-16
+- Reviewed: 2026-08-12
 - Scope:
   - static frontend
   - Cloudflare Worker API routes
   - OCR vision endpoint
   - generated public data artifacts
   - MCP and OAuth discovery surfaces
+  - external sale-signal ingestion and confidential buyer mandates
 
 ## System Overview
 
@@ -19,6 +20,7 @@ This document captures the current application threat model, attack surface, and
 - Sensitive integrations:
   - OpenAI Responses API for server-side plate vision OCR
   - Worker secrets for OCR, session signing, and optional OAuth clients
+  - Cloudflare KV for confidential buyer mandates
 - Primary public entry points:
   - `/api/search`
   - `/api/results`
@@ -28,9 +30,13 @@ This document captures the current application threat model, attack surface, and
   - `/api/vision_session`
   - `/api/vision_plate`
   - `/api/oauth/token`
+  - `/api/market_signal`
+  - `/api/broker_inquiry`
   - `/mcp`
   - `/.well-known/*` discovery documents
   - `/camera.html`
+- Protected operational entry point:
+  - `/api/internal/broker_notifications`
 
 ## Data Classification
 
@@ -43,7 +49,9 @@ This document captures the current application threat model, attack surface, and
   - OpenAI API credentials
   - OCR session signing secrets
   - OAuth signing keys and client secrets
+  - broker-notification bearer token
   - temporary user-submitted OCR image payloads in transit
+  - buyer mandate contact details, budget, notes, and consent records
   - rate-limit state and operational logs
 
 ## Trust Boundaries
@@ -53,6 +61,9 @@ This document captures the current application threat model, attack surface, and
 3. Cloudflare Worker -> static asset binding
 4. Cloudflare Worker -> OpenAI API
 5. Build scripts -> generated public data
+6. Market ingester -> public 28car listing pages
+7. Cloudflare Worker -> private buyer-mandate KV binding
+8. GitHub Actions notifier -> authenticated Worker operations endpoint -> private Telegram channel
 
 ## Attack Surface
 
@@ -63,6 +74,7 @@ This document captures the current application threat model, attack surface, and
 - OAuth token endpoint for machine OCR clients
 - MCP tool endpoint and discovery documents
 - Static generated data that can be scraped at scale
+- Exact-match external sale-signal lookup and buyer-mandate POST endpoint
 
 ### Internal
 
@@ -70,6 +82,7 @@ This document captures the current application threat model, attack surface, and
 - Worker secrets configured through Cloudflare
 - Local build and deploy scripts
 - Generated static asset publish directory under `.tmp/cloudflare-public`
+- Bearer-authenticated broker notification queue endpoint
 
 ## STRIDE Summary
 
@@ -78,6 +91,10 @@ This document captures the current application threat model, attack surface, and
 | Spoofing | Browser OCR requests | Medium | Same-origin checks plus signed vision session token and Strict cookie binding |
 | Spoofing | Machine OCR clients | Medium | OAuth client credentials and scoped bearer tokens |
 | Tampering | Query params / JSON body | Medium | Strict dataset validation, normalized query handling, JSON content-type enforcement |
+| Spoofing / Spam | Buyer mandate submissions | Medium | Same-origin enforcement, honeypot, strict field validation, active-listing recheck, and IP rate limits |
+| Information Disclosure | Buyer mandate data | High -> Lowered | Dedicated private KV, 90-day TTL, no public read route, minimal fields, and no IP/user-agent stored in mandate values |
+| Information Disclosure | Buyer mandate notifications | Medium -> Lowered | Timing-safe bearer authentication, 7-day notification TTL, metadata-only messages, and acknowledgement only after Telegram delivery |
+| Information Disclosure | 28car seller data | Medium -> Lowered | Allowlisted ingestion schema discards seller names, phones, descriptions, photos, comments, and views |
 | Repudiation | Abuse visibility | Medium | Rate limiting, Worker error logging, and security summarization tooling |
 | Information Disclosure | Secrets and local files | Medium | Worker secrets, ignored local env files, repository secret scan, and static publish allowlist |
 | Denial of Service | Public read APIs | Medium | Endpoint-specific IP rate limiting, page-size caps, short-query page caps, and cache-backed responses |
@@ -110,6 +127,17 @@ This document captures the current application threat model, attack surface, and
   - normalized, bounded query inputs
   - no-store API response headers
   - cache-backed responses for hot static payloads
+- Market and mandate protections:
+  - exact-plate signal responses rather than a bulk market API
+  - aggregate market snapshots are gitignored and exist only transiently on the private update runner
+  - direct `/_market/*` requests blocked by the Worker
+  - source URL host allowlisting and freshness expiry
+  - POST-only, same-origin, JSON-only mandate submission
+  - active-listing verification before a mandate is accepted
+  - dedicated KV binding with a 90-day automatic expiry
+  - no seller contact fields in the scrape output and no buyer IP/user-agent in lead records
+  - timing-safe bearer authentication on the internal notification endpoint
+  - notification payloads exclude buyer contact values and notes
 - Repository safeguards:
   - `scripts/scan_repo_secrets.py`
   - `.github/workflows/security.yml`
@@ -123,6 +151,10 @@ This document captures the current application threat model, attack surface, and
 3. Vision OCR still incurs external API cost and should be monitored for unusual spikes.
 4. Local developer secrets in ignored files remain a manual operational risk until rotated or moved fully into managed secret stores.
 5. Static search indexes and public JSON artifacts intentionally expose auction data at scale, so abuse prevention is mostly rate/cost control rather than confidentiality.
+6. Worker isolate-local mandate rate limiting is not globally consistent; production should add Cloudflare-native rate limiting or Turnstile before paid acquisition.
+7. A third-party listing signal can be stale or legally non-transferable even within the freshness window; human verification remains mandatory.
+8. The approved daily full crawl remains dependent on 28car's public layout and `robots.txt`; the scraper fails closed, but source-policy and terms changes still require operational review.
+9. KV is eventually consistent, so a newly submitted inquiry notification may take roughly a minute to become visible to the scheduled notifier.
 
 ## Required Operational Follow-Up
 
@@ -131,6 +163,9 @@ This document captures the current application threat model, attack surface, and
 3. Add centralized Cloudflare-native rate limiting for high-volume public endpoints.
 4. Run `python3 scripts/scan_repo_secrets.py` before public commits or releases.
 5. Keep `api/openapi.yaml`, API docs, and Worker routes aligned.
+6. Restrict operational access to the dedicated `BROKER_LEADS` namespace and never commit exported values.
+7. Rotate `BROKER_NOTIFY_TOKEN` if either GitHub Actions or Cloudflare access is suspected to be compromised.
+8. Review the daily crawl after any 28car policy, terms, or layout change.
 
 ## Future Security Work
 

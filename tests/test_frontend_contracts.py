@@ -24,6 +24,9 @@ class FrontendContractsTests(unittest.TestCase):
         self.assertIn('id="searchPanelTitle"', html)
         self.assertIn('id="homeShelf"', html)
         self.assertIn('id="resultsContext"', html)
+        self.assertIn('id="marketSignal"', html)
+        self.assertIn('id="brokerModal"', html)
+        self.assertIn('id="brokerForm"', html)
         self.assertIn('id="queryLabel"', html)
         self.assertIn('id="datasetLabel"', html)
         self.assertIn('id="issueLabel"', html)
@@ -42,6 +45,16 @@ class FrontendContractsTests(unittest.TestCase):
         self.assertIn("function syncResultsTableMode(", index_home_js)
         self.assertIn("function emptyResultsMessage(", index_home_js)
         self.assertIn("function renderSearchAssist(", index_present_js)
+        market_js = (ROOT / "assets" / "index.market.js").read_text(encoding="utf-8")
+        plate_market_js = (ROOT / "assets" / "plate.market.js").read_text(encoding="utf-8")
+        self.assertIn("function createPlateMarketFlow(", market_js)
+        self.assertIn("./api/market_signal", market_js)
+        self.assertIn("./api/broker_inquiry", market_js)
+        self.assertIn("nofollow noopener noreferrer", market_js)
+        self.assertIn("marketFlow.update({ query: qEl.value, rows: list })", index_js)
+        self.assertIn("availability_detected", plate_market_js)
+        self.assertIn('url.hostname === "m.28car.com"', plate_market_js)
+        self.assertIn("card.hidden = false", plate_market_js)
         self.assertIn("function formatAuctionDate(", index_present_js)
         self.assertIn("function updateIssueTotal(", index_present_js)
         self.assertIn("function parseInitialState(", index_state_js)
@@ -110,6 +123,7 @@ class FrontendContractsTests(unittest.TestCase):
                 "./assets/index.issue.js",
                 "./assets/index.present.js",
                 "./assets/index.share.js",
+                "./assets/index.market.js",
                 "./assets/index.js",
             ],
             "landing.html": ["./assets/landing.js"],
@@ -122,6 +136,14 @@ class FrontendContractsTests(unittest.TestCase):
             html = (ROOT / html_name).read_text(encoding="utf-8")
             for script_path in script_paths:
                 self.assertIn(script_path, html, f"{html_name}: {script_path}")
+
+    def test_service_worker_precaches_every_required_homepage_script(self) -> None:
+        html = (ROOT / "index.html").read_text(encoding="utf-8")
+        service_worker = (ROOT / "sw.js").read_text(encoding="utf-8")
+        required_scripts = re.findall(r'<script src="(\./assets/[^"]+\.js)(?:\?[^"\s]+)?"></script>', html)
+        self.assertIn("./assets/index.market.js", required_scripts)
+        for script_path in required_scripts:
+            self.assertIn(f"'{script_path}'", service_worker, script_path)
 
     def test_public_footers_link_to_github_repository(self) -> None:
         repo_url = "https://github.com/heathermhuang/platehk"
@@ -164,6 +186,23 @@ class FrontendContractsTests(unittest.TestCase):
         self.assertIn("export async function issueVisionSessionToken(", worker_lib)
         self.assertIn("Hong Kong registration marks do not use the letters I, O, or Q", worker_api)
         self.assertIn("香港車牌不使用英文字母 I、O、Q", worker_api)
+
+    def test_market_signal_and_broker_routes_minimise_third_party_data(self) -> None:
+        worker_api = (ROOT / "cloudflare-worker" / "src" / "api.mjs").read_text(encoding="utf-8")
+        worker_index = (ROOT / "cloudflare-worker" / "src" / "index.mjs").read_text(encoding="utf-8")
+        builder = (ROOT / "scripts" / "build_cloudflare_public.py").read_text(encoding="utf-8")
+        scraper = (ROOT / "scripts" / "scrape_28car_market.py").read_text(encoding="utf-8")
+
+        self.assertIn('route === "market_signal"', worker_api)
+        self.assertIn('route === "broker_inquiry"', worker_api)
+        self.assertIn("BROKER_INQUIRY_RETENTION_SECONDS", worker_api)
+        self.assertIn("sameOriginError(request)", worker_api)
+        self.assertIn("decodeURIComponent(url.pathname)", worker_index)
+        self.assertIn('decodedPathname.startsWith("/_market/")', worker_index)
+        self.assertIn("copy_private_market_signals", builder)
+        self.assertIn("validate_payload(payload)", scraper)
+        self.assertNotIn('"seller_name"', scraper)
+        self.assertNotIn('"seller_phone"', scraper)
 
     def test_camera_vision_ignores_non_hong_kong_plate_formats(self) -> None:
         camera_js = (ROOT / "assets" / "camera.js").read_text(encoding="utf-8")

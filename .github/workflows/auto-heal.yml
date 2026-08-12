@@ -214,6 +214,15 @@ jobs:
         if: ${{ steps.plan.outputs.status == 'repairable' || steps.override.outputs.status == 'repairable' }}
         run: npm ci
 
+      - name: Refresh privacy-minimized 28car sale signals
+        if: ${{ steps.plan.outputs.status == 'repairable' || steps.override.outputs.status == 'repairable' }}
+        run: >-
+          python scripts/scrape_28car_market.py
+          --max-pages 0
+          --require-complete
+          --concurrency 4
+          --request-delay 0.75
+
       - name: Execute deterministic repair
         if: ${{ steps.plan.outputs.status == 'repairable' || steps.override.outputs.status == 'repairable' }}
         env:
@@ -310,14 +319,20 @@ jobs:
       - name: Verify production after deploy
         if: ${{ github.event.inputs.deploy != 'false' && (github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run != 'true') && (steps.changes.outputs.changed == 'true' || steps.plan.outputs.deploy_required == 'true' || steps.override.outputs.deploy_required == 'true') }}
         run: |
+          verified=false
           for attempt in 1 2 3 4 5; do
-            if python scripts/check_production_freshness.py --base-url https://plate.hk --fail-on-drift; then
-              exit 0
+            if python scripts/check_production_freshness.py --base-url https://plate.hk --fail-on-drift \
+              && python scripts/check_market_production.py --base-url https://plate.hk; then
+              verified=true
+              break
             fi
             echo "Production is not fresh yet; retrying in 20 seconds (attempt ${attempt}/5)."
             sleep 20
           done
-          python scripts/check_production_freshness.py --base-url https://plate.hk --fail-on-drift
+          if [ "$verified" != "true" ]; then
+            python scripts/check_production_freshness.py --base-url https://plate.hk --fail-on-drift
+            python scripts/check_market_production.py --base-url https://plate.hk
+          fi
 
       - name: Write summary
         if: always()

@@ -176,6 +176,25 @@ function buildEmptySitemapXml() {
 
 async function serveAsset(request, env) {
   const url = new URL(request.url);
+  let decodedPathname = "";
+  try {
+    decodedPathname = decodeURIComponent(url.pathname);
+  } catch {
+    return new Response("Not found", {
+      status: 404,
+      headers: { "cache-control": "no-store", "x-content-type-options": "nosniff" },
+    });
+  }
+  if (decodedPathname === "/_market" || decodedPathname.startsWith("/_market/")) {
+    return new Response("Not found", {
+      status: 404,
+      headers: {
+        "cache-control": "no-store",
+        "x-content-type-options": "nosniff",
+        "x-robots-tag": "noindex, nofollow, noarchive",
+      },
+    });
+  }
   const primaryHost = isPrimaryHost(url.hostname);
   const genericNoindex = !primaryHost;
   const isHome = url.pathname === "/" || url.pathname === "/index.html";

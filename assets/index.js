@@ -692,6 +692,23 @@ function composeAuctionKey(datasetKey, auctionDate) {
         shareSiteUrl: SHARE_SITE_URL,
       });
 
+      const marketFlow = window.createPlateMarketFlow({
+        normalizePlate,
+        getCurrentLang: () => currentLang,
+        marketSignalEl,
+        brokerModalEl,
+        brokerCloseEl,
+        brokerFormEl,
+        brokerPlateEl,
+        brokerBudgetEl,
+        brokerContactMethodEl,
+        brokerContactEl,
+        brokerNoteEl,
+        brokerConsentEl,
+        brokerSubmitEl,
+        brokerStatusEl,
+      });
+
       const {
         renderIssuePanel,
         updateUrlState,
@@ -883,6 +900,7 @@ function composeAuctionKey(datasetKey, auctionDate) {
         renderHomeCards();
         renderSearchAssist({ totalCount, selectedIssue: issueEl.value || "", q: normalizePlate(qEl.value) });
         renderIssuePanel({ selectedIssue: issueEl.value || "", totalCount });
+        marketFlow.update({ query: qEl.value, rows: list });
         syncFocusModeChrome();
       }
 
@@ -1151,6 +1169,7 @@ function composeAuctionKey(datasetKey, auctionDate) {
         buildSortOptions();
         buildIssueOptions();
         renderHomeCards();
+        marketFlow.applyLanguage();
         syncFocusModeChrome();
         updateIssueTotal(issueEl.value || "");
       }
