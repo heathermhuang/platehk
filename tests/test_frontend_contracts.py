@@ -55,13 +55,14 @@ class FrontendContractsTests(unittest.TestCase):
         self.assertNotIn("./api/broker_inquiry", market_js)
         self.assertNotIn('id="brokerContact"', html)
         self.assertNotIn('id="brokerConsent"', html)
-        self.assertIn("market-plate", market_js)
+        self.assertIn('class="plate"', market_js)
         self.assertIn("whatsapp-icon", market_js)
         self.assertIn("nofollow noopener noreferrer", market_js)
         self.assertIn("marketFlow.update({ query: qEl.value, rows: list })", index_js)
         self.assertIn("availability_detected", plate_market_js)
         self.assertIn('url.hostname === "m.28car.com"', plate_market_js)
         self.assertIn("card.hidden = false", plate_market_js)
+        self.assertIn('node("span", "plate", plate)', plate_market_js)
         self.assertIn("function formatAuctionDate(", index_present_js)
         self.assertIn("function updateIssueTotal(", index_present_js)
         self.assertIn("function parseInitialState(", index_state_js)
@@ -210,15 +211,28 @@ class FrontendContractsTests(unittest.TestCase):
         self.assertIn("decodeURIComponent(url.pathname)", worker_index)
         self.assertIn('decodedPathname.startsWith("/_market/")', worker_index)
         self.assertIn("copy_private_market_signals", builder)
-        self.assertIn("background:var(--plate-fill,#f0c94d)", popular_builder)
-        self.assertNotIn("background:#fff; color:#111; font-family:\"Arial Narrow\"", popular_builder)
+        self.assertIn(".market-card .plate {", popular_builder)
+        self.assertNotIn(".market-plate::before", popular_builder)
         self.assertIn("validate_payload(payload)", scraper)
         self.assertNotIn('"seller_name"', scraper)
         self.assertNotIn('"seller_phone"', scraper)
 
         index_html = (ROOT / "index.html").read_text(encoding="utf-8")
-        self.assertIn("background: var(--plate-fill, #f0c94d);", index_html)
-        self.assertIn("./assets/ledger.css?v=20260812-10", index_html)
+        ledger_css = (ROOT / "assets" / "ledger.css").read_text(encoding="utf-8")
+        self.assertIn('class="plate broker-plate-value"', index_html)
+        self.assertNotIn(".market-plate {", index_html)
+        self.assertNotIn(".market-plate", ledger_css)
+        self.assertIn("./assets/ledger.css?v=20260812-11", index_html)
+
+        generated_market_pages = []
+        for page_path in (ROOT / "plates").glob("*.html"):
+            page_html = page_path.read_text(encoding="utf-8")
+            if "data-market-card" in page_html:
+                generated_market_pages.append(page_path)
+                self.assertIn(".market-card .plate {", page_html, page_path.name)
+                self.assertNotIn(".market-plate::before", page_html, page_path.name)
+                self.assertNotIn("background:#fff; color:#111", page_html, page_path.name)
+        self.assertGreater(len(generated_market_pages), 0)
 
     def test_camera_vision_ignores_non_hong_kong_plate_formats(self) -> None:
         camera_js = (ROOT / "assets" / "camera.js").read_text(encoding="utf-8")

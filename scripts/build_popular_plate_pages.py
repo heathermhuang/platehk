@@ -15,7 +15,7 @@ TODAY = date.today().isoformat()
 MAX_PAGES = 800
 INDEX_LINKS = 420
 TABLE_ROWS = 18
-LEDGER_CSS_VERSION = "20260812-10"
+LEDGER_CSS_VERSION = "20260812-11"
 MARKET_SIGNALS_PATH = DATA / "market" / "28car.active.json"
 _MARKET_SIGNALS: dict | None = None
 
@@ -352,14 +352,14 @@ def render_page(entries_by_norm: dict[str, dict], entry: dict, related: list[dic
       .market-card p { margin:8px 0 0; color:#665b45; line-height:1.6; max-width:72ch; }
       .market-kicker { color:#725208; font-size:12px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
       .market-title { display:flex; align-items:center; flex-wrap:wrap; gap:10px; }
-      .market-plate { display:inline-flex; align-items:center; justify-content:center; min-width:92px; min-height:34px; padding:4px 12px; border:2px solid var(--plate-border,#171612); border-radius:4px; background:var(--plate-fill,#f0c94d); color:var(--plate-ink,#171612); font-family:"SFMono-Regular","Roboto Mono",Consolas,"Liberation Mono",monospace; font-size:16px; font-weight:700; line-height:1; letter-spacing:0; white-space:pre; }
+      .market-card .plate { width:auto; max-width:100%; min-width:92px; min-height:34px; padding:4px 12px; font-size:16px; line-height:1; letter-spacing:0; }
       .market-price { color:#554214; }
       .market-actions { display:flex; flex-direction:column; gap:9px; min-width:210px; text-align:center; font-size:12px; }
-      .whatsapp-action { border-color:#0b6f63 !important; background:#128c7e !important; color:#fff !important; display:inline-flex; align-items:center; justify-content:center; gap:9px; }
-      .whatsapp-action:hover { background:#0f786d !important; }
+      .whatsapp-action { border-color:#0b6f63 !important; background:#075e54 !important; color:#fff !important; display:inline-flex; align-items:center; justify-content:center; gap:9px; }
+      .whatsapp-action:hover { background:#064c45 !important; }
       .whatsapp-icon { width:20px; height:20px; flex:0 0 auto; fill:currentColor; }
 """
-        market_script = '      <script src="../assets/plate.market.js?v=20260812-02"></script>\n'
+        market_script = '      <script src="../assets/plate.market.js?v=20260812-03"></script>\n'
         market_grid_selector = ", .market-card"
         market_media_style = "        .market-actions { min-width:0; }\n"
         market_section = f"{market_card}\n\n"

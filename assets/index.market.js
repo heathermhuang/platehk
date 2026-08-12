@@ -215,7 +215,7 @@ window.createPlateMarketFlow = function createPlateMarketFlow({
       <article class="market-signal-item" data-market-plate="${escapeHtml(plate)}">
       <div class="market-signal-copy">
         <div class="market-kicker">${escapeHtml(copy.kicker)}</div>
-        <h2 class="market-title"><span class="market-plate" aria-label="${escapeHtml(copy.plateLabelText(plateLabel))}">${escapeHtml(plateLabel)}</span><span> ${escapeHtml(copy.titleSuffix)}</span></h2>
+        <h2 class="market-title"><span class="plate" aria-label="${escapeHtml(copy.plateLabelText(plateLabel))}">${escapeHtml(plateLabel)}</span><span> ${escapeHtml(copy.titleSuffix)}</span></h2>
         <p>${escapeHtml(copy.body)}</p>
         <div class="market-facts">
           <span><strong>${escapeHtml(prices.label)}:</strong> ${escapeHtml(prices.value)}</span>
