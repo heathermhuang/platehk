@@ -23,12 +23,6 @@
     "binding": "ASSETS",
     "run_worker_first": true
   },
-  "kv_namespaces": [
-    {
-      "binding": "BROKER_LEADS",
-      "id": "df514975c99e4b5fbf93852be8ac7ed6"
-    }
-  ],
   "vars": {
     "APP_ENV": "production",
     "OPENAI_BASE_URL": "https://api.openai.com/v1",
@@ -37,8 +31,7 @@
   },
   "secrets": {
     "required": [
-      "OPENAI_API_KEY",
-      "BROKER_NOTIFY_TOKEN"
+      "OPENAI_API_KEY"
     ]
   }
 }

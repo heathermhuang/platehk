@@ -348,13 +348,21 @@ def render_page(entries_by_norm: dict[str, dict], entry: dict, related: list[dic
     if market_card:
         market_style = """      .market-card { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:18px; align-items:center; margin-top:14px; padding:18px; border:1px solid #c7a84d; border-left:5px solid #a87808; border-radius:4px; background:#fff9df; }
       .market-card[hidden] { display:none; }
-      .market-card h2 { margin:5px 0 8px; font-size:22px; }
+      .market-card h2 { margin:7px 0 9px; font-size:22px; }
       .market-card p { margin:8px 0 0; color:#665b45; line-height:1.6; max-width:72ch; }
       .market-kicker { color:#725208; font-size:12px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
+      .market-title { display:flex; align-items:center; flex-wrap:wrap; gap:10px; }
+      .market-plate { display:inline-flex; align-items:center; justify-content:center; min-height:38px; padding:4px 15px; border:3px solid #171717; border-radius:6px; background:#fff; color:#111; font-family:"Arial Narrow","Roboto Condensed",Arial,sans-serif; font-size:.9em; font-weight:900; line-height:1; letter-spacing:.1em; box-shadow:inset 0 0 0 1px #fff,inset 0 0 0 2px #171717; }
+      .market-plate::before,.market-plate::after { content:""; width:4px; height:4px; border-radius:50%; background:#7a7a7a; }
+      .market-plate::before { margin-right:9px; }
+      .market-plate::after { margin-left:7px; }
       .market-price { color:#554214; }
       .market-actions { display:flex; flex-direction:column; gap:9px; min-width:210px; text-align:center; font-size:12px; }
+      .whatsapp-action { border-color:#0b6f63 !important; background:#128c7e !important; color:#fff !important; display:inline-flex; align-items:center; justify-content:center; gap:9px; }
+      .whatsapp-action:hover { background:#0f786d !important; }
+      .whatsapp-icon { width:20px; height:20px; flex:0 0 auto; fill:currentColor; }
 """
-        market_script = '      <script src="../assets/plate.market.js?v=20260812-01"></script>\n'
+        market_script = '      <script src="../assets/plate.market.js?v=20260812-02"></script>\n'
         market_grid_selector = ", .market-card"
         market_media_style = "        .market-actions { min-width:0; }\n"
         market_section = f"{market_card}\n\n"

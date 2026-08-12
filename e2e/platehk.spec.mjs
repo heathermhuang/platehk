@@ -251,9 +251,15 @@ test.describe("Plate.hk browser journeys", () => {
     await expectNoBrowserErrors(errors);
   });
 
-  test("shows the buyer mandate only for an exact active external signal", async ({ page }) => {
+  test("shows the WhatsApp buyer enquiry only for an exact active external signal", async ({ page }) => {
     const errors = collectBrowserErrors(page);
-    let submitted = null;
+    await page.addInitScript(() => {
+      window.__platehkOpenedUrls = [];
+      window.open = (url) => {
+        window.__platehkOpenedUrls.push(String(url));
+        return null;
+      };
+    });
     await page.route("**/api/market_signal?*", async (route) => {
       const plate = new URL(route.request().url()).searchParams.get("plate");
       if (plate !== "88") {
@@ -275,38 +281,39 @@ test.describe("Plate.hk browser journeys", () => {
         },
       });
     });
-    await page.route("**/api/broker_inquiry", async (route) => {
-      submitted = route.request().postDataJSON();
-      await route.fulfill({ status: 201, json: { status: "received", inquiry_id: "test-inquiry-1" } });
-    });
-
     await page.goto("/?lang=en&q=88&broker=1");
     await waitForResultRows(page, 1);
     await expect(page.locator("#marketSignal")).toBeVisible();
-    await expect(page.locator("#marketSignal")).toContainText("88 may be obtainable");
+    await expect(page.locator("#marketSignal .market-plate")).toHaveText("88");
+    await expect(page.locator("#marketSignal .market-title")).toContainText("may be obtainable");
+    await expect(page.locator("#marketSignal")).not.toContainText("1 recent signal");
     await expect(page.locator("#marketSignal .market-source-link")).toHaveAttribute("href", /m\.28car\.com/);
+    await expect(page.locator("#marketSignal .market-inquire-btn .whatsapp-icon")).toBeVisible();
+    await expect(page.locator("#marketSignal .market-inquire-btn")).toHaveCSS("background-color", "rgb(18, 140, 126)");
+    const rowWhatsAppButton = page.locator("#rows tr[data-plate='88'] .row-market-btn").first();
+    await expect(rowWhatsAppButton.locator(".whatsapp-icon")).toBeVisible();
+    await expect(rowWhatsAppButton).toHaveCSS("background-color", "rgb(18, 140, 126)");
     await expect(page.locator("#brokerModal")).toBeVisible();
+    await expect(page.locator("#brokerSubmit")).toHaveCSS("background-color", "rgb(18, 140, 126)");
     await page.locator("#brokerBudget").fill("900000");
-    await page.locator("#brokerContactMethod").selectOption("email");
-    await page.locator("#brokerContact").fill("buyer@example.test");
     await page.locator("#brokerNote").fill("Initial approach only");
-    await page.locator("#brokerConsent").check();
     await page.locator("#brokerSubmit").click();
-    await expect(page.locator("#brokerStatus")).toContainText("test-inquiry-1");
-    expect(submitted).toEqual(expect.objectContaining({
-      plate: "88",
-      listing_id: "n100001",
-      budget_hkd: 900000,
-      contact_method: "email",
-      contact: "buyer@example.test",
-      privacy_consent: true,
-    }));
+    const openedUrl = await page.evaluate(() => window.__platehkOpenedUrls[0]);
+    const whatsappUrl = new URL(openedUrl);
+    expect(whatsappUrl.origin).toBe("https://wa.me");
+    expect(whatsappUrl.pathname).toBe("/85268591577");
+    const composedMessage = whatsappUrl.searchParams.get("text");
+    expect(composedMessage).toContain("plate 88");
+    expect(composedMessage).toContain("HK$900,000");
+    expect(composedMessage).toContain("Initial approach only");
+    expect(composedMessage).toContain("m.28car.com");
 
     await page.locator("#brokerClose").click();
     await page.locator("#q").fill("HK30");
     await waitForResultRows(page, 1);
     await expect(page.locator("#marketSignal")).toBeHidden();
     await expect(page.locator("#marketSignal .market-source-link")).toHaveCount(0);
+    await expect(page.locator("#rows .row-market-btn")).toHaveCount(0);
     await runAxe(page);
     await expectNoBrowserErrors(errors);
   });

@@ -695,18 +695,15 @@ function composeAuctionKey(datasetKey, auctionDate) {
       const marketFlow = window.createPlateMarketFlow({
         normalizePlate,
         getCurrentLang: () => currentLang,
+        rowsEl,
         marketSignalEl,
         brokerModalEl,
         brokerCloseEl,
         brokerFormEl,
         brokerPlateEl,
         brokerBudgetEl,
-        brokerContactMethodEl,
-        brokerContactEl,
         brokerNoteEl,
-        brokerConsentEl,
         brokerSubmitEl,
-        brokerStatusEl,
       });
 
       const {
@@ -878,7 +875,7 @@ function composeAuctionKey(datasetKey, auctionDate) {
               const href = rowLink(r);
               const linkText = linkTextForRow(r);
               return `
-                <tr>
+                <tr data-plate="${escapeHtml(normalizePlate(r.single_line || r.double_line))}">
                   <td class="col-date" data-label="${escapeHtml(t("thDate"))}">${renderDateCell(r, idx)}</td>
                   <td class="col-single" data-label="${escapeHtml(t("thSingle"))}">${formatSingleLine(r.single_line)}</td>
                   <td class="col-double" data-label="${escapeHtml(t("thDouble"))}">${doublePlate}</td>

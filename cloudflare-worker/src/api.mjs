@@ -610,17 +610,6 @@ async function handleSearch(request, env, ctx) {
 }
 
 const MARKET_SIGNAL_DIR = "./_market/28car";
-const BROKER_INQUIRY_RETENTION_SECONDS = 90 * 24 * 60 * 60;
-const BROKER_NOTIFICATION_RETENTION_SECONDS = 7 * 24 * 60 * 60;
-const BROKER_NOTIFICATION_PREFIX = "broker-notification:";
-
-function brokerLeadsWritable(env) {
-  return Boolean(
-    env.BROKER_LEADS
-    && typeof env.BROKER_LEADS.put === "function"
-    && typeof env.BROKER_LEADS.delete === "function"
-  );
-}
 
 function marketCacheUrl(request, shard) {
   return new URL(`/_market-cache/${shard}`, request.url).toString();
@@ -646,12 +635,12 @@ async function loadActiveMarketOffers(request, env, plate) {
   return { payload, offers };
 }
 
-function publicMarketSignal(plate, payload, offers, env) {
+function publicMarketSignal(plate, payload, offers) {
   if (!payload || !offers.length) {
     return {
       plate,
       availability_detected: false,
-      inquiry_enabled: brokerLeadsWritable(env),
+      inquiry_enabled: true,
     };
   }
   const prices = [...new Set(offers
@@ -676,7 +665,7 @@ function publicMarketSignal(plate, payload, offers, env) {
     listing_id: String(primary.listing_id),
     source_url: String(primary.source_url),
     source_attribution: "28car",
-    inquiry_enabled: brokerLeadsWritable(env),
+    inquiry_enabled: true,
   };
 }
 
@@ -689,168 +678,7 @@ async function handleMarketSignal(request, env) {
   if (plate.length > 16) return badRequest("plate too long");
   enforcePublicReadRateLimit(request, "market-signal", 90, 600);
   const { payload, offers } = await loadActiveMarketOffers(request, env, plate);
-  return jsonResponse(publicMarketSignal(plate, payload, offers, env));
-}
-
-function validContact(method, value) {
-  if (method === "email") {
-    return value.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-  }
-  if (method === "phone" || method === "whatsapp") {
-    const digits = value.replace(/\D/g, "");
-    return value.length <= 32 && digits.length >= 8 && digits.length <= 15;
-  }
-  return false;
-}
-
-async function handleBrokerInquiry(request, env) {
-  const methodErr = requireMethod(request, "POST");
-  if (methodErr) return methodErr;
-  const mediaErr = requireJsonContentType(request);
-  if (mediaErr) return mediaErr;
-  const originErr = sameOriginError(request);
-  if (originErr) return originErr;
-  const ip = request.headers.get("cf-connecting-ip") || "unknown";
-  enforceRateLimit(`broker-inquiry:minute:${ip}`, 4, 60);
-  enforceRateLimit(`broker-inquiry:hour:${ip}`, 12, 3600);
-
-  const body = await readJsonBody(request, 4096);
-  if (String(body.company_website || "").trim()) {
-    return jsonResponse({ status: "received" }, 202);
-  }
-  const plate = normalizeQuery(body.plate || "");
-  const contactMethod = String(body.contact_method || "").trim().toLowerCase();
-  const contact = String(body.contact || "").trim();
-  const note = String(body.note || "").trim();
-  const budgetHkd = Number(body.budget_hkd);
-  const lang = body.lang === "en" ? "en" : "zh";
-  if (!plate || plate.length > 16) return badRequest("invalid_plate");
-  if (!Number.isSafeInteger(budgetHkd) || budgetHkd < 1000 || budgetHkd > 100000000) {
-    return badRequest("invalid_budget");
-  }
-  if (!validContact(contactMethod, contact)) return badRequest("invalid_contact");
-  if (note.length > 500) return badRequest("note_too_long");
-  if (body.privacy_consent !== true) return badRequest("privacy_consent_required");
-  if (!brokerLeadsWritable(env)) {
-    throw new ApiError("broker_inquiry_not_configured", 503);
-  }
-
-  const { offers } = await loadActiveMarketOffers(request, env, plate);
-  if (!offers.length) return badRequest("external_listing_not_active");
-  const requestedListingId = String(body.listing_id || "");
-  const sourceOffer = offers.find((offer) => offer.listing_id === requestedListingId) || offers[0];
-  const inquiryId = crypto.randomUUID();
-  const createdAt = new Date().toISOString();
-  const record = {
-    schema_version: 1,
-    inquiry_id: inquiryId,
-    status: "new",
-    created_at: createdAt,
-    expires_at: new Date(Date.now() + BROKER_INQUIRY_RETENTION_SECONDS * 1000).toISOString(),
-    plate,
-    budget_hkd: budgetHkd,
-    contact_method: contactMethod,
-    contact,
-    note,
-    lang,
-    source: "28car",
-    source_listing_id: String(sourceOffer.listing_id),
-    source_url: String(sourceOffer.source_url),
-    privacy_consent: true,
-    privacy_terms_version: "2026-08-12",
-  };
-  const key = `broker-inquiry:${createdAt.slice(0, 7)}:${inquiryId}`;
-  await env.BROKER_LEADS.put(key, JSON.stringify(record), {
-    expirationTtl: BROKER_INQUIRY_RETENTION_SECONDS,
-    metadata: {
-      inquiry_id: inquiryId,
-      plate,
-      status: "new",
-      created_at: createdAt,
-      budget_hkd: budgetHkd,
-      contact_method: contactMethod,
-    },
-  });
-  const notificationKey = `${BROKER_NOTIFICATION_PREFIX}${createdAt}:${inquiryId}`;
-  try {
-    await env.BROKER_LEADS.put(notificationKey, "", {
-      expirationTtl: BROKER_NOTIFICATION_RETENTION_SECONDS,
-      metadata: {
-        inquiry_id: inquiryId,
-        plate,
-        budget_hkd: budgetHkd,
-        contact_method: contactMethod,
-        created_at: createdAt,
-      },
-    });
-  } catch {
-    console.error("[broker-inquiry] notification queue write failed", JSON.stringify({ inquiry_id: inquiryId }));
-    try {
-      await env.BROKER_LEADS.delete(key);
-    } catch {
-      console.error("[broker-inquiry] rollback failed", JSON.stringify({ inquiry_id: inquiryId }));
-    }
-    throw new ApiError("broker_inquiry_notification_failed", 503);
-  }
-  console.log("[broker-inquiry] received", JSON.stringify({ inquiry_id: inquiryId, plate }));
-  return jsonResponse({ status: "received", inquiry_id: inquiryId }, 201);
-}
-
-function brokerNotificationAuthError(request, env) {
-  const expected = String(env.BROKER_NOTIFY_TOKEN || "").trim();
-  if (!expected) return new ApiError("broker_notifications_not_configured", 503);
-  const header = String(request.headers.get("authorization") || "").trim();
-  const match = /^Bearer\s+(.+)$/i.exec(header);
-  if (!match || !timingSafeEqual(match[1], expected)) {
-    return new ApiError("not_found", 404);
-  }
-  return null;
-}
-
-function publicBrokerNotification(item) {
-  const metadata = item?.metadata;
-  if (!metadata || typeof metadata !== "object") return null;
-  const inquiryId = String(metadata.inquiry_id || "");
-  const plate = normalizeQuery(metadata.plate || "");
-  const budgetHkd = Number(metadata.budget_hkd);
-  const contactMethod = String(metadata.contact_method || "").toLowerCase();
-  const createdAt = String(metadata.created_at || "");
-  if (!/^[0-9a-f-]{36}$/i.test(inquiryId) || !plate || !Number.isSafeInteger(budgetHkd)) return null;
-  if (!["email", "phone", "whatsapp"].includes(contactMethod) || !Number.isFinite(Date.parse(createdAt))) return null;
-  return {
-    notification_key: String(item.name || ""),
-    inquiry_id: inquiryId,
-    plate,
-    budget_hkd: budgetHkd,
-    contact_method: contactMethod,
-    created_at: createdAt,
-  };
-}
-
-async function handleBrokerNotifications(request, env) {
-  const authErr = brokerNotificationAuthError(request, env);
-  if (authErr) throw authErr;
-  if (!env.BROKER_LEADS || typeof env.BROKER_LEADS.list !== "function" || typeof env.BROKER_LEADS.delete !== "function") {
-    throw new ApiError("broker_inquiry_not_configured", 503);
-  }
-  if (request.method === "GET") {
-    const listed = await env.BROKER_LEADS.list({ prefix: BROKER_NOTIFICATION_PREFIX, limit: 100 });
-    const notifications = (listed.keys || []).map(publicBrokerNotification).filter(Boolean);
-    return jsonResponse({ notifications, truncated: listed.list_complete === false });
-  }
-  const methodErr = requireMethod(request, "POST");
-  if (methodErr) return methodErr;
-  const mediaErr = requireJsonContentType(request);
-  if (mediaErr) return mediaErr;
-  const body = await readJsonBody(request, 8192);
-  const keys = Array.isArray(body.notification_keys) ? body.notification_keys : [];
-  if (!keys.length || keys.length > 100) return badRequest("invalid_notification_keys");
-  const uniqueKeys = [...new Set(keys.map((key) => String(key || "")))];
-  if (uniqueKeys.some((key) => !/^broker-notification:[0-9T:.Z+-]+:[0-9a-f-]{36}$/i.test(key))) {
-    return badRequest("invalid_notification_keys");
-  }
-  await Promise.all(uniqueKeys.map((key) => env.BROKER_LEADS.delete(key)));
-  return jsonResponse({ acknowledged: uniqueKeys.length });
+  return jsonResponse(publicMarketSignal(plate, payload, offers));
 }
 
 async function handleVisionSession(request, env) {
@@ -1077,8 +905,6 @@ export async function handleApiRequest(request, env, ctx) {
     if (route === "results") return await handleResults(request, env, ctx);
     if (route === "search") return await handleSearch(request, env, ctx);
     if (route === "market_signal") return await handleMarketSignal(request, env, ctx);
-    if (route === "broker_inquiry") return await handleBrokerInquiry(request, env, ctx);
-    if (route === "internal/broker_notifications") return await handleBrokerNotifications(request, env, ctx);
     if (route === "oauth/token") return await handleOauthToken(request, env, ctx);
     if (route === "vision_session") return await handleVisionSession(request, env, ctx);
     if (route === "vision_plate") return await handleVisionPlate(request, env, ctx);
