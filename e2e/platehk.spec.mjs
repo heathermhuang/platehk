@@ -261,23 +261,22 @@ test.describe("Plate.hk browser journeys", () => {
       };
     });
     await page.route("**/api/market_signal?*", async (route) => {
-      const plate = new URL(route.request().url()).searchParams.get("plate");
-      if (plate !== "88") {
-        await route.fulfill({ json: { plate, availability_detected: false, inquiry_enabled: true } });
-        return;
-      }
+      const plates = new URL(route.request().url()).searchParams.get("plates").split(",");
       await route.fulfill({
         json: {
-          plate: "88",
-          availability_detected: true,
-          source: "28car",
-          offer_count: 1,
-          asking_prices_hkd: [888000],
-          has_contact_price: false,
-          observed_at: new Date().toISOString(),
-          listing_id: "n100001",
-          source_url: "https://m.28car.com/num_dsp.php?h_vid=50000001&h_f_do=1",
-          inquiry_enabled: true,
+          plates_requested: plates.length,
+          signals: plates.includes("88") ? [{
+            plate: "88",
+            availability_detected: true,
+            source: "28car",
+            offer_count: 1,
+            asking_prices_hkd: [888000],
+            has_contact_price: false,
+            observed_at: new Date().toISOString(),
+            listing_id: "n100001",
+            source_url: "https://m.28car.com/num_dsp.php?h_vid=50000001&h_f_do=1",
+            inquiry_enabled: true,
+          }] : [],
         },
       });
     });
@@ -314,6 +313,66 @@ test.describe("Plate.hk browser journeys", () => {
     await expect(page.locator("#marketSignal")).toBeHidden();
     await expect(page.locator("#marketSignal .market-source-link")).toHaveCount(0);
     await expect(page.locator("#rows .row-market-btn")).toHaveCount(0);
+    await runAxe(page);
+    await expectNoBrowserErrors(errors);
+  });
+
+  test("surfaces every active external signal in a focused multi-result list", async ({ page }) => {
+    const errors = collectBrowserErrors(page);
+    const signals = {
+      HUANG: {
+        asking_prices_hkd: [],
+        has_contact_price: true,
+        listing_id: "n259378",
+        source_url: "https://m.28car.com/num_dsp.php?h_vid=62255017&h_f_do=1",
+      },
+      DRHUANG: {
+        asking_prices_hkd: [100000],
+        has_contact_price: false,
+        listing_id: "n289747",
+        source_url: "https://m.28car.com/num_dsp.php?h_vid=69543484&h_f_do=1",
+      },
+    };
+    await page.route("**/api/market_signal?*", async (route) => {
+      const plates = new URL(route.request().url()).searchParams.get("plates").split(",");
+      await route.fulfill({
+        json: {
+          plates_requested: plates.length,
+          signals: plates.flatMap((plate) => signals[plate] ? [{
+            plate,
+            availability_detected: true,
+            source: "28car",
+            offer_count: 1,
+            observed_at: new Date().toISOString(),
+            inquiry_enabled: true,
+            ...signals[plate],
+          }] : []),
+        },
+      });
+    });
+
+    await page.goto("/?lang=en&q=HUANG");
+    await waitForResultRows(page, 2);
+    const huangRow = page.locator("#rows tr[data-plate='HUANG']");
+    const drHuangRow = page.locator("#rows tr[data-plate='DRHUANG']");
+    await expect(huangRow.locator(".row-market-btn")).toBeVisible();
+    await expect(drHuangRow.locator(".row-market-btn")).toBeVisible();
+    await expect(page.locator("#marketSignal .market-signal-item")).toHaveCount(2);
+    await expect(page.locator("#marketSignal [data-market-plate='HUANG'] .market-plate")).toHaveText("HUANG");
+    await expect(page.locator("#marketSignal [data-market-plate='DRHUANG'] .market-plate")).toHaveText("DR HUANG");
+
+    const plateStyleMatches = await page.evaluate(() => {
+      const resultPlate = getComputedStyle(document.querySelector("#rows tr[data-plate='HUANG'] .plate"));
+      const marketPlate = getComputedStyle(document.querySelector("#marketSignal [data-market-plate='HUANG'] .market-plate"));
+      return ["backgroundColor", "borderColor", "borderRadius", "color", "fontFamily", "fontWeight"]
+        .every((property) => resultPlate[property] === marketPlate[property]);
+    });
+    expect(plateStyleMatches).toBe(true);
+
+    await drHuangRow.locator(".row-market-btn").click();
+    await expect(page.locator("#brokerModal")).toBeVisible();
+    await expect(page.locator("#brokerPlate")).toHaveText("DR HUANG");
+    await page.locator("#brokerClose").click();
     await runAxe(page);
     await expectNoBrowserErrors(errors);
   });

@@ -18,6 +18,14 @@ let marketPayload = {
       first_seen_at: observedAt,
       last_seen_at: observedAt,
     }],
+    TEST9: [{
+      listing_id: "n100002",
+      source_url: "https://m.28car.com/num_dsp.php?h_vid=50000002&h_f_do=1",
+      price_type: "contact",
+      asking_price_hkd: null,
+      first_seen_at: observedAt,
+      last_seen_at: observedAt,
+    }],
   },
 };
 
@@ -49,6 +57,52 @@ assert.equal(signal.asking_prices_hkd[0], 88000);
 assert.equal(signal.inquiry_enabled, true);
 assert.equal(Object.hasOwn(signal, "seller"), false);
 assert.equal(Object.hasOwn(signal, "contact"), false);
+
+const batchResponse = await worker.fetch(
+  new Request("https://plate.hk/api/market_signal?plates=NONE1%2CTEST8%2CTEST9", {
+    headers: {
+      "cf-connecting-ip": "192.0.2.14",
+      referer: "https://plate.hk/?q=TEST",
+      "sec-fetch-site": "same-origin",
+    },
+  }),
+  env,
+  ctx,
+);
+assert.equal(batchResponse.status, 200);
+const batch = await batchResponse.json();
+assert.equal(batch.plates_requested, 3);
+assert.deepEqual(batch.signals.map(({ plate }) => plate), ["TEST8", "TEST9"]);
+assert.equal(batch.signals[0].asking_prices_hkd[0], 88000);
+assert.equal(batch.signals[1].has_contact_price, true);
+assert.equal(Object.hasOwn(batch.signals[0], "seller"), false);
+
+const crossOriginBatchResponse = await worker.fetch(
+  new Request("https://plate.hk/api/market_signal?plates=TEST8%2CTEST9", {
+    headers: {
+      "cf-connecting-ip": "192.0.2.16",
+      origin: "https://example.test",
+      "sec-fetch-site": "cross-site",
+    },
+  }),
+  env,
+  ctx,
+);
+assert.equal(crossOriginBatchResponse.status, 403);
+
+const tooManyPlates = Array.from({ length: 201 }, (_, index) => `P${index}`).join(",");
+const oversizedBatchResponse = await worker.fetch(
+  new Request(`https://plate.hk/api/market_signal?plates=${encodeURIComponent(tooManyPlates)}`, {
+    headers: {
+      "cf-connecting-ip": "192.0.2.15",
+      referer: "https://plate.hk/?q=P",
+      "sec-fetch-site": "same-origin",
+    },
+  }),
+  env,
+  ctx,
+);
+assert.equal(oversizedBatchResponse.status, 400);
 
 const missingResponse = await worker.fetch(
   new Request("https://plate.hk/api/market_signal?plate=NONE1", {

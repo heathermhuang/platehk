@@ -1404,13 +1404,22 @@
         border-left: 5px solid #a87808;
         border-radius: 4px;
         background: #fff9df;
+        display: block;
+        box-shadow: 0 10px 26px rgba(78, 55, 3, 0.09);
+      }
+      .market-signal[hidden] { display: none; }
+      .market-signal-list { display: grid; gap: 18px; }
+      .market-signal-item {
         display: grid;
         grid-template-columns: minmax(0, 1fr) auto;
         gap: 18px;
         align-items: center;
-        box-shadow: 0 10px 26px rgba(78, 55, 3, 0.09);
+        min-width: 0;
       }
-      .market-signal[hidden] { display: none; }
+      .market-signal-item + .market-signal-item {
+        padding-top: 18px;
+        border-top: 1px solid #dacb9b;
+      }
       .market-kicker {
         color: #725208;
         font-size: 12px;
@@ -1426,33 +1435,23 @@
         gap: 10px;
       }
       .market-plate {
-        position: relative;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        min-height: 38px;
-        padding: 4px 15px;
-        border: 3px solid #171717;
-        border-radius: 6px;
-        background: #fff;
-        color: #111;
-        font-family: "Arial Narrow", "Roboto Condensed", Arial, sans-serif;
-        font-size: .9em;
-        font-weight: 900;
+        min-width: 92px;
+        min-height: 34px;
+        padding: 4px 12px;
+        border: 2px solid var(--plate-border, #171612);
+        border-radius: 4px;
+        background: var(--plate-fill, #f0c94d);
+        color: var(--plate-ink, #171612);
+        font-family: "SFMono-Regular", "Roboto Mono", Consolas, "Liberation Mono", monospace;
+        font-size: 16px;
+        font-weight: 700;
         line-height: 1;
-        letter-spacing: .1em;
-        box-shadow: inset 0 0 0 1px #fff, inset 0 0 0 2px #171717;
+        letter-spacing: 0;
+        white-space: pre;
       }
-      .market-plate::before,
-      .market-plate::after {
-        content: "";
-        width: 4px;
-        height: 4px;
-        border-radius: 50%;
-        background: #7a7a7a;
-      }
-      .market-plate::before { margin-right: 9px; }
-      .market-plate::after { margin-left: 7px; }
       .market-signal p { margin: 0; max-width: 74ch; color: #554a39; line-height: 1.55; }
       .market-facts { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 11px; }
       .market-facts span {
@@ -1671,7 +1670,7 @@
       }
       a { color: var(--accent); }
       @media (max-width: 860px) {
-        .market-signal { grid-template-columns: 1fr; }
+        .market-signal-item { grid-template-columns: 1fr; }
         .market-actions { min-width: 0; }
         .home-shelf { grid-template-columns: 1fr; }
         .controls { grid-template-columns: minmax(0, 1fr) auto; }
@@ -2158,7 +2157,7 @@
         }
       }
     </style>
-    <link rel="stylesheet" href="./assets/ledger.css?v=20260512-09" />
+    <link rel="stylesheet" href="./assets/ledger.css?v=20260812-10" />
 
   </head>
   <body>
@@ -2326,7 +2325,7 @@
     <script src="./assets/vendor/qrcode-generator.js?v=20260503-01"></script>
     <script src="./assets/index.webmcp.js?v=20260418-01"></script>
     <script src="./assets/index.share.js?v=20260512-08"></script>
-    <script src="./assets/index.market.js?v=20260812-02"></script>
+    <script src="./assets/index.market.js?v=20260812-03"></script>
     <script src="./assets/index.js?v=20260812-02"></script>
   </body>
 </html>

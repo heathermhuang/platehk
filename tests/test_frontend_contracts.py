@@ -198,18 +198,27 @@ class FrontendContractsTests(unittest.TestCase):
         worker_api = (ROOT / "cloudflare-worker" / "src" / "api.mjs").read_text(encoding="utf-8")
         worker_index = (ROOT / "cloudflare-worker" / "src" / "index.mjs").read_text(encoding="utf-8")
         builder = (ROOT / "scripts" / "build_cloudflare_public.py").read_text(encoding="utf-8")
+        popular_builder = (ROOT / "scripts" / "build_popular_plate_pages.py").read_text(encoding="utf-8")
         scraper = (ROOT / "scripts" / "scrape_28car_market.py").read_text(encoding="utf-8")
 
         self.assertIn('route === "market_signal"', worker_api)
+        self.assertIn('url.searchParams.get("plates")', worker_api)
+        self.assertIn('plates must contain 1 to 200 exact plates', worker_api)
         self.assertNotIn('route === "broker_inquiry"', worker_api)
         self.assertNotIn("BROKER_LEADS", worker_api)
         self.assertNotIn("BROKER_NOTIFY_TOKEN", worker_api)
         self.assertIn("decodeURIComponent(url.pathname)", worker_index)
         self.assertIn('decodedPathname.startsWith("/_market/")', worker_index)
         self.assertIn("copy_private_market_signals", builder)
+        self.assertIn("background:var(--plate-fill,#f0c94d)", popular_builder)
+        self.assertNotIn("background:#fff; color:#111; font-family:\"Arial Narrow\"", popular_builder)
         self.assertIn("validate_payload(payload)", scraper)
         self.assertNotIn('"seller_name"', scraper)
         self.assertNotIn('"seller_phone"', scraper)
+
+        index_html = (ROOT / "index.html").read_text(encoding="utf-8")
+        self.assertIn("background: var(--plate-fill, #f0c94d);", index_html)
+        self.assertIn("./assets/ledger.css?v=20260812-10", index_html)
 
     def test_camera_vision_ignores_non_hong_kong_plate_formats(self) -> None:
         camera_js = (ROOT / "assets" / "camera.js").read_text(encoding="utf-8")

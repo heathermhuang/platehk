@@ -8,9 +8,10 @@
     "cf:secrets:check": "node scripts/check_cloudflare_worker_secrets.mjs",
     "cf:deploy": "python3 scripts/build_cloudflare_public.py --require-market-snapshot && npm run cf:secrets:check && wrangler deploy",
     "cf:deploy:ci": "python3 scripts/build_cloudflare_public.py --require-market-snapshot && wrangler deploy",
-    "test": "python3 -m unittest discover -s tests && npm run test:market-worker && npm run test:e2e",
+    "test": "python3 -m unittest discover -s tests && npm run test:market-frontend && npm run test:market-worker && npm run test:e2e",
     "test:e2e": "playwright test",
     "test:market-worker": "node tests/market_worker_test.mjs",
+    "test:market-frontend": "node tests/index_market_test.mjs",
     "test:python": "python3 -m unittest discover -s tests"
   },
   "devDependencies": {
