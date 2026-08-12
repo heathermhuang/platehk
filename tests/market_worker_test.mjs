@@ -4,6 +4,21 @@ import worker from "../cloudflare-worker/src/index.mjs";
 
 
 const observedAt = new Date().toISOString();
+const assetRequests = [];
+const searchIndexMeta = {
+  schema_version: 1,
+  row_metadata: [
+    ["pvrm", "pvrm::2026-01-01", "2026-01-01", "2026年1月1日", null, null, false, "https://example.test/pvrm.pdf", null, null, null, null],
+    ["tvrm_physical", "tvrm_physical::2026-02-02", "2026-02-02", "2026年2月2日", "day", null, false, "https://example.test/tvrm.pdf", null, null, null, null],
+  ],
+  result_states: [[null, null], ["sold", "sold"]],
+  prefix_counts: { H: 2, D: 1 },
+  bigram_counts: { HU: 4, UA: 2, AN: 3, NG: 4, DR: 1, RH: 1 },
+};
+const compactSearchRows = [
+  [0, "HUANG", null, 100000, 1],
+  [1, "DR HUANG", ["DR", "HUANG"], 200000, 1],
+];
 let marketPayload = {
   schema_version: 1,
   source: "28car",
@@ -33,6 +48,16 @@ const env = {
   ASSETS: {
     async fetch(request) {
       const url = new URL(request.url);
+      assetRequests.push(decodeURIComponent(url.pathname));
+      if (decodeURIComponent(url.pathname) === "/api/v1/all/search-index/meta.json") {
+        return Response.json(searchIndexMeta);
+      }
+      if (decodeURIComponent(url.pathname) === "/api/v1/all/search-index/bigram/UA.json") {
+        return Response.json({ rows: compactSearchRows });
+      }
+      if (decodeURIComponent(url.pathname) === "/data/all.tvrm_legacy_overlap.json") {
+        return Response.json({ keys: [], exact_keys: [] });
+      }
       if (decodeURIComponent(url.pathname) === "/_market/28car/T.json") {
         return Response.json(marketPayload);
       }
@@ -41,6 +66,38 @@ const env = {
   },
 };
 const ctx = { waitUntil() {}, passThroughOnException() {} };
+globalThis.caches = {
+  default: {
+    async match() { return undefined; },
+    async put() {},
+  },
+};
+
+const indexedSearchResponse = await worker.fetch(
+  new Request("https://search.plate.hk/api/search?dataset=all&q=HUANG&page=1&page_size=20&sort=amount_desc", {
+    headers: { "cf-connecting-ip": "192.0.2.20" },
+  }),
+  env,
+  ctx,
+);
+assert.equal(indexedSearchResponse.status, 200);
+const indexedSearch = await indexedSearchResponse.json();
+assert.equal(indexedSearch.total, 2);
+assert.deepEqual(indexedSearch.rows.map((row) => row.single_line), ["HUANG", "DR HUANG"]);
+assert.ok(assetRequests.includes("/api/v1/all/search-index/bigram/UA.json"));
+assert.equal(assetRequests.some((path) => path.includes("results.chunks")), false);
+
+const datasetSearchResponse = await worker.fetch(
+  new Request("https://dataset-search.plate.hk/api/search?dataset=pvrm&q=HUANG&page=1&page_size=20&sort=amount_desc", {
+    headers: { "cf-connecting-ip": "192.0.2.21" },
+  }),
+  env,
+  ctx,
+);
+assert.equal(datasetSearchResponse.status, 200);
+const datasetSearch = await datasetSearchResponse.json();
+assert.equal(datasetSearch.total, 1);
+assert.equal(datasetSearch.rows[0].dataset_key, "pvrm");
 
 const signalResponse = await worker.fetch(
   new Request("https://plate.hk/api/market_signal?plate=TEST8", {

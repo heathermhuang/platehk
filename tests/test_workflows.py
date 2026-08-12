@@ -403,6 +403,12 @@ class WorkflowTests(unittest.TestCase):
         self.assertTrue((publish / "data" / "events.json").exists())
         self.assertTrue((publish / "data" / "TVRM auction result (1973-2026).xls").exists())
         self.assertTrue((publish / "api" / "v1" / "all" / "results.chunks.json").exists())
+        search_index = publish / "api" / "v1" / "all" / "search-index"
+        search_meta = json.loads((search_index / "meta.json").read_text(encoding="utf-8"))
+        self.assertEqual(search_meta["schema_version"], 1)
+        self.assertGreater(search_meta["bigram_counts"]["UA"], 0)
+        self.assertTrue((search_index / "prefix1" / "H.json").exists())
+        self.assertTrue((search_index / "bigram" / "UA.json").exists())
         self.assertTrue((publish / "api" / "v1" / "tvrm_eauction" / "results.chunks.json").exists())
         self.assertTrue((publish / "data" / "all.prefix2" / "HK.json").exists())
         self.assertTrue((publish / ".well-known" / "api-catalog.json").exists())

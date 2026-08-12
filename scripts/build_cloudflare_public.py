@@ -16,6 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 TARGET = ROOT / ".tmp" / "cloudflare-public"
 RESULTS_CHUNK_ROWS = 12000
 MAX_WORKERS_ASSET_BYTES = 25 * 1024 * 1024
+SEARCH_INDEX_SCHEMA_VERSION = 1
 
 ROOT_FILES = [
     "index.html",
@@ -164,6 +165,92 @@ def write_json(path: Path, value) -> None:
     path.write_text(json.dumps(value, ensure_ascii=False, separators=(",", ":")))
 
 
+def normalize_search_plate(row: dict) -> str:
+    value = row.get("single_line") or row.get("double_line") or ""
+    if isinstance(value, list):
+        value = "".join(str(part or "") for part in value)
+    return re.sub(r"[^A-Z0-9]+", "", str(value).upper())
+
+
+def build_complete_search_index(rows: list[dict], dataset_dir: Path) -> None:
+    """Build compact, complete candidate shards for dynamic search.
+
+    Search previously had to read every results chunk when a query missed the
+    small curated indexes. Each shard below stores compact row arrays plus a
+    shared metadata table, keeping arbitrary searches exact without copying the
+    98 MB unified dataset into a Worker request.
+    """
+    search_dir = dataset_dir / "search-index"
+    prefix_dir = search_dir / "prefix1"
+    bigram_dir = search_dir / "bigram"
+    prefix_dir.mkdir(parents=True, exist_ok=True)
+    bigram_dir.mkdir(parents=True, exist_ok=True)
+
+    row_metadata: list[list] = []
+    row_metadata_ids: dict[str, int] = {}
+    result_states: list[list] = []
+    result_state_ids: dict[str, int] = {}
+    prefix_rows: dict[str, list[list]] = {}
+    bigram_rows: dict[str, list[list]] = {}
+
+    for row in rows:
+        plate = normalize_search_plate(row)
+        if not plate:
+            continue
+
+        metadata = [
+            row.get("dataset_key"),
+            row.get("auction_key"),
+            row.get("auction_date"),
+            row.get("auction_date_label"),
+            row.get("date_precision"),
+            row.get("year_range"),
+            row.get("is_lny"),
+            row.get("pdf_url"),
+            row.get("source_url"),
+            row.get("source_format"),
+            row.get("source_type"),
+            row.get("source_sheet"),
+        ]
+        metadata_key = json.dumps(metadata, ensure_ascii=False, separators=(",", ":"))
+        metadata_id = row_metadata_ids.get(metadata_key)
+        if metadata_id is None:
+            metadata_id = len(row_metadata)
+            row_metadata_ids[metadata_key] = metadata_id
+            row_metadata.append(metadata)
+
+        result_state = [row.get("result_status"), row.get("result_text")]
+        result_state_key = json.dumps(result_state, ensure_ascii=False, separators=(",", ":"))
+        result_state_id = result_state_ids.get(result_state_key)
+        if result_state_id is None:
+            result_state_id = len(result_states)
+            result_state_ids[result_state_key] = result_state_id
+            result_states.append(result_state)
+
+        compact_row = [
+            metadata_id,
+            row.get("single_line"),
+            row.get("double_line"),
+            row.get("amount_hkd"),
+            result_state_id,
+        ]
+        prefix_rows.setdefault(plate[0], []).append(compact_row)
+        for token in {plate[idx:idx + 2] for idx in range(len(plate) - 1)}:
+            bigram_rows.setdefault(token, []).append(compact_row)
+
+    write_json(search_dir / "meta.json", {
+        "schema_version": SEARCH_INDEX_SCHEMA_VERSION,
+        "row_metadata": row_metadata,
+        "result_states": result_states,
+        "prefix_counts": {token: len(bucket) for token, bucket in sorted(prefix_rows.items())},
+        "bigram_counts": {token: len(bucket) for token, bucket in sorted(bigram_rows.items())},
+    })
+    for token, bucket in sorted(prefix_rows.items()):
+        write_json(prefix_dir / f"{token}.json", {"rows": bucket})
+    for token, bucket in sorted(bigram_rows.items()):
+        write_json(bigram_dir / f"{token}.json", {"rows": bucket})
+
+
 def copy_public_data_files() -> None:
     data_root = ROOT / "data"
     target_data = TARGET / "data"
@@ -284,6 +371,8 @@ def build_results_chunks(dataset: str) -> None:
             "end": idx + len(chunk) - 1,
         })
     write_json(dataset_dir / "results.chunks.json", manifest)
+    if dataset == "all":
+        build_complete_search_index(rows, dataset_dir)
 
 
 def prune_oversized_assets() -> None:

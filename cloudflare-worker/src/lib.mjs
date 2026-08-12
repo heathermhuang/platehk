@@ -285,25 +285,25 @@ export function compareSearchRows(a, b, sort, query) {
   return String(a.single_line || "").localeCompare(String(b.single_line || ""));
 }
 
-export async function getStaticJson(env, requestUrl, path) {
-  const cacheKey = `${requestUrl}::${path}`;
-  if (STATIC_JSON_CACHE.has(cacheKey)) return STATIC_JSON_CACHE.get(cacheKey);
+export async function getStaticJson(env, requestUrl, path, { cache = true } = {}) {
   const requestBase = new URL(requestUrl);
   const normalizedPath = String(path || "").startsWith("./") ? `/${String(path).slice(2)}` : String(path || "");
   const assetUrl = new URL(normalizedPath, `${requestBase.origin}/`);
+  const cacheKey = `json::${assetUrl.toString()}`;
+  if (cache && STATIC_JSON_CACHE.has(cacheKey)) return STATIC_JSON_CACHE.get(cacheKey);
   const response = await env.ASSETS.fetch(new Request(assetUrl.toString(), { method: "GET" }));
   if (!response.ok) return null;
   const data = await response.json();
-  STATIC_JSON_CACHE.set(cacheKey, data);
+  if (cache) STATIC_JSON_CACHE.set(cacheKey, data);
   return data;
 }
 
 export async function getStaticText(env, requestUrl, path) {
-  const cacheKey = `${requestUrl}::text::${path}`;
-  if (STATIC_JSON_CACHE.has(cacheKey)) return STATIC_JSON_CACHE.get(cacheKey);
   const requestBase = new URL(requestUrl);
   const normalizedPath = String(path || "").startsWith("./") ? `/${String(path).slice(2)}` : String(path || "");
   const assetUrl = new URL(normalizedPath, `${requestBase.origin}/`);
+  const cacheKey = `text::${assetUrl.toString()}`;
+  if (STATIC_JSON_CACHE.has(cacheKey)) return STATIC_JSON_CACHE.get(cacheKey);
   const response = await env.ASSETS.fetch(new Request(assetUrl.toString(), { method: "GET" }));
   if (!response.ok) return null;
   const data = await response.text();
