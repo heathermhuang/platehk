@@ -95,28 +95,6 @@ function createMemoryCaches() {
   };
 }
 
-function createMemoryKv() {
-  const store = new Map();
-  return {
-    async put(key, value, options = {}) {
-      store.set(String(key), { value: String(value), options });
-    },
-    async get(key) {
-      return store.get(String(key))?.value ?? null;
-    },
-    async list({ prefix = "", limit = 1000 } = {}) {
-      const keys = [...store.entries()]
-        .filter(([key]) => key.startsWith(String(prefix)))
-        .slice(0, Number(limit) || 1000)
-        .map(([name, item]) => ({ name, metadata: item.options?.metadata || null }));
-      return { keys, list_complete: true };
-    },
-    async delete(key) {
-      store.delete(String(key));
-    },
-  };
-}
-
 async function bodyForRequest(req) {
   if (req.method === "GET" || req.method === "HEAD") return undefined;
   const chunks = [];
@@ -155,8 +133,6 @@ async function main() {
     OPENAI_TIMEOUT_SECONDS: process.env.OPENAI_TIMEOUT_SECONDS || "20",
     OPENAI_VISION_MODEL: process.env.OPENAI_VISION_MODEL || "gpt-4.1-mini",
     ASSETS: createAssetBinding(assetsRoot),
-    BROKER_LEADS: createMemoryKv(),
-    BROKER_NOTIFY_TOKEN: process.env.BROKER_NOTIFY_TOKEN || "local-broker-notify-token",
   };
   const pending = new Set();
   const ctx = {

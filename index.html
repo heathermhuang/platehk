@@ -1418,7 +1418,41 @@
         letter-spacing: .08em;
         text-transform: uppercase;
       }
-      .market-signal h2 { margin: 5px 0 7px; font-size: 23px; color: #292015; }
+      .market-signal h2 { margin: 7px 0 9px; font-size: 23px; color: #292015; }
+      .market-title {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+      .market-plate {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 38px;
+        padding: 4px 15px;
+        border: 3px solid #171717;
+        border-radius: 6px;
+        background: #fff;
+        color: #111;
+        font-family: "Arial Narrow", "Roboto Condensed", Arial, sans-serif;
+        font-size: .9em;
+        font-weight: 900;
+        line-height: 1;
+        letter-spacing: .1em;
+        box-shadow: inset 0 0 0 1px #fff, inset 0 0 0 2px #171717;
+      }
+      .market-plate::before,
+      .market-plate::after {
+        content: "";
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+        background: #7a7a7a;
+      }
+      .market-plate::before { margin-right: 9px; }
+      .market-plate::after { margin-left: 7px; }
       .market-signal p { margin: 0; max-width: 74ch; color: #554a39; line-height: 1.55; }
       .market-facts { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 11px; }
       .market-facts span {
@@ -1436,16 +1470,25 @@
       .market-actions { display: flex; flex-direction: column; align-items: stretch; gap: 9px; min-width: 220px; }
       .market-inquire-btn {
         min-height: 46px;
-        border: 1px solid #7d5c0d;
+        border: 1px solid #0b6f63 !important;
         border-radius: 4px;
-        background: #7d5c0d;
-        color: #fff;
+        background: #128c7e !important;
+        color: #fff !important;
         font-weight: 800;
         padding: 10px 14px;
         cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 9px;
       }
+      .market-inquire-btn:hover { background: #0f786d !important; }
+      .market-inquire-btn:focus-visible { outline: 3px solid rgba(18, 140, 126, .28); outline-offset: 2px; }
       .market-inquire-btn:disabled { cursor: not-allowed; opacity: .58; }
       .market-source-link { color: #654c12; text-align: center; font-size: 12px; text-decoration: underline; }
+      .whatsapp-icon { width: 20px; height: 20px; flex: 0 0 auto; fill: currentColor; }
+      .icon-btn.row-market-btn { border-color: #0b6f63 !important; background: #128c7e !important; color: #fff !important; }
+      .icon-btn.row-market-btn:hover { background: #0f786d !important; color: #fff !important; }
       .broker-modal {
         position: fixed;
         inset: 0;
@@ -1474,7 +1517,7 @@
       .broker-form { display: grid; gap: 14px; padding: 18px; }
       .broker-field { display: grid; gap: 6px; }
       .broker-field label, .broker-label { font-size: 13px; font-weight: 750; color: #2b4052; }
-      .broker-form input, .broker-form select, .broker-form textarea {
+      .broker-form input, .broker-form textarea {
         width: 100%;
         min-height: 44px;
         border: 1px solid var(--line-strong);
@@ -1484,14 +1527,23 @@
         font: inherit;
         padding: 10px 11px;
       }
-      .broker-form textarea { min-height: 92px; resize: vertical; }
-      .broker-plate-value { min-height: 44px; padding: 10px 12px; border: 1px solid var(--line); background: #f6f1e6; font-weight: 850; letter-spacing: .05em; }
-      .broker-consent { display: grid; grid-template-columns: auto 1fr; align-items: start; gap: 9px; color: var(--muted); font-size: 12px; line-height: 1.5; }
-      .broker-consent input { width: 20px; min-height: 20px; margin: 1px 0 0; }
-      .broker-submit { min-height: 48px; border-radius: 4px; background: var(--accent); color: var(--accent-ink); font-weight: 800; }
-      .broker-status { min-height: 20px; color: #8a2a20; font-size: 13px; line-height: 1.45; }
-      .broker-status.success { color: #276a45; font-weight: 700; }
-      .broker-honeypot { position: absolute !important; left: -10000px !important; width: 1px !important; height: 1px !important; overflow: hidden !important; }
+      .broker-form textarea { min-height: 76px; resize: vertical; }
+      .broker-plate-value { width: fit-content; min-height: 44px; }
+      .broker-whatsapp-note { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+      .broker-submit {
+        min-height: 50px;
+        border: 1px solid #0b6f63 !important;
+        border-radius: 4px;
+        background: #128c7e !important;
+        color: #fff !important;
+        font-weight: 800;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 9px;
+        cursor: pointer;
+      }
+      .broker-submit:hover { background: #0f786d !important; }
       .issue-jump-link {
         color: var(--accent);
         text-decoration: none;
@@ -2238,7 +2290,7 @@
       <div class="broker-dialog" role="dialog" aria-modal="true" aria-labelledby="brokerTitle">
         <div class="broker-head">
           <div>
-            <h2 id="brokerTitle" data-broker-title>保密買方委託</h2>
+            <h2 id="brokerTitle" data-broker-title>WhatsApp 保密洽購</h2>
           </div>
           <button class="broker-close" id="brokerClose" type="button" aria-label="關閉">×</button>
         </div>
@@ -2246,38 +2298,21 @@
         <form class="broker-form" id="brokerForm">
           <div class="broker-field">
             <span class="broker-label" data-broker-plate-label></span>
-            <output class="broker-plate-value" id="brokerPlate"></output>
+            <output class="market-plate broker-plate-value" id="brokerPlate"></output>
           </div>
           <div class="broker-field">
             <label for="brokerBudget" data-broker-budget-label></label>
             <input id="brokerBudget" name="budget_hkd" type="number" inputmode="numeric" min="1000" max="100000000" step="1000" required />
           </div>
           <div class="broker-field">
-            <label for="brokerContactMethod" data-broker-method-label></label>
-            <select id="brokerContactMethod" name="contact_method" required>
-              <option value="email">電郵</option>
-              <option value="whatsapp">WhatsApp</option>
-              <option value="phone">電話</option>
-            </select>
-          </div>
-          <div class="broker-field">
-            <label for="brokerContact" data-broker-contact-label></label>
-            <input id="brokerContact" name="contact" type="text" maxlength="254" autocomplete="email" required />
-          </div>
-          <div class="broker-field">
             <label for="brokerNote" data-broker-note-label></label>
-            <textarea id="brokerNote" name="note" maxlength="500"></textarea>
+            <textarea id="brokerNote" name="note" maxlength="300"></textarea>
           </div>
-          <div class="broker-honeypot" aria-hidden="true">
-            <label for="brokerCompanyWebsite">Company website</label>
-            <input id="brokerCompanyWebsite" name="company_website" type="text" tabindex="-1" autocomplete="off" />
-          </div>
-          <label class="broker-consent">
-            <input id="brokerConsent" name="privacy_consent" type="checkbox" required />
-            <span data-broker-consent-copy>我同意 Plate.hk 為處理此委託而儲存及使用上述資料。 <a href="./privacy.html" target="_blank" rel="noopener">Privacy</a> · <a href="./terms.html" target="_blank" rel="noopener">Terms</a></span>
-          </label>
-          <div class="broker-status" id="brokerStatus" role="status" aria-live="polite"></div>
-          <button class="broker-submit" id="brokerSubmit" type="submit">提交保密委託</button>
+          <p class="broker-whatsapp-note" data-broker-whatsapp-note></p>
+          <button class="broker-submit" id="brokerSubmit" type="submit">
+            <svg class="whatsapp-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M12.04 2a9.84 9.84 0 0 0-8.48 14.8L2 22l5.33-1.52A9.96 9.96 0 1 0 12.04 2Zm0 17.98a8.1 8.1 0 0 1-4.13-1.13l-.3-.18-3.16.9.92-3.08-.2-.31a8 8 0 1 1 6.87 3.8Zm4.45-6.03c-.24-.12-1.44-.7-1.66-.79-.22-.08-.38-.12-.54.12-.16.24-.62.79-.76.95-.14.16-.28.18-.52.06-.24-.12-1.02-.37-1.94-1.2a7.3 7.3 0 0 1-1.34-1.66c-.14-.24-.02-.37.1-.49.11-.1.24-.28.36-.42.12-.14.16-.24.24-.4.08-.16.04-.3-.02-.42-.06-.12-.54-1.3-.74-1.78-.2-.47-.4-.4-.54-.41h-.46c-.16 0-.42.06-.64.3-.22.24-.84.82-.84 2s.86 2.32.98 2.48c.12.16 1.7 2.58 4.1 3.62.58.24 1.02.39 1.37.5.58.18 1.1.16 1.51.1.46-.07 1.44-.59 1.64-1.16.2-.57.2-1.06.14-1.16-.06-.1-.22-.16-.46-.28Z"/></svg>
+            <span data-broker-submit-copy>在 WhatsApp 繼續</span>
+          </button>
         </form>
       </div>
     </div>
@@ -2291,7 +2326,7 @@
     <script src="./assets/vendor/qrcode-generator.js?v=20260503-01"></script>
     <script src="./assets/index.webmcp.js?v=20260418-01"></script>
     <script src="./assets/index.share.js?v=20260512-08"></script>
-    <script src="./assets/index.market.js?v=20260811-01"></script>
-    <script src="./assets/index.js?v=20260512-10"></script>
+    <script src="./assets/index.market.js?v=20260812-02"></script>
+    <script src="./assets/index.js?v=20260812-02"></script>
   </body>
 </html>

@@ -19,6 +19,16 @@
     }
   };
   const money = (amount) => `HK$${Number(amount).toLocaleString("en-HK")}`;
+  const whatsappIcon = () => {
+    const icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    icon.setAttribute("class", "whatsapp-icon");
+    icon.setAttribute("aria-hidden", "true");
+    icon.setAttribute("viewBox", "0 0 24 24");
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("d", "M12.04 2a9.84 9.84 0 0 0-8.48 14.8L2 22l5.33-1.52A9.96 9.96 0 1 0 12.04 2Zm0 17.98a8.1 8.1 0 0 1-4.13-1.13l-.3-.18-3.16.9.92-3.08-.2-.31a8 8 0 1 1 6.87 3.8Zm4.45-6.03c-.24-.12-1.44-.7-1.66-.79-.22-.08-.38-.12-.54.12-.16.24-.62.79-.76.95-.14.16-.28.18-.52.06-.24-.12-1.02-.37-1.94-1.2a7.3 7.3 0 0 1-1.34-1.66c-.14-.24-.02-.37.1-.49.11-.1.24-.28.36-.42.12-.14.16-.24.24-.4.08-.16.04-.3-.02-.42-.06-.12-.54-1.3-.74-1.78-.2-.47-.4-.4-.54-.41h-.46c-.16 0-.42.06-.64.3-.22.24-.84.82-.84 2s.86 2.32.98 2.48c.12.16 1.7 2.58 4.1 3.62.58.24 1.02.39 1.37.5.58.18 1.1.16 1.51.1.46-.07 1.44-.59 1.64-1.16.2-.57.2-1.06.14-1.16-.06-.1-.22-.16-.46-.28Z");
+    icon.append(path);
+    return icon;
+  };
 
   fetch(new URL(`../api/market_signal?plate=${encodeURIComponent(plate)}`, location.href), { cache: "no-store" })
     .then((response) => {
@@ -37,7 +47,11 @@
 
       const copy = node("div");
       copy.append(node("div", "market-kicker", "外部放售訊號 / External sale signal"));
-      copy.append(node("h2", "", "這個車牌或可洽購 / This plate may be obtainable"));
+      const title = node("h2", "market-title");
+      const plateBadge = node("span", "market-plate", plate);
+      plateBadge.setAttribute("aria-label", `車牌 / Plate ${plate}`);
+      title.append(plateBadge, document.createTextNode(" "), node("span", "", "或可洽購 / may be obtainable"));
+      copy.append(title);
       const priceLine = node("div", "market-price", "目前叫價 / Asking: ");
       priceLine.append(node("strong", "", price));
       copy.append(priceLine);
@@ -45,8 +59,9 @@
 
       const actions = node("div", "market-actions");
       if (signal.inquiry_enabled === true) {
-        const mandate = node("a", "btn primary", "委託核實及議價");
+        const mandate = node("a", "btn primary whatsapp-action");
         mandate.href = `../?lang=zh&q=${encodeURIComponent(plate)}&broker=1`;
+        mandate.append(whatsappIcon(), node("span", "", "WhatsApp 委託核實及議價"));
         actions.append(mandate);
       }
       const source = node("a", "", "查看 28car 來源刊登");

@@ -26,7 +26,7 @@ class WorkflowTests(unittest.TestCase):
             self.assertIn("run: npm run cf:deploy:ci", workflow)
             self.assertNotIn("run: npm run cf:deploy\n", workflow)
 
-    def test_market_refresh_and_broker_notification_workflows_are_wired(self) -> None:
+    def test_market_refresh_workflows_are_wired(self) -> None:
         auto_update = (ROOT / ".github" / "workflows" / "auto-update.yml").read_text(encoding="utf-8")
         scrape_marker = "python scripts/scrape_28car_market.py"
         updater_marker = "run: bash scripts/cron_update.sh"
@@ -35,11 +35,7 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn("--require-complete", auto_update)
         self.assertLess(auto_update.index(scrape_marker), auto_update.index(updater_marker))
 
-        notifications = (ROOT / ".github" / "workflows" / "broker-notifications.yml").read_text(encoding="utf-8")
-        self.assertIn('cron: "*/5 * * * *"', notifications)
-        self.assertIn("BROKER_NOTIFY_TOKEN: ${{ secrets.BROKER_NOTIFY_TOKEN }}", notifications)
-        self.assertIn("TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}", notifications)
-        self.assertIn("https://plate.hk/api/internal/broker_notifications", notifications)
+        self.assertFalse((ROOT / ".github" / "workflows" / "broker-notifications.yml").exists())
 
         auto_heal = (ROOT / ".github" / "workflows" / "auto-heal.yml").read_text(encoding="utf-8")
         self.assertIn("python scripts/scrape_28car_market.py", auto_heal)

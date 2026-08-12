@@ -174,55 +174,6 @@ paths:
                     format: uri
         "429":
           description: Rate limited
-  /api/broker_inquiry:
-    post:
-      summary: Submit a same-origin confidential buyer mandate
-      description: |
-        Browser-only intake endpoint. The Worker rechecks that a fresh external signal exists,
-        then stores the minimum mandate record in the private BROKER_LEADS KV namespace with a
-        90-day automatic expiry. Submission is a request for assessment, not an accepted agency agreement.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [plate, budget_hkd, contact_method, contact, privacy_consent]
-              properties:
-                plate:
-                  type: string
-                  maxLength: 16
-                listing_id:
-                  type: string
-                budget_hkd:
-                  type: integer
-                  minimum: 1000
-                  maximum: 100000000
-                contact_method:
-                  type: string
-                  enum: [email, whatsapp, phone]
-                contact:
-                  type: string
-                  maxLength: 254
-                note:
-                  type: string
-                  maxLength: 500
-                privacy_consent:
-                  type: boolean
-                lang:
-                  type: string
-                  enum: [zh, en]
-      responses:
-        "201":
-          description: Mandate received
-        "400":
-          description: Invalid fields or no fresh external signal
-        "403":
-          description: Invalid or missing same-origin browser provenance
-        "429":
-          description: Rate limited
-        "503":
-          description: Buyer-mandate storage is not configured
   /api/vision_plate:
     post:
       summary: OCR a cropped Hong Kong plate image

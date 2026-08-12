@@ -44,7 +44,7 @@ The current public UI uses a flat Ledger visual system: compact auction-record t
 - A static frontend with issue shards, hot-search caches, and SEO pages
 - A public `/api/v1` JSON surface for dataset browsing
 - Camera-assisted lookup via the Cloudflare Worker runtime
-- Privacy-minimised external sale signals with an exact-plate confidential buyer-mandate flow
+- Privacy-minimised external sale signals with an exact-plate WhatsApp buyer-enquiry flow
 - OAuth 2.0 client-credentials discovery for protected OCR access
 - OAuth Protected Resource Metadata for agent auth discovery
 - MCP Server Card plus a streamable HTTP `/mcp` transport for agent tool discovery
@@ -116,7 +116,7 @@ The current production shape is:
 - Cloudflare Static Assets serves the frontend and prebuilt public data
 - Cloudflare Worker handles `/api/*` routes and the vision-assisted lookup flow
 - The Worker performs exact-plate lookups against a non-browsable, minimal external-sale signal asset
-- Confidential buyer mandates are stored in a dedicated Cloudflare KV binding with automatic 90-day expiry
+- Fresh exact sale signals can launch a short, client-side WhatsApp buyer-enquiry draft
 - Static JSON shards power search, issue browsing, and high-frequency cached queries
 - SEO pages under `plates/` expose popular plate result pages to search engines
 
@@ -243,27 +243,13 @@ python3 scripts/build_cloudflare_public.py
 
 Use `--max-pages 0` only for an intentional full scan. Full scans and `--require-complete` runs abort before writing when any requested page fails; bounded exploratory scans can retain recent prior signals while recording explicit partial coverage. A layout change, `robots.txt` restriction, or page with zero parsed records therefore cannot silently replace production with a false complete snapshot. The cloud-owned `Auto Update Data` workflow runs a required-complete privacy-minimized scan before rebuilding SEO pages each day, then deploys every successful refresh after the same repository checks pass. Market-only changes are deployed but never committed.
 
-The confidential mandate endpoint uses the dedicated `BROKER_LEADS` KV binding declared in `wrangler.jsonc`. Do not reuse that namespace for public data, and do not export or commit mandate values. Without the binding, market signals remain readable but the inquiry CTA is disabled. The local Worker shim supplies an in-memory binding for development and tests.
-
-Buyer leads expire automatically after 90 days. A separate seven-day, PII-minimized notification marker contains only the inquiry reference, target plate, budget, contact method, and submission time. The `Broker Inquiry Notifications` workflow polls the authenticated internal endpoint every five minutes, sends pending markers to the existing private Telegram operations channel, and acknowledges them only after successful delivery. The buyer's email, phone number, WhatsApp number, and note never leave the private KV record through this notification path.
-
-After receiving an alert, an authorized operator can retrieve the full mandate from Cloudflare by combining the alert's submission month and inquiry reference:
-
-```bash
-npx wrangler kv key get --binding BROKER_LEADS --remote "broker-inquiry:YYYY-MM:<inquiry-id>"
-```
-
-The command output contains personal data. Run it only in an authorized terminal, and do not paste the output into Telegram, GitHub issues, logs, or repository files. If notification-marker creation fails, the intake returns an error and attempts to remove the just-created mandate instead of reporting an unnotified success.
-
-The internal endpoint is protected by the same randomly generated `BROKER_NOTIFY_TOKEN` stored independently as a Cloudflare Worker secret and a GitHub Actions secret. Never put this token in `wrangler.jsonc`, repository files, logs, or workflow output.
+When a fresh exact signal exists, the buyer CTA opens a short form for the target plate, maximum budget, and an optional note. Submitting the form composes a prefilled WhatsApp message to the configured business number and opens it in a new tab. Plate.hk does not POST or store the form values; the buyer decides whether to send the draft in WhatsApp. The temporary destination is configured as `WHATSAPP_NUMBER` in `assets/index.market.js` and should be replaced when the dedicated business number is ready.
 
 ## Security
 
 - Review [SECURITY.md](./SECURITY.md) before changing public endpoints, OCR flows, or deployment boundaries
 - Run `python3 scripts/scan_repo_secrets.py` if you touched config, CI, or API-adjacent code
 - Do not commit credentials, tokens, or local environment files
-- Treat `BROKER_LEADS` values as confidential personal data; access only for mandate handling and allow the 90-day TTL to expire records
-- Keep `BROKER_NOTIFY_TOKEN` synchronized between Cloudflare and GitHub Actions; notification messages must never include buyer contact values or notes
 - Camera OCR requires the Cloudflare Worker secret `OPENAI_API_KEY`; set it with `wrangler secret put OPENAI_API_KEY` and verify it with `npm run cf:secrets:check`
 - Protected agent-facing OCR auth is published via `/.well-known/oauth-protected-resource`, `/.well-known/oauth-authorization-server`, and `/.well-known/jwks.json`
 - The worker expects `OAUTH_CLIENTS_JSON`, `OAUTH_JWT_PRIVATE_JWK`, and `OAUTH_JWKS_JSON` to issue and verify bearer tokens for `/api/vision_plate`

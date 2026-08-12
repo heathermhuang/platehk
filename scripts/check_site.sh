@@ -26,8 +26,7 @@ export PYTHONPYCACHEPREFIX="${PYTHONPYCACHEPREFIX:-${TMPDIR:-/tmp}/pvrm-pycache}
   scripts/verify_data_integrity.py \
   scripts/build_audit_report.py \
   scripts/auto_heal_update.py \
-  scripts/scan_repo_secrets.py \
-  scripts/process_broker_notifications.py
+  scripts/scan_repo_secrets.py
 
 bash -n scripts/run_local.sh
 bash -n scripts/stop_local.sh

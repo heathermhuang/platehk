@@ -1,87 +1,77 @@
 window.createPlateMarketFlow = function createPlateMarketFlow({
   normalizePlate,
   getCurrentLang,
+  rowsEl,
   marketSignalEl,
   brokerModalEl,
   brokerCloseEl,
   brokerFormEl,
   brokerPlateEl,
   brokerBudgetEl,
-  brokerContactMethodEl,
-  brokerContactEl,
   brokerNoteEl,
-  brokerConsentEl,
   brokerSubmitEl,
-  brokerStatusEl,
 }) {
+  const WHATSAPP_NUMBER = "85268591577";
   const COPY = {
     zh: {
       kicker: "外部放售訊號",
-      title: (plate) => `${plate} 或可洽購`,
+      titleSuffix: "或可洽購",
+      plateLabelText: (plate) => `車牌 ${plate}`,
       body: "我們在第三方平台發現近期放售訊號。Plate.hk 可先核實是否仍可交易，再以買方代表身份私下接洽及議價。",
       price: "目前叫價",
       priceRange: "目前叫價範圍",
       priceContact: "部分放售須另議價格",
-      offerCount: (count) => `${count} 個近期訊號`,
       observed: (date) => `最近核對：${date}`,
       disclaimer: "第三方刊登可能已過期、資料有誤或不符合轉移規則；這不是可買到或可轉名的保證。",
-      inquire: "委託我們核實及議價",
-      pending: "買方服務設定中",
+      inquire: "WhatsApp 委託核實及議價",
       source: "查看 28car 來源刊登",
-      dialogTitle: "保密買方委託",
-      dialogIntro: "我們會在初步接洽時保密你的身份。若交易需要披露資料，我們會先取得你的同意。",
+      dialogTitle: "WhatsApp 保密洽購",
+      dialogIntro: "告訴我們你的預算和要求，我們會為你準備 WhatsApp 訊息。",
       plateLabel: "目標車牌",
       budgetLabel: "最高預算（HKD）",
-      methodLabel: "聯絡方式",
-      contactLabel: "電郵或電話",
-      contactPlaceholder: "輸入可聯絡你的資料",
-      methodEmail: "電郵",
-      methodWhatsapp: "WhatsApp",
-      methodPhone: "電話",
       noteLabel: "補充資料（選填）",
       notePlaceholder: "例如期限、交易偏好或可接受條件",
-      consent: "我同意 Plate.hk 為處理此委託而儲存及使用上述資料，並已閱讀私隱政策及使用條款。",
-      submit: "提交保密委託",
-      submitting: "提交中…",
-      success: (id) => `已收到委託。參考編號：${id}`,
-      unavailable: "委託服務暫時未完成設定，請稍後再試。",
-      invalid: "請檢查預算、聯絡資料及同意選項。",
-      failed: "未能提交，請稍後再試。",
+      whatsappNote: "按下後只會開啟 WhatsApp 草稿；你在 WhatsApp 按「傳送」前，資料不會傳送給 Plate.hk。",
+      submit: "在 WhatsApp 繼續",
       close: "關閉",
+      message: ({ plate, asking, budget, note, sourceUrl }) => [
+        `你好 Plate.hk，我有興趣洽購車牌 ${plate}。`,
+        `目前叫價：${asking}`,
+        `我的最高預算：${budget}`,
+        note ? `補充資料：${note}` : "",
+        "請先核實放售是否仍然有效，並代表我保密接洽及議價。",
+        sourceUrl ? `來源：${sourceUrl}` : "",
+      ].filter(Boolean).join("\n"),
     },
     en: {
       kicker: "External sale signal",
-      title: (plate) => `${plate} may be obtainable`,
+      titleSuffix: "may be obtainable",
+      plateLabelText: (plate) => `Plate ${plate}`,
       body: "We found a recent offer signal on a third-party platform. Plate.hk can verify that it is still actionable, then approach and negotiate as your confidential buyer representative.",
       price: "Current asking price",
       priceRange: "Current asking range",
       priceContact: "Some offers require a price enquiry",
-      offerCount: (count) => `${count} recent signal${count === 1 ? "" : "s"}`,
       observed: (date) => `Last checked: ${date}`,
       disclaimer: "Third-party listings may be stale, inaccurate, or incompatible with transfer rules. This is not a guarantee of availability or transferability.",
-      inquire: "Ask us to verify & negotiate",
-      pending: "Buyer service setup pending",
+      inquire: "Ask via WhatsApp",
       source: "View the source listing on 28car",
-      dialogTitle: "Confidential buyer mandate",
-      dialogIntro: "We keep your identity private during the initial approach. If a transaction requires disclosure, we will obtain your consent first.",
+      dialogTitle: "Confidential WhatsApp enquiry",
+      dialogIntro: "Add your budget and any context, and we will prepare the WhatsApp message for you.",
       plateLabel: "Target plate",
       budgetLabel: "Maximum budget (HKD)",
-      methodLabel: "Contact method",
-      contactLabel: "Email or phone",
-      contactPlaceholder: "How should we reach you?",
-      methodEmail: "Email",
-      methodWhatsapp: "WhatsApp",
-      methodPhone: "Phone",
       noteLabel: "Additional context (optional)",
       notePlaceholder: "For example, timing, transaction preferences, or acceptable terms",
-      consent: "I agree that Plate.hk may store and use this information to handle the mandate, and I have read the Privacy Policy and Terms of Use.",
-      submit: "Submit confidential mandate",
-      submitting: "Submitting…",
-      success: (id) => `Mandate received. Reference: ${id}`,
-      unavailable: "The mandate service is not fully configured yet. Please try again later.",
-      invalid: "Check the budget, contact details, and consent option.",
-      failed: "Submission failed. Please try again later.",
+      whatsappNote: "This opens a WhatsApp draft only. Nothing is sent to Plate.hk until you press Send in WhatsApp.",
+      submit: "Continue in WhatsApp",
       close: "Close",
+      message: ({ plate, asking, budget, note, sourceUrl }) => [
+        `Hi Plate.hk, I am interested in buying plate ${plate}.`,
+        `Current asking price: ${asking}`,
+        `My maximum budget: ${budget}`,
+        note ? `Additional context: ${note}` : "",
+        "Please verify that the listing is active and negotiate confidentially for me.",
+        sourceUrl ? `Source: ${sourceUrl}` : "",
+      ].filter(Boolean).join("\n"),
     },
   };
 
@@ -102,6 +92,10 @@ window.createPlateMarketFlow = function createPlateMarketFlow({
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#039;");
+  }
+
+  function whatsappIcon() {
+    return '<svg class="whatsapp-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M12.04 2a9.84 9.84 0 0 0-8.48 14.8L2 22l5.33-1.52A9.96 9.96 0 1 0 12.04 2Zm0 17.98a8.1 8.1 0 0 1-4.13-1.13l-.3-.18-3.16.9.92-3.08-.2-.31a8 8 0 1 1 6.87 3.8Zm4.45-6.03c-.24-.12-1.44-.7-1.66-.79-.22-.08-.38-.12-.54.12-.16.24-.62.79-.76.95-.14.16-.28.18-.52.06-.24-.12-1.02-.37-1.94-1.2a7.3 7.3 0 0 1-1.34-1.66c-.14-.24-.02-.37.1-.49.11-.1.24-.28.36-.42.12-.14.16-.24.24-.4.08-.16.04-.3-.02-.42-.06-.12-.54-1.3-.74-1.78-.2-.47-.4-.4-.54-.41h-.46c-.16 0-.42.06-.64.3-.22.24-.84.82-.84 2s.86 2.32.98 2.48c.12.16 1.7 2.58 4.1 3.62.58.24 1.02.39 1.37.5.58.18 1.1.16 1.51.1.46-.07 1.44-.59 1.64-1.16.2-.57.2-1.06.14-1.16-.06-.1-.22-.16-.46-.28Z"/></svg>';
   }
 
   function validSourceUrl(value) {
@@ -140,10 +134,32 @@ window.createPlateMarketFlow = function createPlateMarketFlow({
     };
   }
 
+  function clearRowActions() {
+    rowsEl.querySelectorAll(".row-market-btn").forEach((button) => button.remove());
+  }
+
+  function syncRowActions() {
+    clearRowActions();
+    if (!currentSignal?.availability_detected || currentSignal.inquiry_enabled !== true) return;
+    const copy = text();
+    const plate = normalizePlate(currentSignal.plate);
+    rowsEl.querySelectorAll(`tr[data-plate="${plate}"] .row-actions`).forEach((actions) => {
+      const button = document.createElement("button");
+      button.className = "icon-btn row-market-btn";
+      button.type = "button";
+      button.dataset.marketInquire = "";
+      button.title = copy.inquire;
+      button.setAttribute("aria-label", `${copy.inquire}: ${plate}`);
+      button.innerHTML = whatsappIcon();
+      actions.append(button);
+    });
+  }
+
   function hideSignal() {
     currentSignal = null;
     marketSignalEl.hidden = true;
     marketSignalEl.innerHTML = "";
+    clearRowActions();
     closeModal();
   }
 
@@ -167,11 +183,10 @@ window.createPlateMarketFlow = function createPlateMarketFlow({
     marketSignalEl.innerHTML = `
       <div class="market-signal-copy">
         <div class="market-kicker">${escapeHtml(copy.kicker)}</div>
-        <h2>${escapeHtml(copy.title(plate))}</h2>
+        <h2 class="market-title"><span class="market-plate" aria-label="${escapeHtml(copy.plateLabelText(plate))}">${escapeHtml(plate)}</span><span> ${escapeHtml(copy.titleSuffix)}</span></h2>
         <p>${escapeHtml(copy.body)}</p>
         <div class="market-facts">
           <span><strong>${escapeHtml(prices.label)}:</strong> ${escapeHtml(prices.value)}</span>
-          <span>${escapeHtml(copy.offerCount(Number(currentSignal.offer_count || 1)))}</span>
           ${observed ? `<span>${escapeHtml(copy.observed(observed))}</span>` : ""}
           ${contactPrice}
         </div>
@@ -179,12 +194,13 @@ window.createPlateMarketFlow = function createPlateMarketFlow({
       </div>
       <div class="market-actions">
         <button class="market-inquire-btn" type="button" data-market-inquire ${enabled ? "" : "disabled"}>
-          ${escapeHtml(enabled ? copy.inquire : copy.pending)}
+          ${whatsappIcon()}<span>${escapeHtml(copy.inquire)}</span>
         </button>
         ${sourceLink}
       </div>
     `;
     marketSignalEl.hidden = false;
+    syncRowActions();
   }
 
   function renderModalLanguage() {
@@ -193,30 +209,19 @@ window.createPlateMarketFlow = function createPlateMarketFlow({
     brokerModalEl.querySelector("[data-broker-intro]").textContent = copy.dialogIntro;
     brokerModalEl.querySelector("[data-broker-plate-label]").textContent = copy.plateLabel;
     brokerModalEl.querySelector("[data-broker-budget-label]").textContent = copy.budgetLabel;
-    brokerModalEl.querySelector("[data-broker-method-label]").textContent = copy.methodLabel;
-    brokerModalEl.querySelector("[data-broker-contact-label]").textContent = copy.contactLabel;
     brokerModalEl.querySelector("[data-broker-note-label]").textContent = copy.noteLabel;
-    brokerModalEl.querySelector("[data-broker-consent-copy]").childNodes[0].textContent = `${copy.consent} `;
+    brokerModalEl.querySelector("[data-broker-whatsapp-note]").textContent = copy.whatsappNote;
     brokerBudgetEl.setAttribute("aria-label", copy.budgetLabel);
-    brokerContactEl.placeholder = copy.contactPlaceholder;
     brokerNoteEl.placeholder = copy.notePlaceholder;
-    brokerContactMethodEl.options[0].textContent = copy.methodEmail;
-    brokerContactMethodEl.options[1].textContent = copy.methodWhatsapp;
-    brokerContactMethodEl.options[2].textContent = copy.methodPhone;
-    brokerSubmitEl.textContent = copy.submit;
+    brokerSubmitEl.querySelector("[data-broker-submit-copy]").textContent = copy.submit;
     brokerCloseEl.setAttribute("aria-label", copy.close);
   }
 
   function openModal() {
     if (!currentSignal?.availability_detected || !currentSignal.inquiry_enabled) return;
     previouslyFocused = document.activeElement;
-    brokerFormEl.querySelectorAll("input, select, textarea, button[type='submit']").forEach((element) => {
-      element.disabled = false;
-    });
     brokerFormEl.reset();
     brokerPlateEl.value = normalizePlate(currentSignal.plate);
-    brokerStatusEl.textContent = "";
-    brokerStatusEl.classList.remove("success");
     renderModalLanguage();
     brokerModalEl.hidden = false;
     brokerModalEl.classList.add("open");
@@ -235,49 +240,20 @@ window.createPlateMarketFlow = function createPlateMarketFlow({
     previouslyFocused = null;
   }
 
-  async function submitInquiry(event) {
+  function openWhatsApp(event) {
     event.preventDefault();
-    if (!currentSignal?.availability_detected) return;
+    if (!currentSignal?.availability_detected || !brokerFormEl.reportValidity()) return;
     const copy = text();
-    brokerStatusEl.textContent = "";
-    if (!brokerFormEl.reportValidity()) return;
-    brokerSubmitEl.disabled = true;
-    brokerSubmitEl.textContent = copy.submitting;
-    try {
-      const response = await fetch("./api/broker_inquiry", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          plate: normalizePlate(currentSignal.plate),
-          listing_id: String(currentSignal.listing_id || ""),
-          budget_hkd: Number(brokerBudgetEl.value),
-          contact_method: brokerContactMethodEl.value,
-          contact: brokerContactEl.value.trim(),
-          note: brokerNoteEl.value.trim(),
-          privacy_consent: brokerConsentEl.checked,
-          company_website: brokerFormEl.elements.company_website.value,
-          lang: getCurrentLang() === "en" ? "en" : "zh",
-        }),
-      });
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        if (payload.error === "broker_inquiry_not_configured") throw new Error("not_configured");
-        if (response.status === 400) throw new Error("invalid");
-        throw new Error("failed");
-      }
-      brokerStatusEl.textContent = copy.success(String(payload.inquiry_id || "received"));
-      brokerStatusEl.classList.add("success");
-      brokerFormEl.querySelectorAll("input, select, textarea, button[type='submit']").forEach((element) => {
-        element.disabled = true;
-      });
-    } catch (error) {
-      brokerStatusEl.classList.remove("success");
-      brokerStatusEl.textContent = error.message === "not_configured"
-        ? copy.unavailable
-        : error.message === "invalid" ? copy.invalid : copy.failed;
-      brokerSubmitEl.disabled = false;
-      brokerSubmitEl.textContent = copy.submit;
-    }
+    const prices = priceSummary(currentSignal);
+    const message = copy.message({
+      plate: normalizePlate(currentSignal.plate),
+      asking: prices.value,
+      budget: formatMoney(Number(brokerBudgetEl.value)),
+      note: brokerNoteEl.value.trim(),
+      sourceUrl: validSourceUrl(currentSignal.source_url),
+    });
+    const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+    window.open(url, "_blank", "noopener,noreferrer");
   }
 
   async function update({ query, rows }) {
@@ -320,11 +296,14 @@ window.createPlateMarketFlow = function createPlateMarketFlow({
   marketSignalEl.addEventListener("click", (event) => {
     if (event.target.closest("[data-market-inquire]")) openModal();
   });
+  rowsEl.addEventListener("click", (event) => {
+    if (event.target.closest("[data-market-inquire]")) openModal();
+  });
   brokerCloseEl.addEventListener("click", closeModal);
   brokerModalEl.addEventListener("click", (event) => {
     if (event.target === brokerModalEl) closeModal();
   });
-  brokerFormEl.addEventListener("submit", submitInquiry);
+  brokerFormEl.addEventListener("submit", openWhatsApp);
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && !brokerModalEl.hidden) closeModal();
   });
