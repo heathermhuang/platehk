@@ -118,7 +118,7 @@ This document captures the current application threat model, attack surface, and
   - no-store API response headers
   - cache-backed responses for hot static payloads
 - Market and enquiry protections:
-  - exact-plate signal responses rather than a bulk market API
+  - exact-plate signal responses, including a same-origin positive-only page batch capped at 200 candidates, rather than a browsable market feed
   - aggregate market snapshots are gitignored and exist only transiently on the private update runner
   - direct `/_market/*` requests blocked by the Worker
   - source URL host allowlisting and freshness expiry

@@ -15,7 +15,7 @@ TODAY = date.today().isoformat()
 MAX_PAGES = 800
 INDEX_LINKS = 420
 TABLE_ROWS = 18
-LEDGER_CSS_VERSION = "20260512-09"
+LEDGER_CSS_VERSION = "20260812-10"
 MARKET_SIGNALS_PATH = DATA / "market" / "28car.active.json"
 _MARKET_SIGNALS: dict | None = None
 
@@ -352,10 +352,7 @@ def render_page(entries_by_norm: dict[str, dict], entry: dict, related: list[dic
       .market-card p { margin:8px 0 0; color:#665b45; line-height:1.6; max-width:72ch; }
       .market-kicker { color:#725208; font-size:12px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
       .market-title { display:flex; align-items:center; flex-wrap:wrap; gap:10px; }
-      .market-plate { display:inline-flex; align-items:center; justify-content:center; min-height:38px; padding:4px 15px; border:3px solid #171717; border-radius:6px; background:#fff; color:#111; font-family:"Arial Narrow","Roboto Condensed",Arial,sans-serif; font-size:.9em; font-weight:900; line-height:1; letter-spacing:.1em; box-shadow:inset 0 0 0 1px #fff,inset 0 0 0 2px #171717; }
-      .market-plate::before,.market-plate::after { content:""; width:4px; height:4px; border-radius:50%; background:#7a7a7a; }
-      .market-plate::before { margin-right:9px; }
-      .market-plate::after { margin-left:7px; }
+      .market-plate { display:inline-flex; align-items:center; justify-content:center; min-width:92px; min-height:34px; padding:4px 12px; border:2px solid var(--plate-border,#171612); border-radius:4px; background:var(--plate-fill,#f0c94d); color:var(--plate-ink,#171612); font-family:"SFMono-Regular","Roboto Mono",Consolas,"Liberation Mono",monospace; font-size:16px; font-weight:700; line-height:1; letter-spacing:0; white-space:pre; }
       .market-price { color:#554214; }
       .market-actions { display:flex; flex-direction:column; gap:9px; min-width:210px; text-align:center; font-size:12px; }
       .whatsapp-action { border-color:#0b6f63 !important; background:#128c7e !important; color:#fff !important; display:inline-flex; align-items:center; justify-content:center; gap:9px; }

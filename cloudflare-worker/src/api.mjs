@@ -615,23 +615,34 @@ function marketCacheUrl(request, shard) {
   return new URL(`/_market-cache/${shard}`, request.url).toString();
 }
 
-async function loadActiveMarketOffers(request, env, plate) {
-  const shard = /^[A-Z0-9]/.test(plate) ? plate[0] : "";
-  if (!shard) return { payload: null, offers: [] };
+async function loadMarketSignalShard(request, env, shard) {
+  if (!/^[A-Z0-9]$/.test(shard)) return null;
   const payload = await getStaticJson(env, marketCacheUrl(request, shard), `${MARKET_SIGNAL_DIR}/${shard}.json`);
   if (!payload || payload.schema_version !== 1 || payload.source !== "28car") {
-    return { payload: null, offers: [] };
+    return null;
   }
+  return payload;
+}
+
+function activeMarketOffers(payload, plate) {
+  if (!payload) return [];
   const freshHours = Math.max(1, Math.min(168, Number(payload.fresh_for_hours || 72)));
   const cutoff = Date.now() - freshHours * 60 * 60 * 1000;
   const candidates = Array.isArray(payload?.signals?.[plate]) ? payload.signals[plate] : [];
-  const offers = candidates.filter((offer) => {
+  return candidates.filter((offer) => {
     if (!offer || typeof offer !== "object") return false;
     if (!/^n\d+$/.test(String(offer.listing_id || ""))) return false;
     if (!/^https:\/\/m\.28car\.com\/num_dsp\.php\?/i.test(String(offer.source_url || ""))) return false;
     const lastSeen = Date.parse(String(offer.last_seen_at || ""));
     return Number.isFinite(lastSeen) && lastSeen >= cutoff;
   });
+}
+
+async function loadActiveMarketOffers(request, env, plate) {
+  const shard = /^[A-Z0-9]/.test(plate) ? plate[0] : "";
+  if (!shard) return { payload: null, offers: [] };
+  const payload = await loadMarketSignalShard(request, env, shard);
+  const offers = activeMarketOffers(payload, plate);
   return { payload, offers };
 }
 
@@ -673,6 +684,37 @@ async function handleMarketSignal(request, env) {
   const methodErr = requireGetLike(request);
   if (methodErr) return methodErr;
   const url = new URL(request.url);
+  const rawBatch = url.searchParams.get("plates");
+  if (rawBatch !== null) {
+    const originErr = sameOriginError(request);
+    if (originErr) return originErr;
+    const requested = rawBatch.split(",");
+    if (!requested.length || requested.length > 200) return badRequest("plates must contain 1 to 200 exact plates");
+    const plates = [];
+    const seen = new Set();
+    for (const rawPlate of requested) {
+      const plate = normalizeQuery(rawPlate);
+      if (!plate) return badRequest("plates contains an empty plate");
+      if (plate.length > 16) return badRequest("plate too long");
+      if (seen.has(plate)) continue;
+      seen.add(plate);
+      plates.push(plate);
+    }
+    enforcePublicReadRateLimit(request, "market-signal-batch", 30, 300);
+    const shards = [...new Set(plates.map((plate) => plate[0]))];
+    const shardEntries = await Promise.all(shards.map(async (shard) => [
+      shard,
+      await loadMarketSignalShard(request, env, shard),
+    ]));
+    const payloads = new Map(shardEntries);
+    const signals = plates
+      .map((plate) => {
+        const payload = payloads.get(plate[0]) || null;
+        return publicMarketSignal(plate, payload, activeMarketOffers(payload, plate));
+      })
+      .filter((signal) => signal.availability_detected);
+    return jsonResponse({ plates_requested: plates.length, signals });
+  }
   const plate = normalizeQuery(url.searchParams.get("plate") || "");
   if (!plate) return badRequest("plate is required");
   if (plate.length > 16) return badRequest("plate too long");

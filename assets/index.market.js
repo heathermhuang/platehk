@@ -75,7 +75,11 @@ window.createPlateMarketFlow = function createPlateMarketFlow({
     },
   };
 
-  let currentSignal = null;
+  const signalCache = new Map();
+  let currentSignals = new Map();
+  let currentPlateLabels = new Map();
+  let activeSignal = null;
+  let activePlateLabel = "";
   let lastLookupKey = "";
   let lookupSequence = 0;
   let previouslyFocused = null;
@@ -138,52 +142,80 @@ window.createPlateMarketFlow = function createPlateMarketFlow({
     rowsEl.querySelectorAll(".row-market-btn").forEach((button) => button.remove());
   }
 
+  function plateForRow(row) {
+    if (!row) return "";
+    return normalizePlate(row.single_line || row.double_line || "");
+  }
+
+  function plateLabelForRow(row) {
+    if (row?.single_line) return String(row.single_line).trim();
+    if (Array.isArray(row?.double_line)) return row.double_line.map((line) => String(line || "").trim()).filter(Boolean).join(" ");
+    return String(row?.double_line || "").trim();
+  }
+
+  function candidatePlateEntries(query, rows) {
+    const normalizedQuery = normalizePlate(query);
+    if (!normalizedQuery || !Array.isArray(rows)) return [];
+    const entries = [];
+    const seen = new Set();
+    rows.forEach((row) => {
+      const plate = plateForRow(row);
+      if (!plate || seen.has(plate)) return;
+      seen.add(plate);
+      entries.push({ plate, label: plateLabelForRow(row) || plate });
+    });
+    return entries;
+  }
+
   function syncRowActions() {
     clearRowActions();
-    if (!currentSignal?.availability_detected || currentSignal.inquiry_enabled !== true) return;
     const copy = text();
-    const plate = normalizePlate(currentSignal.plate);
-    rowsEl.querySelectorAll(`tr[data-plate="${plate}"] .row-actions`).forEach((actions) => {
-      const button = document.createElement("button");
-      button.className = "icon-btn row-market-btn";
-      button.type = "button";
-      button.dataset.marketInquire = "";
-      button.title = copy.inquire;
-      button.setAttribute("aria-label", `${copy.inquire}: ${plate}`);
-      button.innerHTML = whatsappIcon();
-      actions.append(button);
+    currentSignals.forEach((signal, plate) => {
+      if (!signal?.availability_detected || signal.inquiry_enabled !== true) return;
+      const plateLabel = currentPlateLabels.get(plate) || plate;
+      rowsEl.querySelectorAll(`tr[data-plate="${plate}"] .row-actions`).forEach((actions) => {
+        const button = document.createElement("button");
+        button.className = "icon-btn row-market-btn";
+        button.type = "button";
+        button.dataset.marketInquire = plate;
+        button.title = copy.inquire;
+        button.setAttribute("aria-label", `${copy.inquire}: ${plateLabel}`);
+        button.innerHTML = whatsappIcon();
+        actions.append(button);
+      });
     });
   }
 
-  function hideSignal() {
-    currentSignal = null;
+  function hideSignals() {
+    currentSignals = new Map();
+    currentPlateLabels = new Map();
+    activeSignal = null;
+    activePlateLabel = "";
     marketSignalEl.hidden = true;
     marketSignalEl.innerHTML = "";
     clearRowActions();
     closeModal();
   }
 
-  function renderSignal() {
-    if (!currentSignal?.availability_detected) {
-      hideSignal();
-      return;
-    }
+  function signalMarkup(signal) {
     const copy = text();
-    const plate = normalizePlate(currentSignal.plate);
-    const prices = priceSummary(currentSignal);
-    const observed = formatObserved(currentSignal.observed_at);
-    const sourceUrl = validSourceUrl(currentSignal.source_url);
+    const plate = normalizePlate(signal.plate);
+    const plateLabel = currentPlateLabels.get(plate) || plate;
+    const prices = priceSummary(signal);
+    const observed = formatObserved(signal.observed_at);
+    const sourceUrl = validSourceUrl(signal.source_url);
     const sourceLink = sourceUrl
       ? `<a class="market-source-link" href="${escapeHtml(sourceUrl)}" target="_blank" rel="nofollow noopener noreferrer">${escapeHtml(copy.source)}</a>`
       : "";
-    const contactPrice = currentSignal.has_contact_price && currentSignal.asking_prices_hkd?.length
+    const contactPrice = signal.has_contact_price && signal.asking_prices_hkd?.length
       ? `<span class="market-contact-price">${escapeHtml(copy.priceContact)}</span>`
       : "";
-    const enabled = currentSignal.inquiry_enabled === true;
-    marketSignalEl.innerHTML = `
+    const enabled = signal.inquiry_enabled === true;
+    return `
+      <article class="market-signal-item" data-market-plate="${escapeHtml(plate)}">
       <div class="market-signal-copy">
         <div class="market-kicker">${escapeHtml(copy.kicker)}</div>
-        <h2 class="market-title"><span class="market-plate" aria-label="${escapeHtml(copy.plateLabelText(plate))}">${escapeHtml(plate)}</span><span> ${escapeHtml(copy.titleSuffix)}</span></h2>
+        <h2 class="market-title"><span class="market-plate" aria-label="${escapeHtml(copy.plateLabelText(plateLabel))}">${escapeHtml(plateLabel)}</span><span> ${escapeHtml(copy.titleSuffix)}</span></h2>
         <p>${escapeHtml(copy.body)}</p>
         <div class="market-facts">
           <span><strong>${escapeHtml(prices.label)}:</strong> ${escapeHtml(prices.value)}</span>
@@ -193,12 +225,21 @@ window.createPlateMarketFlow = function createPlateMarketFlow({
         <p class="market-disclaimer">${escapeHtml(copy.disclaimer)}</p>
       </div>
       <div class="market-actions">
-        <button class="market-inquire-btn" type="button" data-market-inquire ${enabled ? "" : "disabled"}>
+        <button class="market-inquire-btn" type="button" data-market-inquire="${escapeHtml(plate)}" ${enabled ? "" : "disabled"}>
           ${whatsappIcon()}<span>${escapeHtml(copy.inquire)}</span>
         </button>
         ${sourceLink}
       </div>
+      </article>
     `;
+  }
+
+  function renderSignals() {
+    if (!currentSignals.size) {
+      hideSignals();
+      return;
+    }
+    marketSignalEl.innerHTML = `<div class="market-signal-list">${Array.from(currentSignals.values(), signalMarkup).join("")}</div>`;
     marketSignalEl.hidden = false;
     syncRowActions();
   }
@@ -217,11 +258,14 @@ window.createPlateMarketFlow = function createPlateMarketFlow({
     brokerCloseEl.setAttribute("aria-label", copy.close);
   }
 
-  function openModal() {
-    if (!currentSignal?.availability_detected || !currentSignal.inquiry_enabled) return;
+  function openModal(plate) {
+    const signal = currentSignals.get(normalizePlate(plate));
+    if (!signal?.availability_detected || !signal.inquiry_enabled) return;
+    activeSignal = signal;
+    activePlateLabel = currentPlateLabels.get(normalizePlate(signal.plate)) || normalizePlate(signal.plate);
     previouslyFocused = document.activeElement;
     brokerFormEl.reset();
-    brokerPlateEl.value = normalizePlate(currentSignal.plate);
+    brokerPlateEl.value = activePlateLabel;
     renderModalLanguage();
     brokerModalEl.hidden = false;
     brokerModalEl.classList.add("open");
@@ -242,62 +286,89 @@ window.createPlateMarketFlow = function createPlateMarketFlow({
 
   function openWhatsApp(event) {
     event.preventDefault();
-    if (!currentSignal?.availability_detected || !brokerFormEl.reportValidity()) return;
+    if (!activeSignal?.availability_detected || !brokerFormEl.reportValidity()) return;
     const copy = text();
-    const prices = priceSummary(currentSignal);
+    const prices = priceSummary(activeSignal);
     const message = copy.message({
-      plate: normalizePlate(currentSignal.plate),
+      plate: activePlateLabel,
       asking: prices.value,
       budget: formatMoney(Number(brokerBudgetEl.value)),
       note: brokerNoteEl.value.trim(),
-      sourceUrl: validSourceUrl(currentSignal.source_url),
+      sourceUrl: validSourceUrl(activeSignal.source_url),
     });
     const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
     window.open(url, "_blank", "noopener,noreferrer");
   }
 
-  async function update({ query, rows }) {
-    const plate = normalizePlate(query);
-    const exactInDatabase = Boolean(plate) && Array.isArray(rows) && rows.some((row) => {
-      const value = row?.single_line || (Array.isArray(row?.double_line) ? row.double_line : "");
-      return normalizePlate(value) === plate;
-    });
-    if (!exactInDatabase) {
-      lastLookupKey = "";
-      lookupSequence += 1;
-      hideSignal();
-      return;
-    }
-    if (lastLookupKey === plate) {
-      if (currentSignal) renderSignal();
-      return;
-    }
-    lastLookupKey = plate;
-    const sequence = ++lookupSequence;
-    try {
-      const response = await fetch(`./api/market_signal?plate=${encodeURIComponent(plate)}`, { cache: "no-store" });
+  async function fetchSignals(plates) {
+    const uncached = plates.filter((plate) => !signalCache.has(plate));
+    if (uncached.length) {
+      const params = new URLSearchParams({ plates: uncached.join(",") });
+      const response = await fetch(`./api/market_signal?${params}`, { cache: "no-store" });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const payload = await response.json();
-      if (sequence !== lookupSequence || lastLookupKey !== plate) return;
-      if (!payload?.availability_detected) {
-        hideSignal();
+      const signals = Array.isArray(payload?.signals) ? payload.signals : [];
+      const byPlate = new Map(signals
+        .filter((signal) => signal?.availability_detected)
+        .map((signal) => [normalizePlate(signal.plate), signal]));
+      uncached.forEach((plate) => signalCache.set(plate, byPlate.get(plate) || null));
+    }
+    return plates.map((plate) => signalCache.get(plate) || null);
+  }
+
+  async function update({ query, rows }) {
+    const entries = candidatePlateEntries(query, rows);
+    if (!entries.length) {
+      lastLookupKey = "";
+      lookupSequence += 1;
+      hideSignals();
+      return;
+    }
+    const plates = entries.map(({ plate }) => plate);
+    const lookupKey = plates.join("|");
+    if (lastLookupKey === lookupKey) {
+      if (currentSignals.size) renderSignals();
+      return;
+    }
+    lastLookupKey = lookupKey;
+    const sequence = ++lookupSequence;
+    hideSignals();
+    try {
+      const results = await fetchSignals(plates);
+      if (sequence !== lookupSequence || lastLookupKey !== lookupKey) return;
+      currentSignals = new Map();
+      currentPlateLabels = new Map(entries.map(({ plate, label }) => [plate, label]));
+      plates.forEach((plate, index) => {
+        const signal = results[index];
+        if (signal) currentSignals.set(plate, signal);
+      });
+      if (!currentSignals.size) {
+        hideSignals();
         return;
       }
-      currentSignal = payload;
-      renderSignal();
+      renderSignals();
       const shouldAutoOpen = !autoOpenHandled && new URLSearchParams(location.search).get("broker") === "1";
       autoOpenHandled = true;
-      if (shouldAutoOpen && currentSignal.inquiry_enabled) openModal();
+      if (shouldAutoOpen) {
+        const queryPlate = normalizePlate(query);
+        const signal = currentSignals.get(queryPlate) || currentSignals.values().next().value;
+        if (signal?.inquiry_enabled) openModal(signal.plate);
+      }
     } catch {
-      if (sequence === lookupSequence) hideSignal();
+      if (sequence === lookupSequence) {
+        lastLookupKey = "";
+        hideSignals();
+      }
     }
   }
 
   marketSignalEl.addEventListener("click", (event) => {
-    if (event.target.closest("[data-market-inquire]")) openModal();
+    const button = event.target.closest("[data-market-inquire]");
+    if (button) openModal(button.dataset.marketInquire);
   });
   rowsEl.addEventListener("click", (event) => {
-    if (event.target.closest("[data-market-inquire]")) openModal();
+    const button = event.target.closest("[data-market-inquire]");
+    if (button) openModal(button.dataset.marketInquire);
   });
   brokerCloseEl.addEventListener("click", closeModal);
   brokerModalEl.addEventListener("click", (event) => {
@@ -311,7 +382,7 @@ window.createPlateMarketFlow = function createPlateMarketFlow({
   return {
     update,
     applyLanguage() {
-      if (currentSignal) renderSignal();
+      if (currentSignals.size) renderSignals();
       if (!brokerModalEl.hidden) renderModalLanguage();
     },
     closeModal,

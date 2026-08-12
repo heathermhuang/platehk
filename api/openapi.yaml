@@ -122,56 +122,78 @@ paths:
           description: OK
   /api/market_signal:
     get:
-      summary: Check for a recent external sale signal for one exact plate
+      summary: Check recent external sale signals for exact plates
       description: |
-        Returns a privacy-minimised exact-match signal only. This is not a bulk marketplace API,
-        and a positive response is not a guarantee that the listing is current, transferable,
-        or available on the stated terms.
+        Pass `plate` for the original single-plate response, or `plates` for a comma-separated,
+        same-origin, page-scoped batch of up to 200 exact plates. The batch response contains
+        positive matches only. This remains an exact-match signal API, not a browsable marketplace feed, and a
+        positive response is not a guarantee that a listing is current, transferable, or available
+        on the stated terms.
       parameters:
         - in: query
           name: plate
-          required: true
+          required: false
           schema:
             type: string
             maxLength: 16
           example: "HK8888"
+        - in: query
+          name: plates
+          required: false
+          schema:
+            type: string
+          example: "HK8888,DRHUANG,88"
+          description: Comma-separated set of 1 to 200 exact normalized plate candidates.
       responses:
         "200":
-          description: Exact-match signal state
+          description: Single exact-match state, or a page-scoped collection of positive exact matches
           content:
             application/json:
               schema:
-                type: object
-                required: [plate, availability_detected, inquiry_enabled]
-                properties:
-                  plate:
-                    type: string
-                  availability_detected:
-                    type: boolean
-                  inquiry_enabled:
-                    type: boolean
-                  source:
-                    type: string
-                    enum: [28car]
-                  offer_count:
-                    type: integer
-                  asking_prices_hkd:
-                    type: array
-                    items:
-                      type: integer
-                  has_contact_price:
-                    type: boolean
-                  observed_at:
-                    type: string
-                    format: date-time
-                  fresh_until:
-                    type: string
-                    format: date-time
-                  listing_id:
-                    type: string
-                  source_url:
-                    type: string
-                    format: uri
+                oneOf:
+                  - type: object
+                    required: [plate, availability_detected, inquiry_enabled]
+                    properties:
+                      plate:
+                        type: string
+                      availability_detected:
+                        type: boolean
+                      inquiry_enabled:
+                        type: boolean
+                      source:
+                        type: string
+                        enum: [28car]
+                      offer_count:
+                        type: integer
+                      asking_prices_hkd:
+                        type: array
+                        items:
+                          type: integer
+                      has_contact_price:
+                        type: boolean
+                      observed_at:
+                        type: string
+                        format: date-time
+                      fresh_until:
+                        type: string
+                        format: date-time
+                      listing_id:
+                        type: string
+                      source_url:
+                        type: string
+                        format: uri
+                  - type: object
+                    required: [plates_requested, signals]
+                    properties:
+                      plates_requested:
+                        type: integer
+                        minimum: 1
+                        maximum: 200
+                      signals:
+                        type: array
+                        items:
+                          type: object
+                          required: [plate, availability_detected, inquiry_enabled]
         "429":
           description: Rate limited
   /api/vision_plate:
