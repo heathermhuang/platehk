@@ -48,7 +48,7 @@
       const copy = node("div");
       copy.append(node("div", "market-kicker", "外部放售訊號 / External sale signal"));
       const title = node("h2", "market-title");
-      const plateBadge = node("span", "market-plate", plate);
+      const plateBadge = node("span", "plate", plate);
       plateBadge.setAttribute("aria-label", `車牌 / Plate ${plate}`);
       title.append(plateBadge, document.createTextNode(" "), node("span", "", "或可洽購 / may be obtainable"));
       copy.append(title);

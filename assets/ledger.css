@@ -535,30 +535,6 @@ code {
   font-weight: 700 !important;
 }
 
-.market-plate {
-  box-sizing: border-box;
-  min-width: 92px;
-  min-height: 34px;
-  padding: 4px 12px;
-  border: 2px solid var(--plate-border);
-  border-radius: 4px;
-  background: var(--plate-fill);
-  color: var(--plate-ink);
-  font-family: "SFMono-Regular", "Roboto Mono", Consolas, "Liberation Mono", monospace;
-  font-size: 16px;
-  font-weight: 700;
-  line-height: 1;
-  letter-spacing: 0;
-  white-space: pre;
-  box-shadow: none;
-}
-
-.market-plate::before,
-.market-plate::after {
-  display: none;
-  content: none;
-}
-
 .plate.na {
   border-color: var(--line-strong) !important;
   background: var(--surface-muted) !important;

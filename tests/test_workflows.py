@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import random
+import re
 import subprocess
 import sys
 import tempfile
@@ -403,6 +404,26 @@ class WorkflowTests(unittest.TestCase):
         self.assertTrue((publish / "data" / "events.json").exists())
         self.assertTrue((publish / "data" / "TVRM auction result (1973-2026).xls").exists())
         self.assertTrue((publish / "api" / "v1" / "all" / "results.chunks.json").exists())
+        search_index = publish / "api" / "v1" / "all" / "search-index"
+        search_meta = json.loads((search_index / "meta.json").read_text(encoding="utf-8"))
+        self.assertEqual(search_meta["schema_version"], 1)
+        self.assertGreater(search_meta["bigram_counts"]["UA"], 0)
+        self.assertTrue((search_index / "prefix1" / "H.json").exists())
+        self.assertTrue((search_index / "bigram" / "UA.json").exists())
+        legacy_query = "KL777"
+        legacy_token = min(
+            {legacy_query[idx:idx + 2] for idx in range(len(legacy_query) - 1)},
+            key=lambda token: (search_meta["bigram_counts"][token], token),
+        )
+        legacy_rows = json.loads(
+            (search_index / "bigram" / f"{legacy_token}.json").read_text(encoding="utf-8")
+        )["rows"]
+        self.assertTrue(any(
+            search_meta["row_metadata"][row[0]][0] == "tvrm_legacy"
+            and re.sub(r"[^A-Z0-9]+", "", str(row[1] or "").upper()) == legacy_query
+            and row[3] == 28000
+            for row in legacy_rows
+        ))
         self.assertTrue((publish / "api" / "v1" / "tvrm_eauction" / "results.chunks.json").exists())
         self.assertTrue((publish / "data" / "all.prefix2" / "HK.json").exists())
         self.assertTrue((publish / ".well-known" / "api-catalog.json").exists())

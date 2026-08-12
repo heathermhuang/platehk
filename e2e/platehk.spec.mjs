@@ -1,5 +1,15 @@
 import { expect, test } from "@playwright/test";
 import axe from "axe-core";
+import { readFileSync, readdirSync } from "node:fs";
+
+const generatedMarketPage = readdirSync(new URL("../plates/", import.meta.url))
+  .filter((filename) => filename.endsWith(".html"))
+  .map((filename) => ({
+    filename,
+    html: readFileSync(new URL(`../plates/${filename}`, import.meta.url), "utf8"),
+  }))
+  .find(({ html }) => html.includes("data-market-card"));
+const generatedMarketPlate = generatedMarketPage?.html.match(/data-market-card data-plate="([A-Z0-9]+)"/)?.[1];
 
 function collectBrowserErrors(page) {
   const errors = [];
@@ -283,17 +293,26 @@ test.describe("Plate.hk browser journeys", () => {
     await page.goto("/?lang=en&q=88&broker=1");
     await waitForResultRows(page, 1);
     await expect(page.locator("#marketSignal")).toBeVisible();
-    await expect(page.locator("#marketSignal .market-plate")).toHaveText("88");
+    await expect(page.locator("#marketSignal .market-title .plate")).toHaveText("88");
+    await expect(page.locator("#marketSignal .market-title .plate")).toHaveCSS("background-color", "rgb(240, 201, 77)");
+    await expect(page.locator("#marketSignal .market-title .plate")).toHaveCSS("color", "rgb(23, 22, 18)");
+    const plateDecoration = await page.locator("#marketSignal .market-title .plate").evaluate((plate) => ({
+      before: getComputedStyle(plate, "::before").content,
+      after: getComputedStyle(plate, "::after").content,
+    }));
+    expect(plateDecoration).toEqual({ before: "none", after: "none" });
     await expect(page.locator("#marketSignal .market-title")).toContainText("may be obtainable");
     await expect(page.locator("#marketSignal")).not.toContainText("1 recent signal");
     await expect(page.locator("#marketSignal .market-source-link")).toHaveAttribute("href", /m\.28car\.com/);
     await expect(page.locator("#marketSignal .market-inquire-btn .whatsapp-icon")).toBeVisible();
-    await expect(page.locator("#marketSignal .market-inquire-btn")).toHaveCSS("background-color", "rgb(18, 140, 126)");
+    await expect(page.locator("#marketSignal .market-inquire-btn")).toHaveCSS("background-color", "rgb(7, 94, 84)");
     const rowWhatsAppButton = page.locator("#rows tr[data-plate='88'] .row-market-btn").first();
     await expect(rowWhatsAppButton.locator(".whatsapp-icon")).toBeVisible();
-    await expect(rowWhatsAppButton).toHaveCSS("background-color", "rgb(18, 140, 126)");
+    await expect(rowWhatsAppButton).toHaveCSS("background-color", "rgb(7, 94, 84)");
     await expect(page.locator("#brokerModal")).toBeVisible();
-    await expect(page.locator("#brokerSubmit")).toHaveCSS("background-color", "rgb(18, 140, 126)");
+    await expect(page.locator("#brokerPlate")).toHaveCSS("background-color", "rgb(240, 201, 77)");
+    await expect(page.locator("#brokerPlate")).toHaveCSS("color", "rgb(23, 22, 18)");
+    await expect(page.locator("#brokerSubmit")).toHaveCSS("background-color", "rgb(7, 94, 84)");
     await page.locator("#brokerBudget").fill("900000");
     await page.locator("#brokerNote").fill("Initial approach only");
     await page.locator("#brokerSubmit").click();
@@ -315,6 +334,39 @@ test.describe("Plate.hk browser journeys", () => {
     await expect(page.locator("#rows .row-market-btn")).toHaveCount(0);
     await runAxe(page);
     await expectNoBrowserErrors(errors);
+  });
+
+  test("uses the canonical yellow plate on generated market landing pages", async ({ page }) => {
+    expect(generatedMarketPage).toBeTruthy();
+    expect(generatedMarketPlate).toBeTruthy();
+    await page.route("**/api/market_signal?*", async (route) => {
+      await route.fulfill({
+        json: {
+          plate: generatedMarketPlate,
+          availability_detected: true,
+          source: "28car",
+          offer_count: 1,
+          asking_prices_hkd: [385000],
+          has_contact_price: false,
+          observed_at: new Date().toISOString(),
+          listing_id: "n100001",
+          source_url: "https://m.28car.com/num_dsp.php?h_vid=50000001&h_f_do=1",
+          inquiry_enabled: true,
+        },
+      });
+    });
+
+    await page.goto(`/plates/${generatedMarketPage.filename}`);
+    const plate = page.locator("[data-market-card] .market-title .plate");
+    await expect(plate).toBeVisible();
+    await expect(plate).toHaveText(generatedMarketPlate);
+    await expect(plate).toHaveCSS("background-color", "rgb(240, 201, 77)");
+    await expect(plate).toHaveCSS("color", "rgb(23, 22, 18)");
+    const decoration = await plate.evaluate((element) => ({
+      before: getComputedStyle(element, "::before").content,
+      after: getComputedStyle(element, "::after").content,
+    }));
+    expect(decoration).toEqual({ before: "none", after: "none" });
   });
 
   test("surfaces every active external signal in a focused multi-result list", async ({ page }) => {
@@ -358,12 +410,12 @@ test.describe("Plate.hk browser journeys", () => {
     await expect(huangRow.locator(".row-market-btn")).toBeVisible();
     await expect(drHuangRow.locator(".row-market-btn")).toBeVisible();
     await expect(page.locator("#marketSignal .market-signal-item")).toHaveCount(2);
-    await expect(page.locator("#marketSignal [data-market-plate='HUANG'] .market-plate")).toHaveText("HUANG");
-    await expect(page.locator("#marketSignal [data-market-plate='DRHUANG'] .market-plate")).toHaveText("DR HUANG");
+    await expect(page.locator("#marketSignal [data-market-plate='HUANG'] .plate")).toHaveText("HUANG");
+    await expect(page.locator("#marketSignal [data-market-plate='DRHUANG'] .plate")).toHaveText("DR HUANG");
 
     const plateStyleMatches = await page.evaluate(() => {
       const resultPlate = getComputedStyle(document.querySelector("#rows tr[data-plate='HUANG'] .plate"));
-      const marketPlate = getComputedStyle(document.querySelector("#marketSignal [data-market-plate='HUANG'] .market-plate"));
+      const marketPlate = getComputedStyle(document.querySelector("#marketSignal [data-market-plate='HUANG'] .plate"));
       return ["backgroundColor", "borderColor", "borderRadius", "color", "fontFamily", "fontWeight"]
         .every((property) => resultPlate[property] === marketPlate[property]);
     });
