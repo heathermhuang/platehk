@@ -8,6 +8,7 @@ playwright-report/
 plates/* [0-9].html
 api/v1/**/* [0-9].json
 data/**/* [0-9].json
+data/market/
 
 cloudflare-worker/.dev.vars
 cloudflare-worker/.env

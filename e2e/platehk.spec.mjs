@@ -251,6 +251,66 @@ test.describe("Plate.hk browser journeys", () => {
     await expectNoBrowserErrors(errors);
   });
 
+  test("shows the buyer mandate only for an exact active external signal", async ({ page }) => {
+    const errors = collectBrowserErrors(page);
+    let submitted = null;
+    await page.route("**/api/market_signal?*", async (route) => {
+      const plate = new URL(route.request().url()).searchParams.get("plate");
+      if (plate !== "88") {
+        await route.fulfill({ json: { plate, availability_detected: false, inquiry_enabled: true } });
+        return;
+      }
+      await route.fulfill({
+        json: {
+          plate: "88",
+          availability_detected: true,
+          source: "28car",
+          offer_count: 1,
+          asking_prices_hkd: [888000],
+          has_contact_price: false,
+          observed_at: new Date().toISOString(),
+          listing_id: "n100001",
+          source_url: "https://m.28car.com/num_dsp.php?h_vid=50000001&h_f_do=1",
+          inquiry_enabled: true,
+        },
+      });
+    });
+    await page.route("**/api/broker_inquiry", async (route) => {
+      submitted = route.request().postDataJSON();
+      await route.fulfill({ status: 201, json: { status: "received", inquiry_id: "test-inquiry-1" } });
+    });
+
+    await page.goto("/?lang=en&q=88&broker=1");
+    await waitForResultRows(page, 1);
+    await expect(page.locator("#marketSignal")).toBeVisible();
+    await expect(page.locator("#marketSignal")).toContainText("88 may be obtainable");
+    await expect(page.locator("#marketSignal .market-source-link")).toHaveAttribute("href", /m\.28car\.com/);
+    await expect(page.locator("#brokerModal")).toBeVisible();
+    await page.locator("#brokerBudget").fill("900000");
+    await page.locator("#brokerContactMethod").selectOption("email");
+    await page.locator("#brokerContact").fill("buyer@example.test");
+    await page.locator("#brokerNote").fill("Initial approach only");
+    await page.locator("#brokerConsent").check();
+    await page.locator("#brokerSubmit").click();
+    await expect(page.locator("#brokerStatus")).toContainText("test-inquiry-1");
+    expect(submitted).toEqual(expect.objectContaining({
+      plate: "88",
+      listing_id: "n100001",
+      budget_hkd: 900000,
+      contact_method: "email",
+      contact: "buyer@example.test",
+      privacy_consent: true,
+    }));
+
+    await page.locator("#brokerClose").click();
+    await page.locator("#q").fill("HK30");
+    await waitForResultRows(page, 1);
+    await expect(page.locator("#marketSignal")).toBeHidden();
+    await expect(page.locator("#marketSignal .market-source-link")).toHaveCount(0);
+    await runAxe(page);
+    await expectNoBrowserErrors(errors);
+  });
+
   test("switches dataset, language, sorting and reset controls without losing result integrity", async ({ page }) => {
     const errors = collectBrowserErrors(page);
 

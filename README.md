@@ -44,6 +44,7 @@ The current public UI uses a flat Ledger visual system: compact auction-record t
 - A static frontend with issue shards, hot-search caches, and SEO pages
 - A public `/api/v1` JSON surface for dataset browsing
 - Camera-assisted lookup via the Cloudflare Worker runtime
+- Privacy-minimised external sale signals with an exact-plate confidential buyer-mandate flow
 - OAuth 2.0 client-credentials discovery for protected OCR access
 - OAuth Protected Resource Metadata for agent auth discovery
 - MCP Server Card plus a streamable HTTP `/mcp` transport for agent tool discovery
@@ -97,6 +98,8 @@ Open [http://127.0.0.1:8080](http://127.0.0.1:8080), then stop the server with:
 | Run syntax checks and tests | `./scripts/check_site.sh` |
 | Run secrets and dependency security checks | `./scripts/check_security.sh` |
 | Check generated duplicate artifacts | `python3 scripts/check_duplicate_generated_artifacts.py` |
+| Refresh a bounded 28car signal slice | `python3 scripts/scrape_28car_market.py --max-pages 25` |
+| Refresh all reported 28car listing pages | `python3 scripts/scrape_28car_market.py --max-pages 0` |
 | Compare production freshness against local outputs | `python3 scripts/check_production_freshness.py --fail-on-drift` |
 | Build Cloudflare static publish directory | `python3 scripts/build_cloudflare_public.py` |
 | Start local Cloudflare Worker dev | `npm run cf:dev` |
@@ -112,6 +115,8 @@ The current production shape is:
 
 - Cloudflare Static Assets serves the frontend and prebuilt public data
 - Cloudflare Worker handles `/api/*` routes and the vision-assisted lookup flow
+- The Worker performs exact-plate lookups against a non-browsable, minimal external-sale signal asset
+- Confidential buyer mandates are stored in a dedicated Cloudflare KV binding with automatic 90-day expiry
 - Static JSON shards power search, issue browsing, and high-frequency cached queries
 - SEO pages under `plates/` expose popular plate result pages to search engines
 
@@ -186,6 +191,7 @@ These are the artifacts most contributors need to understand:
 | `data/hot_search/` | Cached results for high-frequency queries such as `88`, `8888`, and `HK` |
 | `data/all.tvrm_legacy_overlap.json` | Deduplication hints for cross-dataset aggregation |
 | `data/audit.json` | Audit view payload listing source coverage and parse quality |
+| `data/market/28car.active.json` | Gitignored local/runner-only 28car signal snapshot: plate, price signal, listing reference/link, and freshness only |
 | `api/v1/` | Static API payloads consumed by external clients and the site |
 
 The historical workbook sources remain in-repo because they are still part of the build graph:
@@ -220,11 +226,44 @@ python3 scripts/verify_data_integrity.py
 
 For the contributor workflow, review [CONTRIBUTING.md](./CONTRIBUTING.md).
 
+## External Sale Signals and Buyer Mandates
+
+The 28car ingester is intentionally narrower than a marketplace mirror. It checks `robots.txt`, applies a global request-start delay, and writes only an allowlisted signal schema. Seller names, phone numbers, comments, descriptions, photos, and view counts are discarded before the output is built.
+
+The aggregate signal file is gitignored and must never be committed to the public repository. During the cloud update it exists only on the private GitHub Actions runner, where the publish builder validates the allowlisted offer fields and packages first-character shards under `/_market/`. The Worker blocks those shard paths from direct web access. The public surface is an exact-match `GET /api/market_signal?plate=...` response. The homepage and generated SEO pages render a sale panel and 28car source link only for a fresh exact match; an absent panel is not evidence that no listing exists, especially when the snapshot reports partial coverage.
+
+SEO plate pages contain only a hidden plate marker, not a baked price, listing ID, or source URL. Their browser script rechecks the exact-match API on every view and renders the card only while the signal remains fresh. All `cf:deploy*` commands require a complete snapshot inside its freshness window, and cloud workflows verify one exact deployed signal plus the 404 boundary on its internal shard after deployment.
+
+Run a bounded refresh during development:
+
+```bash
+python3 scripts/scrape_28car_market.py --max-pages 25 --concurrency 3 --request-delay 0.85
+python3 scripts/build_cloudflare_public.py
+```
+
+Use `--max-pages 0` only for an intentional full scan. Full scans and `--require-complete` runs abort before writing when any requested page fails; bounded exploratory scans can retain recent prior signals while recording explicit partial coverage. A layout change, `robots.txt` restriction, or page with zero parsed records therefore cannot silently replace production with a false complete snapshot. The cloud-owned `Auto Update Data` workflow runs a required-complete privacy-minimized scan before rebuilding SEO pages each day, then deploys every successful refresh after the same repository checks pass. Market-only changes are deployed but never committed.
+
+The confidential mandate endpoint uses the dedicated `BROKER_LEADS` KV binding declared in `wrangler.jsonc`. Do not reuse that namespace for public data, and do not export or commit mandate values. Without the binding, market signals remain readable but the inquiry CTA is disabled. The local Worker shim supplies an in-memory binding for development and tests.
+
+Buyer leads expire automatically after 90 days. A separate seven-day, PII-minimized notification marker contains only the inquiry reference, target plate, budget, contact method, and submission time. The `Broker Inquiry Notifications` workflow polls the authenticated internal endpoint every five minutes, sends pending markers to the existing private Telegram operations channel, and acknowledges them only after successful delivery. The buyer's email, phone number, WhatsApp number, and note never leave the private KV record through this notification path.
+
+After receiving an alert, an authorized operator can retrieve the full mandate from Cloudflare by combining the alert's submission month and inquiry reference:
+
+```bash
+npx wrangler kv key get --binding BROKER_LEADS --remote "broker-inquiry:YYYY-MM:<inquiry-id>"
+```
+
+The command output contains personal data. Run it only in an authorized terminal, and do not paste the output into Telegram, GitHub issues, logs, or repository files. If notification-marker creation fails, the intake returns an error and attempts to remove the just-created mandate instead of reporting an unnotified success.
+
+The internal endpoint is protected by the same randomly generated `BROKER_NOTIFY_TOKEN` stored independently as a Cloudflare Worker secret and a GitHub Actions secret. Never put this token in `wrangler.jsonc`, repository files, logs, or workflow output.
+
 ## Security
 
 - Review [SECURITY.md](./SECURITY.md) before changing public endpoints, OCR flows, or deployment boundaries
 - Run `python3 scripts/scan_repo_secrets.py` if you touched config, CI, or API-adjacent code
 - Do not commit credentials, tokens, or local environment files
+- Treat `BROKER_LEADS` values as confidential personal data; access only for mandate handling and allow the 90-day TTL to expire records
+- Keep `BROKER_NOTIFY_TOKEN` synchronized between Cloudflare and GitHub Actions; notification messages must never include buyer contact values or notes
 - Camera OCR requires the Cloudflare Worker secret `OPENAI_API_KEY`; set it with `wrangler secret put OPENAI_API_KEY` and verify it with `npm run cf:secrets:check`
 - Protected agent-facing OCR auth is published via `/.well-known/oauth-protected-resource`, `/.well-known/oauth-authorization-server`, and `/.well-known/jwks.json`
 - The worker expects `OAUTH_CLIENTS_JSON`, `OAUTH_JWT_PRIVATE_JWK`, and `OAUTH_JWKS_JSON` to issue and verify bearer tokens for `/api/vision_plate`

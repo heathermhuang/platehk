@@ -6,10 +6,11 @@
     "build:cloudflare:assets": "python3 scripts/build_cloudflare_public.py",
     "cf:dev": "npm run build:cloudflare:assets && wrangler dev",
     "cf:secrets:check": "node scripts/check_cloudflare_worker_secrets.mjs",
-    "cf:deploy": "npm run build:cloudflare:assets && npm run cf:secrets:check && wrangler deploy",
-    "cf:deploy:ci": "npm run build:cloudflare:assets && wrangler deploy",
-    "test": "python3 -m unittest discover -s tests && npm run test:e2e",
+    "cf:deploy": "python3 scripts/build_cloudflare_public.py --require-market-snapshot && npm run cf:secrets:check && wrangler deploy",
+    "cf:deploy:ci": "python3 scripts/build_cloudflare_public.py --require-market-snapshot && wrangler deploy",
+    "test": "python3 -m unittest discover -s tests && npm run test:market-worker && npm run test:e2e",
     "test:e2e": "playwright test",
+    "test:market-worker": "node tests/market_worker_test.mjs",
     "test:python": "python3 -m unittest discover -s tests"
   },
   "devDependencies": {

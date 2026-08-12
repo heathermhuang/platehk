@@ -4,8 +4,9 @@ from __future__ import annotations
 import html
 import json
 from collections import defaultdict
-from datetime import date
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
+from urllib.parse import urlparse
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "data"
@@ -15,6 +16,8 @@ MAX_PAGES = 800
 INDEX_LINKS = 420
 TABLE_ROWS = 18
 LEDGER_CSS_VERSION = "20260512-09"
+MARKET_SIGNALS_PATH = DATA / "market" / "28car.active.json"
+_MARKET_SIGNALS: dict | None = None
 
 DATASETS = {
     "pvrm": {
@@ -53,6 +56,55 @@ STATIC_PAGES = [
 
 def load_json(path: Path):
     return json.loads(path.read_text())
+
+
+def load_active_market_signals() -> dict:
+    global _MARKET_SIGNALS
+    if _MARKET_SIGNALS is not None:
+        return _MARKET_SIGNALS
+    if not MARKET_SIGNALS_PATH.exists():
+        _MARKET_SIGNALS = {}
+        return _MARKET_SIGNALS
+    try:
+        payload = load_json(MARKET_SIGNALS_PATH)
+    except (OSError, json.JSONDecodeError):
+        _MARKET_SIGNALS = {}
+        return _MARKET_SIGNALS
+    if payload.get("schema_version") != 1 or payload.get("source") != "28car":
+        _MARKET_SIGNALS = {}
+        return _MARKET_SIGNALS
+    fresh_hours = max(1, min(168, int(payload.get("fresh_for_hours") or 72)))
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=fresh_hours)
+    active: dict[str, list[dict]] = {}
+    for plate_norm, offers in (payload.get("signals") or {}).items():
+        if not isinstance(offers, list):
+            continue
+        kept = []
+        for offer in offers:
+            if not isinstance(offer, dict):
+                continue
+            try:
+                last_seen = datetime.fromisoformat(str(offer.get("last_seen_at") or "").replace("Z", "+00:00"))
+            except ValueError:
+                continue
+            parsed_url = urlparse(str(offer.get("source_url") or ""))
+            if last_seen < cutoff or parsed_url.scheme != "https" or parsed_url.hostname != "m.28car.com":
+                continue
+            kept.append(offer)
+        if kept:
+            active[str(plate_norm)] = kept
+    _MARKET_SIGNALS = active
+    return _MARKET_SIGNALS
+
+
+def market_signal_html(plate_norm: str) -> str:
+    offers = load_active_market_signals().get(plate_norm) or []
+    if not offers:
+        return ""
+    return (
+        f'      <section class="market-card" data-market-card data-plate="{html.escape(plate_norm, quote=True)}" '
+        'hidden aria-live="polite"></section>'
+    )
 
 
 def norm(text: str | None) -> str:
@@ -287,6 +339,25 @@ def render_page(entries_by_norm: dict[str, dict], entry: dict, related: list[dic
     )
     search_lines = "".join(f"<li>{html.escape(line)}</li>" for line in search_intent_lines(entry))
     dataset_breakdown = dataset_breakdown_html(entry)
+    market_card = market_signal_html(plate_norm)
+    market_style = ""
+    market_script = ""
+    market_grid_selector = ""
+    market_media_style = ""
+    market_section = ""
+    if market_card:
+        market_style = """      .market-card { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:18px; align-items:center; margin-top:14px; padding:18px; border:1px solid #c7a84d; border-left:5px solid #a87808; border-radius:4px; background:#fff9df; }
+      .market-card[hidden] { display:none; }
+      .market-card h2 { margin:5px 0 8px; font-size:22px; }
+      .market-card p { margin:8px 0 0; color:#665b45; line-height:1.6; max-width:72ch; }
+      .market-kicker { color:#725208; font-size:12px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
+      .market-price { color:#554214; }
+      .market-actions { display:flex; flex-direction:column; gap:9px; min-width:210px; text-align:center; font-size:12px; }
+"""
+        market_script = '      <script src="../assets/plate.market.js?v=20260812-01"></script>\n'
+        market_grid_selector = ", .market-card"
+        market_media_style = "        .market-actions { min-width:0; }\n"
+        market_section = f"{market_card}\n\n"
 
     ld_json = {
         "@context": "https://schema.org",
@@ -362,10 +433,10 @@ def render_page(entries_by_norm: dict[str, dict], entry: dict, related: list[dic
         border-radius:4px; padding:10px 12px; min-width: 160px;
       }}
       .dataset-chip span {{ color:var(--muted); font-size:12px; }}
-      a {{ color:var(--accent); }}
+{market_style}      a {{ color:var(--accent); }}
       @media (max-width: 860px) {{
-        .meta, .grid {{ grid-template-columns: 1fr; }}
-        .plate {{ min-width: 0; width: 100%; font-size: 28px; }}
+        .meta, .grid{market_grid_selector} {{ grid-template-columns: 1fr; }}
+{market_media_style}        .plate {{ min-width: 0; width: 100%; font-size: 28px; }}
       }}
     </style>
   </head>
@@ -391,7 +462,7 @@ def render_page(entries_by_norm: dict[str, dict], entry: dict, related: list[dic
         </div>
       </div>
 
-      <div class="grid">
+{market_section}      <div class="grid">
         <div class="stack">
           <div class="card">
             <h2>成交紀錄 / Auction Records</h2>
@@ -421,7 +492,7 @@ def render_page(entries_by_norm: dict[str, dict], entry: dict, related: list[dic
           </div>
         </div>
       </div>
-    </div>
+{market_script}    </div>
   </body>
 </html>
 """

@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import argparse
 import json
 import hashlib
 import importlib.util
 import re
 import shutil
 import subprocess
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 
@@ -171,6 +173,67 @@ def copy_public_data_files() -> None:
         copy_optional_path(data_root / rel, target_data / rel)
 
 
+def copy_private_market_signals(*, required: bool = False) -> None:
+    source = ROOT / "data" / "market" / "28car.active.json"
+    if not source.exists():
+        if required:
+            raise RuntimeError(
+                "A fresh private market snapshot is required for deploys; run scripts/scrape_28car_market.py first"
+            )
+        return
+    payload = json.loads(source.read_text(encoding="utf-8"))
+    if payload.get("schema_version") != 1 or payload.get("source") != "28car":
+        raise RuntimeError("Invalid 28car market signal schema")
+    signals = payload.get("signals")
+    if not isinstance(signals, dict):
+        raise RuntimeError("Invalid 28car market signal payload")
+    allowed_offer_fields = {
+        "listing_id",
+        "source_url",
+        "price_type",
+        "asking_price_hkd",
+        "first_seen_at",
+        "last_seen_at",
+    }
+    for plate_norm, offers in signals.items():
+        if not isinstance(offers, list):
+            raise RuntimeError(f"Invalid 28car offers for {plate_norm}")
+        if any(not isinstance(offer, dict) or set(offer) != allowed_offer_fields for offer in offers):
+            raise RuntimeError(f"Non-allowlisted 28car fields for {plate_norm}")
+    if required:
+        if payload.get("coverage", {}).get("complete") is not True:
+            raise RuntimeError("A complete 28car market snapshot is required for deploys")
+        try:
+            scraped_at = datetime.fromisoformat(str(payload.get("scraped_at") or "").replace("Z", "+00:00"))
+        except ValueError as exc:
+            raise RuntimeError("Invalid 28car market snapshot timestamp") from exc
+        fresh_hours = max(1, min(168, int(payload.get("fresh_for_hours") or 72)))
+        now = datetime.now(timezone.utc)
+        if scraped_at < now - timedelta(hours=fresh_hours) or scraped_at > now + timedelta(minutes=10):
+            raise RuntimeError("The private 28car market snapshot is outside its freshness window")
+    target = TARGET / "_market" / "28car"
+    metadata = {key: value for key, value in payload.items() if key != "signals"}
+    shards: dict[str, dict] = {}
+    for plate_norm, offers in signals.items():
+        shard = str(plate_norm or "")[:1]
+        if not re.fullmatch(r"[A-Z0-9]", shard):
+            continue
+        shards.setdefault(shard, {})[plate_norm] = offers
+    write_json(target / "manifest.json", {
+        **metadata,
+        "shards": sorted(shards),
+    })
+    for shard, shard_signals in sorted(shards.items()):
+        write_json(target / f"{shard}.json", {
+            "schema_version": payload.get("schema_version"),
+            "source": payload.get("source"),
+            "scraped_at": payload.get("scraped_at"),
+            "fresh_for_hours": payload.get("fresh_for_hours"),
+            "coverage": payload.get("coverage"),
+            "signals": shard_signals,
+        })
+
+
 def copy_plate_pages() -> None:
     target_plates = TARGET / "plates"
     target_plates.mkdir(parents=True, exist_ok=True)
@@ -272,7 +335,7 @@ def stamp_service_worker_cache_name() -> None:
     sw_path.write_text(stamped, encoding="utf-8")
 
 
-def main() -> None:
+def main(*, require_market_snapshot: bool = False) -> None:
     if TARGET.exists():
         shutil.rmtree(TARGET)
     TARGET.mkdir(parents=True, exist_ok=True)
@@ -286,6 +349,7 @@ def main() -> None:
     copy_plate_pages()
 
     copy_public_data_files()
+    copy_private_market_signals(required=require_market_snapshot)
 
     for rel in SPECIAL_ROOT_DIRS:
         copy_path(ROOT / rel, TARGET / rel, allow_hidden=True)
@@ -306,4 +370,7 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--require-market-snapshot", action="store_true")
+    args = parser.parse_args()
+    main(require_market_snapshot=args.require_market_snapshot)

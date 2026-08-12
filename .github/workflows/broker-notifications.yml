@@ -1,0 +1,35 @@
+name: Broker Inquiry Notifications
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: platehk-broker-notifications
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  notify:
+    name: Notify private Telegram operations channel
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Deliver pending inquiry notifications
+        env:
+          BROKER_NOTIFY_TOKEN: ${{ secrets.BROKER_NOTIFY_TOKEN }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TELEGRAM_MESSAGE_THREAD_ID: ${{ secrets.TELEGRAM_MESSAGE_THREAD_ID }}
+        run: >-
+          python scripts/process_broker_notifications.py
+          --endpoint https://plate.hk/api/internal/broker_notifications

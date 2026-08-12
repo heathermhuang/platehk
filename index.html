@@ -1397,6 +1397,101 @@
         justify-content: flex-end;
         gap: 8px;
       }
+      .market-signal {
+        margin: 14px 0;
+        padding: 18px;
+        border: 1px solid #c7a84d;
+        border-left: 5px solid #a87808;
+        border-radius: 4px;
+        background: #fff9df;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 18px;
+        align-items: center;
+        box-shadow: 0 10px 26px rgba(78, 55, 3, 0.09);
+      }
+      .market-signal[hidden] { display: none; }
+      .market-kicker {
+        color: #725208;
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+      }
+      .market-signal h2 { margin: 5px 0 7px; font-size: 23px; color: #292015; }
+      .market-signal p { margin: 0; max-width: 74ch; color: #554a39; line-height: 1.55; }
+      .market-facts { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 11px; }
+      .market-facts span {
+        display: inline-flex;
+        align-items: center;
+        min-height: 30px;
+        padding: 5px 9px;
+        border: 1px solid #dacb9b;
+        border-radius: 999px;
+        background: rgba(255,255,255,.7);
+        color: #5f4b1d;
+        font-size: 12px;
+      }
+      .market-disclaimer { margin-top: 10px !important; font-size: 12px; color: #75694f !important; }
+      .market-actions { display: flex; flex-direction: column; align-items: stretch; gap: 9px; min-width: 220px; }
+      .market-inquire-btn {
+        min-height: 46px;
+        border: 1px solid #7d5c0d;
+        border-radius: 4px;
+        background: #7d5c0d;
+        color: #fff;
+        font-weight: 800;
+        padding: 10px 14px;
+        cursor: pointer;
+      }
+      .market-inquire-btn:disabled { cursor: not-allowed; opacity: .58; }
+      .market-source-link { color: #654c12; text-align: center; font-size: 12px; text-decoration: underline; }
+      .broker-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 10020;
+        padding: 16px;
+        background: rgba(16, 20, 24, .62);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .broker-modal[hidden] { display: none; }
+      body.broker-modal-open { overflow: hidden; }
+      .broker-dialog {
+        width: min(620px, 100%);
+        max-height: 92vh;
+        overflow: auto;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: var(--panel);
+        box-shadow: 0 24px 58px rgba(8, 25, 50, .3);
+      }
+      .broker-head { display: flex; justify-content: space-between; gap: 12px; padding: 18px 18px 0; }
+      .broker-head h2 { margin: 0; font-size: 23px; }
+      .broker-close { width: 44px; height: 44px; padding: 0; font-size: 24px; line-height: 1; }
+      .broker-intro { margin: 8px 18px 0; color: var(--muted); line-height: 1.55; }
+      .broker-form { display: grid; gap: 14px; padding: 18px; }
+      .broker-field { display: grid; gap: 6px; }
+      .broker-field label, .broker-label { font-size: 13px; font-weight: 750; color: #2b4052; }
+      .broker-form input, .broker-form select, .broker-form textarea {
+        width: 100%;
+        min-height: 44px;
+        border: 1px solid var(--line-strong);
+        border-radius: 4px;
+        background: #fff;
+        color: var(--ink);
+        font: inherit;
+        padding: 10px 11px;
+      }
+      .broker-form textarea { min-height: 92px; resize: vertical; }
+      .broker-plate-value { min-height: 44px; padding: 10px 12px; border: 1px solid var(--line); background: #f6f1e6; font-weight: 850; letter-spacing: .05em; }
+      .broker-consent { display: grid; grid-template-columns: auto 1fr; align-items: start; gap: 9px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+      .broker-consent input { width: 20px; min-height: 20px; margin: 1px 0 0; }
+      .broker-submit { min-height: 48px; border-radius: 4px; background: var(--accent); color: var(--accent-ink); font-weight: 800; }
+      .broker-status { min-height: 20px; color: #8a2a20; font-size: 13px; line-height: 1.45; }
+      .broker-status.success { color: #276a45; font-weight: 700; }
+      .broker-honeypot { position: absolute !important; left: -10000px !important; width: 1px !important; height: 1px !important; overflow: hidden !important; }
       .issue-jump-link {
         color: var(--accent);
         text-decoration: none;
@@ -1524,6 +1619,8 @@
       }
       a { color: var(--accent); }
       @media (max-width: 860px) {
+        .market-signal { grid-template-columns: 1fr; }
+        .market-actions { min-width: 0; }
         .home-shelf { grid-template-columns: 1fr; }
         .controls { grid-template-columns: minmax(0, 1fr) auto; }
         .control-group.query { grid-column: 1; }
@@ -2082,6 +2179,7 @@
       </div>
 
       <section class="results-context" id="resultsContext" hidden></section>
+      <section class="market-signal" id="marketSignal" hidden aria-live="polite"></section>
       <div class="table-wrap" id="resultsTableWrap" role="region" aria-label="Search results table" tabindex="0">
         <table id="resultsTable">
           <thead>
@@ -2136,6 +2234,53 @@
         </div>
       </div>
     </div>
+    <div class="broker-modal" id="brokerModal" hidden aria-hidden="true">
+      <div class="broker-dialog" role="dialog" aria-modal="true" aria-labelledby="brokerTitle">
+        <div class="broker-head">
+          <div>
+            <h2 id="brokerTitle" data-broker-title>保密買方委託</h2>
+          </div>
+          <button class="broker-close" id="brokerClose" type="button" aria-label="關閉">×</button>
+        </div>
+        <p class="broker-intro" data-broker-intro></p>
+        <form class="broker-form" id="brokerForm">
+          <div class="broker-field">
+            <span class="broker-label" data-broker-plate-label></span>
+            <output class="broker-plate-value" id="brokerPlate"></output>
+          </div>
+          <div class="broker-field">
+            <label for="brokerBudget" data-broker-budget-label></label>
+            <input id="brokerBudget" name="budget_hkd" type="number" inputmode="numeric" min="1000" max="100000000" step="1000" required />
+          </div>
+          <div class="broker-field">
+            <label for="brokerContactMethod" data-broker-method-label></label>
+            <select id="brokerContactMethod" name="contact_method" required>
+              <option value="email">電郵</option>
+              <option value="whatsapp">WhatsApp</option>
+              <option value="phone">電話</option>
+            </select>
+          </div>
+          <div class="broker-field">
+            <label for="brokerContact" data-broker-contact-label></label>
+            <input id="brokerContact" name="contact" type="text" maxlength="254" autocomplete="email" required />
+          </div>
+          <div class="broker-field">
+            <label for="brokerNote" data-broker-note-label></label>
+            <textarea id="brokerNote" name="note" maxlength="500"></textarea>
+          </div>
+          <div class="broker-honeypot" aria-hidden="true">
+            <label for="brokerCompanyWebsite">Company website</label>
+            <input id="brokerCompanyWebsite" name="company_website" type="text" tabindex="-1" autocomplete="off" />
+          </div>
+          <label class="broker-consent">
+            <input id="brokerConsent" name="privacy_consent" type="checkbox" required />
+            <span data-broker-consent-copy>我同意 Plate.hk 為處理此委託而儲存及使用上述資料。 <a href="./privacy.html" target="_blank" rel="noopener">Privacy</a> · <a href="./terms.html" target="_blank" rel="noopener">Terms</a></span>
+          </label>
+          <div class="broker-status" id="brokerStatus" role="status" aria-live="polite"></div>
+          <button class="broker-submit" id="brokerSubmit" type="submit">提交保密委託</button>
+        </form>
+      </div>
+    </div>
     <script src="./assets/index.config.js?v=20260807-01"></script>
     <script src="./assets/index.home.js?v=20260807-01"></script>
     <script src="./assets/index.offline-data.js?v=20260426-01"></script>
@@ -2146,6 +2291,7 @@
     <script src="./assets/vendor/qrcode-generator.js?v=20260503-01"></script>
     <script src="./assets/index.webmcp.js?v=20260418-01"></script>
     <script src="./assets/index.share.js?v=20260512-08"></script>
+    <script src="./assets/index.market.js?v=20260811-01"></script>
     <script src="./assets/index.js?v=20260512-10"></script>
   </body>
 </html>
