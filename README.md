@@ -187,7 +187,7 @@ These are the artifacts most contributors need to understand:
 | `data/tvrm_legacy/issues.manifest.json` and `data/tvrm_legacy/issues/*.json` | Historical year-range TVRM shards |
 | `data/all.search.meta.json` | Aggregate search metadata |
 | `data/all.prefix1.top200.json` | Lightweight preview index for broad “all plates” queries |
-| `data/all.prefix2/`, `data/all.char1/`, and `data/all.bigram/` | Bounded helper indexes for fast short-query search paths |
+| `data/all.prefix2/`, `data/all.char1/`, and `data/all.bigram/` | Compact complete prefix and bigram indexes for fast arbitrary-plate searches |
 | `data/hot_search/` | Cached results for high-frequency queries such as `88`, `8888`, and `HK` |
 | `data/all.tvrm_legacy_overlap.json` | Deduplication hints for cross-dataset aggregation |
 | `data/audit.json` | Audit view payload listing source coverage and parse quality |

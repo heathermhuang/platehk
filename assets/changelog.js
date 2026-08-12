@@ -3,8 +3,18 @@
           pageTitle: "更新日誌 | Plate.hk",
           title: "更新日誌",
           back: "← 返回首頁",
-          updated: "最後更新：2026年6月30日",
+          updated: "最後更新：2026年8月12日",
           items: [
+            {
+              date: "2026-08-12",
+              title: "加快完整車牌搜尋並統一外部放售提示",
+              points: [
+                "任意車牌文字搜尋現使用精簡的前綴與 bigram 索引，一般查詢不再需要下載接近 98 MB 的完整結果分片。",
+                "Production canary 顯示原本較慢的 HUANG、TEST8、1234 與 PLATE 查詢現約需 0.29 至 0.37 秒，較更新前快約 79% 至 93%。",
+                "保留 TVRM legacy 子資料集內 124 筆會在 all dataset 去重的重疊記錄；例如 KL 777 在歷史資料集仍可正常搜尋，而跨資料集結果維持去重。",
+                "首頁搜尋結果與生成車牌頁的外部放售提示已統一使用網站的香港車牌樣式，令相同車牌在不同入口保持一致。"
+              ]
+            },
             {
               date: "2026-06-30",
               title: "同步 6 月下旬拍牌易結果",
@@ -470,8 +480,18 @@
           pageTitle: "Changelog | Plate.hk",
           title: "Changelog",
           back: "← Back to Home",
-          updated: "Last updated: 30 June 2026",
+          updated: "Last updated: 12 August 2026",
           items: [
+            {
+              date: "2026-08-12",
+              title: "Faster complete plate search and unified sale-signal styling",
+              points: [
+                "Arbitrary plate-text searches now use compact prefix and bigram indexes, so normal queries no longer need to download nearly 98 MB of complete result chunks.",
+                "Production canaries put previously slower HUANG, TEST8, 1234, and PLATE searches at roughly 0.29 to 0.37 seconds, about 79% to 93% faster than before.",
+                "TVRM legacy searches retain 124 overlap rows that are intentionally deduplicated from the all-dataset view; for example, KL 777 remains searchable in the historical dataset while aggregate results stay deduplicated.",
+                "External sale signals on homepage results and generated plate pages now use the same Hong Kong plate styling, keeping each mark visually consistent across entry points."
+              ]
+            },
             {
               date: "2026-06-30",
               title: "Synced late-June E-Auction results",
