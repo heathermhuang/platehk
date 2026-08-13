@@ -387,6 +387,14 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn("data/all.search.meta.json", listing)
         self.assertIn("data/all.prefix1.top200.json", listing)
         self.assertIn("data/all.tvrm_legacy_overlap.json", listing)
+        self.assertIn("about.html", listing)
+        self.assertIn("mcp.html", listing)
+        self.assertIn("plates/index.html", listing)
+        self.assertIn("plates/88.html", listing)
+        self.assertIn("sitemap.xml", listing)
+        self.assertIn("robots.txt", listing)
+        self.assertIn("llms.txt", listing)
+        self.assertIn("agent.md", listing)
 
     def test_build_cloudflare_public_excludes_pipeline_bulks(self) -> None:
         proc = subprocess.run(
@@ -400,6 +408,7 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn(".tmp/cloudflare-public", proc.stdout)
         publish = ROOT / ".tmp" / "cloudflare-public"
         self.assertTrue((publish / "index.html").exists())
+        self.assertTrue((publish / "about.html").exists())
         self.assertTrue((publish / "data" / "hot_search" / "manifest.json").exists())
         self.assertTrue((publish / "data" / "events.json").exists())
         self.assertTrue((publish / "data" / "TVRM auction result (1973-2026).xls").exists())

@@ -16,6 +16,7 @@ The current public UI uses a flat Ledger visual system: compact auction-record t
 ## Live project
 
 - Site: [https://plate.hk/](https://plate.hk/)
+- Data guide and methodology: [https://plate.hk/about.html](https://plate.hk/about.html)
 - API docs: [https://plate.hk/api.html](https://plate.hk/api.html)
 - Data audit: [https://plate.hk/audit.html](https://plate.hk/audit.html)
 - Changelog: [https://plate.hk/changelog.html](https://plate.hk/changelog.html)
@@ -42,6 +43,8 @@ The current public UI uses a flat Ledger visual system: compact auction-record t
 
 - Searchable auction data for Hong Kong plate sales across multiple datasets
 - A static frontend with issue shards, hot-search caches, and SEO pages
+- Source-grounded Dataset and Breadcrumb structured data on generated plate pages
+- Agent-readable citation guidance through `llms.txt`, `agent.md`, API discovery, and MCP
 - A public `/api/v1` JSON surface for dataset browsing
 - Camera-assisted lookup via the Cloudflare Worker runtime
 - Privacy-minimised external sale signals with an exact-plate WhatsApp buyer-enquiry flow
@@ -232,7 +235,7 @@ The 28car ingester is intentionally narrower than a marketplace mirror. It check
 
 The aggregate signal file is gitignored and must never be committed to the public repository. During the cloud update it exists only on the private GitHub Actions runner, where the publish builder validates the allowlisted offer fields and packages first-character shards under `/_market/`. The Worker blocks those shard paths from direct web access. The public surface supports one exact match with `GET /api/market_signal?plate=...` and a same-origin, page-scoped set of up to 200 exact candidates with `GET /api/market_signal?plates=...`; the batch returns positive matches only and is not a browsable market feed. The homepage uses that bounded batch so every rendered search row is checked, while generated SEO pages use the single-plate form. A sale panel and 28car source link render only for a fresh exact match; an absent panel is not evidence that no listing exists, especially when the snapshot reports partial coverage.
 
-SEO plate pages contain only a hidden plate marker, not a baked price, listing ID, or source URL. Their browser script rechecks the exact-match API on every view and renders the card only while the signal remains fresh. All `cf:deploy*` commands require a complete snapshot inside its freshness window, and cloud workflows verify one exact deployed signal plus the 404 boundary on its internal shard after deployment.
+SEO plate pages embed source-grounded historical auction results, but external market signals contain only a hidden plate marker, never a baked asking price, listing ID, or marketplace URL. Their browser script rechecks the exact-match API on every view and renders the card only while the signal remains fresh. All `cf:deploy*` commands require a complete snapshot inside its freshness window, and cloud workflows verify one exact deployed signal plus the 404 boundary on its internal shard after deployment.
 
 Run a bounded refresh during development:
 

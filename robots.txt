@@ -1,5 +1,7 @@
 User-agent: *
 Allow: /
+Allow: /api/openapi.yaml
+Allow: /api/v1/index.json
 Disallow: /api/
 Disallow: /api/v1/
 Disallow: /api/admin/

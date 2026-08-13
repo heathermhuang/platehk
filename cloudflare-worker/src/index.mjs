@@ -70,10 +70,21 @@ function appendDiscoveryLinkHeaders(headers, url) {
   appendLink(headers, `</api.html>; rel="service-doc"; type="text/html"`);
   appendLink(headers, `</sitemap.xml>; rel="sitemap"; type="application/xml"`);
   appendLink(headers, `</llms.txt>; rel="describedby"; type="text/plain"`);
+  appendLink(headers, `</about.html>; rel="describedby"; type="text/html"`);
   appendLink(headers, `</skill.md>; rel="alternate"; type="text/markdown"`);
   if (url.pathname === "/" || url.pathname === "/index.html") {
     appendLink(headers, `</agent.md>; rel="alternate"; type="text/markdown"`);
   }
+}
+
+function withDiscoveryLinkHeaders(response, url) {
+  const headers = new Headers(response.headers);
+  appendDiscoveryLinkHeaders(headers, url);
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
 }
 
 async function serveHomepageMarkdown(request, env, { noindex = false } = {}) {
@@ -279,10 +290,12 @@ export default {
       return Response.redirect(redirectUrl.toString(), 301);
     }
     if (url.pathname.startsWith("/api/")) {
-      return handleApiRequest(request, env, ctx);
+      const response = await handleApiRequest(request, env, ctx);
+      return isPrimaryHost(url.hostname) ? withDiscoveryLinkHeaders(response, url) : response;
     }
     if (url.pathname === "/mcp") {
-      return handleMcpRequest(request, env, ctx);
+      const response = await handleMcpRequest(request, env, ctx);
+      return isPrimaryHost(url.hostname) ? withDiscoveryLinkHeaders(response, url) : response;
     }
     return serveAsset(request, env);
   },

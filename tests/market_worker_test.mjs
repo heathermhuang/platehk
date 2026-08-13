@@ -79,13 +79,17 @@ globalThis.caches = {
 };
 
 const indexedSearchResponse = await worker.fetch(
-  new Request("https://search.plate.hk/api/search?dataset=all&q=HUANG&page=1&page_size=20&sort=amount_desc", {
+  new Request("https://plate.hk/api/search?dataset=all&q=HUANG&page=1&page_size=20&sort=amount_desc", {
     headers: { "cf-connecting-ip": "192.0.2.20" },
   }),
   env,
   ctx,
 );
 assert.equal(indexedSearchResponse.status, 200);
+const discoveryLinks = indexedSearchResponse.headers.get("link") || "";
+assert.match(discoveryLinks, /<\/sitemap\.xml>; rel="sitemap"; type="application\/xml"/);
+assert.match(discoveryLinks, /<\/llms\.txt>; rel="describedby"; type="text\/plain"/);
+assert.match(discoveryLinks, /<\/about\.html>; rel="describedby"; type="text\/html"/);
 const indexedSearch = await indexedSearchResponse.json();
 assert.equal(indexedSearch.total, 2);
 assert.deepEqual(indexedSearch.rows.map((row) => row.single_line), ["HUANG", "DR HUANG"]);

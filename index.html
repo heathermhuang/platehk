@@ -41,16 +41,32 @@
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
-        "@type": "WebSite",
-        "name": "Plate.hk",
-        "alternateName": "香港車牌拍賣資料庫",
-        "url": "https://plate.hk/",
-        "inLanguage": ["zh-HK", "en"],
-        "potentialAction": {
-          "@type": "SearchAction",
-          "target": "https://plate.hk/?q={search_term_string}",
-          "query-input": "required name=search_term_string"
-        }
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://plate.hk/#organization",
+            "name": "Plate.hk",
+            "url": "https://plate.hk/",
+            "logo": "https://plate.hk/assets/logo.svg",
+            "sameAs": ["https://github.com/heathermhuang/platehk"]
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://plate.hk/#website",
+            "name": "Plate.hk",
+            "alternateName": "香港車牌拍賣資料庫",
+            "url": "https://plate.hk/",
+            "description": "搜尋香港自訂車牌、傳統車牌實體拍賣及拍牌易歷史成交結果，並核對官方來源文件。",
+            "publisher": { "@id": "https://plate.hk/#organization" },
+            "about": { "@id": "https://plate.hk/about.html#dataset" },
+            "inLanguage": ["zh-HK", "en"],
+            "potentialAction": {
+              "@type": "SearchAction",
+              "target": "https://plate.hk/?q={search_term_string}",
+              "query-input": "required name=search_term_string"
+            }
+          }
+        ]
       }
     </script>
     <script>
@@ -2148,8 +2164,8 @@
         <div class="brand">
           <img class="brand-logo" id="brandLogo" src="./assets/logo.svg?v=20260512-08" alt="HK Vehicle Registration Marks database logo" />
           <div class="brand-titles">
-            <h1 id="titleMain"></h1>
-            <div class="dataset-subtitle" id="titleDataset"></div>
+            <h1 id="titleMain">香港車牌拍賣資料庫</h1>
+            <div class="dataset-subtitle" id="titleDataset">全部車牌</div>
           </div>
         </div>
         <div class="top-actions">
@@ -2167,13 +2183,13 @@
 
       <div class="panel">
         <div class="panel-head">
-          <div class="panel-title" id="searchPanelTitle"></div>
-          <div class="panel-note" id="searchPanelNote"></div>
+          <div class="panel-title" id="searchPanelTitle">搜尋</div>
+          <div class="panel-note" id="searchPanelNote">先選資料集，再輸入車牌或直接瀏覽期數。</div>
         </div>
         <div class="controls">
           <div class="controls-primary">
             <div class="control-group query">
-              <label class="control-label" id="queryLabel" for="q"></label>
+              <label class="control-label" id="queryLabel" for="q">車牌搜尋</label>
               <input id="q" type="search" placeholder="輸入車牌，例如 L1BERTY" />
             </div>
             <div class="control-actions">
@@ -2182,15 +2198,15 @@
           </div>
           <div class="controls-secondary">
             <div class="control-group">
-              <label class="control-label" id="datasetLabel" for="dataset"></label>
+              <label class="control-label" id="datasetLabel" for="dataset">資料集</label>
               <select id="dataset"></select>
             </div>
             <div class="control-group">
-              <label class="control-label" id="issueLabel" for="issue"></label>
+              <label class="control-label" id="issueLabel" for="issue">期數</label>
               <select id="issue"></select>
             </div>
             <div class="control-group">
-              <label class="control-label" id="sortLabel" for="sort"></label>
+              <label class="control-label" id="sortLabel" for="sort">排序</label>
               <select id="sort"></select>
             </div>
           </div>
@@ -2243,6 +2259,7 @@
       </div>
       <div class="policy-links">
         <a id="popularLink" href="./plates/index.html">熱門車牌</a>
+        <a href="./about.html">資料說明 / Data Guide</a>
         <a id="termsLink" href="./terms.html">使用條款</a>
         <a id="privacyLink" href="./privacy.html">私隱政策</a>
         <a id="changelogLink" href="./changelog.html">更新日誌</a>

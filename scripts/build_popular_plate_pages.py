@@ -18,6 +18,17 @@ TABLE_ROWS = 18
 LEDGER_CSS_VERSION = "20260812-11"
 MARKET_SIGNALS_PATH = DATA / "market" / "28car.active.json"
 _MARKET_SIGNALS: dict | None = None
+_DATASET_STATS: dict[str, dict] = {}
+
+SITE_URL = "https://plate.hk"
+SITE_NAME = "Plate.hk"
+SITE_ORGANIZATION_ID = f"{SITE_URL}/#organization"
+SITE_WEBSITE_ID = f"{SITE_URL}/#website"
+TD_URL = "https://www.td.gov.hk/en/public_services/vehicle_registration_mark/"
+TD_HISTORY_URL = (
+    "https://www.td.gov.hk/en/about_us/history_of_transport_department/"
+    "licensing_services/auction_of_vehicle_registration_marks__/index.html"
+)
 
 DATASETS = {
     "pvrm": {
@@ -45,9 +56,12 @@ DATASETS = {
 STATIC_PAGES = [
     "https://plate.hk/",
     "https://plate.hk/landing.html",
+    "https://plate.hk/about.html",
     "https://plate.hk/api.html",
     "https://plate.hk/audit.html",
+    "https://plate.hk/camera.html",
     "https://plate.hk/changelog.html",
+    "https://plate.hk/mcp.html",
     "https://plate.hk/terms.html",
     "https://plate.hk/privacy.html",
     "https://plate.hk/plates/index.html",
@@ -56,6 +70,40 @@ STATIC_PAGES = [
 
 def load_json(path: Path):
     return json.loads(path.read_text())
+
+
+def source_url(row: dict) -> str:
+    raw = str(row.get("pdf_url") or "").strip()
+    if raw.startswith("./"):
+        return f"{SITE_URL}/{raw[2:]}"
+    parsed = urlparse(raw)
+    if parsed.scheme in {"http", "https"} and parsed.hostname in {"td.gov.hk", "www.td.gov.hk"}:
+        return raw
+    return ""
+
+
+def source_link_html(row: dict) -> str:
+    url = source_url(row)
+    if not url:
+        return "<span>來源未連結 / Source unavailable</span>"
+    is_workbook = urlparse(url).path.lower().endswith((".xls", ".xlsx"))
+    label = "來源檔案 / Source file" if is_workbook else "官方 PDF / Official source"
+    page = row.get("page")
+    if page not in (None, ""):
+        label += f" (p.{html.escape(str(page))})"
+    return (
+        f'<a href="{html.escape(url, quote=True)}" target="_blank" '
+        f'rel="noopener noreferrer">{label}</a>'
+    )
+
+
+def source_urls_for(rows: list[dict]) -> list[str]:
+    urls = set()
+    for row in rows:
+        url = source_url(row)
+        if url:
+            urls.add(url)
+    return sorted(urls)
 
 
 def load_active_market_signals() -> dict:
@@ -136,12 +184,6 @@ def money(amount) -> str:
     return f"HK${int(amount):,}"
 
 
-def money_en(amount) -> str:
-    if amount is None:
-        return "unparsed"
-    return f"HK${int(amount):,}"
-
-
 def format_date_zh(iso: str) -> str:
     parts = str(iso or "").split("-")
     if len(parts) != 3:
@@ -213,12 +255,32 @@ def plate_interest_bonus(plate_norm: str, count: int) -> int:
 
 
 def build_plate_data():
+    global _DATASET_STATS
     overlap_exact, overlap_coarse = overlap_lookup()
     rows_by_plate: dict[str, list[dict]] = defaultdict(list)
     stats: dict[str, dict] = {}
+    dataset_stats: dict[str, dict] = {}
 
     for dataset_key, meta in DATASETS.items():
         rows = load_json(meta["results"])
+        dated_rows = [
+            str(row.get("auction_date") or "")
+            for row in rows
+            if str(row.get("auction_date") or "")
+        ]
+        issue_keys = {
+            str(row.get("auction_key") or row.get("year_range") or row.get("auction_date") or "")
+            for row in rows
+            if str(row.get("auction_key") or row.get("year_range") or row.get("auction_date") or "")
+        }
+        source_urls = source_urls_for(rows)
+        dataset_stats[dataset_key] = {
+            "rows": len(rows),
+            "issues": len(issue_keys),
+            "sources": len(source_urls),
+            "first_date": min(dated_rows) if dated_rows else "",
+            "latest_date": max(dated_rows) if dated_rows else "",
+        }
         for row in rows:
             display = plate_display(row)
             plate_norm = norm(display)
@@ -270,6 +332,7 @@ def build_plate_data():
         stats.values(),
         key=lambda item: (-item["score"], -max(item["max_amount"], 0), -item["count"], len(item["plate_norm"]), item["plate_norm"]),
     )
+    _DATASET_STATS = dataset_stats
     return ordered[:MAX_PAGES]
 
 
@@ -287,15 +350,31 @@ def summary_sentence(entry: dict) -> str:
     )
 
 
-def search_intent_lines(entry: dict) -> list[str]:
-    plate = entry["plate_display"]
-    plate_norm = entry["plate_norm"]
-    category_zh, category_en = classify_plate(plate_norm)
-    return [
-        f"{plate} 屬於 {category_zh}，通常會被搜尋「{plate} 車牌價格」、「{plate} auction result」或「{plate} plate hk」。",
-        f"If users search for {plate} plate price, {plate} auction result, or {plate} HK plate, this page should be a direct landing page.",
-        f"目前 Plate.hk 已整理 {entry['count']} 筆相關紀錄，並可一鍵回到站內查詢 {plate_norm} 的完整結果。",
-    ]
+def answer_summary_html(entry: dict) -> str:
+    plate = html.escape(entry["plate_display"])
+    top = entry["top_row"]
+    top_price = html.escape(money(top.get("amount_hkd")))
+    top_date = html.escape(date_label(top))
+    latest_date = html.escape(date_label(entry["latest_row"]))
+    dataset_names = ", ".join(DATASETS[key]["label_en"] for key in entry["dataset_keys"])
+    top_source = source_link_html(top)
+    return f"""
+              <div class="answer-item">
+                <h3>{plate} 車牌最高成交價是多少？ / What is the highest recorded auction price?</h3>
+                <p>Plate.hk 收錄的最高公開拍賣成交紀錄是 <strong>{top_price}</strong>，日期為 <strong>{top_date}</strong>。 {top_source}</p>
+              </div>
+              <div class="answer-item">
+                <h3>有多少筆紀錄？ / How many records are included?</h3>
+                <p>目前有 <strong>{entry['count']}</strong> 筆去重後紀錄，最近一筆為 <strong>{latest_date}</strong>；涵蓋 {html.escape(dataset_names)}。</p>
+              </div>
+              <div class="answer-item">
+                <h3>成交價是否代表現時市值？ / Is this a current valuation?</h3>
+                <p>不是。這些數字是歷史公開拍賣成交結果，不是估價、放售價或對未來成交價的保證。</p>
+              </div>
+              <div class="answer-item">
+                <h3>如何核對資料？ / How can the record be verified?</h3>
+                <p>使用下表每一列的官方 PDF 或來源檔案核對車牌、日期和成交價；如有差異，以官方來源為準。<a href="../about.html">查看資料方法與限制</a>。</p>
+              </div>"""
 
 
 def dataset_breakdown_html(entry: dict) -> str:
@@ -328,7 +407,7 @@ def render_page(entries_by_norm: dict[str, dict], entry: dict, related: list[dic
           <td>{html.escape(date_label(row))}</td>
           <td>{html.escape(DATASETS[row['dataset_key']]['label_zh'])}<br><span>{html.escape(DATASETS[row['dataset_key']]['label_en'])}</span></td>
           <td>{html.escape(money(row.get('amount_hkd')))}</td>
-          <td><a href="https://plate.hk/?lang=zh&q={plate_norm}" rel="noopener">站內搜尋</a></td>
+          <td>{source_link_html(row)}<br><a href="https://plate.hk/?lang=zh&q={plate_norm}">完整站內紀錄 / Full search</a></td>
         </tr>
         """
         for row in entry["rows"][:TABLE_ROWS]
@@ -337,7 +416,7 @@ def render_page(entries_by_norm: dict[str, dict], entry: dict, related: list[dic
         f'<a class="pill" href="./{item["plate_norm"]}.html">{html.escape(item["plate_display"])}</a>'
         for item in related
     )
-    search_lines = "".join(f"<li>{html.escape(line)}</li>" for line in search_intent_lines(entry))
+    answer_summary = answer_summary_html(entry)
     dataset_breakdown = dataset_breakdown_html(entry)
     market_card = market_signal_html(plate_norm)
     market_style = ""
@@ -364,18 +443,63 @@ def render_page(entries_by_norm: dict[str, dict], entry: dict, related: list[dic
         market_media_style = "        .market-actions { min-width:0; }\n"
         market_section = f"{market_card}\n\n"
 
+    page_id = f"{canonical}#webpage"
+    dataset_id = f"{canonical}#dataset"
+    source_urls = source_urls_for(entry["rows"][:TABLE_ROWS])
+    first_iso = str(first_row.get("auction_date") or "")
+    latest_iso = str(latest_row.get("auction_date") or "")
+    temporal_coverage = f"{first_iso}/{latest_iso}" if first_iso and latest_iso else ""
+    dataset_schema = {
+        "@type": "Dataset",
+        "@id": dataset_id,
+        "name": f"{plate} Hong Kong vehicle registration mark auction records",
+        "alternateName": f"{plate} 車牌拍賣紀錄",
+        "description": desc,
+        "url": canonical,
+        "mainEntityOfPage": {"@id": page_id},
+        "creator": {"@id": SITE_ORGANIZATION_ID},
+        "provider": {"@id": SITE_ORGANIZATION_ID},
+        "dateModified": TODAY,
+        "spatialCoverage": {"@type": "Place", "name": "Hong Kong"},
+        "variableMeasured": ["auction date", "vehicle registration mark", "sale price in HKD", "auction dataset"],
+        "inLanguage": ["zh-HK", "en"],
+    }
+    if temporal_coverage:
+        dataset_schema["temporalCoverage"] = temporal_coverage
+    if source_urls:
+        dataset_schema["isBasedOn"] = source_urls
+
     ld_json = {
         "@context": "https://schema.org",
-        "@type": "Article",
-        "headline": og_title,
-        "description": desc,
-        "mainEntityOfPage": canonical,
-        "dateModified": TODAY,
-        "about": {"@type": "Thing", "name": plate},
-        "publisher": {"@type": "Organization", "name": "Plate.hk", "url": "https://plate.hk/"},
-        "mentions": [
-            {"@type": "Thing", "name": category_en},
-            {"@type": "Thing", "name": money_en(top.get("amount_hkd"))},
+        "@graph": [
+            {
+                "@type": "Organization",
+                "@id": SITE_ORGANIZATION_ID,
+                "name": SITE_NAME,
+                "url": f"{SITE_URL}/",
+                "logo": f"{SITE_URL}/assets/logo.svg",
+            },
+            {
+                "@type": "WebPage",
+                "@id": page_id,
+                "url": canonical,
+                "name": og_title,
+                "description": desc,
+                "dateModified": TODAY,
+                "inLanguage": ["zh-HK", "en"],
+                "isPartOf": {"@id": SITE_WEBSITE_ID},
+                "mainEntity": {"@id": dataset_id},
+            },
+            dataset_schema,
+            {
+                "@type": "BreadcrumbList",
+                "@id": f"{canonical}#breadcrumb",
+                "itemListElement": [
+                    {"@type": "ListItem", "position": 1, "name": "Plate.hk", "item": f"{SITE_URL}/"},
+                    {"@type": "ListItem", "position": 2, "name": "Popular plates", "item": f"{SITE_URL}/plates/index.html"},
+                    {"@type": "ListItem", "position": 3, "name": f"{plate} auction records", "item": canonical},
+                ],
+            },
         ],
     }
 
@@ -389,17 +513,21 @@ def render_page(entries_by_norm: dict[str, dict], entry: dict, related: list[dic
     <meta name="robots" content="index,follow,max-image-preview:large" />
     <meta name="theme-color" content="#f4f1e8" />
     <link rel="canonical" href="{canonical}" />
-    <meta property="og:type" content="article" />
+    <meta property="og:type" content="website" />
     <meta property="og:title" content="{html.escape(og_title)}" />
     <meta property="og:description" content="{html.escape(desc)}" />
     <meta property="og:url" content="{canonical}" />
     <meta property="og:site_name" content="Plate.hk" />
     <meta property="og:image" content="https://plate.hk/assets/logo.svg" />
+    <meta property="og:image:alt" content="Plate.hk Hong Kong vehicle registration marks database logo" />
+    <meta property="og:locale" content="zh_HK" />
     <meta name="twitter:card" content="summary" />
     <meta name="twitter:title" content="{html.escape(og_title)}" />
     <meta name="twitter:description" content="{html.escape(desc)}" />
     <meta name="twitter:image" content="https://plate.hk/assets/logo.svg" />
+    <meta name="twitter:image:alt" content="Plate.hk Hong Kong vehicle registration marks database logo" />
     <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg" />
+    <link rel="alternate" type="application/json" href="https://plate.hk/api/search?dataset=all&amp;q={plate_norm}&amp;sort=amount_desc&amp;page=1&amp;page_size=200" title="{html.escape(plate)} auction records as JSON" />
     <script type="application/ld+json">{json.dumps(ld_json, ensure_ascii=False)}</script>
     <link rel="stylesheet" href="../assets/ledger.css?v={LEDGER_CSS_VERSION}" />
     <style>
@@ -431,7 +559,11 @@ def render_page(entries_by_norm: dict[str, dict], entry: dict, related: list[dic
       .btn.primary {{ background:var(--accent) !important; color:var(--accent-ink) !important; border-color:var(--accent) !important; }}
       .pills {{ display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }}
       .pill {{ padding:8px 11px; background:var(--surface) !important; color:var(--accent) !important; }}
-      .facts {{ margin-top:12px; padding-left: 20px; color: var(--muted); line-height: 1.7; }}
+      .answer-list {{ display:grid; gap:12px; margin-top:12px; }}
+      .answer-item {{ border-top:1px solid var(--line); padding-top:12px; }}
+      .answer-item:first-child {{ border-top:0; padding-top:0; }}
+      .answer-item h3 {{ margin:0; font-size:16px; line-height:1.45; }}
+      .answer-item p {{ margin:6px 0 0; color:var(--muted); line-height:1.65; }}
       .dataset-breakdown {{ display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }}
       .dataset-chip {{
         display:flex; flex-direction:column; gap:4px; background:var(--surface); border:1px solid var(--line);
@@ -453,7 +585,7 @@ def render_page(entries_by_norm: dict[str, dict], entry: dict, related: list[dic
         <div style="margin-top:12px;"><span class="plate">{html.escape(plate)}</span></div>
         <div class="lede">
           {html.escape(summary_sentence(entry))}<br />
-          Category: {html.escape(category_en)}. This page is built to answer direct searches such as "{html.escape(plate)} plate price", "{html.escape(plate)} auction result", and "{html.escape(plate)} Hong Kong plate".
+          Category: {html.escape(category_en)}. This page summarizes {entry['count']} public auction record(s) for {html.escape(plate)}, with a source link beside each displayed result.
         </div>
         <div class="actions">
           <a class="btn primary" href="https://plate.hk/?lang=zh&q={plate_norm}">在 Plate.hk 搜尋</a>
@@ -474,20 +606,20 @@ def render_page(entries_by_norm: dict[str, dict], entry: dict, related: list[dic
             <div class="lede">最高成交出現在 {html.escape(highest_date)}。以下列出目前最重要的歷史紀錄，並可直接回站內搜尋完整結果。</div>
             <table>
               <thead>
-                <tr><th>日期 / Date</th><th>分類 / Dataset</th><th>成交價 / Price</th><th>操作 / Action</th></tr>
+                <tr><th>日期 / Date</th><th>分類 / Dataset</th><th>成交價 / Price</th><th>來源 / Source</th></tr>
               </thead>
               <tbody>{rows_html}</tbody>
             </table>
           </div>
           <div class="card">
-            <h2>這個車牌為什麼常被搜尋？</h2>
-            <ul class="facts">{search_lines}</ul>
+            <h2>直接答案 / Direct Answers</h2>
+            <div class="answer-list">{answer_summary}</div>
           </div>
         </div>
         <div class="stack">
           <div class="card">
             <h2>資料概覽 / Coverage</h2>
-            <div class="lede">{html.escape(plate)} 目前歸類為 {html.escape(category_zh)}。以下是它在不同資料集中的出現情況。</div>
+            <div class="lede">{html.escape(plate)} 目前歸類為 {html.escape(category_zh)}。資料由 Plate.hk 整理自香港運輸署公開拍賣結果；以下是它在不同資料集中的出現情況。</div>
             <div class="dataset-breakdown">{dataset_breakdown}</div>
           </div>
           <div class="card">
@@ -513,6 +645,31 @@ def render_index(entries: list[dict]) -> str:
         </a>"""
         for item in entries[:INDEX_LINKS]
     )
+    canonical = f"{SITE_URL}/plates/index.html"
+    ld_json = {
+        "@context": "https://schema.org",
+        "@graph": [
+            {
+                "@type": "CollectionPage",
+                "@id": f"{canonical}#webpage",
+                "url": canonical,
+                "name": "Popular Hong Kong vehicle registration mark auction records",
+                "description": "A browsable index of notable Hong Kong registration marks selected from public auction records by sale price, record count, and memorable plate patterns.",
+                "dateModified": TODAY,
+                "inLanguage": ["zh-HK", "en"],
+                "isPartOf": {"@id": SITE_WEBSITE_ID},
+                "about": {"@id": f"{SITE_URL}/about.html#dataset"},
+            },
+            {
+                "@type": "BreadcrumbList",
+                "@id": f"{canonical}#breadcrumb",
+                "itemListElement": [
+                    {"@type": "ListItem", "position": 1, "name": "Plate.hk", "item": f"{SITE_URL}/"},
+                    {"@type": "ListItem", "position": 2, "name": "Popular plates", "item": canonical},
+                ],
+            },
+        ],
+    }
     return f"""<!doctype html>
 <html lang="zh-HK">
   <head>
@@ -526,8 +683,15 @@ def render_index(entries: list[dict]) -> str:
     <meta property="og:title" content="熱門車牌拍賣結果索引 | Plate.hk" />
     <meta property="og:description" content="快速進入熱門香港車牌的靜態搜尋落地頁。" />
     <meta property="og:url" content="https://plate.hk/plates/index.html" />
+    <meta property="og:site_name" content="Plate.hk" />
     <meta property="og:image" content="https://plate.hk/assets/logo.svg" />
+    <meta property="og:image:alt" content="Plate.hk Hong Kong vehicle registration marks database logo" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="熱門車牌拍賣結果索引 | Plate.hk" />
+    <meta name="twitter:description" content="快速瀏覽熱門香港車牌的歷史公開拍賣成交結果與官方來源。" />
+    <meta name="twitter:image" content="https://plate.hk/assets/logo.svg" />
     <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg" />
+    <script type="application/ld+json">{json.dumps(ld_json, ensure_ascii=False)}</script>
     <link rel="stylesheet" href="../assets/ledger.css?v={LEDGER_CSS_VERSION}" />
     <style>
       :root {{ --bg:#f4f1e8; --panel:#fffaf0; --line:#c9c0ad; --ink:#1d1b17; --muted:#5f594d; --accent:#3a5d4b; }}
@@ -538,6 +702,8 @@ def render_index(entries: list[dict]) -> str:
       .hero h1 {{ margin:12px 0 0; font-size:clamp(24px, 3vw, 34px) !important; }}
       .hero a {{ display:inline-flex; align-items:center; font-size:14px; }}
       .lede {{ color:var(--muted); line-height:1.72; margin-top:12px; max-width:78ch; }}
+      .hub-actions {{ display:flex; flex-wrap:wrap; gap:10px; margin-top:14px; }}
+      .hub-actions a {{ display:inline-flex; padding:9px 12px; border:1px solid var(--line); border-radius:4px; text-decoration:none; font-weight:800; }}
       .grid {{ display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap:10px; margin-top:14px; }}
       .card {{
         display:flex; min-height:112px; flex-direction:column; align-items:flex-start; gap:8px;
@@ -562,12 +728,235 @@ def render_index(entries: list[dict]) -> str:
         <a href="../index.html">← 返回首頁 / Back to Search</a>
         <h1>熱門車牌拍賣結果索引</h1>
         <div class="lede">
-          這裡列出 Plate.hk 目前最值得被 Google 直接收錄的一批熱門車牌頁面。排序不只看最高成交，也會納入出現次數、字型記憶度與熱門搜尋意圖。<br />
-          This hub links to high-value and high-intent Hong Kong plate pages, so search engines can land directly on a specific plate instead of only the homepage.
+          這裡列出 {min(len(entries), INDEX_LINKS)} 個具代表性的香港車牌歷史成交頁。排序綜合最高公開拍賣成交價、收錄紀錄數、短號碼及常見字首；價格只代表歷史成交，不是現時估值。<br />
+          Browse notable Hong Kong plate auction records ranked by public sale results, record coverage, and memorable plate patterns. Historical prices are not current valuations.
         </div>
+        <div class="hub-actions"><a href="../about.html">資料方法與限制 / Data guide</a><a href="../index.html">搜尋全部紀錄 / Search all records</a></div>
       </div>
       <div class="grid">{top_cards}</div>
     </div>
+  </body>
+</html>
+"""
+
+
+def render_about() -> str:
+    canonical = f"{SITE_URL}/about.html"
+    stats = _DATASET_STATS
+    total_rows = sum(int(item.get("rows") or 0) for item in stats.values())
+    total_issues = sum(int(item.get("issues") or 0) for item in stats.values())
+    first_dates = [str(item.get("first_date") or "") for item in stats.values() if item.get("first_date")]
+    latest_dates = [str(item.get("latest_date") or "") for item in stats.values() if item.get("latest_date")]
+    first_date = min(first_dates) if first_dates else ""
+    latest_date = max(latest_dates) if latest_dates else ""
+    descriptions = {
+        "pvrm": "自訂車牌實體拍賣 / personalized registration mark physical auctions",
+        "tvrm_physical": "傳統及特殊車牌實體拍賣 / traditional and special-mark physical auctions",
+        "tvrm_eauction": "普通傳統車牌拍牌易結果 / ordinary traditional marks sold by E-Auction",
+        "tvrm_legacy": "1973-2006 官方工作簿年份區段 / official workbook-backed historical year ranges",
+    }
+    coverage_rows = "".join(
+        f"""
+              <tr>
+                <th scope="row">{html.escape(DATASETS[key]['label_zh'])}<br><span>{html.escape(DATASETS[key]['label_en'])}</span></th>
+                <td>{int(stats.get(key, {}).get('rows') or 0):,}</td>
+                <td>{int(stats.get(key, {}).get('issues') or 0):,}</td>
+                <td>{html.escape(format_date_zh(str(stats.get(key, {}).get('latest_date') or '')))}</td>
+                <td>{html.escape(descriptions[key])}</td>
+              </tr>"""
+        for key in DATASETS
+    )
+    description = (
+        "Plate.hk is an independent, read-only index of historical Hong Kong vehicle registration mark auction "
+        "results compiled from Transport Department PDF handouts and official workbook exports, with source links "
+        "for verification."
+    )
+    dataset_schema = {
+        "@type": "Dataset",
+        "@id": f"{canonical}#dataset",
+        "name": "Plate.hk Hong Kong vehicle registration mark auction results",
+        "alternateName": ["香港車牌拍賣資料庫", "Hong Kong PVRM and TVRM auction results"],
+        "description": description,
+        "url": canonical,
+        "creator": {"@id": SITE_ORGANIZATION_ID},
+        "provider": {"@id": SITE_ORGANIZATION_ID},
+        "dateModified": TODAY,
+        "spatialCoverage": {"@type": "Place", "name": "Hong Kong"},
+        "variableMeasured": ["auction date", "vehicle registration mark", "sale price in HKD", "auction type", "source document"],
+        "measurementTechnique": "Source-document extraction, normalized search indexing, cross-dataset overlap checks, and automated integrity auditing.",
+        "isBasedOn": [TD_URL, TD_HISTORY_URL],
+        "subjectOf": [
+            f"{SITE_URL}/audit.html",
+            f"{SITE_URL}/api.html",
+            f"{SITE_URL}/api/v1/index.json",
+        ],
+        "inLanguage": ["zh-HK", "en"],
+    }
+    if first_date and latest_date:
+        dataset_schema["temporalCoverage"] = f"{first_date}/{latest_date}"
+    ld_json = {
+        "@context": "https://schema.org",
+        "@graph": [
+            {
+                "@type": "Organization",
+                "@id": SITE_ORGANIZATION_ID,
+                "name": SITE_NAME,
+                "url": f"{SITE_URL}/",
+                "logo": f"{SITE_URL}/assets/logo.svg",
+                "sameAs": ["https://github.com/heathermhuang/platehk"],
+            },
+            {
+                "@type": "WebPage",
+                "@id": f"{canonical}#webpage",
+                "url": canonical,
+                "name": "Plate.hk data guide and methodology",
+                "description": description,
+                "dateModified": TODAY,
+                "inLanguage": ["zh-HK", "en"],
+                "isPartOf": {"@id": SITE_WEBSITE_ID},
+                "mainEntity": {"@id": f"{canonical}#dataset"},
+            },
+            dataset_schema,
+            {
+                "@type": "BreadcrumbList",
+                "@id": f"{canonical}#breadcrumb",
+                "itemListElement": [
+                    {"@type": "ListItem", "position": 1, "name": "Plate.hk", "item": f"{SITE_URL}/"},
+                    {"@type": "ListItem", "position": 2, "name": "Data guide", "item": canonical},
+                ],
+            },
+        ],
+    }
+
+    return f"""<!doctype html>
+<html lang="zh-HK">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>香港車牌拍賣資料說明與方法 | Plate.hk</title>
+    <meta name="description" content="了解 Plate.hk 香港車牌拍賣資料的官方來源、PVRM/TVRM 覆蓋範圍、更新與核對方法，以及歷史成交價的限制。" />
+    <meta name="robots" content="index,follow,max-image-preview:large" />
+    <meta name="theme-color" content="#f4f1e8" />
+    <link rel="canonical" href="{canonical}" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="Plate.hk" />
+    <meta property="og:title" content="香港車牌拍賣資料說明與方法 | Plate.hk" />
+    <meta property="og:description" content="資料來源、覆蓋範圍、核對方法與歷史成交價限制。" />
+    <meta property="og:url" content="{canonical}" />
+    <meta property="og:image" content="https://plate.hk/assets/logo.svg" />
+    <meta property="og:image:alt" content="Plate.hk Hong Kong vehicle registration marks database logo" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Plate.hk data guide and methodology" />
+    <meta name="twitter:description" content="Sources, coverage, verification method, and limits of Hong Kong plate auction data." />
+    <meta name="twitter:image" content="https://plate.hk/assets/logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg" />
+    <link rel="alternate" type="application/json" href="https://plate.hk/api/v1/index.json" title="Plate.hk public API dataset index" />
+    <script type="application/ld+json">{json.dumps(ld_json, ensure_ascii=False)}</script>
+    <link rel="stylesheet" href="./assets/ledger.css?v={LEDGER_CSS_VERSION}" />
+    <style>
+      :root {{ --bg:#f4f1e8; --panel:#fffaf0; --line:#c9c0ad; --ink:#1d1b17; --muted:#5f594d; --accent:#3a5d4b; }}
+      * {{ box-sizing:border-box; }}
+      body {{ margin:0; color:var(--ink); font-family:"Space Grotesk","Noto Sans HK",sans-serif; }}
+      .wrap {{ max-width:1060px; margin:0 auto; padding:28px 18px 56px; }}
+      .hero, .card {{ padding:20px; }}
+      .hero h1 {{ margin:12px 0 0; font-size:clamp(28px,4vw,44px); }}
+      .lede, .card p, .card li {{ color:var(--muted); line-height:1.75; }}
+      .lede {{ margin-top:12px; max-width:80ch; }}
+      .summary {{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-top:16px; }}
+      .metric {{ border:1px solid var(--line); background:var(--panel); padding:14px; }}
+      .metric span {{ display:block; color:var(--muted); font-size:12px; font-weight:800; text-transform:uppercase; }}
+      .metric strong {{ display:block; margin-top:6px; font-size:22px; }}
+      .grid {{ display:grid; grid-template-columns:1.1fr .9fr; gap:14px; margin-top:14px; }}
+      .stack {{ display:grid; gap:14px; align-content:start; }}
+      h2 {{ margin:0; font-size:22px; }}
+      h3 {{ margin:18px 0 0; font-size:17px; }}
+      p {{ margin:8px 0 0; }}
+      table {{ width:100%; border-collapse:collapse; margin-top:14px; }}
+      th, td {{ border-top:1px solid var(--line); padding:11px 9px; text-align:left; vertical-align:top; }}
+      th span {{ color:var(--muted); font-size:12px; }}
+      .steps {{ margin:12px 0 0; padding-left:22px; }}
+      .links {{ display:flex; gap:9px; flex-wrap:wrap; margin-top:14px; }}
+      .links a {{ display:inline-flex; padding:9px 11px; border:1px solid var(--line); border-radius:4px; text-decoration:none; font-weight:800; }}
+      a {{ color:var(--accent); }}
+      @media (max-width:800px) {{ .summary, .grid {{ grid-template-columns:1fr; }} table {{ display:block; overflow-x:auto; }} }}
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <header class="hero">
+        <a href="./index.html">← 返回搜尋 / Back to Search</a>
+        <h1>香港車牌拍賣資料說明與方法</h1>
+        <p class="lede">Plate.hk 是獨立、唯讀的香港車牌歷史拍賣資料索引，整理香港運輸署公開 PDF 結果及官方工作簿匯出。它不是政府網站；如資料有差異，以官方文件為準。</p>
+        <p class="lede" lang="en">Plate.hk is an independent, read-only index compiled from Hong Kong Transport Department auction-result PDFs and official workbook exports. It is not a government website; official source documents prevail.</p>
+        <div class="summary">
+          <div class="metric"><span>Source rows</span><strong>{total_rows:,}</strong></div>
+          <div class="metric"><span>Auction issues / ranges</span><strong>{total_issues:,}</strong></div>
+          <div class="metric"><span>Latest covered date</span><strong>{html.escape(format_date_zh(latest_date))}</strong></div>
+        </div>
+      </header>
+
+      <section class="card" style="margin-top:14px;" aria-labelledby="coverage-title">
+        <h2 id="coverage-title">收錄範圍 / Coverage</h2>
+        <p>下表是四個來源資料集的建置快照。Source rows 是去除跨資料集重複前的來源列數；「全部車牌」搜尋會隱藏已識別的 legacy 重複紀錄。</p>
+        <table>
+          <thead><tr><th>資料集 / Dataset</th><th>Rows</th><th>Issues</th><th>Latest</th><th>Scope</th></tr></thead>
+          <tbody>{coverage_rows}</tbody>
+        </table>
+      </section>
+
+      <div class="grid">
+        <div class="stack">
+          <section class="card" aria-labelledby="answers-title">
+            <h2 id="answers-title">常見問題與直接答案 / Direct Answers</h2>
+            <h3>Plate.hk 的資料來自哪裡？</h3>
+            <p>主要來自香港運輸署發布的 PVRM、TVRM 實體拍賣及拍牌易結果 PDF；1973-2006 歷史區段來自官方工作簿匯出。每個車牌頁會在可用時直接連回相應來源。</p>
+            <h3>歷史成交價等於車牌現時價值嗎？</h3>
+            <p>不等於。成交價只描述某次公開拍賣的歷史結果，不是估值、即時放售價、所有權證明或未來成交保證。</p>
+            <h3>Plate.hk 是香港政府或運輸署網站嗎？</h3>
+            <p>不是。Plate.hk 是獨立資料工具；官方文件和運輸署網站始終是最終權威來源。</p>
+            <h3>應如何引用一筆結果？</h3>
+            <p>同時列出車牌顯示方式、拍賣日期、成交價、資料集名稱和來源連結。若版面空格或雙行排列有意義，應保留官方文件中的表示方式。</p>
+          </section>
+          <section class="card" aria-labelledby="method-title">
+            <h2 id="method-title">資料流程 / Method</h2>
+            <ol class="steps">
+              <li>從公開的官方拍賣結果文件建立期數清單。</li>
+              <li>提取車牌顯示、拍賣日期、成交價、來源 URL 及頁碼。</li>
+              <li>保留原始顯示方式；另建標準化搜尋鍵，方便忽略版面空格搜尋。</li>
+              <li>檢查格式、空值、期數列數及 legacy 跨資料集重疊。</li>
+              <li>發布靜態搜尋資料、公開 API、審核報告及可核對來源的車牌頁。</li>
+            </ol>
+          </section>
+        </div>
+        <div class="stack">
+          <section class="card" aria-labelledby="limits-title">
+            <h2 id="limits-title">限制 / Limits</h2>
+            <ul class="steps">
+              <li>最新資料取決於官方文件是否已發布及排程更新是否成功。</li>
+              <li>舊工作簿資料部分只能準確到年份區段，不代表單一拍賣日。</li>
+              <li>自動提取可能有錯漏；高風險用途必須回看來源文件。</li>
+              <li>外部放售訊號與官方拍賣結果是不同資料層，不應混作官方成交。</li>
+            </ul>
+          </section>
+          <section class="card" aria-labelledby="sources-title">
+            <h2 id="sources-title">官方來源與機器入口</h2>
+            <div class="links">
+              <a href="{TD_URL}" target="_blank" rel="noopener noreferrer">運輸署車牌服務</a>
+              <a href="{TD_HISTORY_URL}" target="_blank" rel="noopener noreferrer">運輸署拍賣歷史</a>
+              <a href="./audit.html">資料審核</a>
+              <a href="./api.html">API 文檔</a>
+              <a href="./api/v1/index.json">API dataset index</a>
+              <a href="./llms.txt">llms.txt</a>
+              <a href="./agent.md">Agent guide</a>
+            </div>
+          </section>
+          <section class="card" aria-labelledby="updated-title">
+            <h2 id="updated-title">頁面狀態 / Page Status</h2>
+            <p>此說明頁於 <time datetime="{TODAY}">{TODAY}</time> 建置；資料時間範圍為 {html.escape(format_date_zh(first_date))} 至 {html.escape(format_date_zh(latest_date))}。這是建置證據，不等於官方已發布當日新拍賣結果。</p>
+          </section>
+        </div>
+      </div>
+    </main>
   </body>
 </html>
 """
@@ -602,6 +991,7 @@ def build():
         )
 
     (OUT / "index.html").write_text(render_index(entries))
+    (ROOT / "about.html").write_text(render_about())
     (DATA / "popular_plates_manifest.json").write_text(
         json.dumps(manifest, ensure_ascii=False, separators=(",", ":"))
     )
