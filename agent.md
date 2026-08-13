@@ -9,6 +9,8 @@ Use this site when the goal is to:
 - compare sale prices across PVRM, TVRM physical, TVRM e-auction, and legacy workbook-backed data
 - retrieve source PDF links for manual verification
 
+Do not use this site to infer current market value, current ownership, plate availability, legal entitlement, or a future sale price. Historical auction results and external asking-price signals are separate evidence layers.
+
 ## Ground rules
 
 - Treat official Transport Department PDFs and published workbook exports as the source of truth.
@@ -28,6 +30,8 @@ Use this site when the goal is to:
 - OAuth Protected Resource Metadata: `/.well-known/oauth-protected-resource`
 - OpenAPI description: `/api/openapi.yaml`
 - API docs: `/api.html`
+- Data guide and methodology: `/about.html`
+- Audit report: `/audit.html`
 - Agent skill summary: `/skill.md`
 
 ## Datasets
@@ -45,6 +49,7 @@ Use this site when the goal is to:
 3. Use `/api/issues` then `/api/issue` when you need a complete auction date slice.
 4. Return `pdf_url` links whenever provenance matters.
 5. Mention whether a result came from `pvrm`, `tvrm_physical`, `tvrm_eauction`, or `tvrm_legacy`.
+6. Describe `amount_hkd` as a historical auction result, not a current valuation.
 
 ## Query normalization
 

@@ -11,8 +11,15 @@
     <meta property="og:title" content="熱門車牌拍賣結果索引 | Plate.hk" />
     <meta property="og:description" content="快速進入熱門香港車牌的靜態搜尋落地頁。" />
     <meta property="og:url" content="https://plate.hk/plates/index.html" />
+    <meta property="og:site_name" content="Plate.hk" />
     <meta property="og:image" content="https://plate.hk/assets/logo.svg" />
+    <meta property="og:image:alt" content="Plate.hk Hong Kong vehicle registration marks database logo" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="熱門車牌拍賣結果索引 | Plate.hk" />
+    <meta name="twitter:description" content="快速瀏覽熱門香港車牌的歷史公開拍賣成交結果與官方來源。" />
+    <meta name="twitter:image" content="https://plate.hk/assets/logo.svg" />
     <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg" />
+    <script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "CollectionPage", "@id": "https://plate.hk/plates/index.html#webpage", "url": "https://plate.hk/plates/index.html", "name": "Popular Hong Kong vehicle registration mark auction records", "description": "A browsable index of notable Hong Kong registration marks selected from public auction records by sale price, record count, and memorable plate patterns.", "dateModified": "2026-08-13", "inLanguage": ["zh-HK", "en"], "isPartOf": {"@id": "https://plate.hk/#website"}, "about": {"@id": "https://plate.hk/about.html#dataset"}}, {"@type": "BreadcrumbList", "@id": "https://plate.hk/plates/index.html#breadcrumb", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Plate.hk", "item": "https://plate.hk/"}, {"@type": "ListItem", "position": 2, "name": "Popular plates", "item": "https://plate.hk/plates/index.html"}]}]}</script>
     <link rel="stylesheet" href="../assets/ledger.css?v=20260812-11" />
     <style>
       :root { --bg:#f4f1e8; --panel:#fffaf0; --line:#c9c0ad; --ink:#1d1b17; --muted:#5f594d; --accent:#3a5d4b; }
@@ -23,6 +30,8 @@
       .hero h1 { margin:12px 0 0; font-size:clamp(24px, 3vw, 34px) !important; }
       .hero a { display:inline-flex; align-items:center; font-size:14px; }
       .lede { color:var(--muted); line-height:1.72; margin-top:12px; max-width:78ch; }
+      .hub-actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:14px; }
+      .hub-actions a { display:inline-flex; padding:9px 12px; border:1px solid var(--line); border-radius:4px; text-decoration:none; font-weight:800; }
       .grid { display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap:10px; margin-top:14px; }
       .card {
         display:flex; min-height:112px; flex-direction:column; align-items:flex-start; gap:8px;
@@ -47,9 +56,10 @@
         <a href="../index.html">← 返回首頁 / Back to Search</a>
         <h1>熱門車牌拍賣結果索引</h1>
         <div class="lede">
-          這裡列出 Plate.hk 目前最值得被 Google 直接收錄的一批熱門車牌頁面。排序不只看最高成交，也會納入出現次數、字型記憶度與熱門搜尋意圖。<br />
-          This hub links to high-value and high-intent Hong Kong plate pages, so search engines can land directly on a specific plate instead of only the homepage.
+          這裡列出 420 個具代表性的香港車牌歷史成交頁。排序綜合最高公開拍賣成交價、收錄紀錄數、短號碼及常見字首；價格只代表歷史成交，不是現時估值。<br />
+          Browse notable Hong Kong plate auction records ranked by public sale results, record coverage, and memorable plate patterns. Historical prices are not current valuations.
         </div>
+        <div class="hub-actions"><a href="../about.html">資料方法與限制 / Data guide</a><a href="../index.html">搜尋全部紀錄 / Search all records</a></div>
       </div>
       <div class="grid">        <a class="card" href="./W.html">
           <div class="plate">W</div>

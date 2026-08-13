@@ -34,7 +34,15 @@ if [[ "$SMOKE" -eq 1 ]]; then
     data/hot_search/all_amount_desc/88.json \
     api/v1/index.json \
     index.html \
+    about.html \
     camera.html \
+    mcp.html \
+    plates/index.html \
+    plates/88.html \
+    sitemap.xml \
+    robots.txt \
+    llms.txt \
+    agent.md \
     sw.js \
     | gzip -1 > "$OUT_FILE"
 else
@@ -52,13 +60,20 @@ else
     data \
     api/v1 \
     index.html \
+    about.html \
     camera.html \
     api.html \
     audit.html \
+    mcp.html \
     landing.html \
     changelog.html \
     privacy.html \
     terms.html \
+    plates \
+    sitemap.xml \
+    robots.txt \
+    llms.txt \
+    agent.md \
     sw.js \
     assets \
     | gzip -1 > "$OUT_FILE"

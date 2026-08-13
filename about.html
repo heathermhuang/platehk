@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="zh-HK">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>香港車牌拍賣資料說明與方法 | Plate.hk</title>
+    <meta name="description" content="了解 Plate.hk 香港車牌拍賣資料的官方來源、PVRM/TVRM 覆蓋範圍、更新與核對方法，以及歷史成交價的限制。" />
+    <meta name="robots" content="index,follow,max-image-preview:large" />
+    <meta name="theme-color" content="#f4f1e8" />
+    <link rel="canonical" href="https://plate.hk/about.html" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="Plate.hk" />
+    <meta property="og:title" content="香港車牌拍賣資料說明與方法 | Plate.hk" />
+    <meta property="og:description" content="資料來源、覆蓋範圍、核對方法與歷史成交價限制。" />
+    <meta property="og:url" content="https://plate.hk/about.html" />
+    <meta property="og:image" content="https://plate.hk/assets/logo.svg" />
+    <meta property="og:image:alt" content="Plate.hk Hong Kong vehicle registration marks database logo" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Plate.hk data guide and methodology" />
+    <meta name="twitter:description" content="Sources, coverage, verification method, and limits of Hong Kong plate auction data." />
+    <meta name="twitter:image" content="https://plate.hk/assets/logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg" />
+    <link rel="alternate" type="application/json" href="https://plate.hk/api/v1/index.json" title="Plate.hk public API dataset index" />
+    <script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "Organization", "@id": "https://plate.hk/#organization", "name": "Plate.hk", "url": "https://plate.hk/", "logo": "https://plate.hk/assets/logo.svg", "sameAs": ["https://github.com/heathermhuang/platehk"]}, {"@type": "WebPage", "@id": "https://plate.hk/about.html#webpage", "url": "https://plate.hk/about.html", "name": "Plate.hk data guide and methodology", "description": "Plate.hk is an independent, read-only index of historical Hong Kong vehicle registration mark auction results compiled from Transport Department PDF handouts and official workbook exports, with source links for verification.", "dateModified": "2026-08-13", "inLanguage": ["zh-HK", "en"], "isPartOf": {"@id": "https://plate.hk/#website"}, "mainEntity": {"@id": "https://plate.hk/about.html#dataset"}}, {"@type": "Dataset", "@id": "https://plate.hk/about.html#dataset", "name": "Plate.hk Hong Kong vehicle registration mark auction results", "alternateName": ["香港車牌拍賣資料庫", "Hong Kong PVRM and TVRM auction results"], "description": "Plate.hk is an independent, read-only index of historical Hong Kong vehicle registration mark auction results compiled from Transport Department PDF handouts and official workbook exports, with source links for verification.", "url": "https://plate.hk/about.html", "creator": {"@id": "https://plate.hk/#organization"}, "provider": {"@id": "https://plate.hk/#organization"}, "dateModified": "2026-08-13", "spatialCoverage": {"@type": "Place", "name": "Hong Kong"}, "variableMeasured": ["auction date", "vehicle registration mark", "sale price in HKD", "auction type", "source document"], "measurementTechnique": "Source-document extraction, normalized search indexing, cross-dataset overlap checks, and automated integrity auditing.", "isBasedOn": ["https://www.td.gov.hk/en/public_services/vehicle_registration_mark/", "https://www.td.gov.hk/en/about_us/history_of_transport_department/licensing_services/auction_of_vehicle_registration_marks__/index.html"], "subjectOf": ["https://plate.hk/audit.html", "https://plate.hk/api.html", "https://plate.hk/api/v1/index.json"], "inLanguage": ["zh-HK", "en"], "temporalCoverage": "1973-01-01/2026-08-01"}, {"@type": "BreadcrumbList", "@id": "https://plate.hk/about.html#breadcrumb", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Plate.hk", "item": "https://plate.hk/"}, {"@type": "ListItem", "position": 2, "name": "Data guide", "item": "https://plate.hk/about.html"}]}]}</script>
+    <link rel="stylesheet" href="./assets/ledger.css?v=20260812-11" />
+    <style>
+      :root { --bg:#f4f1e8; --panel:#fffaf0; --line:#c9c0ad; --ink:#1d1b17; --muted:#5f594d; --accent:#3a5d4b; }
+      * { box-sizing:border-box; }
+      body { margin:0; color:var(--ink); font-family:"Space Grotesk","Noto Sans HK",sans-serif; }
+      .wrap { max-width:1060px; margin:0 auto; padding:28px 18px 56px; }
+      .hero, .card { padding:20px; }
+      .hero h1 { margin:12px 0 0; font-size:clamp(28px,4vw,44px); }
+      .lede, .card p, .card li { color:var(--muted); line-height:1.75; }
+      .lede { margin-top:12px; max-width:80ch; }
+      .summary { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-top:16px; }
+      .metric { border:1px solid var(--line); background:var(--panel); padding:14px; }
+      .metric span { display:block; color:var(--muted); font-size:12px; font-weight:800; text-transform:uppercase; }
+      .metric strong { display:block; margin-top:6px; font-size:22px; }
+      .grid { display:grid; grid-template-columns:1.1fr .9fr; gap:14px; margin-top:14px; }
+      .stack { display:grid; gap:14px; align-content:start; }
+      h2 { margin:0; font-size:22px; }
+      h3 { margin:18px 0 0; font-size:17px; }
+      p { margin:8px 0 0; }
+      table { width:100%; border-collapse:collapse; margin-top:14px; }
+      th, td { border-top:1px solid var(--line); padding:11px 9px; text-align:left; vertical-align:top; }
+      th span { color:var(--muted); font-size:12px; }
+      .steps { margin:12px 0 0; padding-left:22px; }
+      .links { display:flex; gap:9px; flex-wrap:wrap; margin-top:14px; }
+      .links a { display:inline-flex; padding:9px 11px; border:1px solid var(--line); border-radius:4px; text-decoration:none; font-weight:800; }
+      a { color:var(--accent); }
+      @media (max-width:800px) { .summary, .grid { grid-template-columns:1fr; } table { display:block; overflow-x:auto; } }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <header class="hero">
+        <a href="./index.html">← 返回搜尋 / Back to Search</a>
+        <h1>香港車牌拍賣資料說明與方法</h1>
+        <p class="lede">Plate.hk 是獨立、唯讀的香港車牌歷史拍賣資料索引，整理香港運輸署公開 PDF 結果及官方工作簿匯出。它不是政府網站；如資料有差異，以官方文件為準。</p>
+        <p class="lede" lang="en">Plate.hk is an independent, read-only index compiled from Hong Kong Transport Department auction-result PDFs and official workbook exports. It is not a government website; official source documents prevail.</p>
+        <div class="summary">
+          <div class="metric"><span>Source rows</span><strong>213,477</strong></div>
+          <div class="metric"><span>Auction issues / ranges</span><strong>760</strong></div>
+          <div class="metric"><span>Latest covered date</span><strong>2026年8月1日</strong></div>
+        </div>
+      </header>
+
+      <section class="card" style="margin-top:14px;" aria-labelledby="coverage-title">
+        <h2 id="coverage-title">收錄範圍 / Coverage</h2>
+        <p>下表是四個來源資料集的建置快照。Source rows 是去除跨資料集重複前的來源列數；「全部車牌」搜尋會隱藏已識別的 legacy 重複紀錄。</p>
+        <table>
+          <thead><tr><th>資料集 / Dataset</th><th>Rows</th><th>Issues</th><th>Latest</th><th>Scope</th></tr></thead>
+          <tbody>
+              <tr>
+                <th scope="row">自訂車牌 PVRM<br><span>PVRM</span></th>
+                <td>48,275</td>
+                <td>228</td>
+                <td>2026年8月1日</td>
+                <td>自訂車牌實體拍賣 / personalized registration mark physical auctions</td>
+              </tr>
+              <tr>
+                <th scope="row">傳統車牌：實體拍賣<br><span>TVRM Physical</span></th>
+                <td>112,398</td>
+                <td>497</td>
+                <td>2026年8月1日</td>
+                <td>傳統及特殊車牌實體拍賣 / traditional and special-mark physical auctions</td>
+              </tr>
+              <tr>
+                <th scope="row">傳統車牌：拍牌易<br><span>TVRM E-Auction</span></th>
+                <td>5,879</td>
+                <td>31</td>
+                <td>2026年7月23日</td>
+                <td>普通傳統車牌拍牌易結果 / ordinary traditional marks sold by E-Auction</td>
+              </tr>
+              <tr>
+                <th scope="row">傳統車牌：1973-2006 年<br><span>TVRM 1973-2006</span></th>
+                <td>46,925</td>
+                <td>4</td>
+                <td>2000年1月1日</td>
+                <td>1973-2006 官方工作簿年份區段 / official workbook-backed historical year ranges</td>
+              </tr></tbody>
+        </table>
+      </section>
+
+      <div class="grid">
+        <div class="stack">
+          <section class="card" aria-labelledby="answers-title">
+            <h2 id="answers-title">常見問題與直接答案 / Direct Answers</h2>
+            <h3>Plate.hk 的資料來自哪裡？</h3>
+            <p>主要來自香港運輸署發布的 PVRM、TVRM 實體拍賣及拍牌易結果 PDF；1973-2006 歷史區段來自官方工作簿匯出。每個車牌頁會在可用時直接連回相應來源。</p>
+            <h3>歷史成交價等於車牌現時價值嗎？</h3>
+            <p>不等於。成交價只描述某次公開拍賣的歷史結果，不是估值、即時放售價、所有權證明或未來成交保證。</p>
+            <h3>Plate.hk 是香港政府或運輸署網站嗎？</h3>
+            <p>不是。Plate.hk 是獨立資料工具；官方文件和運輸署網站始終是最終權威來源。</p>
+            <h3>應如何引用一筆結果？</h3>
+            <p>同時列出車牌顯示方式、拍賣日期、成交價、資料集名稱和來源連結。若版面空格或雙行排列有意義，應保留官方文件中的表示方式。</p>
+          </section>
+          <section class="card" aria-labelledby="method-title">
+            <h2 id="method-title">資料流程 / Method</h2>
+            <ol class="steps">
+              <li>從公開的官方拍賣結果文件建立期數清單。</li>
+              <li>提取車牌顯示、拍賣日期、成交價、來源 URL 及頁碼。</li>
+              <li>保留原始顯示方式；另建標準化搜尋鍵，方便忽略版面空格搜尋。</li>
+              <li>檢查格式、空值、期數列數及 legacy 跨資料集重疊。</li>
+              <li>發布靜態搜尋資料、公開 API、審核報告及可核對來源的車牌頁。</li>
+            </ol>
+          </section>
+        </div>
+        <div class="stack">
+          <section class="card" aria-labelledby="limits-title">
+            <h2 id="limits-title">限制 / Limits</h2>
+            <ul class="steps">
+              <li>最新資料取決於官方文件是否已發布及排程更新是否成功。</li>
+              <li>舊工作簿資料部分只能準確到年份區段，不代表單一拍賣日。</li>
+              <li>自動提取可能有錯漏；高風險用途必須回看來源文件。</li>
+              <li>外部放售訊號與官方拍賣結果是不同資料層，不應混作官方成交。</li>
+            </ul>
+          </section>
+          <section class="card" aria-labelledby="sources-title">
+            <h2 id="sources-title">官方來源與機器入口</h2>
+            <div class="links">
+              <a href="https://www.td.gov.hk/en/public_services/vehicle_registration_mark/" target="_blank" rel="noopener noreferrer">運輸署車牌服務</a>
+              <a href="https://www.td.gov.hk/en/about_us/history_of_transport_department/licensing_services/auction_of_vehicle_registration_marks__/index.html" target="_blank" rel="noopener noreferrer">運輸署拍賣歷史</a>
+              <a href="./audit.html">資料審核</a>
+              <a href="./api.html">API 文檔</a>
+              <a href="./api/v1/index.json">API dataset index</a>
+              <a href="./llms.txt">llms.txt</a>
+              <a href="./agent.md">Agent guide</a>
+            </div>
+          </section>
+          <section class="card" aria-labelledby="updated-title">
+            <h2 id="updated-title">頁面狀態 / Page Status</h2>
+            <p>此說明頁於 <time datetime="2026-08-13">2026-08-13</time> 建置；資料時間範圍為 1973年1月1日 至 2026年8月1日。這是建置證據，不等於官方已發布當日新拍賣結果。</p>
+          </section>
+        </div>
+      </div>
+    </main>
+  </body>
+</html>

@@ -148,6 +148,7 @@ class FrontendContractsTests(unittest.TestCase):
     def test_service_worker_precaches_every_required_homepage_script(self) -> None:
         html = (ROOT / "index.html").read_text(encoding="utf-8")
         service_worker = (ROOT / "sw.js").read_text(encoding="utf-8")
+        self.assertIn("'./about.html'", service_worker)
         required_scripts = re.findall(r'<script src="(\./assets/[^"]+\.js)(?:\?[^"\s]+)?"></script>', html)
         self.assertIn("./assets/index.market.js", required_scripts)
         for script_path in required_scripts:
@@ -226,6 +227,8 @@ class FrontendContractsTests(unittest.TestCase):
 
         generated_market_pages = []
         for page_path in (ROOT / "plates").glob("*.html"):
+            if " " in page_path.name:
+                continue
             page_html = page_path.read_text(encoding="utf-8")
             if "data-market-card" in page_html:
                 generated_market_pages.append(page_path)
@@ -400,6 +403,203 @@ class FrontendContractsTests(unittest.TestCase):
         self.assertIn("OAUTH_CLIENTS_JSON", dev_vars)
         self.assertIn("OAUTH_JWT_PRIVATE_JWK", dev_vars)
         self.assertIn("OAUTH_JWKS_JSON", dev_vars)
+
+    def test_seo_and_answer_engine_surfaces_are_source_grounded(self) -> None:
+        index_html = (ROOT / "index.html").read_text(encoding="utf-8")
+        title_match = re.search(r'<h1 id="titleMain">\s*([^<]+)', index_html)
+        self.assertIsNotNone(title_match)
+        self.assertEqual(title_match.group(1).strip(), "香港車牌拍賣資料庫")
+
+        index_ld = json.loads(
+            re.search(
+                r'<script type="application/ld\+json">\s*(.*?)\s*</script>',
+                index_html,
+                re.DOTALL,
+            ).group(1)
+        )
+        index_types = {item["@type"] for item in index_ld["@graph"]}
+        self.assertEqual(index_types, {"Organization", "WebSite"})
+        self.assertIn('href="./about.html"', index_html)
+
+        plate_html = (ROOT / "plates" / "88.html").read_text(encoding="utf-8")
+        self.assertIn("官方 PDF / Official source", plate_html)
+        self.assertIn("直接答案 / Direct Answers", plate_html)
+        self.assertIn("Is this a current valuation?", plate_html)
+        self.assertIn('rel="alternate" type="application/json"', plate_html)
+        self.assertNotIn("If users search", plate_html)
+        self.assertNotIn("built to answer direct searches", plate_html)
+        plate_ld = json.loads(
+            re.search(
+                r'<script type="application/ld\+json">(.*?)</script>',
+                plate_html,
+                re.DOTALL,
+            ).group(1)
+        )
+        plate_types = {item["@type"] for item in plate_ld["@graph"]}
+        self.assertEqual(plate_types, {"Organization", "WebPage", "Dataset", "BreadcrumbList"})
+        plate_dataset = next(item for item in plate_ld["@graph"] if item["@type"] == "Dataset")
+        self.assertGreaterEqual(len(plate_dataset["description"]), 50)
+        self.assertEqual(plate_dataset["provider"], {"@id": "https://plate.hk/#organization"})
+        self.assertTrue(all(url.startswith("https://www.td.gov.hk/") for url in plate_dataset["isBasedOn"]))
+
+        about_html = (ROOT / "about.html").read_text(encoding="utf-8")
+        self.assertIn("Plate.hk 是獨立、唯讀", about_html)
+        self.assertIn("歷史成交價等於車牌現時價值嗎？", about_html)
+        self.assertIn("API dataset index", about_html)
+        about_ld = json.loads(
+            re.search(
+                r'<script type="application/ld\+json">(.*?)</script>',
+                about_html,
+                re.DOTALL,
+            ).group(1)
+        )
+        about_types = {item["@type"] for item in about_ld["@graph"]}
+        self.assertEqual(about_types, {"Organization", "WebPage", "Dataset", "BreadcrumbList"})
+        about_dataset = next(item for item in about_ld["@graph"] if item["@type"] == "Dataset")
+        self.assertEqual(about_dataset["provider"], {"@id": "https://plate.hk/#organization"})
+
+        sitemap = (ROOT / "sitemap.xml").read_text(encoding="utf-8")
+        for url in ["https://plate.hk/about.html", "https://plate.hk/camera.html", "https://plate.hk/mcp.html"]:
+            self.assertIn(f"<loc>{url}</loc>", sitemap)
+        robots = (ROOT / "robots.txt").read_text(encoding="utf-8")
+        self.assertIn("Allow: /api/openapi.yaml", robots)
+        self.assertIn("Allow: /api/v1/index.json", robots)
+        self.assertIn("Disallow: /api/", robots)
+
+        llms = (ROOT / "llms.txt").read_text(encoding="utf-8")
+        agent_md = (ROOT / "agent.md").read_text(encoding="utf-8")
+        worker = (ROOT / "cloudflare-worker" / "src" / "index.mjs").read_text(encoding="utf-8")
+        cloudflare_builder = (ROOT / "scripts" / "build_cloudflare_public.py").read_text(encoding="utf-8")
+        self.assertIn("Citation and verification guidance", llms)
+        self.assertIn("not a current valuation", llms)
+        self.assertIn("Data guide and methodology", agent_md)
+        self.assertIn('</about.html>; rel="describedby"', worker)
+        self.assertIn("module.render_about()", cloudflare_builder)
+
+    def test_all_generated_plate_pages_have_unique_source_grounded_schema(self) -> None:
+        sitemap = (ROOT / "sitemap.xml").read_text(encoding="utf-8")
+        pages = sorted(
+            path
+            for path in (ROOT / "plates").glob("*.html")
+            if path.name != "index.html" and " " not in path.name
+        )
+        self.assertEqual(len(pages), 800)
+
+        canonicals = set()
+        for path in pages:
+            page_html = path.read_text(encoding="utf-8")
+            canonical_match = re.search(r'<link rel="canonical" href="([^"]+)"', page_html)
+            self.assertIsNotNone(canonical_match, path.name)
+            canonical = canonical_match.group(1)
+            self.assertNotIn(canonical, canonicals, path.name)
+            canonicals.add(canonical)
+            self.assertIn(f"<loc>{canonical}</loc>", sitemap, path.name)
+
+            self.assertIn("直接答案 / Direct Answers", page_html, path.name)
+            self.assertIn("Is this a current valuation?", page_html, path.name)
+            self.assertNotIn("If users search", page_html, path.name)
+            self.assertNotIn("built to answer direct searches", page_html, path.name)
+            self.assertTrue(
+                "Official source" in page_html
+                or "Source file" in page_html
+                or "Source unavailable" in page_html,
+                path.name,
+            )
+
+            ld_match = re.search(
+                r'<script type="application/ld\+json">(.*?)</script>',
+                page_html,
+                re.DOTALL,
+            )
+            self.assertIsNotNone(ld_match, path.name)
+            graph = json.loads(ld_match.group(1))["@graph"]
+            self.assertEqual(
+                {item["@type"] for item in graph},
+                {"Organization", "WebPage", "Dataset", "BreadcrumbList"},
+                path.name,
+            )
+            dataset = next(item for item in graph if item["@type"] == "Dataset")
+            self.assertEqual(dataset["provider"], {"@id": "https://plate.hk/#organization"}, path.name)
+            self.assertGreaterEqual(len(dataset["description"]), 50, path.name)
+            for source in dataset.get("isBasedOn", []):
+                self.assertTrue(
+                    source.startswith("https://www.td.gov.hk/")
+                    or source.startswith("https://plate.hk/data/"),
+                    f"{path.name}: {source}",
+                )
+
+        self.assertEqual(len(canonicals), 800)
+
+    def test_seo_hub_about_stats_and_auxiliary_metadata_are_complete(self) -> None:
+        hub_html = (ROOT / "plates" / "index.html").read_text(encoding="utf-8")
+        self.assertIn('<link rel="canonical" href="https://plate.hk/plates/index.html"', hub_html)
+        self.assertIn('href="../about.html"', hub_html)
+        self.assertIn("Historical prices are not current valuations", hub_html)
+        hub_ld = json.loads(
+            re.search(
+                r'<script type="application/ld\+json">(.*?)</script>',
+                hub_html,
+                re.DOTALL,
+            ).group(1)
+        )
+        self.assertEqual(
+            {item["@type"] for item in hub_ld["@graph"]},
+            {"CollectionPage", "BreadcrumbList"},
+        )
+
+        dataset_paths = [
+            ROOT / "data" / "results.slim.json",
+            ROOT / "data" / "tvrm_physical" / "results.slim.json",
+            ROOT / "data" / "tvrm_eauction" / "results.slim.json",
+            ROOT / "data" / "tvrm_legacy" / "results.slim.json",
+        ]
+        datasets = [json.loads(path.read_text(encoding="utf-8")) for path in dataset_paths]
+        total_rows = sum(len(rows) for rows in datasets)
+        dates = [str(row.get("auction_date")) for rows in datasets for row in rows if row.get("auction_date")]
+
+        about_html = (ROOT / "about.html").read_text(encoding="utf-8")
+        self.assertIn('<link rel="canonical" href="https://plate.hk/about.html"', about_html)
+        self.assertIn(f"<strong>{total_rows:,}</strong>", about_html)
+        about_ld = json.loads(
+            re.search(
+                r'<script type="application/ld\+json">(.*?)</script>',
+                about_html,
+                re.DOTALL,
+            ).group(1)
+        )
+        about_dataset = next(item for item in about_ld["@graph"] if item["@type"] == "Dataset")
+        self.assertEqual(about_dataset["temporalCoverage"], f"{min(dates)}/{max(dates)}")
+        self.assertEqual(about_dataset["provider"], {"@id": "https://plate.hk/#organization"})
+
+        camera_html = (ROOT / "camera.html").read_text(encoding="utf-8")
+        self.assertIn("<title>香港車牌相機辨識搜尋 | Plate.hk</title>", camera_html)
+        self.assertIn('<meta property="og:site_name" content="Plate.hk"', camera_html)
+        self.assertIn('<meta name="twitter:card" content="summary"', camera_html)
+        for html_name, title in [
+            ("audit.html", "<title>資料審核 | Plate.hk</title>"),
+            ("mcp.html", "<title>MCP 文件 | Plate.hk</title>"),
+        ]:
+            self.assertIn(title, (ROOT / html_name).read_text(encoding="utf-8"), html_name)
+
+    def test_source_links_only_accept_local_data_or_transport_department_urls(self) -> None:
+        import importlib.util
+
+        module_path = ROOT / "scripts" / "build_popular_plate_pages.py"
+        spec = importlib.util.spec_from_file_location("build_popular_plate_pages", module_path)
+        self.assertIsNotNone(spec)
+        self.assertIsNotNone(spec.loader)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+
+        self.assertEqual(
+            module.source_url({"pdf_url": "./data/source%20file.xlsx"}),
+            "https://plate.hk/data/source%20file.xlsx",
+        )
+        official = "https://www.td.gov.hk/filemanager/example.pdf"
+        self.assertEqual(module.source_url({"pdf_url": official}), official)
+        self.assertEqual(module.source_url({"pdf_url": "https://example.com/source.pdf"}), "")
+        self.assertEqual(module.source_url({"pdf_url": "javascript:alert(1)"}), "")
+        self.assertIn("p.&lt;2&gt;", module.source_link_html({"pdf_url": official, "page": "<2>"}))
 
     def test_security_ci_and_worker_guardrails_exist(self) -> None:
         worker_lib = (ROOT / "cloudflare-worker" / "src" / "lib.mjs").read_text(encoding="utf-8")

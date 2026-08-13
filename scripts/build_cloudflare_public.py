@@ -373,6 +373,7 @@ def copy_plate_pages() -> None:
         page = module.render_page(entries_by_norm, entry, related)
         (target_plates / f"{entry['plate_norm']}.html").write_text(page, encoding="utf-8")
     (target_plates / "index.html").write_text(module.render_index(entries), encoding="utf-8")
+    (TARGET / "about.html").write_text(module.render_about(), encoding="utf-8")
 
 
 def build_results_chunks(dataset: str) -> None:
