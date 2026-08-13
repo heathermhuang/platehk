@@ -12,6 +12,7 @@ window.createPlateMarketFlow = function createPlateMarketFlow({
   brokerSubmitEl,
 }) {
   const WHATSAPP_NUMBER = "85268591577";
+  const MAX_VISIBLE_SIGNALS = 1;
   const COPY = {
     zh: {
       kicker: "外部放售訊號",
@@ -239,7 +240,8 @@ window.createPlateMarketFlow = function createPlateMarketFlow({
       hideSignals();
       return;
     }
-    marketSignalEl.innerHTML = `<div class="market-signal-list">${Array.from(currentSignals.values(), signalMarkup).join("")}</div>`;
+    const visibleSignals = Array.from(currentSignals.values()).slice(0, MAX_VISIBLE_SIGNALS);
+    marketSignalEl.innerHTML = `<div class="market-signal-list">${visibleSignals.map(signalMarkup).join("")}</div>`;
     marketSignalEl.hidden = false;
     syncRowActions();
   }
