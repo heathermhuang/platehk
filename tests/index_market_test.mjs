@@ -146,14 +146,13 @@ assert.equal(fetchedBatches[0][199], "DRHUANG");
 assert.equal(rowActions.get("HUANG").children.length, 1);
 assert.equal(rowActions.get("DRHUANG").children.length, 1);
 assert.equal(rowActions.get("HUANG88").children.length, 0);
-assert.equal((marketSignalEl.innerHTML.match(/class="market-signal-item"/g) || []).length, 2);
+assert.equal((marketSignalEl.innerHTML.match(/class="market-signal-item"/g) || []).length, 1);
 assert.match(marketSignalEl.innerHTML, /data-market-plate="HUANG"/);
-assert.match(marketSignalEl.innerHTML, /data-market-plate="DRHUANG"/);
-assert.match(marketSignalEl.innerHTML, />DR HUANG<\/span>/);
+assert.doesNotMatch(marketSignalEl.innerHTML, /data-market-plate="DRHUANG"/);
 
 const drHuangButton = rowActions.get("DRHUANG").children[0];
 rowsEl.listeners.get("click")({ target: drHuangButton });
 assert.equal(brokerModalEl.hidden, false);
 assert.equal(brokerPlateEl.value, "DR HUANG");
 
-console.log("Multi-result market signal frontend test passed.");
+console.log("Single-listing market signal frontend test passed.");

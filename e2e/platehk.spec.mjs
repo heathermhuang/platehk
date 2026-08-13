@@ -369,7 +369,7 @@ test.describe("Plate.hk browser journeys", () => {
     expect(decoration).toEqual({ before: "none", after: "none" });
   });
 
-  test("surfaces every active external signal in a focused multi-result list", async ({ page }) => {
+  test("shows one external signal while keeping actions on all matching result rows", async ({ page }) => {
     const errors = collectBrowserErrors(page);
     const signals = {
       HUANG: {
@@ -409,9 +409,9 @@ test.describe("Plate.hk browser journeys", () => {
     const drHuangRow = page.locator("#rows tr[data-plate='DRHUANG']");
     await expect(huangRow.locator(".row-market-btn")).toBeVisible();
     await expect(drHuangRow.locator(".row-market-btn")).toBeVisible();
-    await expect(page.locator("#marketSignal .market-signal-item")).toHaveCount(2);
+    await expect(page.locator("#marketSignal .market-signal-item")).toHaveCount(1);
     await expect(page.locator("#marketSignal [data-market-plate='HUANG'] .plate")).toHaveText("HUANG");
-    await expect(page.locator("#marketSignal [data-market-plate='DRHUANG'] .plate")).toHaveText("DR HUANG");
+    await expect(page.locator("#marketSignal [data-market-plate='DRHUANG']")).toHaveCount(0);
 
     const plateStyleMatches = await page.evaluate(() => {
       const resultPlate = getComputedStyle(document.querySelector("#rows tr[data-plate='HUANG'] .plate"));
