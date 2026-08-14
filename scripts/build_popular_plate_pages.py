@@ -404,10 +404,10 @@ def render_page(entries_by_norm: dict[str, dict], entry: dict, related: list[dic
     rows_html = "".join(
         f"""
         <tr>
-          <td>{html.escape(date_label(row))}</td>
-          <td>{html.escape(DATASETS[row['dataset_key']]['label_zh'])}<br><span>{html.escape(DATASETS[row['dataset_key']]['label_en'])}</span></td>
-          <td>{html.escape(money(row.get('amount_hkd')))}</td>
-          <td>{source_link_html(row)}<br><a href="https://plate.hk/?lang=zh&q={plate_norm}">完整站內紀錄 / Full search</a></td>
+          <td data-label="日期 / Date">{html.escape(date_label(row))}</td>
+          <td data-label="分類 / Dataset">{html.escape(DATASETS[row['dataset_key']]['label_zh'])}<br><span>{html.escape(DATASETS[row['dataset_key']]['label_en'])}</span></td>
+          <td data-label="成交價 / Price">{html.escape(money(row.get('amount_hkd')))}</td>
+          <td data-label="來源 / Source">{source_link_html(row)}<br><a href="https://plate.hk/?lang=zh&q={plate_norm}">完整站內紀錄 / Full search</a></td>
         </tr>
         """
         for row in entry["rows"][:TABLE_ROWS]
@@ -550,6 +550,7 @@ def render_page(entries_by_norm: dict[str, dict], entry: dict, related: list[dic
       .metric .v {{ margin-top:6px; font-size:20px; font-weight:800; }}
       .grid {{ display:grid; grid-template-columns: 1.25fr .75fr; gap:14px; margin-top:14px; }}
       .stack {{ display:grid; gap:14px; }}
+      .grid > *, .stack, .card {{ min-width:0; }}
       table {{ width:100%; border-collapse: collapse; margin-top: 10px; }}
       th, td {{ text-align:left; padding: 12px 10px; border-top:1px solid var(--line); vertical-align: top; }}
       td span {{ color:var(--muted); font-size:12px; }}
@@ -574,6 +575,14 @@ def render_page(entries_by_norm: dict[str, dict], entry: dict, related: list[dic
       @media (max-width: 860px) {{
         .meta, .grid{market_grid_selector} {{ grid-template-columns: 1fr; }}
 {market_media_style}        .plate {{ min-width: 0; width: 100%; font-size: 28px; }}
+      }}
+      @media (max-width: 620px) {{
+        .responsive-table, .responsive-table tbody, .responsive-table tr, .responsive-table td {{ display:block; width:100%; }}
+        .responsive-table thead {{ position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }}
+        .responsive-table tr {{ border-top:1px solid var(--line); padding:8px 0; }}
+        .responsive-table tbody tr:first-child {{ margin-top:10px; }}
+        .responsive-table td {{ display:grid; grid-template-columns:minmax(104px,.8fr) minmax(0,1.7fr); gap:10px; border-top:0; padding:6px 0; overflow-wrap:anywhere; }}
+        .responsive-table td::before {{ content:attr(data-label); color:var(--muted); font-size:11px; font-weight:800; line-height:1.35; text-transform:uppercase; }}
       }}
     </style>
   </head>
@@ -604,7 +613,7 @@ def render_page(entries_by_norm: dict[str, dict], entry: dict, related: list[dic
           <div class="card">
             <h2>成交紀錄 / Auction Records</h2>
             <div class="lede">最高成交出現在 {html.escape(highest_date)}。以下列出目前最重要的歷史紀錄，並可直接回站內搜尋完整結果。</div>
-            <table>
+            <table class="responsive-table">
               <thead>
                 <tr><th>日期 / Date</th><th>分類 / Dataset</th><th>成交價 / Price</th><th>來源 / Source</th></tr>
               </thead>
@@ -758,11 +767,11 @@ def render_about() -> str:
     coverage_rows = "".join(
         f"""
               <tr>
-                <th scope="row">{html.escape(DATASETS[key]['label_zh'])}<br><span>{html.escape(DATASETS[key]['label_en'])}</span></th>
-                <td>{int(stats.get(key, {}).get('rows') or 0):,}</td>
-                <td>{int(stats.get(key, {}).get('issues') or 0):,}</td>
-                <td>{html.escape(format_date_zh(str(stats.get(key, {}).get('latest_date') or '')))}</td>
-                <td>{html.escape(descriptions[key])}</td>
+                <th scope="row" data-label="資料集 / Dataset">{html.escape(DATASETS[key]['label_zh'])}<br><span>{html.escape(DATASETS[key]['label_en'])}</span></th>
+                <td data-label="Rows">{int(stats.get(key, {}).get('rows') or 0):,}</td>
+                <td data-label="Issues">{int(stats.get(key, {}).get('issues') or 0):,}</td>
+                <td data-label="Latest">{html.escape(format_date_zh(str(stats.get(key, {}).get('latest_date') or '')))}</td>
+                <td data-label="Scope">{html.escape(descriptions[key])}</td>
               </tr>"""
         for key in DATASETS
     )
@@ -868,6 +877,7 @@ def render_about() -> str:
       .metric strong {{ display:block; margin-top:6px; font-size:22px; }}
       .grid {{ display:grid; grid-template-columns:1.1fr .9fr; gap:14px; margin-top:14px; }}
       .stack {{ display:grid; gap:14px; align-content:start; }}
+      .grid > *, .stack, .card {{ min-width:0; }}
       h2 {{ margin:0; font-size:22px; }}
       h3 {{ margin:18px 0 0; font-size:17px; }}
       p {{ margin:8px 0 0; }}
@@ -878,7 +888,15 @@ def render_about() -> str:
       .links {{ display:flex; gap:9px; flex-wrap:wrap; margin-top:14px; }}
       .links a {{ display:inline-flex; padding:9px 11px; border:1px solid var(--line); border-radius:4px; text-decoration:none; font-weight:800; }}
       a {{ color:var(--accent); }}
-      @media (max-width:800px) {{ .summary, .grid {{ grid-template-columns:1fr; }} table {{ display:block; overflow-x:auto; }} }}
+      @media (max-width:800px) {{ .summary, .grid {{ grid-template-columns:1fr; }} }}
+      @media (max-width:620px) {{
+        .responsive-table, .responsive-table tbody, .responsive-table tr, .responsive-table td, .responsive-table th[scope="row"] {{ display:block; width:100%; }}
+        .responsive-table thead {{ position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }}
+        .responsive-table tr {{ border-top:1px solid var(--line); padding:9px 0; }}
+        .responsive-table tbody tr:first-child {{ margin-top:12px; }}
+        .responsive-table td, .responsive-table th[scope="row"] {{ display:grid; grid-template-columns:minmax(104px,.8fr) minmax(0,1.7fr); gap:10px; border-top:0; padding:6px 0; overflow-wrap:anywhere; }}
+        .responsive-table td::before, .responsive-table th[scope="row"]::before {{ content:attr(data-label); color:var(--muted); font-size:11px; font-weight:800; line-height:1.35; text-transform:uppercase; }}
+      }}
     </style>
   </head>
   <body>
@@ -898,7 +916,7 @@ def render_about() -> str:
       <section class="card" style="margin-top:14px;" aria-labelledby="coverage-title">
         <h2 id="coverage-title">收錄範圍 / Coverage</h2>
         <p>下表是四個來源資料集的建置快照。Source rows 是去除跨資料集重複前的來源列數；「全部車牌」搜尋會隱藏已識別的 legacy 重複紀錄。</p>
-        <table>
+        <table class="responsive-table">
           <thead><tr><th>資料集 / Dataset</th><th>Rows</th><th>Issues</th><th>Latest</th><th>Scope</th></tr></thead>
           <tbody>{coverage_rows}</tbody>
         </table>

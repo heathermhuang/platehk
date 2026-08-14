@@ -426,8 +426,25 @@ class FrontendContractsTests(unittest.TestCase):
         self.assertIn("直接答案 / Direct Answers", plate_html)
         self.assertIn("Is this a current valuation?", plate_html)
         self.assertIn('rel="alternate" type="application/json"', plate_html)
+        self.assertIn('<table class="responsive-table">', plate_html)
+        self.assertIn('<td data-label="日期 / Date">', plate_html)
+        self.assertIn('<td data-label="分類 / Dataset">', plate_html)
+        self.assertIn('data-label="成交價 / Price"', plate_html)
+        self.assertIn('<td data-label="來源 / Source">', plate_html)
+        self.assertIn(".grid > *, .stack, .card { min-width:0; }", plate_html)
         self.assertNotIn("If users search", plate_html)
         self.assertNotIn("built to answer direct searches", plate_html)
+        for plate_path in sorted((ROOT / "plates").glob("*.html")):
+            if plate_path.name == "index.html":
+                continue
+            with self.subTest(plate_page=plate_path.name):
+                generated_plate_html = plate_path.read_text(encoding="utf-8")
+                self.assertIn('<table class="responsive-table">', generated_plate_html)
+                self.assertIn('<td data-label="日期 / Date">', generated_plate_html)
+                self.assertIn('<td data-label="分類 / Dataset">', generated_plate_html)
+                self.assertIn('data-label="成交價 / Price"', generated_plate_html)
+                self.assertIn('<td data-label="來源 / Source">', generated_plate_html)
+                self.assertIn(".grid > *, .stack, .card { min-width:0; }", generated_plate_html)
         plate_ld = json.loads(
             re.search(
                 r'<script type="application/ld\+json">(.*?)</script>',
@@ -446,6 +463,11 @@ class FrontendContractsTests(unittest.TestCase):
         self.assertIn("Plate.hk 是獨立、唯讀", about_html)
         self.assertIn("歷史成交價等於車牌現時價值嗎？", about_html)
         self.assertIn("API dataset index", about_html)
+        self.assertIn('<table class="responsive-table">', about_html)
+        self.assertIn('data-label="資料集 / Dataset"', about_html)
+        self.assertIn('<td data-label="Rows">', about_html)
+        self.assertIn('<td data-label="Scope">', about_html)
+        self.assertIn(".responsive-table th[scope=\"row\"]::before", about_html)
         about_ld = json.loads(
             re.search(
                 r'<script type="application/ld\+json">(.*?)</script>',
