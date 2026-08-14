@@ -146,6 +146,34 @@ test.describe("Plate.hk public API", () => {
 });
 
 test.describe("Plate.hk browser journeys", () => {
+  test("keeps SEO answer pages readable without viewport overflow", async ({ page }) => {
+    const errors = collectBrowserErrors(page);
+    const isMobile = page.viewportSize().width <= 620;
+
+    await page.goto("/about.html");
+    await expect(page.locator("h1")).toContainText("香港車牌拍賣資料");
+    await expect(page.locator("#answers-title")).toBeVisible();
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+    if (isMobile) {
+      await expect(page.locator(".responsive-table tbody tr").first()).toHaveCSS("display", "block");
+      await expect(page.locator(".responsive-table tbody tr").first().locator("th")).toHaveCSS("display", "grid");
+      await expect(page.locator(".responsive-table tbody tr").first().locator("td").nth(3)).toHaveAttribute("data-label", "Scope");
+    }
+
+    await page.goto("/plates/88.html");
+    await expect(page.locator("h1")).toContainText("88 車牌拍賣結果");
+    await expect(page.getByText("直接答案 / Direct Answers", { exact: true })).toBeVisible();
+    await expect(page.locator('a[href*="td.gov.hk"]').first()).toBeVisible();
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+    if (isMobile) {
+      await expect(page.locator(".responsive-table tbody tr").first()).toHaveCSS("display", "block");
+      await expect(page.locator(".responsive-table tbody tr").first().locator("td").first()).toHaveCSS("display", "grid");
+      await expect(page.locator(".responsive-table tbody tr").first().locator("td").nth(3)).toHaveAttribute("data-label", "來源 / Source");
+    }
+
+    await expectNoBrowserErrors(errors);
+  });
+
   test("shows at most four auction events in the desktop calendar slider", async ({ page }, testInfo) => {
     test.skip(!testInfo.project.name.includes("desktop"), "Desktop-only calendar behavior");
     const errors = collectBrowserErrors(page);

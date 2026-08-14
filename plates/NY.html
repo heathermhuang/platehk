@@ -45,6 +45,7 @@
       .metric .v { margin-top:6px; font-size:20px; font-weight:800; }
       .grid { display:grid; grid-template-columns: 1.25fr .75fr; gap:14px; margin-top:14px; }
       .stack { display:grid; gap:14px; }
+      .grid > *, .stack, .card { min-width:0; }
       table { width:100%; border-collapse: collapse; margin-top: 10px; }
       th, td { text-align:left; padding: 12px 10px; border-top:1px solid var(--line); vertical-align: top; }
       td span { color:var(--muted); font-size:12px; }
@@ -69,6 +70,14 @@
       @media (max-width: 860px) {
         .meta, .grid { grid-template-columns: 1fr; }
         .plate { min-width: 0; width: 100%; font-size: 28px; }
+      }
+      @media (max-width: 620px) {
+        .responsive-table, .responsive-table tbody, .responsive-table tr, .responsive-table td { display:block; width:100%; }
+        .responsive-table thead { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+        .responsive-table tr { border-top:1px solid var(--line); padding:8px 0; }
+        .responsive-table tbody tr:first-child { margin-top:10px; }
+        .responsive-table td { display:grid; grid-template-columns:minmax(104px,.8fr) minmax(0,1.7fr); gap:10px; border-top:0; padding:6px 0; overflow-wrap:anywhere; }
+        .responsive-table td::before { content:attr(data-label); color:var(--muted); font-size:11px; font-weight:800; line-height:1.35; text-transform:uppercase; }
       }
     </style>
   </head>
@@ -99,16 +108,16 @@
           <div class="card">
             <h2>成交紀錄 / Auction Records</h2>
             <div class="lede">最高成交出現在 2012年2月11日。以下列出目前最重要的歷史紀錄，並可直接回站內搜尋完整結果。</div>
-            <table>
+            <table class="responsive-table">
               <thead>
                 <tr><th>日期 / Date</th><th>分類 / Dataset</th><th>成交價 / Price</th><th>來源 / Source</th></tr>
               </thead>
               <tbody>
         <tr>
-          <td>2012年2月11日</td>
-          <td>自訂車牌 PVRM<br><span>PVRM</span></td>
-          <td>HK$190,000</td>
-          <td><a href="https://www.td.gov.hk/filemanager/common/pvrm%20auction%20result%20handout%2011.2.2012.pdf" target="_blank" rel="noopener noreferrer">官方 PDF / Official source</a><br><a href="https://plate.hk/?lang=zh&q=NY">完整站內紀錄 / Full search</a></td>
+          <td data-label="日期 / Date">2012年2月11日</td>
+          <td data-label="分類 / Dataset">自訂車牌 PVRM<br><span>PVRM</span></td>
+          <td data-label="成交價 / Price">HK$190,000</td>
+          <td data-label="來源 / Source"><a href="https://www.td.gov.hk/filemanager/common/pvrm%20auction%20result%20handout%2011.2.2012.pdf" target="_blank" rel="noopener noreferrer">官方 PDF / Official source</a><br><a href="https://plate.hk/?lang=zh&q=NY">完整站內紀錄 / Full search</a></td>
         </tr>
         </tbody>
             </table>
