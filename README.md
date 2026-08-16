@@ -26,6 +26,7 @@ The current public UI uses a flat Ledger visual system: compact auction-record t
 - Contribution guide: [CONTRIBUTING.md](./CONTRIBUTING.md)
 - Security posture: [SECURITY.md](./SECURITY.md)
 - OpenAPI spec: [api/openapi.yaml](./api/openapi.yaml)
+- SEO/AEO measurement baseline: [docs/SEO_AEO_BASELINE.md](./docs/SEO_AEO_BASELINE.md)
 
 ## At a Glance
 
@@ -101,6 +102,8 @@ Open [http://127.0.0.1:8080](http://127.0.0.1:8080), then stop the server with:
 | Run syntax checks and tests | `./scripts/check_site.sh` |
 | Run secrets and dependency security checks | `./scripts/check_security.sh` |
 | Check generated duplicate artifacts | `python3 scripts/check_duplicate_generated_artifacts.py` |
+| Initialize private SEO/AEO measurement templates | `python3 scripts/build_seo_aeo_baseline.py --init` |
+| Build the private SEO/AEO scorecard | `python3 scripts/build_seo_aeo_baseline.py` |
 | Refresh a bounded 28car signal slice | `python3 scripts/scrape_28car_market.py --max-pages 25` |
 | Refresh all reported 28car listing pages | `python3 scripts/scrape_28car_market.py --max-pages 0` |
 | Compare production freshness against local outputs | `python3 scripts/check_production_freshness.py --fail-on-drift` |
@@ -167,6 +170,7 @@ flowchart LR
 | `plates/` | Generated SEO landing pages for popular plates |
 | `cloudflare-worker/` | Worker runtime for API routes and vision lookup |
 | `scripts/` | Build, validation, packaging, and data-update scripts |
+| `config/seo-aeo-prompts.json` | Versioned bilingual search and AI-citation measurement corpus |
 
 ## Data Coverage
 

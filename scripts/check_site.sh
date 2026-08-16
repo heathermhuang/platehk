@@ -25,6 +25,7 @@ export PYTHONPYCACHEPREFIX="${PYTHONPYCACHEPREFIX:-${TMPDIR:-/tmp}/pvrm-pycache}
   scripts/check_market_production.py \
   scripts/verify_data_integrity.py \
   scripts/build_audit_report.py \
+  scripts/build_seo_aeo_baseline.py \
   scripts/auto_heal_update.py \
   scripts/scan_repo_secrets.py
 
