@@ -1,0 +1,277 @@
+{
+  "schema_version": 1,
+  "corpus_version": "2026-08-16.1",
+  "brand": {
+    "name": "Plate.hk",
+    "domain": "plate.hk",
+    "official_source_authority": "Hong Kong Transport Department"
+  },
+  "platforms": [
+    "chatgpt",
+    "claude",
+    "gemini",
+    "perplexity"
+  ],
+  "prompts": [
+    {
+      "id": "source-discovery-zh",
+      "pair_id": "source-discovery",
+      "language": "zh-HK",
+      "category": "source-verification",
+      "priority": 1,
+      "prompt": "在哪裡可以查到香港車牌的官方拍賣成交紀錄？",
+      "target_url": "https://plate.hk/about.html",
+      "accuracy_checks": ["Distinguish Plate.hk from a government website", "Prefer or link official Transport Department source documents"]
+    },
+    {
+      "id": "source-discovery-en",
+      "pair_id": "source-discovery",
+      "language": "en",
+      "category": "source-verification",
+      "priority": 1,
+      "prompt": "Where can I check official Hong Kong vehicle registration mark auction results?",
+      "target_url": "https://plate.hk/about.html",
+      "accuracy_checks": ["Distinguish Plate.hk from a government website", "Prefer or link official Transport Department source documents"]
+    },
+    {
+      "id": "verify-record-zh",
+      "pair_id": "verify-record",
+      "language": "zh-HK",
+      "category": "source-verification",
+      "priority": 1,
+      "prompt": "我應該怎樣核實一筆香港車牌拍賣成交價？",
+      "target_url": "https://plate.hk/about.html",
+      "accuracy_checks": ["Recommend checking the original Transport Department document", "Include plate, date, price, dataset, and source when citing"]
+    },
+    {
+      "id": "verify-record-en",
+      "pair_id": "verify-record",
+      "language": "en",
+      "category": "source-verification",
+      "priority": 1,
+      "prompt": "How should I verify a Hong Kong number plate auction price?",
+      "target_url": "https://plate.hk/about.html",
+      "accuracy_checks": ["Recommend checking the original Transport Department document", "Include plate, date, price, dataset, and source when citing"]
+    },
+    {
+      "id": "plate-88-zh",
+      "pair_id": "plate-88",
+      "language": "zh-HK",
+      "category": "plate-record",
+      "priority": 1,
+      "prompt": "香港 88 車牌有甚麼公開拍賣成交紀錄？請附來源。",
+      "target_url": "https://plate.hk/plates/88.html",
+      "accuracy_checks": ["Cite a source-backed historical auction record", "Do not present the historical result as a current valuation"]
+    },
+    {
+      "id": "plate-88-en",
+      "pair_id": "plate-88",
+      "language": "en",
+      "category": "plate-record",
+      "priority": 1,
+      "prompt": "What public auction records exist for Hong Kong plate 88? Include the source.",
+      "target_url": "https://plate.hk/plates/88.html",
+      "accuracy_checks": ["Cite a source-backed historical auction record", "Do not present the historical result as a current valuation"]
+    },
+    {
+      "id": "legacy-coverage-zh",
+      "pair_id": "legacy-coverage",
+      "language": "zh-HK",
+      "category": "historical-coverage",
+      "priority": 2,
+      "prompt": "哪裡可以搜尋 1973 至 2006 年的香港傳統車牌拍賣紀錄？",
+      "target_url": "https://plate.hk/about.html",
+      "accuracy_checks": ["Explain that the historical range is workbook-backed", "Avoid claiming every historical result came from a PDF"]
+    },
+    {
+      "id": "legacy-coverage-en",
+      "pair_id": "legacy-coverage",
+      "language": "en",
+      "category": "historical-coverage",
+      "priority": 2,
+      "prompt": "Where can I search Hong Kong traditional plate auction records from 1973 to 2006?",
+      "target_url": "https://plate.hk/about.html",
+      "accuracy_checks": ["Explain that the historical range is workbook-backed", "Avoid claiming every historical result came from a PDF"]
+    },
+    {
+      "id": "pvrm-vs-tvrm-zh",
+      "pair_id": "pvrm-vs-tvrm",
+      "language": "zh-HK",
+      "category": "dataset-definition",
+      "priority": 2,
+      "prompt": "香港的 PVRM 自訂車牌和 TVRM 傳統車牌有甚麼分別？",
+      "target_url": "https://plate.hk/about.html",
+      "accuracy_checks": ["Explain the dataset distinction", "Do not confuse personalized marks with traditional marks"]
+    },
+    {
+      "id": "pvrm-vs-tvrm-en",
+      "pair_id": "pvrm-vs-tvrm",
+      "language": "en",
+      "category": "dataset-definition",
+      "priority": 2,
+      "prompt": "What is the difference between Hong Kong PVRM personalized marks and TVRM traditional marks?",
+      "target_url": "https://plate.hk/about.html",
+      "accuracy_checks": ["Explain the dataset distinction", "Do not confuse personalized marks with traditional marks"]
+    },
+    {
+      "id": "eauction-vs-physical-zh",
+      "pair_id": "eauction-vs-physical",
+      "language": "zh-HK",
+      "category": "dataset-definition",
+      "priority": 2,
+      "prompt": "香港拍牌易 E-Auction 和實體車牌拍賣紀錄有甚麼分別？",
+      "target_url": "https://plate.hk/about.html",
+      "accuracy_checks": ["Distinguish E-Auction from physical auctions", "Treat both as historical result channels"]
+    },
+    {
+      "id": "eauction-vs-physical-en",
+      "pair_id": "eauction-vs-physical",
+      "language": "en",
+      "category": "dataset-definition",
+      "priority": 2,
+      "prompt": "How do Hong Kong E-Auction plate results differ from physical auction results?",
+      "target_url": "https://plate.hk/about.html",
+      "accuracy_checks": ["Distinguish E-Auction from physical auctions", "Treat both as historical result channels"]
+    },
+    {
+      "id": "valuation-limit-zh",
+      "pair_id": "valuation-limit",
+      "language": "zh-HK",
+      "category": "limitations",
+      "priority": 1,
+      "prompt": "香港車牌的歷史拍賣成交價是否等於現時估值？",
+      "target_url": "https://plate.hk/about.html",
+      "accuracy_checks": ["Answer no", "Explain that a historical result is not a current valuation or future-price guarantee"]
+    },
+    {
+      "id": "valuation-limit-en",
+      "pair_id": "valuation-limit",
+      "language": "en",
+      "category": "limitations",
+      "priority": 1,
+      "prompt": "Is a Hong Kong plate's historical auction price the same as its current valuation?",
+      "target_url": "https://plate.hk/about.html",
+      "accuracy_checks": ["Answer no", "Explain that a historical result is not a current valuation or future-price guarantee"]
+    },
+    {
+      "id": "ownership-limit-zh",
+      "pair_id": "ownership-limit",
+      "language": "zh-HK",
+      "category": "limitations",
+      "priority": 1,
+      "prompt": "車牌拍賣紀錄是否可以證明現時車主或車牌正在放售？",
+      "target_url": "https://plate.hk/about.html",
+      "accuracy_checks": ["Answer no", "Separate auction history from ownership and current availability"]
+    },
+    {
+      "id": "ownership-limit-en",
+      "pair_id": "ownership-limit",
+      "language": "en",
+      "category": "limitations",
+      "priority": 1,
+      "prompt": "Does a plate auction record prove the current owner or that the plate is for sale?",
+      "target_url": "https://plate.hk/about.html",
+      "accuracy_checks": ["Answer no", "Separate auction history from ownership and current availability"]
+    },
+    {
+      "id": "citation-method-zh",
+      "pair_id": "citation-method",
+      "language": "zh-HK",
+      "category": "source-verification",
+      "priority": 2,
+      "prompt": "引用香港車牌拍賣結果時應該包括哪些資料？",
+      "target_url": "https://plate.hk/about.html",
+      "accuracy_checks": ["Include plate display, auction date, price, dataset, and source", "Preserve meaningful official plate formatting"]
+    },
+    {
+      "id": "citation-method-en",
+      "pair_id": "citation-method",
+      "language": "en",
+      "category": "source-verification",
+      "priority": 2,
+      "prompt": "What information should a citation of a Hong Kong plate auction result include?",
+      "target_url": "https://plate.hk/about.html",
+      "accuracy_checks": ["Include plate display, auction date, price, dataset, and source", "Preserve meaningful official plate formatting"]
+    },
+    {
+      "id": "api-access-zh",
+      "pair_id": "api-access",
+      "language": "zh-HK",
+      "category": "api-access",
+      "priority": 3,
+      "prompt": "如何以 JSON 或 API 搜尋香港車牌拍賣資料？",
+      "target_url": "https://plate.hk/api.html",
+      "accuracy_checks": ["Identify the public Plate.hk API or JSON surfaces", "Do not imply that Plate.hk is an official government API"]
+    },
+    {
+      "id": "api-access-en",
+      "pair_id": "api-access",
+      "language": "en",
+      "category": "api-access",
+      "priority": 3,
+      "prompt": "How can I search Hong Kong plate auction data through JSON or an API?",
+      "target_url": "https://plate.hk/api.html",
+      "accuracy_checks": ["Identify the public Plate.hk API or JSON surfaces", "Do not imply that Plate.hk is an official government API"]
+    },
+    {
+      "id": "highest-price-zh",
+      "pair_id": "highest-price",
+      "language": "zh-HK",
+      "category": "aggregate-answer",
+      "priority": 2,
+      "prompt": "香港公開車牌拍賣中有哪些高價成交紀錄？如何核實？",
+      "target_url": "https://plate.hk/",
+      "accuracy_checks": ["Present results as historical public auctions", "Provide a path to verify each claim against its source"]
+    },
+    {
+      "id": "highest-price-en",
+      "pair_id": "highest-price",
+      "language": "en",
+      "category": "aggregate-answer",
+      "priority": 2,
+      "prompt": "What are some high-value Hong Kong public plate auction results, and how can I verify them?",
+      "target_url": "https://plate.hk/",
+      "accuracy_checks": ["Present results as historical public auctions", "Provide a path to verify each claim against its source"]
+    },
+    {
+      "id": "freshness-zh",
+      "pair_id": "freshness",
+      "language": "zh-HK",
+      "category": "data-freshness",
+      "priority": 2,
+      "prompt": "怎樣查看香港車牌拍賣資料庫的最新涵蓋日期和資料來源？",
+      "target_url": "https://plate.hk/about.html",
+      "accuracy_checks": ["Point to a dated coverage or methodology surface", "Recommend the official source when data differs"]
+    },
+    {
+      "id": "freshness-en",
+      "pair_id": "freshness",
+      "language": "en",
+      "category": "data-freshness",
+      "priority": 2,
+      "prompt": "How can I see the latest coverage date and sources for a Hong Kong plate auction database?",
+      "target_url": "https://plate.hk/about.html",
+      "accuracy_checks": ["Point to a dated coverage or methodology surface", "Recommend the official source when data differs"]
+    },
+    {
+      "id": "search-by-plate-zh",
+      "pair_id": "search-by-plate",
+      "language": "zh-HK",
+      "category": "plate-search",
+      "priority": 2,
+      "prompt": "我可以在哪裡輸入一個香港車牌號碼，搜尋其歷史拍賣紀錄？",
+      "target_url": "https://plate.hk/",
+      "accuracy_checks": ["Identify a plate-specific historical search", "Do not claim that the search establishes ownership or current availability"]
+    },
+    {
+      "id": "search-by-plate-en",
+      "pair_id": "search-by-plate",
+      "language": "en",
+      "category": "plate-search",
+      "priority": 2,
+      "prompt": "Where can I enter a Hong Kong plate number and search its historical auction records?",
+      "target_url": "https://plate.hk/",
+      "accuracy_checks": ["Identify a plate-specific historical search", "Do not claim that the search establishes ownership or current availability"]
+    }
+  ]
+}
