@@ -3,9 +3,17 @@
           pageTitle: "API 文檔 | Plate.hk",
           title: "API 文檔",
           back: "← 返回首頁",
-          updated: "最後更新：2026年3月20日",
+          updated: "最後更新：2026年8月17日",
           html: `
-            <p>本專案提供靜態 Open Data API，並以 Cloudflare Worker 提供搜尋與相機辨識端點。</p>
+            <p>Plate.hk 提供公開 JSON 車牌拍賣搜尋 API。這是獨立資料索引，不是香港政府或運輸署 API；如資料有差異，以運輸署原始文件為準。</p>
+            <h2>直接搜尋車牌</h2>
+            <div class="box">
+              <div><code>GET https://plate.hk/api/search?dataset=all&amp;q=88&amp;page=1&amp;page_size=20&amp;sort=amount_desc</code></div>
+            </div>
+            <p><code>dataset</code> 可用 <code>all</code>、<code>pvrm</code>、<code>tvrm_physical</code>、<code>tvrm_eauction</code> 或 <code>tvrm_legacy</code>；<code>q</code> 是車牌搜尋字串。回應包含 <code>total</code>、分頁資料及每筆拍賣紀錄。</p>
+            <p><code>curl -G 'https://plate.hk/api/search' --data-urlencode 'dataset=all' --data-urlencode 'q=88' --data-urlencode 'page_size=20'</code></p>
+
+            <h2>靜態資料入口</h2>
             <p><code>Base URL: https://plate.hk/api/v1</code></p>
             <div class="box">
               <div><code>GET https://plate.hk/api/v1/index.json</code></div>
@@ -43,9 +51,9 @@
 
             <h2>建議抓取方式</h2>
             <ol>
-              <li>先抓 <code>issues.manifest.json</code>，取得期數與 shard 路徑</li>
+              <li>一般車牌查詢先用 <code>/api/search</code></li>
+              <li>批量同步先抓 <code>issues.manifest.json</code>，取得期數與 shard 路徑</li>
               <li>需要哪一期就抓哪一期的 <code>issues/{date}.json</code></li>
-              <li>需要搜尋時自行建立索引（以 normalized plate 為 key）</li>
             </ol>
 
             <h2>OpenAPI</h2>
@@ -57,9 +65,17 @@
           pageTitle: "API Docs | Plate.hk",
           title: "API Docs",
           back: "← Back to Home",
-          updated: "Last updated: 20 Mar 2026",
+          updated: "Last updated: 17 Aug 2026",
           html: `
-            <p>This project ships a static Open Data API, with Cloudflare Worker endpoints for search and camera recognition.</p>
+            <p>Plate.hk provides a public JSON search API for Hong Kong plate-auction records. It is an independent data index, not a Hong Kong Government or Transport Department API; the original Transport Department document prevails if data differs.</p>
+            <h2>Search by plate</h2>
+            <div class="box">
+              <div><code>GET https://plate.hk/api/search?dataset=all&amp;q=88&amp;page=1&amp;page_size=20&amp;sort=amount_desc</code></div>
+            </div>
+            <p><code>dataset</code> accepts <code>all</code>, <code>pvrm</code>, <code>tvrm_physical</code>, <code>tvrm_eauction</code>, or <code>tvrm_legacy</code>; <code>q</code> is the plate query. The response includes <code>total</code>, paging fields, and auction-result rows.</p>
+            <p><code>curl -G 'https://plate.hk/api/search' --data-urlencode 'dataset=all' --data-urlencode 'q=88' --data-urlencode 'page_size=20'</code></p>
+
+            <h2>Static data entrypoint</h2>
             <p><code>Base URL: https://plate.hk/api/v1</code></p>
             <div class="box">
               <div><code>GET https://plate.hk/api/v1/index.json</code></div>
@@ -97,9 +113,9 @@
 
             <h2>Suggested Fetch Flow</h2>
             <ol>
-              <li>Fetch <code>issues.manifest.json</code> to get all issue shards</li>
+              <li>Use <code>/api/search</code> for normal plate lookups</li>
+              <li>For bulk sync, fetch <code>issues.manifest.json</code> to get all issue shards</li>
               <li>Fetch only the specific <code>issues/{date}.json</code> you need</li>
-              <li>Build your own index for search (normalized plate as key)</li>
             </ol>
 
             <h2>OpenAPI</h2>

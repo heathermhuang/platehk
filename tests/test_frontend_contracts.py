@@ -371,6 +371,8 @@ class FrontendContractsTests(unittest.TestCase):
         self.assertIn("/.well-known/mcp-server-card", llms)
         self.assertIn("/mcp", llms)
         self.assertIn("/agent.md", llms)
+        self.assertIn("Public server-side search API", llms)
+        self.assertIn("/api/search?dataset=all&q=88", llms)
         self.assertIn("Plate.hk Agent Overview", agent_md)
         self.assertIn("name: platehk-public-data", skill_md)
         self.assertIn("text/markdown", worker)
@@ -399,6 +401,8 @@ class FrontendContractsTests(unittest.TestCase):
         self.assertIn('"skills"', agent_skills)
         self.assertIn('"skills"', legacy_skills)
         self.assertIn("/api/oauth/token", openapi)
+        self.assertIn("/api/search:", openapi)
+        self.assertIn("url: https://plate.hk", openapi)
         self.assertIn("vision:ocr", openapi)
         self.assertIn("OAUTH_CLIENTS_JSON", dev_vars)
         self.assertIn("OAUTH_JWT_PRIVATE_JWK", dev_vars)
@@ -425,6 +429,7 @@ class FrontendContractsTests(unittest.TestCase):
         self.assertIn("官方 PDF / Official source", plate_html)
         self.assertIn("直接答案 / Direct Answers", plate_html)
         self.assertIn("Is this a current valuation?", plate_html)
+        self.assertIn("What public auction records exist for Hong Kong plate 88?", plate_html)
         self.assertIn('rel="alternate" type="application/json"', plate_html)
         self.assertIn('<table class="responsive-table">', plate_html)
         self.assertIn('<td data-label="日期 / Date">', plate_html)
@@ -453,7 +458,7 @@ class FrontendContractsTests(unittest.TestCase):
             ).group(1)
         )
         plate_types = {item["@type"] for item in plate_ld["@graph"]}
-        self.assertEqual(plate_types, {"Organization", "WebPage", "Dataset", "BreadcrumbList"})
+        self.assertEqual(plate_types, {"Organization", "WebPage", "Dataset", "FAQPage", "BreadcrumbList"})
         plate_dataset = next(item for item in plate_ld["@graph"] if item["@type"] == "Dataset")
         self.assertGreaterEqual(len(plate_dataset["description"]), 50)
         self.assertEqual(plate_dataset["provider"], {"@id": "https://plate.hk/#organization"})
@@ -465,7 +470,10 @@ class FrontendContractsTests(unittest.TestCase):
         self.assertIn("Where can I check official Hong Kong vehicle registration mark auction results?", about_html)
         self.assertIn("Plate.hk 不是政府網站", about_html)
         self.assertIn("independent, non-government", about_html)
-        self.assertIn("歷史成交價等於車牌現時價值嗎？", about_html)
+        self.assertIn("歷史成交價等於現時估值、車主資料或放售狀態嗎？", about_html)
+        self.assertIn("PVRM、TVRM 實體拍賣及拍牌易有甚麼分別？", about_html)
+        self.assertIn("不是現時估值、車主或持有人紀錄、即時放售證明", about_html)
+        self.assertIn("GET /api/search?dataset=all&amp;q=88", about_html)
         self.assertIn("API dataset index", about_html)
         self.assertIn('<table class="responsive-table">', about_html)
         self.assertIn('data-label="資料集 / Dataset"', about_html)
@@ -480,7 +488,7 @@ class FrontendContractsTests(unittest.TestCase):
             ).group(1)
         )
         about_types = {item["@type"] for item in about_ld["@graph"]}
-        self.assertEqual(about_types, {"Organization", "WebPage", "Dataset", "BreadcrumbList"})
+        self.assertEqual(about_types, {"Organization", "WebPage", "Dataset", "FAQPage", "BreadcrumbList"})
         about_dataset = next(item for item in about_ld["@graph"] if item["@type"] == "Dataset")
         self.assertEqual(about_dataset["provider"], {"@id": "https://plate.hk/#organization"})
 
@@ -524,6 +532,7 @@ class FrontendContractsTests(unittest.TestCase):
             self.assertIn(f"<loc>{canonical}</loc>", sitemap, path.name)
 
             self.assertIn("直接答案 / Direct Answers", page_html, path.name)
+            self.assertIn("What public auction records exist for Hong Kong plate", page_html, path.name)
             self.assertIn("Is this a current valuation?", page_html, path.name)
             self.assertNotIn("If users search", page_html, path.name)
             self.assertNotIn("built to answer direct searches", page_html, path.name)
@@ -543,7 +552,7 @@ class FrontendContractsTests(unittest.TestCase):
             graph = json.loads(ld_match.group(1))["@graph"]
             self.assertEqual(
                 {item["@type"] for item in graph},
-                {"Organization", "WebPage", "Dataset", "BreadcrumbList"},
+                {"Organization", "WebPage", "Dataset", "FAQPage", "BreadcrumbList"},
                 path.name,
             )
             dataset = next(item for item in graph if item["@type"] == "Dataset")

@@ -11,9 +11,51 @@ import {
 } from "./mcp.mjs";
 
 const PRIMARY_HOSTS = new Set(["plate.hk", "www.plate.hk"]);
+const STATIC_HTML_ROUTES = new Set([
+  "/about",
+  "/api",
+  "/audit",
+  "/camera",
+  "/changelog",
+  "/landing",
+  "/privacy",
+  "/terms",
+]);
 
 function isPrimaryHost(hostname) {
   return PRIMARY_HOSTS.has(String(hostname || "").toLowerCase());
+}
+
+function canonicalPublicPath(pathname) {
+  if (pathname === "/index" || pathname === "/index.html") return "/";
+  if (pathname === "/plates" || pathname === "/plates/" || pathname === "/plates/index") {
+    return "/plates/index.html";
+  }
+  if (STATIC_HTML_ROUTES.has(pathname)) return `${pathname}.html`;
+  if (/^\/plates\/[A-Za-z0-9]+$/.test(pathname)) return `${pathname}.html`;
+  return null;
+}
+
+function redirectToCanonicalHtml(request, url) {
+  if (!isPrimaryHost(url.hostname) || !["GET", "HEAD"].includes(request.method)) return null;
+  const canonicalPath = canonicalPublicPath(url.pathname);
+  if (!canonicalPath) return null;
+  const redirectUrl = new URL(url);
+  redirectUrl.pathname = canonicalPath;
+  return Response.redirect(redirectUrl.toString(), 301);
+}
+
+function requestForHtmlAsset(request, url) {
+  if (!isPrimaryHost(url.hostname)
+      || !["GET", "HEAD"].includes(request.method)
+      || !url.pathname.endsWith(".html")) {
+    return request;
+  }
+  const assetUrl = new URL(url);
+  assetUrl.pathname = url.pathname.endsWith("/index.html")
+    ? url.pathname.slice(0, -"index.html".length)
+    : url.pathname.slice(0, -".html".length);
+  return new Request(assetUrl.toString(), request);
 }
 
 function securityHeadersForAsset(request, response, { noindex = false } = {}) {
@@ -253,10 +295,13 @@ async function serveAsset(request, env) {
   if (!env.ASSETS || typeof env.ASSETS.fetch !== "function") {
     return new Response("Static assets binding not configured", { status: 500 });
   }
-  const response = await env.ASSETS.fetch(request);
+  const response = await env.ASSETS.fetch(requestForHtmlAsset(request, url));
   if (!response.ok) return response;
   const contentType = String(response.headers.get("content-type") || "").toLowerCase();
-  const noindex = genericNoindex && contentType.includes("text/html");
+  const isPublicDataJson = primaryHost
+    && url.pathname.startsWith("/data/")
+    && contentType.includes("application/json");
+  const noindex = (genericNoindex && contentType.includes("text/html")) || isPublicDataJson;
   if (!primaryHost && contentType.includes("text/html")) {
     const rewritten = (await response.text()).replaceAll("https://plate.hk", url.origin);
     const headers = securityHeadersForAsset(request, response, { noindex });
@@ -289,6 +334,8 @@ export default {
       redirectUrl.hostname = "plate.hk";
       return Response.redirect(redirectUrl.toString(), 301);
     }
+    const canonicalHtmlRedirect = redirectToCanonicalHtml(request, url);
+    if (canonicalHtmlRedirect) return canonicalHtmlRedirect;
     if (url.pathname.startsWith("/api/")) {
       const response = await handleApiRequest(request, env, ctx);
       return isPrimaryHost(url.hostname) ? withDiscoveryLinkHeaders(response, url) : response;

@@ -3,11 +3,12 @@ info:
   title: Hong Kong VRM Auction Data API
   version: v1
   description: |
-    Static Open Data API for Hong Kong vehicle registration mark auction results.
+    Public JSON API and static data endpoints for Hong Kong vehicle registration mark auction results.
     Auction data sources are Transport Department published PDF handouts and a bundled legacy TVRM workbook.
+    Plate.hk is an independent, non-government index. Verify material results against the original source.
     The exact-match market-signal endpoint may also report a recent, unverified third-party 28car listing signal.
 servers:
-  - url: https://<your-domain>
+  - url: https://plate.hk
 paths:
   /api/oauth/token:
     post:
@@ -120,6 +121,96 @@ paths:
       responses:
         "200":
           description: OK
+  /api/search:
+    get:
+      summary: Search public auction records by vehicle registration mark
+      description: |
+        Searches the independent Plate.hk index. This is not an official Hong Kong Government API.
+        Verify material results against the original Transport Department source URL returned with the row.
+      parameters:
+        - in: query
+          name: dataset
+          required: true
+          schema:
+            type: string
+            enum: [all, pvrm, tvrm_physical, tvrm_eauction, tvrm_legacy]
+        - in: query
+          name: q
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 16
+          example: "88"
+        - in: query
+          name: issue
+          required: false
+          schema:
+            type: string
+          description: Optional dataset-specific issue or auction-date identifier.
+        - in: query
+          name: sort
+          required: false
+          schema:
+            type: string
+            enum: [amount_desc, amount_asc, date_desc, plate_asc]
+            default: amount_desc
+        - in: query
+          name: mode
+          required: false
+          schema:
+            type: string
+            enum: [exact_prefix]
+        - in: query
+          name: page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - in: query
+          name: page_size
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 200
+      responses:
+        "200":
+          description: Matching public auction records and pagination metadata
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [dataset, q, page, page_size, total, rows]
+                properties:
+                  dataset:
+                    type: string
+                  q:
+                    type: string
+                  issue:
+                    type: string
+                    nullable: true
+                  mode:
+                    type: string
+                    nullable: true
+                  sort:
+                    type: string
+                  page:
+                    type: integer
+                  page_size:
+                    type: integer
+                  total:
+                    type: integer
+                  rows:
+                    type: array
+                    items:
+                      type: object
+        "400":
+          description: Invalid dataset, query, filter, sort, or paging value
+        "429":
+          description: Rate limited
   /api/market_signal:
     get:
       summary: Check recent external sale signals for exact plates
