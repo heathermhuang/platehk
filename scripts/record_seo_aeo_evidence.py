@@ -35,20 +35,25 @@ def _private_relative_path(input_dir: Path, value: str, *, field: str, must_exis
 
 
 def _atomic_write_csv(path: Path, rows: list[dict[str, str]]) -> None:
-    with tempfile.NamedTemporaryFile(
-        "w",
-        encoding="utf-8",
-        newline="",
-        dir=path.parent,
-        prefix=f".{path.name}.",
-        suffix=".tmp",
-        delete=False,
-    ) as handle:
-        temp_path = Path(handle.name)
-        writer = csv.DictWriter(handle, fieldnames=baseline.AUDIT_COLUMNS)
-        writer.writeheader()
-        writer.writerows(rows)
-    temp_path.replace(path)
+    temp_path: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            "w",
+            encoding="utf-8",
+            newline="",
+            dir=path.parent,
+            prefix=f".{path.name}.",
+            suffix=".tmp",
+            delete=False,
+        ) as handle:
+            temp_path = Path(handle.name)
+            writer = csv.DictWriter(handle, fieldnames=baseline.AUDIT_COLUMNS)
+            writer.writeheader()
+            writer.writerows(rows)
+        temp_path.replace(path)
+    finally:
+        if temp_path is not None:
+            temp_path.unlink(missing_ok=True)
 
 
 def record_evidence(
@@ -118,6 +123,8 @@ def record_evidence(
         _private_relative_path(input_dir, value, field="screenshot_path", must_exist=True).as_posix()
         for value in (screenshot_paths or [])
     ]
+    if not conversation_url and not normalized_screenshots:
+        raise baseline.BaselineError("Evidence needs a conversation_url or screenshot_path")
     normalized_cited_urls: list[str] = []
     for value in cited_urls or []:
         parsed_url = urlparse(value)
@@ -152,20 +159,23 @@ def record_evidence(
     evidence_bytes = (json.dumps(evidence, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
     evidence_sha256 = hashlib.sha256(evidence_bytes).hexdigest()
     evidence_path.parent.mkdir(parents=True, exist_ok=True)
-    evidence_path.write_bytes(evidence_bytes)
-
-    row.update(
-        {
-            "audit_date": parsed_at.date().isoformat(),
-            "run_id": run_id,
-            "observed_prompt": str(prompt["prompt"]),
-            "evidence_path": evidence_relative.as_posix(),
-            "evidence_sha256": evidence_sha256,
-            "model_or_surface": model_or_surface.strip(),
-            "web_search_enabled": "yes" if web_search_enabled else "no",
-        }
-    )
-    _atomic_write_csv(audit_path, rows)
+    try:
+        evidence_path.write_bytes(evidence_bytes)
+        row.update(
+            {
+                "audit_date": parsed_at.date().isoformat(),
+                "run_id": run_id,
+                "observed_prompt": str(prompt["prompt"]),
+                "evidence_path": evidence_relative.as_posix(),
+                "evidence_sha256": evidence_sha256,
+                "model_or_surface": model_or_surface.strip(),
+                "web_search_enabled": "yes" if web_search_enabled else "no",
+            }
+        )
+        _atomic_write_csv(audit_path, rows)
+    except Exception:
+        evidence_path.unlink(missing_ok=True)
+        raise
     return {
         "run_id": run_id,
         "evidence_path": evidence_relative.as_posix(),

@@ -7,6 +7,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -94,6 +95,7 @@ class SeoAeoEvidenceRecorderTests(unittest.TestCase):
                 "model_or_surface": "ChatGPT test surface",
                 "web_search_enabled": True,
                 "captured_at": "2026-08-17T12:30:00+08:00",
+                "conversation_url": "https://chatgpt.com/c/no-overwrite-test",
                 "run_id": "no-overwrite-test",
             }
             recorder.record_evidence(**kwargs)
@@ -119,6 +121,47 @@ class SeoAeoEvidenceRecorderTests(unittest.TestCase):
                     screenshot_paths=["../outside.png"],
                     run_id="path-boundary-test",
                 )
+
+    def test_requires_a_conversation_url_or_screenshot(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            input_dir = Path(tmp_dir) / "seo-aeo"
+            baseline.initialise_inputs(input_dir, self.config)
+            prompt = self.config["prompts"][0]
+            with self.assertRaisesRegex(baseline.BaselineError, "conversation_url or screenshot_path"):
+                recorder.record_evidence(
+                    input_dir=input_dir,
+                    config=self.config,
+                    platform="chatgpt",
+                    prompt_id=prompt["id"],
+                    observed_prompt=prompt["prompt"],
+                    verbatim_answer="Answer",
+                    model_or_surface="ChatGPT test surface",
+                    web_search_enabled=True,
+                    captured_at="2026-08-17T12:30:00+08:00",
+                    run_id="missing-locator-test",
+                )
+
+    def test_removes_new_evidence_if_csv_binding_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            input_dir = Path(tmp_dir) / "seo-aeo"
+            baseline.initialise_inputs(input_dir, self.config)
+            prompt = self.config["prompts"][0]
+            with mock.patch.object(recorder, "_atomic_write_csv", side_effect=OSError("write failed")):
+                with self.assertRaisesRegex(OSError, "write failed"):
+                    recorder.record_evidence(
+                        input_dir=input_dir,
+                        config=self.config,
+                        platform="chatgpt",
+                        prompt_id=prompt["id"],
+                        observed_prompt=prompt["prompt"],
+                        verbatim_answer="Answer",
+                        model_or_surface="ChatGPT test surface",
+                        web_search_enabled=True,
+                        captured_at="2026-08-17T12:30:00+08:00",
+                        conversation_url="https://chatgpt.com/c/rollback-test",
+                        run_id="rollback-test",
+                    )
+            self.assertFalse(any((input_dir / "evidence").rglob("*.json")))
 
 
 if __name__ == "__main__":

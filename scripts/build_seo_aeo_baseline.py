@@ -12,6 +12,7 @@ from collections import Counter, defaultdict
 from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -202,6 +203,24 @@ def _load_audit_evidence(
         raise BaselineError(f"{field_prefix} evidence cited_urls must be a string list")
     if not isinstance(screenshot_paths, list) or not all(isinstance(item, str) for item in screenshot_paths):
         raise BaselineError(f"{field_prefix} evidence screenshot_paths must be a string list")
+    for cited_url in cited_urls:
+        parsed_url = urlparse(cited_url)
+        if parsed_url.scheme not in {"http", "https"} or not parsed_url.netloc:
+            raise BaselineError(f"{field_prefix} evidence contains an invalid cited URL")
+    conversation_url = str(evidence.get("conversation_url") or "").strip()
+    if conversation_url:
+        parsed_url = urlparse(conversation_url)
+        if parsed_url.scheme not in {"http", "https"} or not parsed_url.netloc:
+            raise BaselineError(f"{field_prefix} evidence conversation_url must be HTTP(S)")
+    for screenshot_value in screenshot_paths:
+        screenshot_relative = Path(screenshot_value)
+        if screenshot_relative.is_absolute() or ".." in screenshot_relative.parts:
+            raise BaselineError(f"{field_prefix} evidence screenshot path must stay inside the private input directory")
+        screenshot_path = (input_dir / screenshot_relative).resolve()
+        if not screenshot_path.is_relative_to(input_dir) or not screenshot_path.is_file():
+            raise BaselineError(f"{field_prefix} evidence screenshot path is missing or outside the private input directory")
+    if not conversation_url and not screenshot_paths:
+        raise BaselineError(f"{field_prefix} evidence needs a conversation_url or screenshot")
     return {
         "run_id": run_id,
         "observed_prompt": observed_prompt,
@@ -403,9 +422,10 @@ def load_ai_audit(path: Path, config: dict[str, Any]) -> dict[str, Any]:
     prompts = {item["id"]: item for item in config["prompts"]}
     expected = {(platform, prompt_id) for platform in config["platforms"] for prompt_id in prompts}
     if not path.exists():
-        return {"present": False, "rows": [], "missing": sorted(expected), "partial": []}
+        return {"present": False, "rows": [], "evidence_rows": [], "missing": sorted(expected), "partial": []}
 
     completed: list[dict[str, Any]] = []
+    validated_evidence: list[dict[str, Any]] = []
     partial: list[tuple[str, str]] = []
     seen: set[tuple[str, str]] = set()
     seen_run_ids: set[str] = set()
@@ -456,6 +476,40 @@ def load_ai_audit(path: Path, config: dict[str, Any]) -> dict[str, Any]:
                 raise BaselineError(
                     f"AI audit line {line_number} needs model_or_surface and web_search_enabled when scored"
                 )
+            evidence_markers = (
+                str(raw.get("run_id") or "").strip(),
+                str(raw.get("observed_prompt") or "").strip(),
+                str(raw.get("evidence_path") or "").strip(),
+                str(raw.get("evidence_sha256") or "").strip(),
+                model_or_surface,
+                str(raw.get("web_search_enabled") or "").strip(),
+            )
+            has_evidence_marker = any(evidence_markers)
+            evidence: dict[str, Any] | None = None
+            if has_evidence_marker or has_all_scores:
+                if not model_or_surface or web_search_enabled is None:
+                    raise BaselineError(
+                        f"AI audit line {line_number} needs model_or_surface and web_search_enabled with evidence"
+                    )
+                declared_run_id = str(raw.get("run_id") or "").strip()
+                declared_evidence_path = Path(str(raw.get("evidence_path") or "").strip()).as_posix()
+                if declared_run_id and declared_run_id in seen_run_ids:
+                    raise BaselineError(f"AI audit reuses run_id {declared_run_id!r}")
+                if declared_evidence_path not in {"", "."} and declared_evidence_path in seen_evidence_paths:
+                    raise BaselineError(f"AI audit reuses evidence_path {declared_evidence_path!r}")
+                evidence = _load_audit_evidence(
+                    path,
+                    raw,
+                    line_number=line_number,
+                    platform=platform,
+                    prompt_id=prompt_id,
+                    prompt=prompt,
+                    model_or_surface=model_or_surface,
+                    web_search_enabled=bool(web_search_enabled),
+                )
+                seen_run_ids.add(evidence["run_id"])
+                seen_evidence_paths.add(evidence["evidence_path"])
+                validated_evidence.append({"platform": platform, "prompt_id": prompt_id, **evidence})
             if not has_all_scores:
                 partial.append(key)
                 continue
@@ -463,24 +517,8 @@ def load_ai_audit(path: Path, config: dict[str, Any]) -> dict[str, Any]:
                 raise BaselineError(f"AI audit line {line_number} needs an answer_summary when scored")
             if booleans["platehk_url_cited"] and not booleans["brand_cited"]:
                 raise BaselineError(f"AI audit line {line_number} cannot cite a Plate.hk URL while brand_cited is no")
-            declared_run_id = str(raw.get("run_id") or "").strip()
-            declared_evidence_path = Path(str(raw.get("evidence_path") or "").strip()).as_posix()
-            if declared_run_id in seen_run_ids:
-                raise BaselineError(f"AI audit reuses run_id {declared_run_id!r}")
-            if declared_evidence_path in seen_evidence_paths:
-                raise BaselineError(f"AI audit reuses evidence_path {declared_evidence_path!r}")
-            evidence = _load_audit_evidence(
-                path,
-                raw,
-                line_number=line_number,
-                platform=platform,
-                prompt_id=prompt_id,
-                prompt=prompt,
-                model_or_surface=model_or_surface,
-                web_search_enabled=bool(web_search_enabled),
-            )
-            seen_run_ids.add(evidence["run_id"])
-            seen_evidence_paths.add(evidence["evidence_path"])
+            if evidence is None:
+                raise BaselineError(f"AI audit line {line_number} needs retrievable evidence when scored")
             completed.append(
                 {
                     "audit_date": audit_date,
@@ -505,6 +543,7 @@ def load_ai_audit(path: Path, config: dict[str, Any]) -> dict[str, Any]:
     return {
         "present": True,
         "rows": completed,
+        "evidence_rows": validated_evidence,
         "missing": sorted(expected - completed_keys),
         "partial": sorted(partial),
     }
@@ -750,7 +789,7 @@ def summarise_ai(audit: dict[str, Any], config: dict[str, Any]) -> dict[str, Any
     return {
         "expected_rows": len(config["prompts"]) * len(config["platforms"]),
         "tested_rows": total,
-        "validated_evidence_rows": total,
+        "validated_evidence_rows": len(audit.get("evidence_rows", [])),
         "missing_rows": len(audit["missing"]),
         "citation_rate_percent": _rate(brand_total, total),
         "platforms_with_citations": sum(bool(item["brand_cited"]) for item in by_platform.values()),
