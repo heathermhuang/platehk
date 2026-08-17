@@ -414,6 +414,15 @@ tbody tr:hover td {
     line-height: 1.25;
   }
 
+  .table-wrap.mode-dataset #resultsTable th.col-category,
+  .table-wrap.mode-dataset #resultsTable td.col-category,
+  .table-wrap.mode-issue #resultsTable th.col-date,
+  .table-wrap.mode-issue #resultsTable td.col-date,
+  .table-wrap.mode-issue #resultsTable th.col-category,
+  .table-wrap.mode-issue #resultsTable td.col-category {
+    display: none;
+  }
+
   #resultsTable th {
     min-height: 40px;
   }
