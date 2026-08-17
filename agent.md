@@ -42,9 +42,9 @@ Plate.hk is the independent, non-government search layer across PVRM, TVRM physi
 
 ## Datasets
 
-- `pvrm`: personalized vehicle registration marks
-- `tvrm_physical`: traditional live auction records
-- `tvrm_eauction`: E-Auction records
+- `pvrm`: approved personalized combinations sold at physical auctions
+- `tvrm_physical`: HK/XX-prefix and special traditional-mark physical-auction results
+- `tvrm_eauction`: ordinary traditional-mark E-Auction results
 - `tvrm_legacy`: historical workbook-backed year-range records
 - `all`: aggregate read view across the public datasets
 

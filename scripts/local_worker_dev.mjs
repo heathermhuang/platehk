@@ -43,12 +43,21 @@ function parseArgs(argv) {
 
 function toAssetPath(root, pathname) {
   const decoded = decodeURIComponent(pathname || "/");
-  const route = decoded === "/" ? "/index.html" : decoded;
-  const withoutLeadingSlash = route.replace(/^\/+/, "");
-  const candidate = resolve(root, normalize(withoutLeadingSlash));
   const rootWithSep = root.endsWith(sep) ? root : `${root}${sep}`;
-  if (candidate !== root && !candidate.startsWith(rootWithSep)) return null;
-  return candidate;
+  const routes = decoded === "/"
+    ? ["/index.html"]
+    : decoded.endsWith("/")
+      ? [`${decoded}index.html`]
+      : extname(decoded)
+        ? [decoded]
+        : [`${decoded}.html`];
+  for (const route of routes) {
+    const withoutLeadingSlash = route.replace(/^\/+/, "");
+    const candidate = resolve(root, normalize(withoutLeadingSlash));
+    if (candidate !== root && !candidate.startsWith(rootWithSep)) return null;
+    if (existsSync(candidate) && statSync(candidate).isFile()) return candidate;
+  }
+  return null;
 }
 
 function createAssetBinding(root) {

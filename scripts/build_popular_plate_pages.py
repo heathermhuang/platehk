@@ -29,6 +29,9 @@ TD_HISTORY_URL = (
     "https://www.td.gov.hk/en/about_us/history_of_transport_department/"
     "licensing_services/auction_of_vehicle_registration_marks__/index.html"
 )
+TD_PVRM_URL = "https://www.td.gov.hk/en/public_services/vehicle_registration_mark/pvrm_auction/index.html"
+TD_TVRM_APPLICATION_URL = "https://www.td.gov.hk/en/public_services/vehicle_registration_mark/tvrm_application/index.html"
+TD_EAUCTION_URL = "https://www.td.gov.hk/en/public_services/vehicle_registration_mark/tvrm_auction/"
 
 DATASETS = {
     "pvrm": {
@@ -360,6 +363,10 @@ def answer_summary_html(entry: dict) -> str:
     top_source = source_link_html(top)
     return f"""
               <div class="answer-item">
+                <h3>{plate} 有哪些香港公開拍賣紀錄？ / What public auction records exist for Hong Kong plate {plate}?</h3>
+                <p>Plate.hk 目前收錄 <strong>{entry['count']}</strong> 筆 {plate} 歷史公開拍賣紀錄；最高一筆是 <strong>{top_price}</strong>，日期為 <strong>{top_date}</strong>。這是獨立搜尋索引，不是政府網站；請用表內的運輸署來源核對。 {top_source}</p>
+              </div>
+              <div class="answer-item">
                 <h3>{plate} 車牌最高成交價是多少？ / What is the highest recorded auction price?</h3>
                 <p>Plate.hk 收錄的最高公開拍賣成交紀錄是 <strong>{top_price}</strong>，日期為 <strong>{top_date}</strong>。 {top_source}</p>
               </div>
@@ -491,6 +498,40 @@ def render_page(entries_by_norm: dict[str, dict], entry: dict, related: list[dic
                 "mainEntity": {"@id": dataset_id},
             },
             dataset_schema,
+            {
+                "@type": "FAQPage",
+                "@id": f"{canonical}#faq",
+                "mainEntity": [
+                    {
+                        "@type": "Question",
+                        "name": f"What public auction records exist for Hong Kong plate {plate}?",
+                        "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": (
+                                f"Plate.hk indexes {entry['count']} historical public-auction record(s) for {plate}. "
+                                f"The highest indexed result is {highest_price} on {highest_date}. "
+                                "Verify each material claim against the linked Hong Kong Transport Department source."
+                            ),
+                        },
+                    },
+                    {
+                        "@type": "Question",
+                        "name": f"Is the historical auction price for {plate} a current valuation?",
+                        "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": "No. A historical public-auction result is not a current valuation, owner record, sale listing, or future-price guarantee.",
+                        },
+                    },
+                    {
+                        "@type": "Question",
+                        "name": f"How can the auction records for {plate} be verified?",
+                        "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": "Match the plate display, auction date, price, dataset, and source link against the original Hong Kong Transport Department document.",
+                        },
+                    },
+                ],
+            },
             {
                 "@type": "BreadcrumbList",
                 "@id": f"{canonical}#breadcrumb",
@@ -793,7 +834,7 @@ def render_about() -> str:
         "spatialCoverage": {"@type": "Place", "name": "Hong Kong"},
         "variableMeasured": ["auction date", "vehicle registration mark", "sale price in HKD", "auction type", "source document"],
         "measurementTechnique": "Source-document extraction, normalized search indexing, cross-dataset overlap checks, and automated integrity auditing.",
-        "isBasedOn": [TD_URL, TD_HISTORY_URL],
+        "isBasedOn": [TD_URL, TD_HISTORY_URL, TD_PVRM_URL, TD_TVRM_APPLICATION_URL, TD_EAUCTION_URL],
         "subjectOf": [
             f"{SITE_URL}/audit.html",
             f"{SITE_URL}/api.html",
@@ -803,6 +844,44 @@ def render_about() -> str:
     }
     if first_date and latest_date:
         dataset_schema["temporalCoverage"] = f"{first_date}/{latest_date}"
+    faq_schema = {
+        "@type": "FAQPage",
+        "@id": f"{canonical}#faq",
+        "mainEntity": [
+            {
+                "@type": "Question",
+                "name": "Where can I check official Hong Kong vehicle registration mark auction results?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Use the Hong Kong Transport Department vehicle registration mark service and auction history as the authority. Plate.hk is an independent search index that links to official sources where available.",
+                },
+            },
+            {
+                "@type": "Question",
+                "name": "What is the difference between PVRM, TVRM physical auctions, and E-Auction?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "PVRMs are approved personalized combinations sold at physical auctions. Ordinary traditional marks other than HK or XX prefixes use E-Auction; HK or XX prefixes and special traditional marks use physical auctions.",
+                },
+            },
+            {
+                "@type": "Question",
+                "name": "Does an auction record prove the current owner or that a plate is for sale?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "No. It proves only a historical public-auction result. It does not prove current holdership, vehicle assignment, transferability, or sale availability.",
+                },
+            },
+            {
+                "@type": "Question",
+                "name": "How can I search Hong Kong plate auction data through JSON or an API?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Use the public Plate.hk JSON search endpoint at /api/search or the static dataset index at /api/v1/index.json. Plate.hk is not an official government API.",
+                },
+            },
+        ],
+    }
     ld_json = {
         "@context": "https://schema.org",
         "@graph": [
@@ -826,6 +905,7 @@ def render_about() -> str:
                 "mainEntity": {"@id": f"{canonical}#dataset"},
             },
             dataset_schema,
+            faq_schema,
             {
                 "@type": "BreadcrumbList",
                 "@id": f"{canonical}#breadcrumb",
@@ -931,8 +1011,14 @@ def render_about() -> str:
             <p lang="en">For the authoritative record, use the <a href="{TD_URL}" target="_blank" rel="noopener noreferrer">Hong Kong Transport Department vehicle registration mark service</a> and its <a href="{TD_HISTORY_URL}" target="_blank" rel="noopener noreferrer">auction history</a>. Plate.hk is an independent, non-government <a href="./index.html">search index</a> across PVRM, TVRM physical auctions, E-Auction, and official workbook-backed history; each result links to the official source when available.</p>
             <h3>Plate.hk 的資料來自哪裡？</h3>
             <p>主要來自香港運輸署發布的 PVRM、TVRM 實體拍賣及拍牌易結果 PDF；1973-2006 歷史區段來自官方工作簿匯出。每個車牌頁會在可用時直接連回相應來源。</p>
-            <h3>歷史成交價等於車牌現時價值嗎？</h3>
-            <p>不等於。成交價只描述某次公開拍賣的歷史結果，不是估值、即時放售價、所有權證明或未來成交保證。</p>
+            <h3>PVRM、TVRM 實體拍賣及拍牌易有甚麼分別？ / What is the difference between PVRM, TVRM physical auctions, and E-Auction?</h3>
+            <p><a href="{TD_PVRM_URL}" target="_blank" rel="noopener noreferrer">PVRM</a> 是獲運輸署批准、最多八個英文字母（不包括 I、O、Q）及／或數字的自訂組合，於實體場地拍賣。一般傳統車牌（不包括 HK／XX 字首）自 2025 年起使用<a href="{TD_EAUCTION_URL}" target="_blank" rel="noopener noreferrer">「拍牌易」</a>；HK／XX 字首及特殊傳統車牌繼續實體拍賣。按<a href="{TD_TVRM_APPLICATION_URL}" target="_blank" rel="noopener noreferrer">傳統車牌規則</a>，普通傳統車牌可隨所屬車輛轉讓，特殊傳統車牌不可轉讓；PVRM 所屬車輛過戶時須一併向運輸署提交分配證明書。以運輸署現行規則為準。</p>
+            <p lang="en"><a href="{TD_PVRM_URL}" target="_blank" rel="noopener noreferrer">PVRMs</a> are approved custom combinations of up to eight letters (excluding I, O and Q) and/or numerals, sold at physical auctions. Ordinary traditional marks other than HK/XX prefixes use <a href="{TD_EAUCTION_URL}" target="_blank" rel="noopener noreferrer">E-Auction</a>; HK/XX-prefix and special traditional marks use physical auctions. Under the <a href="{TD_TVRM_APPLICATION_URL}" target="_blank" rel="noopener noreferrer">traditional-mark rules</a>, ordinary traditional marks may transfer with the vehicle and special traditional marks are non-transferable; a PVRM Certificate of Allocation must accompany a transfer of the vehicle bearing that mark. Current Transport Department rules prevail.</p>
+            <h3>歷史成交價等於現時估值、車主資料或放售狀態嗎？ / Does an auction record prove current value, owner, or sale status?</h3>
+            <p>不等於，也不能證明。成交價只描述某次公開拍賣的歷史結果，不是現時估值、車主或持有人紀錄、即時放售證明或未來成交保證。車牌或車輛其後可能已轉讓、取消分配或不再放售。</p>
+            <p lang="en">No. An auction result is a historical transaction record, not a current valuation, owner or holder record, active sale listing, or future-price guarantee. The mark or vehicle may later have been transferred, cancelled, or withdrawn from sale.</p>
+            <h3>如何用 JSON 或 API 搜尋？ / How can I search through JSON or an API?</h3>
+            <p>使用公開的 <a href="./api.html">Plate.hk API 文檔</a>及 <code>GET /api/search?dataset=all&amp;q=88</code>，或從 <a href="./api/v1/index.json">dataset index</a> 取得靜態資料入口。這是 Plate.hk 的獨立 API，不是香港政府或運輸署 API。</p>
             <h3>Plate.hk 是香港政府或運輸署網站嗎？</h3>
             <p>不是。Plate.hk 是獨立資料工具；官方文件和運輸署網站始終是最終權威來源。</p>
             <h3>應如何引用一筆結果？</h3>

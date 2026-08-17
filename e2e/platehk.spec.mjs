@@ -143,6 +143,28 @@ test.describe("Plate.hk public API", () => {
     const visionGet = await request.get("/api/vision_plate");
     expect([400, 405]).toContain(visionGet.status());
   });
+
+  test("serves declared HTML canonicals without breaking machine routes", async ({ request }) => {
+    const aboutHtml = await request.get("/about.html");
+    expect(aboutHtml.status()).toBe(200);
+    const primaryHost = { host: "plate.hk" };
+
+    const aboutAlias = await request.get("/about", { headers: primaryHost, maxRedirects: 0 });
+    expect(aboutAlias.status()).toBe(301);
+    expect(aboutAlias.headers().location).toContain("/about.html");
+
+    const plateIndexAlias = await request.get("/plates/", { headers: primaryHost, maxRedirects: 0 });
+    expect(plateIndexAlias.status()).toBe(301);
+    expect(plateIndexAlias.headers().location).toContain("/plates/index.html");
+
+    const mcpTransport = await request.get("/mcp", { headers: primaryHost, maxRedirects: 0 });
+    expect(mcpTransport.status()).toBe(405);
+    expect(mcpTransport.headers().location).toBeUndefined();
+
+    const utilityJson = await request.get("/data/hot_search/manifest.json", { headers: primaryHost });
+    expect(utilityJson.status()).toBe(200);
+    expect(utilityJson.headers()["x-robots-tag"]).toContain("noindex");
+  });
 });
 
 test.describe("Plate.hk browser journeys", () => {
@@ -153,6 +175,9 @@ test.describe("Plate.hk browser journeys", () => {
     await page.goto("/about.html");
     await expect(page.locator("h1")).toContainText("香港車牌拍賣資料");
     await expect(page.locator("#answers-title")).toBeVisible();
+    await expect(page.getByText("PVRM、TVRM 實體拍賣及拍牌易有甚麼分別？", { exact: false })).toBeVisible();
+    await expect(page.locator('a[href*="pvrm_auction"]').first()).toBeVisible();
+    await expect(page.getByText("GET /api/search?dataset=all&q=88", { exact: true })).toBeVisible();
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
     if (isMobile) {
       await expect(page.locator(".responsive-table tbody tr").first()).toHaveCSS("display", "block");
@@ -163,6 +188,7 @@ test.describe("Plate.hk browser journeys", () => {
     await page.goto("/plates/88.html");
     await expect(page.locator("h1")).toContainText("88 車牌拍賣結果");
     await expect(page.getByText("直接答案 / Direct Answers", { exact: true })).toBeVisible();
+    await expect(page.getByText("What public auction records exist for Hong Kong plate 88?", { exact: false })).toBeVisible();
     await expect(page.locator('a[href*="td.gov.hk"]').first()).toBeVisible();
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
     if (isMobile) {
