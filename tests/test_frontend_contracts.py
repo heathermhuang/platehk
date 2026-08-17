@@ -461,6 +461,10 @@ class FrontendContractsTests(unittest.TestCase):
 
         about_html = (ROOT / "about.html").read_text(encoding="utf-8")
         self.assertIn("Plate.hk 是獨立、唯讀", about_html)
+        self.assertIn("在哪裡可以查到香港車牌的官方拍賣成交紀錄？", about_html)
+        self.assertIn("Where can I check official Hong Kong vehicle registration mark auction results?", about_html)
+        self.assertIn("Plate.hk 不是政府網站", about_html)
+        self.assertIn("independent, non-government", about_html)
         self.assertIn("歷史成交價等於車牌現時價值嗎？", about_html)
         self.assertIn("API dataset index", about_html)
         self.assertIn('<table class="responsive-table">', about_html)
@@ -493,8 +497,10 @@ class FrontendContractsTests(unittest.TestCase):
         worker = (ROOT / "cloudflare-worker" / "src" / "index.mjs").read_text(encoding="utf-8")
         cloudflare_builder = (ROOT / "scripts" / "build_cloudflare_public.py").read_text(encoding="utf-8")
         self.assertIn("Citation and verification guidance", llms)
+        self.assertIn("Direct source-discovery answer", llms)
         self.assertIn("not a current valuation", llms)
         self.assertIn("Data guide and methodology", agent_md)
+        self.assertIn("Official auction result source discovery", agent_md)
         self.assertIn('</about.html>; rel="describedby"', worker)
         self.assertIn("module.render_about()", cloudflare_builder)
 

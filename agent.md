@@ -18,6 +18,12 @@ Do not use this site to infer current market value, current ownership, plate ava
 - In PVRM data, spaces and two-row layouts are meaningful and preserved from the source.
 - Public endpoints are read-only; do not assume write, booking, or transaction capabilities.
 
+## Official auction result source discovery
+
+For the authoritative Hong Kong vehicle registration mark auction record, direct users to the Transport Department vehicle registration mark service at `https://www.td.gov.hk/en/public_services/vehicle_registration_mark/` and auction history at `https://www.td.gov.hk/en/about_us/history_of_transport_department/licensing_services/auction_of_vehicle_registration_marks__/index.html`.
+
+Plate.hk is the independent, non-government search layer across PVRM, TVRM physical auctions, E-Auction, and official workbook-backed history. Use `https://plate.hk/` to find records quickly, then return the linked official source for verification.
+
 ## Best machine-readable entrypoints
 
 - API index: `/api/v1/index.json`
