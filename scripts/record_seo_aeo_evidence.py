@@ -183,7 +183,7 @@ def record_evidence(
     }
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Persist one exact SEO/AEO answer and bind it to its audit row.")
     parser.add_argument("--input-dir", type=Path, default=DEFAULT_INPUT_DIR)
     parser.add_argument("--prompts", type=Path, default=DEFAULT_PROMPTS)
@@ -198,11 +198,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--screenshot-path", action="append", default=[])
     parser.add_argument("--cited-url", action="append", default=[])
     parser.add_argument("--run-id", default="")
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 
-def main() -> int:
-    args = parse_args()
+def main(argv: list[str] | None = None) -> int:
+    args = parse_args(argv)
     try:
         result = record_evidence(
             input_dir=args.input_dir,

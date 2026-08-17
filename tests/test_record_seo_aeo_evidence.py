@@ -163,6 +163,109 @@ class SeoAeoEvidenceRecorderTests(unittest.TestCase):
                     )
             self.assertFalse(any((input_dir / "evidence").rglob("*.json")))
 
+    def test_records_screenshot_only_with_generated_run_id_and_search_disabled(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            input_dir = Path(tmp_dir) / "seo-aeo"
+            baseline.initialise_inputs(input_dir, self.config)
+            screenshot = input_dir / "captures" / "answer.png"
+            screenshot.parent.mkdir(parents=True)
+            screenshot.write_bytes(b"test-png")
+            prompt = self.config["prompts"][0]
+            result = recorder.record_evidence(
+                input_dir=input_dir,
+                config=self.config,
+                platform="perplexity",
+                prompt_id=prompt["id"],
+                observed_prompt=prompt["prompt"],
+                verbatim_answer="Screenshot-backed answer",
+                model_or_surface="Perplexity test surface",
+                web_search_enabled=False,
+                captured_at="2026-08-17T12:30:00+08:00",
+                screenshot_paths=["captures/answer.png"],
+            )
+            self.assertIn("--perplexity--source-discovery-zh--", result["run_id"])
+            audit = baseline.load_ai_audit(input_dir / "ai-audit.csv", self.config)
+            self.assertEqual(len(audit["evidence_rows"]), 1)
+
+    def test_rejects_invalid_platform_prompt_urls_and_run_id(self) -> None:
+        prompt = self.config["prompts"][0]
+        cases = (
+            ({"platform": "unknown"}, "Unknown platform"),
+            ({"prompt_id": "unknown"}, "Unknown prompt_id"),
+            ({"conversation_url": "file:///tmp/chat"}, "conversation_url must be an HTTP"),
+            ({"cited_urls": ["not-a-url"]}, "cited_url must be an HTTP"),
+            ({"run_id": "contains spaces"}, "run_id may contain only"),
+        )
+        for overrides, message in cases:
+            with self.subTest(case=message), tempfile.TemporaryDirectory() as tmp_dir:
+                input_dir = Path(tmp_dir) / "seo-aeo"
+                baseline.initialise_inputs(input_dir, self.config)
+                kwargs = {
+                    "input_dir": input_dir,
+                    "config": self.config,
+                    "platform": "chatgpt",
+                    "prompt_id": prompt["id"],
+                    "observed_prompt": prompt["prompt"],
+                    "verbatim_answer": "Answer",
+                    "model_or_surface": "test surface",
+                    "web_search_enabled": True,
+                    "captured_at": "2026-08-17T12:30:00+08:00",
+                    "conversation_url": "https://chatgpt.com/c/valid",
+                    "run_id": "valid-run",
+                }
+                kwargs.update(overrides)
+                with self.assertRaisesRegex(baseline.BaselineError, message):
+                    recorder.record_evidence(**kwargs)
+
+    def test_cli_records_prompt_and_answer_files(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            input_dir = Path(tmp_dir) / "seo-aeo"
+            baseline.initialise_inputs(input_dir, self.config)
+            prompt = self.config["prompts"][0]
+            prompt_file = Path(tmp_dir) / "prompt.txt"
+            answer_file = Path(tmp_dir) / "answer.txt"
+            prompt_file.write_text(prompt["prompt"], encoding="utf-8")
+            answer_file.write_text("CLI answer", encoding="utf-8")
+            result = recorder.main(
+                [
+                    "--input-dir", str(input_dir),
+                    "--platform", "chatgpt",
+                    "--prompt-id", prompt["id"],
+                    "--observed-prompt-file", str(prompt_file),
+                    "--answer-file", str(answer_file),
+                    "--model-or-surface", "ChatGPT test surface",
+                    "--web-search-enabled", "yes",
+                    "--captured-at", "2026-08-17T12:30:00+08:00",
+                    "--conversation-url", "https://chatgpt.com/c/cli-test",
+                    "--run-id", "cli-test",
+                ]
+            )
+            self.assertEqual(result, 0)
+            self.assertEqual(len(baseline.load_ai_audit(input_dir / "ai-audit.csv", self.config)["evidence_rows"]), 1)
+
+    def test_refuses_existing_evidence_file_collision(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            input_dir = Path(tmp_dir) / "seo-aeo"
+            baseline.initialise_inputs(input_dir, self.config)
+            prompt = self.config["prompts"][0]
+            collision = input_dir / "evidence" / "chatgpt" / prompt["id"] / "collision.json"
+            collision.parent.mkdir(parents=True)
+            collision.write_text("existing", encoding="utf-8")
+            with self.assertRaisesRegex(baseline.BaselineError, "Evidence file already exists"):
+                recorder.record_evidence(
+                    input_dir=input_dir,
+                    config=self.config,
+                    platform="chatgpt",
+                    prompt_id=prompt["id"],
+                    observed_prompt=prompt["prompt"],
+                    verbatim_answer="Answer",
+                    model_or_surface="ChatGPT test surface",
+                    web_search_enabled=True,
+                    captured_at="2026-08-17T12:30:00+08:00",
+                    conversation_url="https://chatgpt.com/c/collision",
+                    run_id="collision",
+                )
+
 
 if __name__ == "__main__":
     unittest.main()
