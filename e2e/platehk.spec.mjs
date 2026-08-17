@@ -14,7 +14,10 @@ const generatedMarketPlate = generatedMarketPage?.html.match(/data-market-card d
 function collectBrowserErrors(page) {
   const errors = [];
   page.on("console", (msg) => {
-    if (msg.type() === "error") errors.push(msg.text());
+    if (msg.type() !== "error") return;
+    const sourceUrl = msg.location().url || "";
+    if (msg.text().startsWith("Failed to load resource") && sourceUrl.startsWith("https://fonts.gstatic.com/")) return;
+    errors.push(sourceUrl ? `${msg.text()} (${sourceUrl})` : msg.text());
   });
   page.on("pageerror", (err) => {
     errors.push(err.message);
@@ -31,6 +34,62 @@ async function waitForResultRows(page, minRows = 1) {
     (count) => document.querySelectorAll("#rows tr:not(.empty-row)").length >= count,
     minRows,
   );
+}
+
+async function readResultTableLayout(page) {
+  return page.locator("#resultsTable").evaluate((table) => {
+    const rect = (element) => {
+      const bounds = element.getBoundingClientRect();
+      return {
+        x: Math.round(bounds.x),
+        y: Math.round(bounds.y),
+        width: Math.round(bounds.width),
+        height: Math.round(bounds.height),
+        right: Math.round(bounds.right),
+        bottom: Math.round(bounds.bottom),
+      };
+    };
+    const details = (element) => ({
+      id: element.id,
+      className: element.className,
+      display: getComputedStyle(element).display,
+      rect: rect(element),
+    });
+    const firstRow = table.querySelector("#rows tr:not(.empty-row)");
+    const sourceCell = firstRow?.querySelector(".col-source");
+    return {
+      mode: table.closest(".table-wrap")?.className || "",
+      viewportWidth: document.documentElement.clientWidth,
+      documentScrollWidth: document.documentElement.scrollWidth,
+      headerDisplay: getComputedStyle(table.tHead).display,
+      headers: Array.from(table.tHead.querySelectorAll("th")).map(details),
+      row: rect(firstRow),
+      rowDisplay: getComputedStyle(firstRow).display,
+      cells: Array.from(firstRow.children).map(details),
+      source: rect(sourceCell),
+      actions: Array.from(sourceCell.querySelectorAll(".icon-btn")).map(rect),
+    };
+  });
+}
+
+function expectContained(inner, outer, tolerance = 1) {
+  expect(inner.x).toBeGreaterThanOrEqual(outer.x - tolerance);
+  expect(inner.y).toBeGreaterThanOrEqual(outer.y - tolerance);
+  expect(inner.right).toBeLessThanOrEqual(outer.right + tolerance);
+  expect(inner.bottom).toBeLessThanOrEqual(outer.bottom + tolerance);
+}
+
+function expectSingleDesktopRow(layout, expectedIdsOrClasses) {
+  const visibleHeaders = layout.headers.filter(({ display }) => display !== "none");
+  const visibleCells = layout.cells.filter(({ display }) => display !== "none");
+  expect(visibleHeaders.map(({ id }) => id)).toEqual(expectedIdsOrClasses.headers);
+  expect(visibleCells.map(({ className }) => className)).toEqual(expectedIdsOrClasses.cells);
+  expect(new Set(visibleHeaders.map(({ rect: bounds }) => bounds.y)).size).toBe(1);
+  expect(new Set(visibleCells.map(({ rect: bounds }) => bounds.y)).size).toBe(1);
+  expect(new Set(visibleCells.map(({ rect: bounds }) => bounds.bottom)).size).toBe(1);
+  for (const cell of visibleCells) expectContained(cell.rect, layout.row);
+  expect(visibleCells.at(-1).className).toBe("col-source");
+  expect(visibleCells.at(-1).rect.x).toBeGreaterThan(visibleCells.at(-2).rect.x);
 }
 
 async function runAxe(page) {
@@ -168,6 +227,59 @@ test.describe("Plate.hk public API", () => {
 });
 
 test.describe("Plate.hk browser journeys", () => {
+  test("keeps source and share controls inside each desktop row and mobile card", async ({ page }, testInfo) => {
+    const isMobile = testInfo.project.name.includes("mobile");
+    const errors = collectBrowserErrors(page);
+
+    await page.goto("/?lang=zh&d=pvrm&sort=amount_desc");
+    await waitForResultRows(page, 2);
+    const datasetLayout = await readResultTableLayout(page);
+    expect(datasetLayout.mode).toContain("mode-dataset");
+    expect(datasetLayout.documentScrollWidth).toBeLessThanOrEqual(datasetLayout.viewportWidth);
+    expect(datasetLayout.actions).toHaveLength(2);
+    for (const action of datasetLayout.actions) expectContained(action, datasetLayout.source);
+
+    if (isMobile) {
+      expect(datasetLayout.headerDisplay).toBe("none");
+      expect(datasetLayout.rowDisplay).toBe("grid");
+      expect(datasetLayout.cells.find(({ className }) => className === "col-category")?.display).toBe("none");
+      for (const cell of datasetLayout.cells.filter(({ display }) => display !== "none")) {
+        expectContained(cell.rect, datasetLayout.row);
+      }
+    } else {
+      expectSingleDesktopRow(datasetLayout, {
+        headers: ["thDate", "thSingle", "thDouble", "thPrice", "thPdf"],
+        cells: ["col-date", "col-single", "col-double", "col-price", "col-source"],
+      });
+    }
+
+    await page.locator("#issue").selectOption({ index: 1 });
+    await expect(page).toHaveURL(/issue=/);
+    await waitForResultRows(page, 2);
+    const issueLayout = await readResultTableLayout(page);
+    expect(issueLayout.mode).toContain("mode-issue");
+    expect(issueLayout.documentScrollWidth).toBeLessThanOrEqual(issueLayout.viewportWidth);
+    expect(issueLayout.actions).toHaveLength(2);
+    for (const action of issueLayout.actions) expectContained(action, issueLayout.source);
+
+    if (isMobile) {
+      expect(issueLayout.headerDisplay).toBe("none");
+      expect(issueLayout.rowDisplay).toBe("grid");
+      expect(issueLayout.cells.find(({ className }) => className === "col-date")?.display).toBe("none");
+      expect(issueLayout.cells.find(({ className }) => className === "col-category")?.display).toBe("none");
+      for (const cell of issueLayout.cells.filter(({ display }) => display !== "none")) {
+        expectContained(cell.rect, issueLayout.row);
+      }
+    } else {
+      expectSingleDesktopRow(issueLayout, {
+        headers: ["thSingle", "thDouble", "thPrice", "thPdf"],
+        cells: ["col-single", "col-double", "col-price", "col-source"],
+      });
+    }
+
+    await expectNoBrowserErrors(errors);
+  });
+
   test("keeps SEO answer pages readable without viewport overflow", async ({ page }) => {
     const errors = collectBrowserErrors(page);
     const isMobile = page.viewportSize().width <= 620;
@@ -393,6 +505,10 @@ test.describe("Plate.hk browser journeys", () => {
   test("uses the canonical yellow plate on generated market landing pages", async ({ page }) => {
     expect(generatedMarketPage).toBeTruthy();
     expect(generatedMarketPlate).toBeTruthy();
+    await page.route(`**/plates/${generatedMarketPage.filename}`, (route) => route.fulfill({
+      body: generatedMarketPage.html,
+      contentType: "text/html",
+    }));
     await page.route("**/api/market_signal?*", async (route) => {
       await route.fulfill({
         json: {
