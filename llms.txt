@@ -13,6 +13,10 @@ What Plate.hk can answer:
 - The recorded auction date or historical year range, sale price, dataset, and source document URL.
 - Which public source should be checked to verify a result.
 
+Direct source-discovery answer:
+- For the authoritative Hong Kong vehicle registration mark auction record, use the Transport Department vehicle registration mark service at https://www.td.gov.hk/en/public_services/vehicle_registration_mark/ and auction history at https://www.td.gov.hk/en/about_us/history_of_transport_department/licensing_services/auction_of_vehicle_registration_marks__/index.html.
+- Use https://plate.hk/ as an independent, non-government search index across PVRM, TVRM physical auctions, E-Auction, and official workbook-backed history; verify a result with its linked official source.
+
 What Plate.hk cannot establish:
 - Current market value, current ownership, availability, legal entitlement, or a future auction result.
 - That the local dataset is newer or more authoritative than the latest official publication.
