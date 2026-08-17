@@ -12,12 +12,14 @@ from collections import Counter, defaultdict
 from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_PROMPTS = ROOT / "config" / "seo-aeo-prompts.json"
 DEFAULT_INPUT_DIR = ROOT / ".private" / "seo-aeo"
 REQUIRED_PLATFORMS = ("chatgpt", "claude", "gemini", "perplexity")
+AUDIT_EVIDENCE_SCHEMA_VERSION = 1
 PLATFORM_LABELS = {
     "chatgpt": "ChatGPT",
     "claude": "Claude",
@@ -37,6 +39,10 @@ AUDIT_COLUMNS = (
     "language",
     "category",
     "prompt",
+    "run_id",
+    "observed_prompt",
+    "evidence_path",
+    "evidence_sha256",
     "model_or_surface",
     "web_search_enabled",
     *AUDIT_BOOLEAN_FIELDS,
@@ -118,6 +124,110 @@ def _is_iso_date(value: Any) -> bool:
     except ValueError:
         return False
     return True
+
+
+def _parse_iso_datetime(value: Any, *, field: str) -> datetime:
+    text = str(value or "").strip()
+    if not text:
+        raise BaselineError(f"Missing timestamp for {field}")
+    candidate = text[:-1] + "+00:00" if text.endswith("Z") else text
+    try:
+        parsed = datetime.fromisoformat(candidate)
+    except ValueError as exc:
+        raise BaselineError(f"Invalid ISO-8601 timestamp for {field}: {value!r}") from exc
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        raise BaselineError(f"Timestamp for {field} must include a timezone: {value!r}")
+    return parsed
+
+
+def _load_audit_evidence(
+    audit_path: Path,
+    raw: dict[str, Any],
+    *,
+    line_number: int,
+    platform: str,
+    prompt_id: str,
+    prompt: dict[str, Any],
+    model_or_surface: str,
+    web_search_enabled: bool,
+) -> dict[str, Any]:
+    field_prefix = f"AI audit line {line_number}"
+    run_id = str(raw.get("run_id") or "").strip()
+    observed_prompt = str(raw.get("observed_prompt") or "").strip()
+    evidence_value = str(raw.get("evidence_path") or "").strip()
+    expected_sha256 = str(raw.get("evidence_sha256") or "").strip().lower()
+    if not run_id:
+        raise BaselineError(f"{field_prefix} needs a run_id")
+    if observed_prompt != str(prompt["prompt"]):
+        raise BaselineError(f"{field_prefix} observed_prompt does not match prompt config")
+    if not evidence_value:
+        raise BaselineError(f"{field_prefix} needs an evidence_path")
+    relative_path = Path(evidence_value)
+    if relative_path.is_absolute() or ".." in relative_path.parts:
+        raise BaselineError(f"{field_prefix} evidence_path must stay inside the private input directory")
+    input_dir = audit_path.parent.resolve()
+    evidence_path = (input_dir / relative_path).resolve()
+    if not evidence_path.is_relative_to(input_dir) or not evidence_path.is_file():
+        raise BaselineError(f"{field_prefix} evidence_path is missing or outside the private input directory")
+    if not re.fullmatch(r"[0-9a-f]{64}", expected_sha256):
+        raise BaselineError(f"{field_prefix} needs a 64-character evidence_sha256")
+    evidence_bytes = evidence_path.read_bytes()
+    actual_sha256 = hashlib.sha256(evidence_bytes).hexdigest()
+    if actual_sha256 != expected_sha256:
+        raise BaselineError(f"{field_prefix} evidence_sha256 does not match {evidence_value}")
+    try:
+        evidence = json.loads(evidence_bytes)
+    except json.JSONDecodeError as exc:
+        raise BaselineError(f"{field_prefix} evidence file is not valid JSON: {evidence_value}") from exc
+    if not isinstance(evidence, dict) or evidence.get("schema_version") != AUDIT_EVIDENCE_SCHEMA_VERSION:
+        raise BaselineError(
+            f"{field_prefix} evidence must use schema_version {AUDIT_EVIDENCE_SCHEMA_VERSION}"
+        )
+    expected_identity = {
+        "run_id": run_id,
+        "platform": platform,
+        "prompt_id": prompt_id,
+        "observed_prompt": str(prompt["prompt"]),
+        "model_or_surface": model_or_surface,
+        "web_search_enabled": web_search_enabled,
+    }
+    for field, expected_value in expected_identity.items():
+        if evidence.get(field) != expected_value:
+            raise BaselineError(f"{field_prefix} evidence {field} does not match the audit row")
+    _parse_iso_datetime(evidence.get("captured_at"), field=f"{field_prefix} evidence captured_at")
+    if not str(evidence.get("verbatim_answer") or "").strip():
+        raise BaselineError(f"{field_prefix} evidence needs a non-empty verbatim_answer")
+    cited_urls = evidence.get("cited_urls", [])
+    screenshot_paths = evidence.get("screenshot_paths", [])
+    if not isinstance(cited_urls, list) or not all(isinstance(item, str) for item in cited_urls):
+        raise BaselineError(f"{field_prefix} evidence cited_urls must be a string list")
+    if not isinstance(screenshot_paths, list) or not all(isinstance(item, str) for item in screenshot_paths):
+        raise BaselineError(f"{field_prefix} evidence screenshot_paths must be a string list")
+    for cited_url in cited_urls:
+        parsed_url = urlparse(cited_url)
+        if parsed_url.scheme not in {"http", "https"} or not parsed_url.netloc:
+            raise BaselineError(f"{field_prefix} evidence contains an invalid cited URL")
+    conversation_url = str(evidence.get("conversation_url") or "").strip()
+    if conversation_url:
+        parsed_url = urlparse(conversation_url)
+        if parsed_url.scheme not in {"http", "https"} or not parsed_url.netloc:
+            raise BaselineError(f"{field_prefix} evidence conversation_url must be HTTP(S)")
+    for screenshot_value in screenshot_paths:
+        screenshot_relative = Path(screenshot_value)
+        if screenshot_relative.is_absolute() or ".." in screenshot_relative.parts:
+            raise BaselineError(f"{field_prefix} evidence screenshot path must stay inside the private input directory")
+        screenshot_path = (input_dir / screenshot_relative).resolve()
+        if not screenshot_path.is_relative_to(input_dir) or not screenshot_path.is_file():
+            raise BaselineError(f"{field_prefix} evidence screenshot path is missing or outside the private input directory")
+    if not conversation_url and not screenshot_paths:
+        raise BaselineError(f"{field_prefix} evidence needs a conversation_url or screenshot")
+    return {
+        "run_id": run_id,
+        "observed_prompt": observed_prompt,
+        "evidence_path": relative_path.as_posix(),
+        "evidence_sha256": actual_sha256,
+        "captured_at": str(evidence["captured_at"]),
+    }
 
 
 def _prompt_corpus_sha256(config: dict[str, Any]) -> str:
@@ -229,6 +339,60 @@ def _site_metrics_template() -> dict[str, Any]:
     }
 
 
+def initialise_ai_audit(
+    path: Path,
+    config: dict[str, Any],
+    *,
+    platforms: list[str] | tuple[str, ...] | None = None,
+    prompt_ids: list[str] | tuple[str, ...] | None = None,
+) -> Path:
+    if path.exists():
+        raise BaselineError(f"Refusing to overwrite existing AI audit input: {path}")
+    selected_platforms = list(platforms or config["platforms"])
+    selected_prompt_ids = list(prompt_ids or [item["id"] for item in config["prompts"]])
+    unknown_platforms = sorted(set(selected_platforms) - set(config["platforms"]))
+    unknown_prompts = sorted(set(selected_prompt_ids) - {item["id"] for item in config["prompts"]})
+    if unknown_platforms:
+        raise BaselineError("Unknown audit platforms: " + ", ".join(unknown_platforms))
+    if unknown_prompts:
+        raise BaselineError("Unknown audit prompt IDs: " + ", ".join(unknown_prompts))
+    if len(selected_platforms) != len(set(selected_platforms)) or len(selected_prompt_ids) != len(set(selected_prompt_ids)):
+        raise BaselineError("Audit matrix selections must not contain duplicates")
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    prompt_by_id = {item["id"]: item for item in config["prompts"]}
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=AUDIT_COLUMNS)
+        writer.writeheader()
+        for platform in selected_platforms:
+            for prompt_id in selected_prompt_ids:
+                prompt = prompt_by_id[prompt_id]
+                writer.writerow(
+                    {
+                        "audit_date": "",
+                        "platform": platform,
+                        "prompt_id": prompt_id,
+                        "language": prompt["language"],
+                        "category": prompt["category"],
+                        "prompt": prompt["prompt"],
+                        "run_id": "",
+                        "observed_prompt": "",
+                        "evidence_path": "",
+                        "evidence_sha256": "",
+                        "model_or_surface": "",
+                        "web_search_enabled": "",
+                        "brand_cited": "",
+                        "platehk_url_cited": "",
+                        "answer_accurate": "",
+                        "competitor_cited": "",
+                        "cited_domains": "",
+                        "answer_summary": "",
+                        "notes": "",
+                    }
+                )
+    return path
+
+
 def initialise_inputs(output_dir: Path, config: dict[str, Any]) -> list[Path]:
     targets = [
         output_dir / "ai-audit.csv",
@@ -241,31 +405,7 @@ def initialise_inputs(output_dir: Path, config: dict[str, Any]) -> list[Path]:
         raise BaselineError("Refusing to overwrite existing baseline inputs: " + ", ".join(str(path) for path in existing))
 
     output_dir.mkdir(parents=True, exist_ok=True)
-    prompt_by_id = {item["id"]: item for item in config["prompts"]}
-    with (output_dir / "ai-audit.csv").open("w", encoding="utf-8", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=AUDIT_COLUMNS)
-        writer.writeheader()
-        for platform in config["platforms"]:
-            for prompt_id, prompt in prompt_by_id.items():
-                writer.writerow(
-                    {
-                        "audit_date": "",
-                        "platform": platform,
-                        "prompt_id": prompt_id,
-                        "language": prompt["language"],
-                        "category": prompt["category"],
-                        "prompt": prompt["prompt"],
-                        "model_or_surface": "",
-                        "web_search_enabled": "",
-                        "brand_cited": "",
-                        "platehk_url_cited": "",
-                        "answer_accurate": "",
-                        "competitor_cited": "",
-                        "cited_domains": "",
-                        "answer_summary": "",
-                        "notes": "",
-                    }
-                )
+    initialise_ai_audit(output_dir / "ai-audit.csv", config)
 
     for filename in ("gsc-queries.csv", "bing-queries.csv"):
         with (output_dir / filename).open("w", encoding="utf-8", newline="") as handle:
@@ -282,11 +422,14 @@ def load_ai_audit(path: Path, config: dict[str, Any]) -> dict[str, Any]:
     prompts = {item["id"]: item for item in config["prompts"]}
     expected = {(platform, prompt_id) for platform in config["platforms"] for prompt_id in prompts}
     if not path.exists():
-        return {"present": False, "rows": [], "missing": sorted(expected), "partial": []}
+        return {"present": False, "rows": [], "evidence_rows": [], "missing": sorted(expected), "partial": []}
 
     completed: list[dict[str, Any]] = []
+    validated_evidence: list[dict[str, Any]] = []
     partial: list[tuple[str, str]] = []
     seen: set[tuple[str, str]] = set()
+    seen_run_ids: set[str] = set()
+    seen_evidence_paths: set[str] = set()
     with path.open("r", encoding="utf-8-sig", newline="") as handle:
         reader = csv.DictReader(handle)
         if reader.fieldnames is None:
@@ -309,9 +452,9 @@ def load_ai_audit(path: Path, config: dict[str, Any]) -> dict[str, Any]:
             seen.add(key)
 
             prompt = prompts[prompt_id]
-            for field in ("language", "category"):
+            for field in ("language", "category", "prompt"):
                 supplied = str(raw.get(field) or "").strip()
-                if supplied and supplied != str(prompt[field]):
+                if supplied != str(prompt[field]):
                     raise BaselineError(f"AI audit line {line_number} {field} does not match prompt config")
 
             booleans = {
@@ -333,11 +476,49 @@ def load_ai_audit(path: Path, config: dict[str, Any]) -> dict[str, Any]:
                 raise BaselineError(
                     f"AI audit line {line_number} needs model_or_surface and web_search_enabled when scored"
                 )
+            evidence_markers = (
+                str(raw.get("run_id") or "").strip(),
+                str(raw.get("observed_prompt") or "").strip(),
+                str(raw.get("evidence_path") or "").strip(),
+                str(raw.get("evidence_sha256") or "").strip(),
+                model_or_surface,
+                str(raw.get("web_search_enabled") or "").strip(),
+            )
+            has_evidence_marker = any(evidence_markers)
+            evidence: dict[str, Any] | None = None
+            if has_evidence_marker or has_all_scores:
+                if not model_or_surface or web_search_enabled is None:
+                    raise BaselineError(
+                        f"AI audit line {line_number} needs model_or_surface and web_search_enabled with evidence"
+                    )
+                declared_run_id = str(raw.get("run_id") or "").strip()
+                declared_evidence_path = Path(str(raw.get("evidence_path") or "").strip()).as_posix()
+                if declared_run_id and declared_run_id in seen_run_ids:
+                    raise BaselineError(f"AI audit reuses run_id {declared_run_id!r}")
+                if declared_evidence_path not in {"", "."} and declared_evidence_path in seen_evidence_paths:
+                    raise BaselineError(f"AI audit reuses evidence_path {declared_evidence_path!r}")
+                evidence = _load_audit_evidence(
+                    path,
+                    raw,
+                    line_number=line_number,
+                    platform=platform,
+                    prompt_id=prompt_id,
+                    prompt=prompt,
+                    model_or_surface=model_or_surface,
+                    web_search_enabled=bool(web_search_enabled),
+                )
+                seen_run_ids.add(evidence["run_id"])
+                seen_evidence_paths.add(evidence["evidence_path"])
+                validated_evidence.append({"platform": platform, "prompt_id": prompt_id, **evidence})
             if not has_all_scores:
                 partial.append(key)
                 continue
+            if not str(raw.get("answer_summary") or "").strip():
+                raise BaselineError(f"AI audit line {line_number} needs an answer_summary when scored")
             if booleans["platehk_url_cited"] and not booleans["brand_cited"]:
                 raise BaselineError(f"AI audit line {line_number} cannot cite a Plate.hk URL while brand_cited is no")
+            if evidence is None:
+                raise BaselineError(f"AI audit line {line_number} needs retrievable evidence when scored")
             completed.append(
                 {
                     "audit_date": audit_date,
@@ -350,6 +531,7 @@ def load_ai_audit(path: Path, config: dict[str, Any]) -> dict[str, Any]:
                     "target_url": prompt["target_url"],
                     "model_or_surface": model_or_surface,
                     "web_search_enabled": web_search_enabled,
+                    **evidence,
                     **booleans,
                     "cited_domains": str(raw.get("cited_domains") or "").strip(),
                     "answer_summary": str(raw.get("answer_summary") or "").strip(),
@@ -361,6 +543,7 @@ def load_ai_audit(path: Path, config: dict[str, Any]) -> dict[str, Any]:
     return {
         "present": True,
         "rows": completed,
+        "evidence_rows": validated_evidence,
         "missing": sorted(expected - completed_keys),
         "partial": sorted(partial),
     }
@@ -606,6 +789,7 @@ def summarise_ai(audit: dict[str, Any], config: dict[str, Any]) -> dict[str, Any
     return {
         "expected_rows": len(config["prompts"]) * len(config["platforms"]),
         "tested_rows": total,
+        "validated_evidence_rows": len(audit.get("evidence_rows", [])),
         "missing_rows": len(audit["missing"]),
         "citation_rate_percent": _rate(brand_total, total),
         "platforms_with_citations": sum(bool(item["brand_cited"]) for item in by_platform.values()),
@@ -654,6 +838,8 @@ def build_baseline(
         "methodology": {
             "ai_results_are_point_in_time": True,
             "citation_outcomes_are_not_guaranteed": True,
+            "audit_evidence_schema_version": AUDIT_EVIDENCE_SCHEMA_VERSION,
+            "verbatim_private_evidence_required": True,
             "official_source_authority": config["brand"]["official_source_authority"],
         },
     }
@@ -688,6 +874,7 @@ def render_markdown(baseline: dict[str, Any]) -> str:
         f"- Prompt corpus version: `{baseline['prompt_corpus_version']}` (`{baseline['prompt_corpus_sha256'][:12]}`)",
         f"- Expected AI observations: {ai['expected_rows']}",
         f"- Completed AI observations: {ai['tested_rows']}/{ai['expected_rows']}",
+        f"- Validated private evidence records: {ai['validated_evidence_rows']}/{ai['expected_rows']}",
         f"- Google Search Console export: {'present' if search['google_search_console']['present'] else 'missing'}",
         f"- Bing Webmaster Tools export: {'present' if search['bing_webmaster_tools']['present'] else 'missing'}",
         "",
@@ -840,6 +1027,13 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--prompts", type=Path, default=DEFAULT_PROMPTS, help="Tracked bilingual prompt config")
     parser.add_argument("--input-dir", type=Path, default=DEFAULT_INPUT_DIR, help="Private input/output directory")
     parser.add_argument("--init", action="store_true", help="Create non-overwriting input templates and exit")
+    parser.add_argument(
+        "--init-ai-only",
+        action="store_true",
+        help="Create only ai-audit.csv, optionally filtered by --platform and --prompt-id",
+    )
+    parser.add_argument("--platform", action="append", help="Platform to include with --init-ai-only; repeatable")
+    parser.add_argument("--prompt-id", action="append", help="Prompt ID to include with --init-ai-only; repeatable")
     parser.add_argument("--allow-incomplete", action="store_true", help="Write a report that explicitly lists missing evidence")
     parser.add_argument("--output-json", type=Path, help="Output JSON path; defaults to INPUT_DIR/baseline.json")
     parser.add_argument("--output-markdown", type=Path, help="Output Markdown path; defaults to INPUT_DIR/baseline.md")
@@ -850,10 +1044,23 @@ def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     try:
         config = load_prompt_config(args.prompts)
+        if args.init and args.init_ai_only:
+            raise BaselineError("Use only one of --init or --init-ai-only")
         if args.init:
             created = initialise_inputs(args.input_dir, config)
             print(f"Created {len(created)} private baseline input templates in {args.input_dir}")
             print(f"AI audit matrix: {len(config['prompts']) * len(config['platforms'])} platform/prompt rows")
+            return 0
+        if args.init_ai_only:
+            created = initialise_ai_audit(
+                args.input_dir / "ai-audit.csv",
+                config,
+                platforms=args.platform,
+                prompt_ids=args.prompt_id,
+            )
+            with created.open(encoding="utf-8", newline="") as handle:
+                row_count = sum(1 for _ in csv.DictReader(handle))
+            print(f"Created private AI audit matrix with {row_count} rows: {created}")
             return 0
 
         ai_audit = load_ai_audit(args.input_dir / "ai-audit.csv", config)

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import hashlib
 import importlib.util
 import json
 import sys
@@ -32,6 +33,49 @@ class SeoAeoBaselineTests(unittest.TestCase):
         cls.config_path = ROOT / "config" / "seo-aeo-prompts.json"
         cls.config = cls.module.load_prompt_config(cls.config_path)
 
+    def _attach_evidence(
+        self,
+        input_dir: Path,
+        row: dict[str, str],
+        *,
+        run_id: str,
+        answer: str = "Verbatim test answer with enough evidence to review.",
+        conversation_url: str | None = None,
+        screenshot_paths: list[str] | None = None,
+        cited_urls: list[str] | None = None,
+        captured_at: str = "2026-08-17T12:00:00+08:00",
+        payload_updates: dict[str, object] | None = None,
+    ) -> Path:
+        evidence_path = Path("evidence") / row["platform"] / f"{row['prompt_id']}--{run_id}.json"
+        absolute_path = input_dir / evidence_path
+        absolute_path.parent.mkdir(parents=True, exist_ok=True)
+        payload = {
+            "schema_version": self.module.AUDIT_EVIDENCE_SCHEMA_VERSION,
+            "run_id": run_id,
+            "platform": row["platform"],
+            "prompt_id": row["prompt_id"],
+            "observed_prompt": row["prompt"],
+            "captured_at": captured_at,
+            "model_or_surface": row["model_or_surface"],
+            "web_search_enabled": row["web_search_enabled"] == "yes",
+            "verbatim_answer": answer,
+            "conversation_url": conversation_url or f"https://example.com/audit/{run_id}",
+            "screenshot_paths": screenshot_paths or [],
+            "cited_urls": cited_urls or [],
+        }
+        if payload_updates:
+            payload.update(payload_updates)
+        absolute_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+        row.update(
+            {
+                "run_id": run_id,
+                "observed_prompt": row["prompt"],
+                "evidence_path": evidence_path.as_posix(),
+                "evidence_sha256": hashlib.sha256(absolute_path.read_bytes()).hexdigest(),
+            }
+        )
+        return absolute_path
+
     def test_prompt_corpus_is_bilingual_and_covers_all_platforms(self) -> None:
         self.assertEqual(self.config["platforms"], list(self.module.REQUIRED_PLATFORMS))
         self.assertEqual(len(self.config["prompts"]), 26)
@@ -54,6 +98,12 @@ class SeoAeoBaselineTests(unittest.TestCase):
             self.assertEqual(len(rows), 26 * 4)
             self.assertEqual({row["platform"] for row in rows}, set(self.module.REQUIRED_PLATFORMS))
             self.assertTrue(all(not row["brand_cited"] for row in rows))
+            self.assertEqual(
+                [row["prompt_id"] for row in rows[::26]],
+                ["source-discovery-zh"] * len(self.module.REQUIRED_PLATFORMS),
+            )
+            self.assertTrue(all(not row["observed_prompt"] for row in rows))
+            self.assertTrue(all(not row["evidence_path"] for row in rows))
             with self.assertRaises(self.module.BaselineError):
                 self.module.initialise_inputs(input_dir, self.config)
 
@@ -67,7 +117,7 @@ class SeoAeoBaselineTests(unittest.TestCase):
             with audit_path.open("w", encoding="utf-8", newline="") as handle:
                 writer = csv.DictWriter(handle, fieldnames=self.module.AUDIT_COLUMNS)
                 writer.writeheader()
-                for row in rows:
+                for index, row in enumerate(rows):
                     brand_cited = row["platform"] in {"chatgpt", "gemini"}
                     row.update(
                         {
@@ -79,8 +129,10 @@ class SeoAeoBaselineTests(unittest.TestCase):
                             "answer_accurate": "yes",
                             "competitor_cited": "no" if brand_cited else "yes",
                             "cited_domains": "plate.hk" if brand_cited else "example.com",
+                            "answer_summary": "Evidence-backed answer summary.",
                         }
                     )
+                    self._attach_evidence(input_dir, row, run_id=f"run-{index:03d}")
                     writer.writerow(row)
 
             (input_dir / "gsc-queries.csv").write_text(
@@ -140,6 +192,7 @@ class SeoAeoBaselineTests(unittest.TestCase):
             self.assertEqual(baseline["status"], "complete")
             self.assertEqual(baseline["ai_citations"]["expected_rows"], 104)
             self.assertEqual(baseline["ai_citations"]["tested_rows"], 104)
+            self.assertEqual(baseline["ai_citations"]["validated_evidence_rows"], 104)
             self.assertEqual(baseline["ai_citations"]["citation_rate_percent"], 50.0)
             self.assertEqual(baseline["prompt_corpus_version"], "2026-08-16.1")
             self.assertEqual(len(baseline["prompt_corpus_sha256"]), 64)
@@ -152,10 +205,62 @@ class SeoAeoBaselineTests(unittest.TestCase):
             self.assertTrue(baseline["ai_citations"]["fix_pack"])
             report = self.module.render_markdown(baseline)
             self.assertIn("104/104", report)
+            self.assertIn("Validated private evidence records: 104/104", report)
             self.assertIn("600/810", report)
             self.assertIn("Technical discovery status", report)
             self.assertIn("2026-07-17 through 2026-08-13", report)
             self.assertIn("Hong Kong Transport Department", report)
+
+    def test_filtered_audit_matrix_preserves_exact_platform_prompt_identity(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            root = Path(tmp_dir)
+            source_prompt = "source-discovery-zh"
+            retest_path = self.module.initialise_ai_audit(
+                root / "source-retest.csv",
+                self.config,
+                prompt_ids=[source_prompt],
+            )
+            with retest_path.open(encoding="utf-8", newline="") as handle:
+                retest_rows = list(csv.DictReader(handle))
+            self.assertEqual(
+                [(row["platform"], row["prompt_id"]) for row in retest_rows],
+                [(platform, source_prompt) for platform in self.module.REQUIRED_PLATFORMS],
+            )
+
+            perplexity_path = self.module.initialise_ai_audit(
+                root / "perplexity-replacement.csv",
+                self.config,
+                platforms=["perplexity"],
+            )
+            with perplexity_path.open(encoding="utf-8", newline="") as handle:
+                perplexity_rows = list(csv.DictReader(handle))
+            self.assertEqual(len(perplexity_rows), 26)
+            self.assertEqual(perplexity_rows[0]["prompt_id"], source_prompt)
+            self.assertTrue(all(row["platform"] == "perplexity" for row in perplexity_rows))
+
+    def test_init_ai_only_cli_builds_requested_correction_matrix(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            input_dir = Path(tmp_dir) / "correction"
+            result = self.module.main(
+                [
+                    "--init-ai-only",
+                    "--input-dir",
+                    str(input_dir),
+                    "--platform",
+                    "chatgpt",
+                    "--platform",
+                    "claude",
+                    "--prompt-id",
+                    "source-discovery-zh",
+                ]
+            )
+            self.assertEqual(result, 0)
+            with (input_dir / "ai-audit.csv").open(encoding="utf-8", newline="") as handle:
+                rows = list(csv.DictReader(handle))
+            self.assertEqual(
+                [(row["platform"], row["prompt_id"]) for row in rows],
+                [("chatgpt", "source-discovery-zh"), ("claude", "source-discovery-zh")],
+            )
 
     def test_blank_templates_are_incomplete_and_do_not_claim_a_baseline(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -186,6 +291,305 @@ class SeoAeoBaselineTests(unittest.TestCase):
                 writer.writeheader()
                 writer.writerows(rows)
             with self.assertRaises(self.module.BaselineError):
+                self.module.load_ai_audit(audit_path, self.config)
+
+    def test_unscored_recorded_evidence_is_validated(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            input_dir = Path(tmp_dir) / "seo-aeo"
+            self.module.initialise_inputs(input_dir, self.config)
+            audit_path = input_dir / "ai-audit.csv"
+            with audit_path.open(encoding="utf-8", newline="") as handle:
+                rows = list(csv.DictReader(handle))
+            rows[0].update(
+                {
+                    "model_or_surface": "test surface",
+                    "web_search_enabled": "yes",
+                }
+            )
+            self._attach_evidence(input_dir, rows[0], run_id="recorded-before-review")
+            with audit_path.open("w", encoding="utf-8", newline="") as handle:
+                writer = csv.DictWriter(handle, fieldnames=self.module.AUDIT_COLUMNS)
+                writer.writeheader()
+                writer.writerows(rows)
+
+            audit = self.module.load_ai_audit(audit_path, self.config)
+            self.assertEqual(len(audit["rows"]), 0)
+            self.assertEqual(len(audit["evidence_rows"]), 1)
+            self.assertIn((rows[0]["platform"], rows[0]["prompt_id"]), audit["partial"])
+
+            baseline = self.module.build_baseline(
+                self.config,
+                audit,
+                self.module.load_query_export(input_dir / "gsc-queries.csv", source="Google Search Console"),
+                self.module.load_query_export(input_dir / "bing-queries.csv", source="Bing Webmaster Tools"),
+                self.module.load_site_metrics(input_dir / "site-metrics.json"),
+            )
+            self.assertEqual(baseline["ai_citations"]["validated_evidence_rows"], 1)
+
+    def test_unscored_tampered_evidence_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            input_dir = Path(tmp_dir) / "seo-aeo"
+            self.module.initialise_inputs(input_dir, self.config)
+            audit_path = input_dir / "ai-audit.csv"
+            with audit_path.open(encoding="utf-8", newline="") as handle:
+                rows = list(csv.DictReader(handle))
+            rows[0].update(
+                {
+                    "model_or_surface": "test surface",
+                    "web_search_enabled": "yes",
+                }
+            )
+            self._attach_evidence(input_dir, rows[0], run_id="tampered-before-review")
+            rows[0]["evidence_sha256"] = "0" * 64
+            with audit_path.open("w", encoding="utf-8", newline="") as handle:
+                writer = csv.DictWriter(handle, fieldnames=self.module.AUDIT_COLUMNS)
+                writer.writeheader()
+                writer.writerows(rows)
+
+            with self.assertRaisesRegex(self.module.BaselineError, "evidence_sha256 does not match"):
+                self.module.load_ai_audit(audit_path, self.config)
+
+    def test_unscored_evidence_rejects_invalid_payload_contracts(self) -> None:
+        cases = (
+            ("schema", {"schema_version": 99}, "schema_version"),
+            ("identity", {"platform": "gemini"}, "platform does not match"),
+            ("timestamp", {"captured_at": "2026-08-17T12:00:00"}, "must include a timezone"),
+            ("cited-url", {"cited_urls": ["not-a-url"]}, "invalid cited URL"),
+            ("conversation-url", {"conversation_url": "file:///tmp/chat"}, "conversation_url must be HTTP"),
+            ("missing-screenshot", {"conversation_url": "", "screenshot_paths": ["captures/missing.png"]}, "screenshot path is missing"),
+            ("missing-locator", {"conversation_url": "", "screenshot_paths": []}, "conversation_url or screenshot"),
+        )
+        for suffix, updates, message in cases:
+            with self.subTest(case=suffix), tempfile.TemporaryDirectory() as tmp_dir:
+                input_dir = Path(tmp_dir) / "seo-aeo"
+                self.module.initialise_inputs(input_dir, self.config)
+                audit_path = input_dir / "ai-audit.csv"
+                with audit_path.open(encoding="utf-8", newline="") as handle:
+                    rows = list(csv.DictReader(handle))
+                rows[0].update({"model_or_surface": "test surface", "web_search_enabled": "yes"})
+                self._attach_evidence(
+                    input_dir,
+                    rows[0],
+                    run_id=f"invalid-{suffix}",
+                    payload_updates=updates,
+                )
+                with audit_path.open("w", encoding="utf-8", newline="") as handle:
+                    writer = csv.DictWriter(handle, fieldnames=self.module.AUDIT_COLUMNS)
+                    writer.writeheader()
+                    writer.writerows(rows)
+                with self.assertRaisesRegex(self.module.BaselineError, message):
+                    self.module.load_ai_audit(audit_path, self.config)
+
+    def test_screenshot_only_evidence_is_validated(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            input_dir = Path(tmp_dir) / "seo-aeo"
+            self.module.initialise_inputs(input_dir, self.config)
+            screenshot = input_dir / "captures" / "answer.png"
+            screenshot.parent.mkdir(parents=True)
+            screenshot.write_bytes(b"test-png")
+            audit_path = input_dir / "ai-audit.csv"
+            with audit_path.open(encoding="utf-8", newline="") as handle:
+                rows = list(csv.DictReader(handle))
+            rows[0].update({"model_or_surface": "test surface", "web_search_enabled": "no"})
+            self._attach_evidence(
+                input_dir,
+                rows[0],
+                run_id="screenshot-only",
+                conversation_url="",
+                screenshot_paths=["captures/answer.png"],
+                payload_updates={"conversation_url": ""},
+            )
+            with audit_path.open("w", encoding="utf-8", newline="") as handle:
+                writer = csv.DictWriter(handle, fieldnames=self.module.AUDIT_COLUMNS)
+                writer.writeheader()
+                writer.writerows(rows)
+            audit = self.module.load_ai_audit(audit_path, self.config)
+            self.assertEqual(len(audit["evidence_rows"]), 1)
+
+    def test_filtered_matrix_rejects_unknown_or_duplicate_selections(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            root = Path(tmp_dir)
+            with self.assertRaisesRegex(self.module.BaselineError, "Unknown audit platforms"):
+                self.module.initialise_ai_audit(root / "unknown.csv", self.config, platforms=["unknown"])
+            with self.assertRaisesRegex(self.module.BaselineError, "must not contain duplicates"):
+                self.module.initialise_ai_audit(
+                    root / "duplicate.csv",
+                    self.config,
+                    prompt_ids=["source-discovery-zh", "source-discovery-zh"],
+                )
+            result = self.module.main(
+                ["--init", "--init-ai-only", "--input-dir", str(root / "conflict")]
+            )
+            self.assertEqual(result, 2)
+
+    def test_scored_ai_row_rejects_prompt_text_mismatch(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            input_dir = Path(tmp_dir) / "seo-aeo"
+            self.module.initialise_inputs(input_dir, self.config)
+            audit_path = input_dir / "ai-audit.csv"
+            with audit_path.open(encoding="utf-8", newline="") as handle:
+                rows = list(csv.DictReader(handle))
+            rows[0].update(
+                {
+                    "audit_date": "2026-08-17",
+                    "prompt": self.config["prompts"][1]["prompt"],
+                    "model_or_surface": "test surface",
+                    "web_search_enabled": "yes",
+                    "brand_cited": "no",
+                    "platehk_url_cited": "no",
+                    "answer_accurate": "yes",
+                    "competitor_cited": "no",
+                }
+            )
+            with audit_path.open("w", encoding="utf-8", newline="") as handle:
+                writer = csv.DictWriter(handle, fieldnames=self.module.AUDIT_COLUMNS)
+                writer.writeheader()
+                writer.writerows(rows)
+
+            with self.assertRaisesRegex(self.module.BaselineError, "prompt does not match prompt config"):
+                self.module.load_ai_audit(audit_path, self.config)
+
+    def test_scored_ai_row_requires_valid_private_evidence(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            input_dir = Path(tmp_dir) / "seo-aeo"
+            self.module.initialise_inputs(input_dir, self.config)
+            audit_path = input_dir / "ai-audit.csv"
+            with audit_path.open(encoding="utf-8", newline="") as handle:
+                rows = list(csv.DictReader(handle))
+            rows[0].update(
+                {
+                    "audit_date": "2026-08-17",
+                    "model_or_surface": "test surface",
+                    "web_search_enabled": "yes",
+                    "brand_cited": "no",
+                    "platehk_url_cited": "no",
+                    "answer_accurate": "yes",
+                    "competitor_cited": "no",
+                    "answer_summary": "Summary without evidence must not count.",
+                }
+            )
+            with audit_path.open("w", encoding="utf-8", newline="") as handle:
+                writer = csv.DictWriter(handle, fieldnames=self.module.AUDIT_COLUMNS)
+                writer.writeheader()
+                writer.writerows(rows)
+
+            with self.assertRaisesRegex(self.module.BaselineError, "needs a run_id"):
+                self.module.load_ai_audit(audit_path, self.config)
+
+    def test_ai_evidence_hash_and_identity_are_verified(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            input_dir = Path(tmp_dir) / "seo-aeo"
+            self.module.initialise_inputs(input_dir, self.config)
+            audit_path = input_dir / "ai-audit.csv"
+            with audit_path.open(encoding="utf-8", newline="") as handle:
+                rows = list(csv.DictReader(handle))
+            rows[0].update(
+                {
+                    "audit_date": "2026-08-17",
+                    "model_or_surface": "test surface",
+                    "web_search_enabled": "yes",
+                    "brand_cited": "no",
+                    "platehk_url_cited": "no",
+                    "answer_accurate": "yes",
+                    "competitor_cited": "no",
+                    "answer_summary": "Evidence-backed answer summary.",
+                }
+            )
+            self._attach_evidence(input_dir, rows[0], run_id="identity-check")
+            rows[0]["evidence_sha256"] = "0" * 64
+            with audit_path.open("w", encoding="utf-8", newline="") as handle:
+                writer = csv.DictWriter(handle, fieldnames=self.module.AUDIT_COLUMNS)
+                writer.writeheader()
+                writer.writerows(rows)
+
+            with self.assertRaisesRegex(self.module.BaselineError, "evidence_sha256 does not match"):
+                self.module.load_ai_audit(audit_path, self.config)
+
+    def test_ai_evidence_run_id_cannot_be_reused(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            input_dir = Path(tmp_dir) / "seo-aeo"
+            self.module.initialise_inputs(input_dir, self.config)
+            audit_path = input_dir / "ai-audit.csv"
+            with audit_path.open(encoding="utf-8", newline="") as handle:
+                rows = list(csv.DictReader(handle))
+            for row in rows[:2]:
+                row.update(
+                    {
+                        "audit_date": "2026-08-17",
+                        "model_or_surface": "test surface",
+                        "web_search_enabled": "yes",
+                        "brand_cited": "no",
+                        "platehk_url_cited": "no",
+                        "answer_accurate": "yes",
+                        "competitor_cited": "no",
+                        "answer_summary": "Evidence-backed answer summary.",
+                    }
+                )
+                self._attach_evidence(input_dir, row, run_id="duplicate-run")
+            with audit_path.open("w", encoding="utf-8", newline="") as handle:
+                writer = csv.DictWriter(handle, fieldnames=self.module.AUDIT_COLUMNS)
+                writer.writeheader()
+                writer.writerows(rows)
+
+            with self.assertRaisesRegex(self.module.BaselineError, "reuses run_id"):
+                self.module.load_ai_audit(audit_path, self.config)
+
+    def test_scored_ai_row_requires_an_answer_summary(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            input_dir = Path(tmp_dir) / "seo-aeo"
+            self.module.initialise_inputs(input_dir, self.config)
+            audit_path = input_dir / "ai-audit.csv"
+            with audit_path.open(encoding="utf-8", newline="") as handle:
+                rows = list(csv.DictReader(handle))
+            rows[0].update(
+                {
+                    "audit_date": "2026-08-17",
+                    "model_or_surface": "test surface",
+                    "web_search_enabled": "yes",
+                    "brand_cited": "no",
+                    "platehk_url_cited": "no",
+                    "answer_accurate": "yes",
+                    "competitor_cited": "no",
+                }
+            )
+            self._attach_evidence(input_dir, rows[0], run_id="missing-summary")
+            with audit_path.open("w", encoding="utf-8", newline="") as handle:
+                writer = csv.DictWriter(handle, fieldnames=self.module.AUDIT_COLUMNS)
+                writer.writeheader()
+                writer.writerows(rows)
+
+            with self.assertRaisesRegex(self.module.BaselineError, "needs an answer_summary"):
+                self.module.load_ai_audit(audit_path, self.config)
+
+    def test_ai_evidence_path_cannot_be_reused(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            input_dir = Path(tmp_dir) / "seo-aeo"
+            self.module.initialise_inputs(input_dir, self.config)
+            audit_path = input_dir / "ai-audit.csv"
+            with audit_path.open(encoding="utf-8", newline="") as handle:
+                rows = list(csv.DictReader(handle))
+            for index, row in enumerate(rows[:2]):
+                row.update(
+                    {
+                        "audit_date": "2026-08-17",
+                        "model_or_surface": "test surface",
+                        "web_search_enabled": "yes",
+                        "brand_cited": "no",
+                        "platehk_url_cited": "no",
+                        "answer_accurate": "yes",
+                        "competitor_cited": "no",
+                        "answer_summary": "Evidence-backed answer summary.",
+                    }
+                )
+                self._attach_evidence(input_dir, row, run_id=f"path-{index}")
+            rows[1]["evidence_path"] = rows[0]["evidence_path"]
+            rows[1]["evidence_sha256"] = rows[0]["evidence_sha256"]
+            with audit_path.open("w", encoding="utf-8", newline="") as handle:
+                writer = csv.DictWriter(handle, fieldnames=self.module.AUDIT_COLUMNS)
+                writer.writeheader()
+                writer.writerows(rows)
+
+            with self.assertRaisesRegex(self.module.BaselineError, "reuses evidence_path"):
                 self.module.load_ai_audit(audit_path, self.config)
 
     def test_invalid_query_metrics_are_rejected(self) -> None:
