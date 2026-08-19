@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-08-18T01:36:39+00:00",
+  "generated_at": "2026-08-19T01:34:32+00:00",
   "timezone": "Asia/Hong_Kong",
   "source_urls": [
     "https://www.td.gov.hk/en/public_services/vehicle_registration_mark/index.html",
@@ -79,6 +79,44 @@
       "source_text_en": "Computed from the recurring January, May and September PVRM application windows linked from the TD auction overview.",
       "meta": {
         "source": "computed_recurring_window_from_td_main_page"
+      }
+    },
+    {
+      "id": "pvrm_physical-2026-09-05-morning",
+      "type": "pvrm_physical",
+      "start_at": "2026-09-05T00:00:00+08:00",
+      "end_at": "2026-09-05T12:59:59+08:00",
+      "date_label_en": "5 September 2026 morning (186 KB)",
+      "date_label_zh": "2026年9月5日上午",
+      "source_page_url_en": "https://www.td.gov.hk/en/public_services/vehicle_registration_mark/index.html",
+      "source_page_url_zh": "https://www.td.gov.hk/tc/public_services/vehicle_registration_mark/index.html",
+      "source_url_en": "https://www.td.gov.hk/filemanager/en/content_4802/PVRM%20Auction%20Handout%20for%205.9.2026%20English.pdf",
+      "source_url_zh": "https://www.td.gov.hk/filemanager/en/content_4802/PVRM%20Auction%20Handout%20for%205.9.2026%20English.pdf",
+      "action_url_en": null,
+      "action_url_zh": null,
+      "source_text_en": "5 September 2026 morning (186 KB)",
+      "meta": {
+        "source": "td_coming_auction",
+        "session": "morning"
+      }
+    },
+    {
+      "id": "tvrm_physical-2026-09-05-afternoon",
+      "type": "tvrm_physical",
+      "start_at": "2026-09-05T12:00:00+08:00",
+      "end_at": "2026-09-05T23:59:59+08:00",
+      "date_label_en": "5 September 2026 afternoon",
+      "date_label_zh": "2026年9月5日下午",
+      "source_page_url_en": "https://www.td.gov.hk/en/public_services/vehicle_registration_mark/index.html",
+      "source_page_url_zh": "https://www.td.gov.hk/tc/public_services/vehicle_registration_mark/index.html",
+      "source_url_en": "https://www.td.gov.hk/filemanager/en/content_4802/TVRM%20Auction%20Handout%20for%205.9.2026.Eng.pdf",
+      "source_url_zh": "https://www.td.gov.hk/filemanager/tc/content_4802/TVRM%20Auction%20Handout%20for%205.9.2026.Chin.pdf",
+      "action_url_en": null,
+      "action_url_zh": null,
+      "source_text_en": "5 September 2026 afternoon",
+      "meta": {
+        "source": "td_coming_auction",
+        "session": "afternoon"
       }
     }
   ]
