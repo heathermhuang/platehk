@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-08-19T01:34:32+00:00",
+  "generated_at": "2026-08-20T01:36:41+00:00",
   "timezone": "Asia/Hong_Kong",
   "source_urls": [
     "https://www.td.gov.hk/en/public_services/vehicle_registration_mark/index.html",
@@ -79,6 +79,24 @@
       "source_text_en": "Computed from the recurring January, May and September PVRM application windows linked from the TD auction overview.",
       "meta": {
         "source": "computed_recurring_window_from_td_main_page"
+      }
+    },
+    {
+      "id": "tvrm_eauction-2026-09-03",
+      "type": "tvrm_eauction",
+      "start_at": "2026-09-03T12:00:00+08:00",
+      "end_at": "2026-09-07T12:00:00+08:00",
+      "date_label_en": "3 September noon to 7 September noon 2026",
+      "date_label_zh": "2026年9月3日中午至9月7日中午",
+      "source_page_url_en": "https://www.td.gov.hk/en/public_services/vehicle_registration_mark/index.html",
+      "source_page_url_zh": "https://www.td.gov.hk/tc/public_services/vehicle_registration_mark/index.html",
+      "source_url_en": "https://www.td.gov.hk/filemanager/en/content_4802/E-Auction%20Handout%20for%20%203-7.9.2026.Eng.pdf",
+      "source_url_zh": "https://www.td.gov.hk/filemanager/tc/content_4802/E-Auction%20Handout%20for%20%203-7.9.2026.Chin.pdf",
+      "action_url_en": "https://e-auction.td.gov.hk/en",
+      "action_url_zh": "https://e-auction.td.gov.hk/tc",
+      "source_text_en": "3 September noon to 7 September noon 2026",
+      "meta": {
+        "source": "td_coming_auction"
       }
     },
     {
