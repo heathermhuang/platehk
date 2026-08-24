@@ -782,4 +782,22 @@ test.describe("Plate.hk browser journeys", () => {
     expect(errors).toHaveLength(3);
     expect(errors.every((error) => error.includes("500 (Internal Server Error)"))).toBe(true);
   });
+
+  test("keeps every popular-plate link usable when enhancement JavaScript is unavailable", async ({ browser, page }, testInfo) => {
+    const noJsContext = await browser.newContext({
+      baseURL: testInfo.project.use.baseURL,
+      javaScriptEnabled: false,
+      viewport: testInfo.project.use.viewport,
+    });
+    const noJsPage = await noJsContext.newPage();
+    await noJsPage.goto("/plates/index.html");
+    await expect(noJsPage.locator("[data-popular-card]:visible")).toHaveCount(420);
+    await expect(noJsPage.locator(".popular-tools")).toBeHidden();
+    await noJsContext.close();
+
+    await page.route("**/assets/popular-index.js*", (route) => route.abort());
+    await page.goto("/plates/index.html");
+    await expect(page.locator("[data-popular-card]:visible")).toHaveCount(420);
+    await expect(page.locator(".popular-tools")).toBeHidden();
+  });
 });

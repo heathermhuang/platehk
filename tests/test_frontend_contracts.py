@@ -210,11 +210,21 @@ class FrontendContractsTests(unittest.TestCase):
         for script_path in required_scripts:
             self.assertIn(f"'{script_path}'", service_worker, script_path)
         for shell_asset in [
+            "./assets/audit.js?v=20260824-02",
+            "./assets/api-page.js?v=20260824-03",
+            "./assets/changelog.js?v=20260824-02",
             "./assets/info-shell.js?v=20260824-01",
             "./assets/popular-index.js?v=20260824-01",
             "./assets/ledger.css?v=20260824-12",
         ]:
             self.assertIn(f"'{shell_asset}'", service_worker, shell_asset)
+
+        for html_name in ["audit.html", "api.html", "changelog.html"]:
+            page = (ROOT / html_name).read_text(encoding="utf-8")
+            exact_assets = re.findall(r'(?:src|href)="(\./assets/[^"]+\?v=[^"]+)"', page)
+            self.assertGreater(len(exact_assets), 0, html_name)
+            for asset in exact_assets:
+                self.assertIn(f"'{asset}'", service_worker, f"{html_name}: {asset}")
 
     def test_public_footers_link_to_github_repository(self) -> None:
         repo_url = "https://github.com/heathermhuang/platehk"
