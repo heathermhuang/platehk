@@ -662,4 +662,48 @@ test.describe("Plate.hk browser journeys", () => {
 
     await expectNoBrowserErrors(errors);
   });
+
+  test("keeps public information pages in one responsive, navigable shell", async ({ page }, testInfo) => {
+    const errors = collectBrowserErrors(page);
+    const pages = [
+      ["/about.html", "about"],
+      ["/terms.html", "terms"],
+      ["/privacy.html", "privacy"],
+      ["/changelog.html", "changelog"],
+      ["/audit.html", "audit"],
+      ["/api.html", "api"],
+      ["/mcp.html", "api"],
+      ["/plates/index.html", "plates"],
+    ];
+
+    for (const [path, activePage] of pages) {
+      await page.goto(`${path}?lang=en`);
+      await expect(page.locator(".info-site-header")).toBeVisible();
+      await expect(page.locator(".info-site-footer")).toBeVisible();
+      await expect(page.locator("main#main-content")).toBeVisible();
+      await expect(page.locator(`body[data-info-page="${activePage}"]`)).toBeVisible();
+      await expect(page.locator(".info-site-header [aria-current=page], .info-site-footer [aria-current=page]")).toHaveCount(1);
+      if (path === "/audit.html") await expect(page.locator("#auditSummary")).not.toBeEmpty();
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
+    }
+
+    await page.goto("/api.html?lang=en");
+    await expect(page.locator("#apiStatus strong").first()).not.toContainText("Loading");
+    await expect(page.locator("#content")).toContainText("Retry-After");
+
+    await page.goto("/changelog.html?lang=en");
+    await expect(page.locator("#changelogStatus strong").first()).not.toContainText("Loading");
+    await expect(page.locator(".changelog-archive")).toBeVisible();
+
+    await page.goto("/plates/index.html");
+    const initialLimit = testInfo.project.name.includes("mobile") ? 40 : 80;
+    await expect(page.locator("[data-popular-card]:visible")).toHaveCount(initialLimit);
+    await page.locator("#popularQuery").fill("88");
+    await expect(page.locator("#popularCount")).toContainText("results");
+    const visiblePlates = await page.locator("[data-popular-card]:visible .plate").allTextContents();
+    expect(visiblePlates.length).toBeGreaterThan(0);
+    expect(visiblePlates.every((plate) => plate.replace(/\s+/g, "").includes("88"))).toBe(true);
+
+    await expectNoBrowserErrors(errors);
+  });
 });

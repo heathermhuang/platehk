@@ -9,6 +9,7 @@
       content="Plate.hk 私隱政策：說明香港車牌拍賣資料庫如何處理搜尋、瀏覽器儲存、Google Analytics、相機 OCR、API 與第三方服務。"
     />
     <meta name="robots" content="index,follow,max-image-preview:large" />
+    <meta name="theme-color" content="#f4f1e8" />
     <link rel="canonical" href="https://plate.hk/privacy.html" />
     <meta property="og:type" content="article" />
     <meta property="og:title" content="私隱政策 | Plate.hk" />
@@ -71,11 +72,12 @@
       .note { border-left:3px solid var(--accent); padding-left:12px; color:var(--muted); }
       a { color:var(--accent); }
     </style>
-    <link rel="stylesheet" href="./assets/ledger.css?v=20260512-09" />
+    <link rel="stylesheet" href="./assets/ledger.css?v=20260824-12" />
 
   </head>
-  <body>
-    <div class="wrap">
+  <body class="info-page info-page--policy" data-info-page="privacy">
+    <div data-info-shell-header></div>
+    <main class="wrap" id="main-content">
       <div class="top">
         <a id="backLink" href="./index.html">&larr; 返回首頁</a>
       </div>
@@ -84,7 +86,8 @@
         <div class="meta" id="updated"></div>
         <div id="content"></div>
       </div>
-    </div>
+    </main>
+    <div data-info-shell-footer></div>
 
     <script>
       const I18N = {
@@ -92,7 +95,7 @@
           pageTitle: "私隱政策 | Plate.hk",
           title: "私隱政策",
           back: "← 返回首頁",
-          updated: "最後更新：2026年8月12日",
+          updated: "內容審閱：2026年8月24日 · 政策生效：2026年8月12日",
           html: `
             <p class="note">Plate.hk 按香港《個人資料（私隱）條例》（第486章）及資料保障原則，以資料最小化、用途限制及合理保安為基本方向處理資料。本政策說明我們在網站、API、分享海報及相機搜尋中如何處理資料。</p>
 
@@ -163,7 +166,7 @@
           pageTitle: "Privacy Policy | Plate.hk",
           title: "Privacy Policy",
           back: "← Back to Home",
-          updated: "Last updated: 12 August 2026",
+          updated: "Reviewed: 24 August 2026 · Effective: 12 August 2026",
           html: `
             <p class="note">Plate.hk handles data with reference to Hong Kong’s Personal Data (Privacy) Ordinance (Cap. 486) and the Data Protection Principles, using data minimisation, purpose limitation, and reasonable security as baseline practices. This policy explains how data is handled across the website, APIs, share posters, and camera search.</p>
 
@@ -252,5 +255,6 @@
 
       render();
     </script>
+    <script src="./assets/info-shell.js?v=20260824-01"></script>
   </body>
 </html>

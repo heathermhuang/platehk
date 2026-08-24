@@ -136,14 +136,70 @@ class FrontendContractsTests(unittest.TestCase):
             ],
             "landing.html": ["./assets/landing.js"],
             "audit.html": ["./assets/audit.js"],
-            "api.html": ["./assets/api-page.js"],
-            "changelog.html": ["./assets/changelog.js"],
+            "api.html": ["./assets/api-page.js", "./assets/info-shell.js"],
+            "changelog.html": ["./assets/changelog.js", "./assets/info-shell.js"],
             "camera.html": ["./assets/camera.js"],
         }
         for html_name, script_paths in expectations.items():
             html = (ROOT / html_name).read_text(encoding="utf-8")
             for script_path in script_paths:
                 self.assertIn(script_path, html, f"{html_name}: {script_path}")
+
+    def test_information_pages_share_one_current_shell(self) -> None:
+        page_keys = {
+            "about.html": "about",
+            "terms.html": "terms",
+            "privacy.html": "privacy",
+            "changelog.html": "changelog",
+            "audit.html": "audit",
+            "api.html": "api",
+            "mcp.html": "api",
+        }
+        for html_name, page_key in page_keys.items():
+            html = (ROOT / html_name).read_text(encoding="utf-8")
+            self.assertIn('class="info-page', html, html_name)
+            self.assertIn(f'data-info-page="{page_key}"', html, html_name)
+            self.assertIn('data-info-shell-header', html, html_name)
+            self.assertIn('data-info-shell-footer', html, html_name)
+            self.assertIn('id="main-content"', html, html_name)
+            self.assertIn('assets/info-shell.js?v=20260824-01', html, html_name)
+            self.assertIn('assets/ledger.css?v=20260824-12', html, html_name)
+            self.assertIn('name="theme-color" content="#f4f1e8"', html, html_name)
+
+        shell = (ROOT / "assets" / "info-shell.js").read_text(encoding="utf-8")
+        self.assertIn('aria-current="page"', shell)
+        self.assertIn("Information pages", shell)
+        self.assertIn("/privacy.html", shell)
+        self.assertIn("/mcp.html", shell)
+        self.assertIn("https://github.com/heathermhuang/platehk", shell)
+
+        changelog = (ROOT / "assets" / "changelog.js").read_text(encoding="utf-8")
+        self.assertIn('date: "2026-08-24"', changelog)
+        self.assertIn('./data/audit.json', changelog)
+        self.assertIn('class="changelog-archive"', changelog)
+
+        api = (ROOT / "assets" / "api-page.js").read_text(encoding="utf-8")
+        self.assertIn("page_size", api)
+        self.assertIn("query_window_exceeded", api)
+        self.assertIn("Retry-After", api)
+        self.assertIn('./data/audit.json', api)
+
+        mcp = (ROOT / "mcp.html").read_text(encoding="utf-8")
+        self.assertNotIn("MCP 文件 | PVRM", mcp)
+        self.assertIn("MCP-Protocol-Version: 2025-06-18", mcp)
+        self.assertIn("vision:ocr", mcp)
+
+    def test_popular_index_is_filterable_without_hiding_crawlable_links(self) -> None:
+        index = (ROOT / "plates" / "index.html").read_text(encoding="utf-8")
+        script = (ROOT / "assets" / "popular-index.js").read_text(encoding="utf-8")
+        builder = (ROOT / "scripts" / "build_popular_plate_pages.py").read_text(encoding="utf-8")
+        self.assertIn('id="popularQuery"', index)
+        self.assertIn('id="popularShowAll"', index)
+        self.assertGreaterEqual(index.count("data-popular-card"), 400)
+        self.assertIn("initialLimit", script)
+        self.assertIn("card.hidden", script)
+        self.assertIn('data-popular-card', builder)
+        self.assertIn('assets/popular-index.js', builder)
 
     def test_service_worker_precaches_every_required_homepage_script(self) -> None:
         html = (ROOT / "index.html").read_text(encoding="utf-8")
@@ -153,6 +209,8 @@ class FrontendContractsTests(unittest.TestCase):
         self.assertIn("./assets/index.market.js", required_scripts)
         for script_path in required_scripts:
             self.assertIn(f"'{script_path}'", service_worker, script_path)
+        for shell_asset in ["./assets/info-shell.js", "./assets/popular-index.js", "./assets/ledger.css"]:
+            self.assertIn(f"'{shell_asset}'", service_worker, shell_asset)
 
     def test_public_footers_link_to_github_repository(self) -> None:
         repo_url = "https://github.com/heathermhuang/platehk"

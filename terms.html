@@ -9,6 +9,7 @@
       content="Plate.hk 使用條款：香港車牌拍賣資料庫、公開 API、相機辨識、分享海報、資料來源、使用限制與免責說明。"
     />
     <meta name="robots" content="index,follow,max-image-preview:large" />
+    <meta name="theme-color" content="#f4f1e8" />
     <link rel="canonical" href="https://plate.hk/terms.html" />
     <meta property="og:type" content="article" />
     <meta property="og:title" content="使用條款 | Plate.hk" />
@@ -71,11 +72,12 @@
       .note { border-left:3px solid var(--accent); padding-left:12px; color:var(--muted); }
       a { color:var(--accent); }
     </style>
-    <link rel="stylesheet" href="./assets/ledger.css?v=20260512-09" />
+    <link rel="stylesheet" href="./assets/ledger.css?v=20260824-12" />
 
   </head>
-  <body>
-    <div class="wrap">
+  <body class="info-page info-page--policy" data-info-page="terms">
+    <div data-info-shell-header></div>
+    <main class="wrap" id="main-content">
       <div class="top">
         <a id="backLink" href="./index.html">&larr; 返回首頁</a>
       </div>
@@ -84,7 +86,8 @@
         <div class="meta" id="updated"></div>
         <div id="content"></div>
       </div>
-    </div>
+    </main>
+    <div data-info-shell-footer></div>
 
     <script>
       const I18N = {
@@ -92,7 +95,7 @@
           pageTitle: "使用條款 | Plate.hk",
           title: "使用條款",
           back: "← 返回首頁",
-          updated: "最後更新：2026年8月12日",
+          updated: "內容審閱：2026年8月24日 · 政策生效：2026年8月12日",
           html: `
             <p class="note">使用 Plate.hk 即表示你同意本使用條款。Plate.hk 是民間整理的香港車牌拍賣資料庫，不是運輸署或任何政府部門的官方服務。</p>
 
@@ -152,7 +155,7 @@
           pageTitle: "Terms of Use | Plate.hk",
           title: "Terms of Use",
           back: "← Back to Home",
-          updated: "Last updated: 12 August 2026",
+          updated: "Reviewed: 24 August 2026 · Effective: 12 August 2026",
           html: `
             <p class="note">By using Plate.hk, you agree to these Terms. Plate.hk is an independently maintained Hong Kong vehicle registration marks database. It is not an official Transport Department or government service.</p>
 
@@ -230,5 +233,6 @@
 
       render();
     </script>
+    <script src="./assets/info-shell.js?v=20260824-01"></script>
   </body>
 </html>
