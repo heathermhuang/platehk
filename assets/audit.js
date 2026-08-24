@@ -136,6 +136,7 @@
         u.searchParams.set("lang", lang);
         history.replaceState(null, "", u.toString());
         applyLang();
+        dispatchEvent(new CustomEvent("platehk:languagechange", { detail: { lang } }));
       }
 
       function buildDatasetOptions() {

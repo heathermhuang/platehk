@@ -209,7 +209,11 @@ class FrontendContractsTests(unittest.TestCase):
         self.assertIn("./assets/index.market.js", required_scripts)
         for script_path in required_scripts:
             self.assertIn(f"'{script_path}'", service_worker, script_path)
-        for shell_asset in ["./assets/info-shell.js", "./assets/popular-index.js", "./assets/ledger.css"]:
+        for shell_asset in [
+            "./assets/info-shell.js?v=20260824-01",
+            "./assets/popular-index.js?v=20260824-01",
+            "./assets/ledger.css?v=20260824-12",
+        ]:
             self.assertIn(f"'{shell_asset}'", service_worker, shell_asset)
 
     def test_public_footers_link_to_github_repository(self) -> None:

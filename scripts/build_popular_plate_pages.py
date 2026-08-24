@@ -744,7 +744,6 @@ def render_index(entries: list[dict]) -> str:
     <meta name="twitter:image" content="https://plate.hk/assets/logo.svg" />
     <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg" />
     <script type="application/ld+json">{json.dumps(ld_json, ensure_ascii=False)}</script>
-    <script>document.documentElement.classList.add("js");</script>
     <meta name="theme-color" content="#f4f1e8" />
     <link rel="stylesheet" href="../assets/ledger.css?v={INFO_CSS_VERSION}" />
     <style>
@@ -758,7 +757,8 @@ def render_index(entries: list[dict]) -> str:
       .lede {{ color:var(--muted); line-height:1.72; margin-top:12px; max-width:78ch; }}
       .hub-actions {{ display:flex; flex-wrap:wrap; gap:10px; margin-top:14px; }}
       .hub-actions a {{ display:inline-flex; padding:9px 12px; border:1px solid var(--line); border-radius:4px; text-decoration:none; font-weight:800; }}
-      .popular-tools {{ display:grid; grid-template-columns:minmax(220px,1fr) auto auto; gap:10px; align-items:end; margin-top:14px; padding:14px; border:1px solid var(--line-strong); border-radius:4px; background:var(--surface); }}
+      .popular-tools {{ display:none; grid-template-columns:minmax(220px,1fr) auto auto; gap:10px; align-items:end; margin-top:14px; padding:14px; border:1px solid var(--line-strong); border-radius:4px; background:var(--surface); }}
+      .popular-ready .popular-tools {{ display:grid; }}
       .popular-snapshot {{ margin-top:12px; color:var(--muted); font-size:12px; font-weight:700; }}
       .popular-tools label {{ display:grid; gap:6px; color:var(--muted); font-size:12px; font-weight:800; }}
       .popular-tools input {{ width:100%; min-height:44px; }}
@@ -771,7 +771,6 @@ def render_index(entries: list[dict]) -> str:
       }}
       .card:hover {{ background:var(--surface-muted) !important; }}
       [data-popular-card][hidden] {{ display:none !important; }}
-      .js:not(.popular-ready) [data-popular-card]:nth-child(n+81) {{ display:none; }}
       .card .plate {{
         display:inline-flex; width:auto; min-width:58px; max-width:100%; height:34px;
         align-items:center; justify-content:center; padding:0 10px;
@@ -781,7 +780,7 @@ def render_index(entries: list[dict]) -> str:
       .card .meta {{ color:var(--muted); font-size:12px; line-height:1.4; margin:0; }}
       @media (max-width: 980px) {{ .grid {{ grid-template-columns: repeat(3, minmax(0,1fr)); }} }}
       @media (max-width: 760px) {{ .grid {{ grid-template-columns: repeat(2, minmax(0,1fr)); }} }}
-      @media (max-width: 620px) {{ .popular-tools {{ grid-template-columns:1fr; align-items:stretch; }} .grid {{ grid-template-columns: 1fr; }} .js:not(.popular-ready) [data-popular-card]:nth-child(n+41) {{ display:none; }} }}
+      @media (max-width: 620px) {{ .popular-ready .popular-tools {{ grid-template-columns:1fr; align-items:stretch; }} .grid {{ grid-template-columns: 1fr; }} }}
     </style>
   </head>
   <body class="info-page info-page--plates" data-info-page="plates">

@@ -6,7 +6,7 @@
           updated: "最後更新：2026年8月24日",
           statusLoading: "正在讀取最新資料狀態…",
           statusError: "暫時未能讀取即時狀態；API 端點仍可按下方方式使用。",
-          statusLabels: ["資料快照", "來源列數", "資料集"],
+          statusLabels: ["API 索引", "審核執行", "搜尋筆數"],
           html: `
             <p>Plate.hk 提供公開 JSON 車牌拍賣搜尋 API。這是獨立資料索引，不是香港政府或運輸署 API；如資料有差異，以運輸署原始文件為準。</p>
             <div class="info-live-status" id="apiStatus" aria-live="polite"><div><strong>正在讀取最新資料狀態…</strong></div></div>
@@ -79,7 +79,7 @@
           updated: "Last updated: 24 Aug 2026",
           statusLoading: "Loading the latest data status…",
           statusError: "Live status is temporarily unavailable. The API remains available through the endpoints below.",
-          statusLabels: ["Data snapshot", "Source rows", "Datasets"],
+          statusLabels: ["API index", "Audit run", "Search rows"],
           html: `
             <p>Plate.hk provides a public JSON search API for Hong Kong plate-auction records. It is an independent data index, not a Hong Kong Government or Transport Department API; the original Transport Department document prevails if data differs.</p>
             <div class="info-live-status" id="apiStatus" aria-live="polite"><div><strong>Loading the latest data status…</strong></div></div>
@@ -164,12 +164,14 @@
         const status = document.getElementById("apiStatus");
         if (!status) return;
         try {
-          const response = await fetch("./data/audit.json", { cache: "no-store" });
-          if (!response.ok) throw new Error(`HTTP ${response.status}`);
-          const audit = await response.json();
-          const summaries = Object.values(audit.summary || {});
-          const sourceRows = summaries.reduce((sum, item) => sum + Number(item.rows_total || 0), 0);
-          const values = [audit.generated_at || "—", sourceRows.toLocaleString("en-US"), String(summaries.length)];
+          const [indexResponse, auditResponse] = await Promise.all([
+            fetch("./api/v1/index.json", { cache: "no-store" }),
+            fetch("./data/audit.json", { cache: "no-store" }),
+          ]);
+          if (!indexResponse.ok || !auditResponse.ok) throw new Error(`HTTP ${indexResponse.status}/${auditResponse.status}`);
+          const [index, audit] = await Promise.all([indexResponse.json(), auditResponse.json()]);
+          const searchRows = Number(index.datasets?.all?.total_rows || 0);
+          const values = [index.generated_at || "—", audit.generated_at || "—", searchRows.toLocaleString("en-US")];
           status.innerHTML = t.statusLabels.map((label, index) => `<div><span>${label}</span><strong>${values[index]}</strong></div>`).join("");
         } catch {
           status.innerHTML = `<div><strong>${t.statusError}</strong></div>`;

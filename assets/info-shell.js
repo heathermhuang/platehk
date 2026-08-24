@@ -1,10 +1,10 @@
 (() => {
   const page = document.body?.dataset.infoPage || "";
-  const language = new URLSearchParams(location.search).get("lang") === "en" ? "en" : "zh";
+  const currentLanguage = () => new URLSearchParams(location.search).get("lang") === "en" ? "en" : "zh";
 
   const withLanguage = (path) => {
     const url = new URL(path, location.origin);
-    if (language === "en") url.searchParams.set("lang", "en");
+    if (currentLanguage() === "en") url.searchParams.set("lang", "en");
     return `${url.pathname}${url.search}`;
   };
 
@@ -15,12 +15,15 @@
     { key: "audit", path: "/audit.html", label: "資料審核 Audit" },
     { key: "api", path: "/api.html", label: "開發者 API" },
   ];
-  const navHasCurrent = navItems.some((item) => item.key === page);
-  const footerCurrent = (key) => !navHasCurrent && key === page ? ' aria-current="page"' : "";
-
   const headerHost = document.querySelector("[data-info-shell-header]") || document.createElement("div");
   if (!headerHost.isConnected) document.body.prepend(headerHost);
-  headerHost.innerHTML = `
+  const footerHost = document.querySelector("[data-info-shell-footer]") || document.createElement("div");
+  if (!footerHost.isConnected) document.body.append(footerHost);
+
+  function renderShell() {
+    const navHasCurrent = navItems.some((item) => item.key === page);
+    const footerCurrent = (key) => !navHasCurrent && key === page ? ' aria-current="page"' : "";
+    headerHost.innerHTML = `
     <a class="info-skip-link" href="#main-content">跳到內容 / Skip to content</a>
     <header class="info-site-header">
       <a class="info-brand" href="${withLanguage("/")}" aria-label="Plate.hk 香港車牌拍賣資料庫首頁">
@@ -37,10 +40,7 @@
         }).join("")}
       </nav>
     </header>`;
-
-  const footerHost = document.querySelector("[data-info-shell-footer]") || document.createElement("div");
-  if (!footerHost.isConnected) document.body.append(footerHost);
-  footerHost.innerHTML = `
+    footerHost.innerHTML = `
     <footer class="info-site-footer">
       <div class="info-footer-intro">
         <a class="info-footer-brand" href="${withLanguage("/")}">Plate.hk</a>
@@ -67,4 +67,9 @@
         <a href="https://forms.gle/1YFfSmraLp27YneU9" target="_blank" rel="noopener">反饋表格</a>
       </div>
     </footer>`;
+  }
+
+  renderShell();
+  addEventListener("platehk:languagechange", renderShell);
+  addEventListener("popstate", renderShell);
 })();
