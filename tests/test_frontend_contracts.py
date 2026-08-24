@@ -188,6 +188,7 @@ class FrontendContractsTests(unittest.TestCase):
         self.assertNotIn("MCP 文件 | PVRM", mcp)
         self.assertIn("MCP-Protocol-Version: 2025-06-18", mcp)
         self.assertIn("vision:ocr", mcp)
+        self.assertIn("drop <code>Q</code>", mcp)
 
     def test_popular_index_is_filterable_without_hiding_crawlable_links(self) -> None:
         index = (ROOT / "plates" / "index.html").read_text(encoding="utf-8")

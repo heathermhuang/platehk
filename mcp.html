@@ -127,7 +127,7 @@
             <h2>搜尋規則</h2>
             <ul>
               <li>Query normalization：trim、uppercase、移除多餘空白</li>
-              <li>HK PVRM 搜尋：<code>I → 1</code>、<code>O → 0</code>、忽略空白</li>
+              <li>HK PVRM 搜尋：<code>I → 1</code>、<code>O → 0</code>、刪除 <code>Q</code>、忽略空白</li>
               <li>必要時以 <code>issue</code> 參數限定單一期數</li>
             </ul>
 
@@ -186,7 +186,7 @@
             <h2>Search Rules</h2>
             <ul>
               <li>Normalize query: trim, uppercase, collapse spaces</li>
-              <li>HK PVRM: map <code>I → 1</code>, <code>O → 0</code>, ignore spaces</li>
+              <li>HK PVRM: map <code>I → 1</code>, <code>O → 0</code>, drop <code>Q</code>, ignore spaces</li>
               <li>Use <code>issue</code> to restrict to a single auction date when needed</li>
             </ul>
 

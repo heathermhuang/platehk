@@ -35,7 +35,7 @@ curl https://plate.hk/mcp \
    - Required input：`dataset`、`auction_date`
    - 取得指定期數的完整資料列。
 
-所有工具都透過現有 Plate.hk API 執行，回傳 source-linked JSON，並標示為 read-only。搜尋會 trim、uppercase、處理版面空格；PVRM matching 亦會套用 `I -> 1`、`O -> 0` 規則。
+所有工具都透過現有 Plate.hk API 執行，回傳 source-linked JSON，並標示為 read-only。搜尋會 trim、uppercase、處理版面空格；PVRM matching 亦會套用 `I -> 1`、`O -> 0`、刪除 `Q` 的規則。
 
 ## 權限邊界
 
