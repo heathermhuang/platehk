@@ -3,8 +3,23 @@
           pageTitle: "更新日誌 | Plate.hk",
           title: "更新日誌",
           back: "← 返回首頁",
-          updated: "最後更新：2026年8月12日",
+          updated: "最後更新：2026年8月24日",
+          currentNote: "產品更新與每日資料同步分開顯示；下方狀態直接讀取最新審核輸出。",
+          archiveLabel: (count) => `較早的更新（${count}）`,
+          statusLoading: "正在讀取最新資料狀態…",
+          statusError: "暫時未能讀取即時狀態；可前往資料審核頁核對。",
+          statusLabels: ["資料快照", "來源列數", "可用 PDF"],
           items: [
+            {
+              date: "2026-08-24",
+              title: "統一資料頁導覽、內容狀態與熱門車牌瀏覽",
+              points: [
+                "資料說明、審核、API、MCP、更新日誌、條款、私隱及熱門車牌頁現共用同一 Plate.hk 導覽、內容寬度、頁尾及手機版規則。",
+                "API 與更新日誌新增由審核輸出驅動的最新資料狀態，不再把會隨每日更新過期的筆數寫死在頁面文案內。",
+                "熱門車牌索引新增即時篩選與分段顯示；無 JavaScript 時仍保留全部可索引連結。",
+                "較早的更新改為可展開記錄，保留完整歷史，同時讓近期變更更容易掃讀。"
+              ]
+            },
             {
               date: "2026-08-12",
               title: "加快完整車牌搜尋並統一外部放售提示",
@@ -480,8 +495,23 @@
           pageTitle: "Changelog | Plate.hk",
           title: "Changelog",
           back: "← Back to Home",
-          updated: "Last updated: 12 August 2026",
+          updated: "Last updated: 24 August 2026",
+          currentNote: "Product releases and daily data refreshes are shown separately. The status below reads the latest audit output directly.",
+          archiveLabel: (count) => `Earlier updates (${count})`,
+          statusLoading: "Loading the latest data status…",
+          statusError: "Live status is temporarily unavailable. Use the Data Audit page to verify the current snapshot.",
+          statusLabels: ["Data snapshot", "Source rows", "Valid PDFs"],
           items: [
+            {
+              date: "2026-08-24",
+              title: "Unified information-page navigation, freshness, and popular-plate browsing",
+              points: [
+                "The data guide, audit, API, MCP, changelog, terms, privacy, and popular-plate pages now share one Plate.hk navigation system, reading width, footer, and mobile behavior.",
+                "API docs and the changelog now show freshness from the generated audit output instead of hard-coding counts that go stale after the next daily refresh.",
+                "The popular-plate index now supports instant filtering and staged disclosure while preserving every crawlable link when JavaScript is unavailable.",
+                "Older releases are grouped in an expandable archive, preserving the full history while keeping recent changes easy to scan."
+              ]
+            },
             {
               date: "2026-08-12",
               title: "Faster complete plate search and unified sale-signal styling",
@@ -930,13 +960,39 @@
       backLink.textContent = t.back;
       backLink.href = `./index.html?lang=${lang}`;
 
-      const entries = document.getElementById("entries");
-      entries.innerHTML = t.items
-        .map((item) => `
+      const entryMarkup = (item) => `
           <section class="entry">
             <h3>${item.date} · ${item.title}</h3>
             <ul>${item.points.map((p) => `<li>${p}</li>`).join("")}</ul>
-          </section>
-        `)
-        .join("");
+          </section>`;
+      const entries = document.getElementById("entries");
+      const recent = t.items.slice(0, 8);
+      const archived = t.items.slice(8);
+      entries.innerHTML = `
+        <div class="changelog-current">
+          <p>${t.currentNote}</p>
+          <div class="info-live-status" id="changelogStatus" aria-live="polite">
+            <div><strong>${t.statusLoading}</strong></div>
+          </div>
+        </div>
+        ${recent.map(entryMarkup).join("")}
+        ${archived.length ? `<details class="changelog-archive"><summary>${t.archiveLabel(archived.length)}</summary>${archived.map(entryMarkup).join("")}</details>` : ""}`;
+
+      async function renderStatus() {
+        const status = document.getElementById("changelogStatus");
+        try {
+          const response = await fetch("./data/audit.json", { cache: "no-store" });
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          const audit = await response.json();
+          const summaries = Object.values(audit.summary || {});
+          const sourceRows = summaries.reduce((sum, item) => sum + Number(item.rows_total || 0), 0);
+          const pdfTotal = summaries.reduce((sum, item) => sum + Number(item.pdf_total || 0), 0);
+          const pdfOk = summaries.reduce((sum, item) => sum + Number(item.pdf_ok || 0), 0);
+          const values = [audit.generated_at || "—", sourceRows.toLocaleString("en-US"), `${pdfOk.toLocaleString("en-US")} / ${pdfTotal.toLocaleString("en-US")}`];
+          status.innerHTML = t.statusLabels.map((label, index) => `<div><span>${label}</span><strong>${values[index]}</strong></div>`).join("");
+        } catch {
+          status.innerHTML = `<div><strong>${t.statusError}</strong></div>`;
+        }
+      }
+      renderStatus();
     

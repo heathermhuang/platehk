@@ -9,6 +9,7 @@
       content="Plate.hk 資料審核頁：查看香港車牌拍賣資料的 PDF 可用性、期數、總額與解析狀態。"
     />
     <meta name="robots" content="index,follow,max-image-preview:large" />
+    <meta name="theme-color" content="#f4f1e8" />
     <link rel="canonical" href="https://plate.hk/audit.html" />
     <meta property="og:type" content="article" />
     <meta property="og:title" content="資料審核 | Plate.hk" />
@@ -230,14 +231,15 @@
         }
       }
     </style>
-    <link rel="stylesheet" href="./assets/ledger.css?v=20260512-09" />
+    <link rel="stylesheet" href="./assets/ledger.css?v=20260824-12" />
 
   </head>
-  <body>
-    <div class="wrap">
-      <header>
+  <body class="info-page info-page--audit" data-info-page="audit">
+    <div data-info-shell-header></div>
+    <main class="wrap" id="main-content">
+      <header class="audit-page-header">
         <div>
-          <div class="title" id="title">資料審核</div>
+          <h1 class="title" id="title">資料審核</h1>
           <div class="sub" id="sub">PDF 下載與清洗狀態總覽</div>
         </div>
         <div class="actions">
@@ -285,11 +287,13 @@
                 <th id="thErr">錯誤</th>
               </tr>
             </thead>
-            <tbody id="tbody"></tbody>
+            <tbody id="tbody"><tr><td colspan="7">正在載入審核資料…</td></tr></tbody>
           </table>
         </div>
       </div>
-    </div>
-    <script src="./assets/audit.js"></script>
+    </main>
+    <div data-info-shell-footer></div>
+    <script src="./assets/audit.js?v=20260824-02"></script>
+    <script src="./assets/info-shell.js?v=20260824-01"></script>
   </body>
 </html>

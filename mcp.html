@@ -9,6 +9,7 @@
       content="Plate.hk MCP 文件：供模型或代理工具存取香港車牌拍賣搜尋資料的介面與使用說明。"
     />
     <meta name="robots" content="index,follow,max-image-preview:large" />
+    <meta name="theme-color" content="#f4f1e8" />
     <link rel="canonical" href="https://plate.hk/mcp.html" />
     <meta property="og:type" content="article" />
     <meta property="og:title" content="MCP 文件 | Plate.hk" />
@@ -64,11 +65,12 @@
       a { color:var(--accent); }
       .box { background:#ffffffcc; border:1px solid var(--line); border-radius:12px; padding:12px 14px; box-shadow: inset 0 1px 0 #ffffffa6; }
     </style>
-    <link rel="stylesheet" href="./assets/ledger.css?v=20260512-09" />
+    <link rel="stylesheet" href="./assets/ledger.css?v=20260824-12" />
 
   </head>
-  <body>
-    <div class="wrap">
+  <body class="info-page info-page--developer" data-info-page="api">
+    <div data-info-shell-header></div>
+    <main class="wrap" id="main-content">
       <div class="top">
         <a id="backLink" href="./index.html">&larr; 返回首頁</a>
       </div>
@@ -77,15 +79,16 @@
         <div class="meta" id="updated"></div>
         <div id="content"></div>
       </div>
-    </div>
+    </main>
+    <div data-info-shell-footer></div>
 
     <script>
       const I18N = {
         zh: {
-          pageTitle: "MCP 文件 | PVRM",
+          pageTitle: "MCP 文件 | Plate.hk",
           title: "MCP 文件",
           back: "← 返回首頁",
-          updated: "最後更新：2026年4月18日",
+          updated: "最後更新：2026年8月24日",
           html: `
             <p>目標：讓 AI 與第三方開發者以「工具」方式存取車牌拍賣資料，不需要下載全量 JSON。</p>
 
@@ -93,8 +96,9 @@
             <ul>
               <li>靜態 Open Data API（見 <code>api/v1/</code>）</li>
               <li>Cloudflare Worker 搜尋 API（提供 <code>/api/search</code>）</li>
-              <li>Worker 現已提供最小可用的 streamable HTTP MCP 端點：<code>/mcp</code></li>
+              <li>Worker 提供唯讀 streamable HTTP MCP 端點：<code>POST /mcp</code></li>
               <li>MCP Server Card 會同時發布在 <code>/.well-known/mcp/server-card.json</code> 與 <code>/.well-known/mcp-server-card</code></li>
+              <li>支援 MCP protocol <code>2025-06-18</code> 及 <code>2025-03-26</code></li>
             </ul>
 
             <h2>工具建議</h2>
@@ -112,10 +116,18 @@
               <li>MCP Server Card：<code>/.well-known/mcp/server-card.json</code></li>
             </ul>
 
+            <h2>連線範例</h2>
+            <div class="box"><code>curl https://plate.hk/mcp \\
+  -H 'Content-Type: application/json' \\
+  -H 'Accept: application/json, text/event-stream' \\
+  -H 'MCP-Protocol-Version: 2025-06-18' \\
+  --data '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'</code></div>
+            <p>公開車牌資料工具為唯讀。相機辨識屬另一個受保護端點，機器客戶端需使用帶有 <code>vision:ocr</code> scope 的 bearer token。</p>
+
             <h2>搜尋規則</h2>
             <ul>
               <li>Query normalization：trim、uppercase、移除多餘空白</li>
-              <li>HK PVRM 搜尋：<code>I → 1</code>、<code>O → 0</code>、忽略空白</li>
+              <li>HK PVRM 搜尋：<code>I → 1</code>、<code>O → 0</code>、刪除 <code>Q</code>、忽略空白</li>
               <li>必要時以 <code>issue</code> 參數限定單一期數</li>
             </ul>
 
@@ -132,10 +144,10 @@
           `,
         },
         en: {
-          pageTitle: "MCP Docs | PVRM",
+          pageTitle: "MCP Docs | Plate.hk",
           title: "MCP Docs",
           back: "← Back to Home",
-          updated: "Last updated: 18 Apr 2026",
+          updated: "Last updated: 24 Aug 2026",
           html: `
             <p>Goal: let AI and third-party developers access plate auction data as tools without downloading the full JSON.</p>
 
@@ -143,8 +155,9 @@
             <ul>
               <li>Static Open Data API (see <code>api/v1/</code>)</li>
               <li>Cloudflare Worker search API (exposes <code>/api/search</code>)</li>
-              <li>The Worker now exposes a minimal streamable HTTP MCP endpoint at <code>/mcp</code></li>
+              <li>The Worker exposes a read-only streamable HTTP MCP endpoint at <code>POST /mcp</code></li>
               <li>The MCP Server Card is published at both <code>/.well-known/mcp/server-card.json</code> and <code>/.well-known/mcp-server-card</code></li>
+              <li>Supported MCP protocols: <code>2025-06-18</code> and <code>2025-03-26</code></li>
             </ul>
 
             <h2>Suggested Tools</h2>
@@ -162,10 +175,18 @@
               <li>MCP Server Card: <code>/.well-known/mcp/server-card.json</code></li>
             </ul>
 
+            <h2>Connection example</h2>
+            <div class="box"><code>curl https://plate.hk/mcp \\
+  -H 'Content-Type: application/json' \\
+  -H 'Accept: application/json, text/event-stream' \\
+  -H 'MCP-Protocol-Version: 2025-06-18' \\
+  --data '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'</code></div>
+            <p>Public plate-data tools are read-only. Camera recognition is a separate protected endpoint; machine clients need a bearer token with the <code>vision:ocr</code> scope.</p>
+
             <h2>Search Rules</h2>
             <ul>
               <li>Normalize query: trim, uppercase, collapse spaces</li>
-              <li>HK PVRM: map <code>I → 1</code>, <code>O → 0</code>, ignore spaces</li>
+              <li>HK PVRM: map <code>I → 1</code>, <code>O → 0</code>, drop <code>Q</code>, ignore spaces</li>
               <li>Use <code>issue</code> to restrict to a single auction date when needed</li>
             </ul>
 
@@ -203,5 +224,6 @@
 
       render();
     </script>
+    <script src="./assets/info-shell.js?v=20260824-01"></script>
   </body>
 </html>

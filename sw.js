@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pvrm-static-v148';
+const CACHE_NAME = 'pvrm-static-v149';
 const ASSETS = [
   './',
   './index.html',
@@ -7,6 +7,8 @@ const ASSETS = [
   './audit.html',
   './api.html',
   './changelog.html',
+  './mcp.html',
+  './plates/index.html',
   './landing.html',
   './assets/index.js',
   './assets/index.config.js',
@@ -21,10 +23,13 @@ const ASSETS = [
   './assets/index.market.js',
   './assets/vendor/qrcode-generator.js',
   './assets/landing.js',
-  './assets/audit.js',
-  './assets/api-page.js',
-  './assets/changelog.js',
+  './assets/audit.js?v=20260824-02',
+  './assets/api-page.js?v=20260824-03',
+  './assets/changelog.js?v=20260824-02',
   './assets/camera.js',
+  './assets/info-shell.js?v=20260824-01',
+  './assets/popular-index.js?v=20260824-01',
+  './assets/ledger.css?v=20260824-12',
   './terms.html',
   './privacy.html',
   './changelog.html',

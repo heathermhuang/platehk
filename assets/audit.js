@@ -1,5 +1,6 @@
       const I18N = {
         zh: {
+          pageTitle: "資料審核 | Plate.hk",
           title: "資料審核",
           sub: "PDF 下載與清洗狀態總覽",
           back: "返回",
@@ -40,8 +41,10 @@
           summaryFmt: (shown, total, problems) => `目前顯示 ${shown} / ${total} 個項目，其中 ${problems} 個帶有 QA 問題。`,
           totalNaHandout: "不適用（當期僅拍賣清單）",
           totalMissing: "未能從資料計算",
+          loadError: "未能載入審核資料。請重新整理，或稍後再試。",
         },
         en: {
+          pageTitle: "Data Audit | Plate.hk",
           title: "Data Audit",
           sub: "Overview of PDF downloads and parsing status",
           back: "Back",
@@ -82,6 +85,7 @@
           summaryFmt: (shown, total, problems) => `Showing ${shown} / ${total} items. ${problems} currently have QA problems.`,
           totalNaHandout: "N/A (handout-only issue)",
           totalMissing: "Unavailable",
+          loadError: "The audit data could not be loaded. Refresh the page or try again later.",
         },
       };
 
@@ -110,7 +114,7 @@
 
       function applyLang() {
         document.documentElement.lang = lang === "zh" ? "zh-HK" : "en";
-        document.title = t("title");
+        document.title = t("pageTitle");
         document.getElementById("title").textContent = t("title");
         document.getElementById("sub").textContent = t("sub");
         document.getElementById("backLink").textContent = t("back");
@@ -132,6 +136,7 @@
         u.searchParams.set("lang", lang);
         history.replaceState(null, "", u.toString());
         applyLang();
+        dispatchEvent(new CustomEvent("platehk:languagechange", { detail: { lang } }));
       }
 
       function buildDatasetOptions() {
@@ -278,6 +283,7 @@
             </tr>`;
           })
           .join("");
+        document.querySelector(".table-wrap")?.setAttribute("aria-busy", "false");
       }
 
       async function main() {
@@ -313,11 +319,15 @@
           if (REPORT) render(REPORT);
         });
 
+        document.querySelector(".table-wrap")?.setAttribute("aria-busy", "true");
         const resp = await fetch("./data/audit.json", { cache: "no-store" });
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
         REPORT = await resp.json();
         render(REPORT);
       }
-      main().catch((e) => {
-        document.getElementById("sub").textContent = String(e);
+      main().catch(() => {
+        document.querySelector(".table-wrap")?.setAttribute("aria-busy", "false");
+        document.getElementById("tbody").innerHTML = `<tr><td colspan="7" class="bad">${esc(t("loadError"))}</td></tr>`;
+        document.getElementById("auditSummary").textContent = t("loadError");
       });
     

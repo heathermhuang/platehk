@@ -18,15 +18,23 @@ The current public UI uses a flat Ledger visual system: compact auction-record t
 - Site: [https://plate.hk/](https://plate.hk/)
 - Data guide and methodology: [https://plate.hk/about.html](https://plate.hk/about.html)
 - API docs: [https://plate.hk/api.html](https://plate.hk/api.html)
+- MCP docs: [https://plate.hk/mcp.html](https://plate.hk/mcp.html)
 - Data audit: [https://plate.hk/audit.html](https://plate.hk/audit.html)
 - Changelog: [https://plate.hk/changelog.html](https://plate.hk/changelog.html)
+- Popular plates: [https://plate.hk/plates/](https://plate.hk/plates/)
 
 ## Project docs
 
 - Contribution guide: [CONTRIBUTING.md](./CONTRIBUTING.md)
 - Security posture: [SECURITY.md](./SECURITY.md)
+- Maintainer update workflow: [UPDATE.md](./UPDATE.md)
+- Cloudflare Worker handover: [CLOUDFLARE_WORKERS_HANDOVER.md](./CLOUDFLARE_WORKERS_HANDOVER.md)
+- API implementation notes: [api/README.md](./api/README.md)
 - OpenAPI spec: [api/openapi.yaml](./api/openapi.yaml)
+- MCP implementation notes: [mcp/README.md](./mcp/README.md)
+- Agent guide and public skill: [agent.md](./agent.md), [skill.md](./skill.md)
 - SEO/AEO measurement baseline: [docs/SEO_AEO_BASELINE.md](./docs/SEO_AEO_BASELINE.md)
+- Historical handoffs and recovery notes: [docs/](./docs/)
 
 ## At a Glance
 
@@ -133,6 +141,8 @@ Legacy runtime code has been removed; production and local runtime paths use the
 The production frontend is intentionally static-first and style-light:
 
 - `assets/ledger.css` carries the current flat Ledger visual layer across the homepage, policy pages, camera page, API/audit pages, and generated plate pages
+- `assets/info-shell.js` gives About, Terms, Privacy, Changelog, Audit, API, MCP, and Popular Plates one shared header, active navigation state, language-aware links, and grouped footer
+- `assets/popular-index.js` adds filtering and staged disclosure to the Popular Plates index while leaving every plate link visible when JavaScript is unavailable
 - `assets/logo.svg` and `assets/favicon.svg` use a square Hong Kong-style plate mark with centered `HONG / KONG` text
 - Search result rows are tuned as dense auction ledger records on desktop and readable cards on mobile
 - `assets/index.share.js` generates branded share posters in-browser from the current row data

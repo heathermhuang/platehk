@@ -3,15 +3,26 @@
           pageTitle: "API 文檔 | Plate.hk",
           title: "API 文檔",
           back: "← 返回首頁",
-          updated: "最後更新：2026年8月17日",
+          updated: "最後更新：2026年8月24日",
+          statusLoading: "正在讀取最新資料狀態…",
+          statusError: "暫時未能讀取即時狀態；API 端點仍可按下方方式使用。",
+          statusLabels: ["API 索引", "審核執行", "搜尋筆數"],
           html: `
             <p>Plate.hk 提供公開 JSON 車牌拍賣搜尋 API。這是獨立資料索引，不是香港政府或運輸署 API；如資料有差異，以運輸署原始文件為準。</p>
+            <div class="info-live-status" id="apiStatus" aria-live="polite"><div><strong>正在讀取最新資料狀態…</strong></div></div>
             <h2>直接搜尋車牌</h2>
             <div class="box">
               <div><code>GET https://plate.hk/api/search?dataset=all&amp;q=88&amp;page=1&amp;page_size=20&amp;sort=amount_desc</code></div>
             </div>
             <p><code>dataset</code> 可用 <code>all</code>、<code>pvrm</code>、<code>tvrm_physical</code>、<code>tvrm_eauction</code> 或 <code>tvrm_legacy</code>；<code>q</code> 是車牌搜尋字串。回應包含 <code>total</code>、分頁資料及每筆拍賣紀錄。</p>
             <p><code>curl -G 'https://plate.hk/api/search' --data-urlencode 'dataset=all' --data-urlencode 'q=88' --data-urlencode 'page_size=20'</code></p>
+
+            <h2>限制與錯誤處理</h2>
+            <ul>
+              <li><code>page_size</code> 必須為 1 至 200；超出範圍會回應 <code>400 invalid_paging</code>。</li>
+              <li>深層分頁可能回應 <code>400 query_window_exceeded</code>；應縮窄車牌查詢或使用資料分片。</li>
+              <li>公開讀取端點設有速率限制；收到 <code>429 rate_limited</code> 時，請按 <code>Retry-After</code> 標頭稍後重試。</li>
+            </ul>
 
             <h2>靜態資料入口</h2>
             <p><code>Base URL: https://plate.hk/api/v1</code></p>
@@ -65,15 +76,26 @@
           pageTitle: "API Docs | Plate.hk",
           title: "API Docs",
           back: "← Back to Home",
-          updated: "Last updated: 17 Aug 2026",
+          updated: "Last updated: 24 Aug 2026",
+          statusLoading: "Loading the latest data status…",
+          statusError: "Live status is temporarily unavailable. The API remains available through the endpoints below.",
+          statusLabels: ["API index", "Audit run", "Search rows"],
           html: `
             <p>Plate.hk provides a public JSON search API for Hong Kong plate-auction records. It is an independent data index, not a Hong Kong Government or Transport Department API; the original Transport Department document prevails if data differs.</p>
+            <div class="info-live-status" id="apiStatus" aria-live="polite"><div><strong>Loading the latest data status…</strong></div></div>
             <h2>Search by plate</h2>
             <div class="box">
               <div><code>GET https://plate.hk/api/search?dataset=all&amp;q=88&amp;page=1&amp;page_size=20&amp;sort=amount_desc</code></div>
             </div>
             <p><code>dataset</code> accepts <code>all</code>, <code>pvrm</code>, <code>tvrm_physical</code>, <code>tvrm_eauction</code>, or <code>tvrm_legacy</code>; <code>q</code> is the plate query. The response includes <code>total</code>, paging fields, and auction-result rows.</p>
             <p><code>curl -G 'https://plate.hk/api/search' --data-urlencode 'dataset=all' --data-urlencode 'q=88' --data-urlencode 'page_size=20'</code></p>
+
+            <h2>Limits and errors</h2>
+            <ul>
+              <li><code>page_size</code> must be between 1 and 200. Out-of-range values return <code>400 invalid_paging</code>.</li>
+              <li>Deep pagination may return <code>400 query_window_exceeded</code>. Narrow the plate query or use dataset shards.</li>
+              <li>Public read endpoints are rate limited. On <code>429 rate_limited</code>, wait for the <code>Retry-After</code> interval before retrying.</li>
+            </ul>
 
             <h2>Static data entrypoint</h2>
             <p><code>Base URL: https://plate.hk/api/v1</code></p>
@@ -138,6 +160,24 @@
           : "https://plate.hk";
       }
 
+      async function renderStatus(t) {
+        const status = document.getElementById("apiStatus");
+        if (!status) return;
+        try {
+          const [indexResponse, auditResponse] = await Promise.all([
+            fetch("./api/v1/index.json", { cache: "no-store" }),
+            fetch("./data/audit.json", { cache: "no-store" }),
+          ]);
+          if (!indexResponse.ok || !auditResponse.ok) throw new Error(`HTTP ${indexResponse.status}/${auditResponse.status}`);
+          const [index, audit] = await Promise.all([indexResponse.json(), auditResponse.json()]);
+          const searchRows = Number(index.datasets?.all?.total_rows || 0);
+          const values = [index.generated_at || "—", audit.generated_at || "—", searchRows.toLocaleString("en-US")];
+          status.innerHTML = t.statusLabels.map((label, index) => `<div><span>${label}</span><strong>${values[index]}</strong></div>`).join("");
+        } catch {
+          status.innerHTML = `<div><strong>${t.statusError}</strong></div>`;
+        }
+      }
+
       function render() {
         const t = I18N[lang];
         document.documentElement.lang = lang === "en" ? "en" : "zh-HK";
@@ -147,6 +187,7 @@
         contentEl.innerHTML = t.html.replaceAll("https://plate.hk", siteOrigin());
         backLinkEl.textContent = t.back;
         backLinkEl.href = `./index.html?lang=${lang}`;
+        renderStatus(t);
       }
 
       render();

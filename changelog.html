@@ -9,6 +9,7 @@
       content="Plate.hk 更新日誌：香港車牌拍賣搜尋網站的資料更新、修復與功能變更記錄。"
     />
     <meta name="robots" content="index,follow,max-image-preview:large" />
+    <meta name="theme-color" content="#f4f1e8" />
     <link rel="canonical" href="https://plate.hk/changelog.html" />
     <meta property="og:type" content="article" />
     <meta property="og:title" content="更新日誌 | Plate.hk" />
@@ -64,11 +65,12 @@
       ul { margin:8px 0 0 18px; }
       a { color:var(--accent); }
     </style>
-    <link rel="stylesheet" href="./assets/ledger.css?v=20260512-09" />
+    <link rel="stylesheet" href="./assets/ledger.css?v=20260824-12" />
 
   </head>
-  <body>
-    <div class="wrap">
+  <body class="info-page info-page--changelog" data-info-page="changelog">
+    <div data-info-shell-header></div>
+    <main class="wrap" id="main-content">
       <div class="top">
         <a id="backLink" href="./index.html">&larr; 返回首頁</a>
       </div>
@@ -77,7 +79,9 @@
         <div class="meta" id="updated"></div>
         <div id="entries"></div>
       </div>
-    </div>
-    <script src="./assets/changelog.js?v=20260812-01"></script>
+    </main>
+    <div data-info-shell-footer></div>
+    <script src="./assets/changelog.js?v=20260824-02"></script>
+    <script src="./assets/info-shell.js?v=20260824-01"></script>
   </body>
 </html>

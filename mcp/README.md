@@ -1,62 +1,46 @@
-# MCP Service Design
+# MCP Service
 
-目標：讓 AI 與第三方開發者以「工具」方式存取車牌拍賣資料，不需要下載全量 JSON。
+Plate.hk 的 Cloudflare Worker 提供唯讀 streamable HTTP MCP 服務，讓 AI 與第三方工具搜尋香港車牌拍賣紀錄，不需要下載全量 JSON。完整雙語使用說明見 [`mcp.html`](../mcp.html)，實作在 [`cloudflare-worker/src/mcp.mjs`](../cloudflare-worker/src/mcp.mjs)。
 
-本 repo 提供兩種方式：
-1) **靜態 Open Data API**（見 `api/v1/`）
-2) **Cloudflare Worker 搜尋 API**（提供 `/api/search`、`/api/issues`、`/api/issue`）
+## 連線與 discovery
 
-現在 Worker 已提供一個最小可用的 HTTP MCP 端點：
-- `/mcp`
-- `/.well-known/mcp/server-card.json`
-- `/.well-known/mcp-server-card`
+- MCP endpoint：`POST /mcp`
+- Server Card：`/.well-known/mcp/server-card.json`
+- 相容別名：`/.well-known/mcp-server-card`
+- 支援 protocol：`2025-06-18`、`2025-03-26`
 
-MCP 服務設計仍建議保持薄薄的 proxy：
-- 優先呼叫 Worker `/api/search`（不需要掃描分片 JSON，延遲最低）
-- 若後端不可用，再 fallback 到 `/api/v1/...` 的分片資料
+列出目前工具：
 
-## Tools（建議）
+```bash
+curl https://plate.hk/mcp \
+  -H 'Content-Type: application/json' \
+  -H 'Accept: application/json, text/event-stream' \
+  -H 'MCP-Protocol-Version: 2025-06-18' \
+  --data '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+```
 
-1. `vrm.list_datasets`
-- Input: `{}`  
-- Output: `{ datasets: [{ id, label, base }] }`
+## 現有 tools
 
-2. `vrm.list_issues`
-- Input: `{ dataset: "pvrm"|"tvrm_physical"|"tvrm_eauction" }`
-- Output: `{ issues: [{ auction_date, count, is_lny? }] }`
+1. `platehk_list_datasets`
+   - Input：`{}`
+   - 列出公開 dataset 及 machine-readable API 入口。
+2. `platehk_search`
+   - Required input：`q`
+   - Optional input：`dataset`、`issue`、`sort`、`mode`、`page`、`page_size`
+   - `dataset` 支援 `all`、`pvrm`、`tvrm_physical`、`tvrm_eauction`、`tvrm_legacy`；`page_size` 上限為 200。
+3. `platehk_list_issues`
+   - Required input：`dataset`
+   - 列出 `pvrm`、`tvrm_physical`、`tvrm_eauction` 或 `tvrm_legacy` 的拍賣期數。
+4. `platehk_get_issue`
+   - Required input：`dataset`、`auction_date`
+   - 取得指定期數的完整資料列。
 
-3. `vrm.get_issue`
-- Input: `{ dataset, auction_date }`
-- Output: `{ auction_date, rows: [...] }`
+所有工具都透過現有 Plate.hk API 執行，回傳 source-linked JSON，並標示為 read-only。搜尋會 trim、uppercase、處理版面空格；PVRM matching 亦會套用 `I -> 1`、`O -> 0`、刪除 `Q` 的規則。
 
-4. `vrm.search`
-- Input:
-  - `dataset`
-  - `q` (plate query)
-  - `issue` (optional; restrict to one issue)
-  - `limit` (default 200)
-  - `cursor` (optional; pagination token)
-- Output:
-  - `{ rows: [...], next_cursor? }`
-- Notes:
-  - Normalize query: trim, uppercase, remove extra spaces.
-  - HK PVRM search normalization: replace `I -> 1`, `O -> 0`, ignore spaces.
+## 權限邊界
 
-5. `vrm.get_plate_history`
-- Input: `{ dataset, plate }`
-- Output: `{ plate, hits: [{ auction_date, single_line, double_line, amount_hkd, pdf_url }] }`
+公開 MCP tools 不需要 OAuth，亦不提供寫入、預約或交易能力。相機 OCR 是另一個受保護端點；機器客戶端需要帶有 `vision:ocr` scope 的 bearer token。相關 discovery：
 
-## Implementation Notes
-
-- MCP server can be deployed as:
-  - Cloudflare Worker (HTTP fetch to the static API + caching)
-  - Small Node/Python service
-- For correctness and speed:
-  - Cache `issues.manifest.json` per dataset
-  - Cache hot issue shards
-  - Progressive scan for search if you don't build an index
-
-## Index Option (Optional)
-若要做真正快速搜尋，可額外生成「倒排索引」shards，例如按 plate 前 2 字元分片：
-- `index/{dataset}/prefix/{AA}.json`
-並在 MCP `vrm.search` 只抓對應分片。
+- `/.well-known/oauth-protected-resource`
+- `/.well-known/oauth-authorization-server`
+- `/.well-known/jwks.json`

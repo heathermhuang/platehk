@@ -16,6 +16,8 @@ MAX_PAGES = 800
 INDEX_LINKS = 420
 TABLE_ROWS = 18
 LEDGER_CSS_VERSION = "20260812-11"
+INFO_CSS_VERSION = "20260824-12"
+INFO_SHELL_VERSION = "20260824-01"
 MARKET_SIGNALS_PATH = DATA / "market" / "28car.active.json"
 _MARKET_SIGNALS: dict | None = None
 _DATASET_STATS: dict[str, dict] = {}
@@ -688,7 +690,7 @@ def render_page(entries_by_norm: dict[str, dict], entry: dict, related: list[dic
 def render_index(entries: list[dict]) -> str:
     top_cards = "\n".join(
         f"""\
-        <a class="card" href="./{item['plate_norm']}.html">
+        <a class="card" data-popular-card href="./{item['plate_norm']}.html">
           <div class="plate">{html.escape(item['plate_display'])}</div>
           <div class="price">{html.escape(money(item['top_row'].get('amount_hkd')))}</div>
           <div class="meta">{item['count']} records · {html.escape(classify_plate(item['plate_norm'])[1])}</div>
@@ -742,7 +744,8 @@ def render_index(entries: list[dict]) -> str:
     <meta name="twitter:image" content="https://plate.hk/assets/logo.svg" />
     <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg" />
     <script type="application/ld+json">{json.dumps(ld_json, ensure_ascii=False)}</script>
-    <link rel="stylesheet" href="../assets/ledger.css?v={LEDGER_CSS_VERSION}" />
+    <meta name="theme-color" content="#f4f1e8" />
+    <link rel="stylesheet" href="../assets/ledger.css?v={INFO_CSS_VERSION}" />
     <style>
       :root {{ --bg:#f4f1e8; --panel:#fffaf0; --line:#c9c0ad; --ink:#1d1b17; --muted:#5f594d; --accent:#3a5d4b; }}
       * {{ box-sizing:border-box; }}
@@ -754,12 +757,20 @@ def render_index(entries: list[dict]) -> str:
       .lede {{ color:var(--muted); line-height:1.72; margin-top:12px; max-width:78ch; }}
       .hub-actions {{ display:flex; flex-wrap:wrap; gap:10px; margin-top:14px; }}
       .hub-actions a {{ display:inline-flex; padding:9px 12px; border:1px solid var(--line); border-radius:4px; text-decoration:none; font-weight:800; }}
+      .popular-tools {{ display:none; grid-template-columns:minmax(220px,1fr) auto auto; gap:10px; align-items:end; margin-top:14px; padding:14px; border:1px solid var(--line-strong); border-radius:4px; background:var(--surface); }}
+      .popular-ready .popular-tools {{ display:grid; }}
+      .popular-snapshot {{ margin-top:12px; color:var(--muted); font-size:12px; font-weight:700; }}
+      .popular-tools label {{ display:grid; gap:6px; color:var(--muted); font-size:12px; font-weight:800; }}
+      .popular-tools input {{ width:100%; min-height:44px; }}
+      .popular-count {{ min-height:44px; display:inline-flex; align-items:center; color:var(--muted); font-size:13px; font-weight:700; }}
+      .popular-tools button {{ min-height:44px; }}
       .grid {{ display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap:10px; margin-top:14px; }}
       .card {{
         display:flex; min-height:112px; flex-direction:column; align-items:flex-start; gap:8px;
         text-decoration:none; color:inherit; padding:12px;
       }}
       .card:hover {{ background:var(--surface-muted) !important; }}
+      [data-popular-card][hidden] {{ display:none !important; }}
       .card .plate {{
         display:inline-flex; width:auto; min-width:58px; max-width:100%; height:34px;
         align-items:center; justify-content:center; padding:0 10px;
@@ -769,11 +780,12 @@ def render_index(entries: list[dict]) -> str:
       .card .meta {{ color:var(--muted); font-size:12px; line-height:1.4; margin:0; }}
       @media (max-width: 980px) {{ .grid {{ grid-template-columns: repeat(3, minmax(0,1fr)); }} }}
       @media (max-width: 760px) {{ .grid {{ grid-template-columns: repeat(2, minmax(0,1fr)); }} }}
-      @media (max-width: 620px) {{ .grid {{ grid-template-columns: 1fr; }} }}
+      @media (max-width: 620px) {{ .popular-ready .popular-tools {{ grid-template-columns:1fr; align-items:stretch; }} .grid {{ grid-template-columns: 1fr; }} }}
     </style>
   </head>
-  <body>
-    <div class="wrap">
+  <body class="info-page info-page--plates" data-info-page="plates">
+    <div data-info-shell-header></div>
+    <main class="wrap" id="main-content">
       <div class="hero">
         <a href="../index.html">← 返回首頁 / Back to Search</a>
         <h1>熱門車牌拍賣結果索引</h1>
@@ -782,9 +794,18 @@ def render_index(entries: list[dict]) -> str:
           Browse notable Hong Kong plate auction records ranked by public sale results, record coverage, and memorable plate patterns. Historical prices are not current valuations.
         </div>
         <div class="hub-actions"><a href="../about.html">資料方法與限制 / Data guide</a><a href="../index.html">搜尋全部紀錄 / Search all records</a></div>
+        <div class="popular-snapshot">資料快照 / Data snapshot: <time datetime="{TODAY}">{TODAY}</time></div>
       </div>
-      <div class="grid">{top_cards}</div>
-    </div>
+      <div class="popular-tools">
+        <label for="popularQuery">篩選車牌 / Filter plates<input id="popularQuery" type="search" inputmode="search" placeholder="例如 88、HK、XX" autocomplete="off" /></label>
+        <span class="popular-count" id="popularCount" aria-live="polite"></span>
+        <button type="button" id="popularShowAll">顯示全部 / Show all</button>
+      </div>
+      <div class="grid" id="popularGrid">{top_cards}</div>
+    </main>
+    <div data-info-shell-footer></div>
+    <script src="../assets/popular-index.js?v=20260824-01"></script>
+    <script src="../assets/info-shell.js?v={INFO_SHELL_VERSION}"></script>
   </body>
 </html>
 """
@@ -941,7 +962,7 @@ def render_about() -> str:
     <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg" />
     <link rel="alternate" type="application/json" href="https://plate.hk/api/v1/index.json" title="Plate.hk public API dataset index" />
     <script type="application/ld+json">{json.dumps(ld_json, ensure_ascii=False)}</script>
-    <link rel="stylesheet" href="./assets/ledger.css?v={LEDGER_CSS_VERSION}" />
+    <link rel="stylesheet" href="./assets/ledger.css?v={INFO_CSS_VERSION}" />
     <style>
       :root {{ --bg:#f4f1e8; --panel:#fffaf0; --line:#c9c0ad; --ink:#1d1b17; --muted:#5f594d; --accent:#3a5d4b; }}
       * {{ box-sizing:border-box; }}
@@ -979,8 +1000,9 @@ def render_about() -> str:
       }}
     </style>
   </head>
-  <body>
-    <main class="wrap">
+  <body class="info-page info-page--about" data-info-page="about">
+    <div data-info-shell-header></div>
+    <main class="wrap" id="main-content">
       <header class="hero">
         <a href="./index.html">← 返回搜尋 / Back to Search</a>
         <h1>香港車牌拍賣資料說明與方法</h1>
@@ -1064,6 +1086,8 @@ def render_about() -> str:
         </div>
       </div>
     </main>
+    <div data-info-shell-footer></div>
+    <script src="./assets/info-shell.js?v={INFO_SHELL_VERSION}"></script>
   </body>
 </html>
 """

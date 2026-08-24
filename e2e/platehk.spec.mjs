@@ -175,6 +175,19 @@ test.describe("Plate.hk public API", () => {
     expect(mcpResp.ok()).toBeTruthy();
     const mcp = await mcpResp.json();
     expect(JSON.stringify(mcp)).toContain("platehk_search");
+
+    for (const protocol of ["2025-06-18", "2025-03-26"]) {
+      const toolsResp = await request.post("/mcp", {
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json, text/event-stream",
+          "MCP-Protocol-Version": protocol,
+        },
+        data: { jsonrpc: "2.0", id: 1, method: "tools/list" },
+      });
+      expect(toolsResp.ok()).toBeTruthy();
+      expect(await toolsResp.text()).toContain("platehk_search");
+    }
   });
 
   test("rejects malformed public API input without server errors", async ({ request }) => {
@@ -661,5 +674,130 @@ test.describe("Plate.hk browser journeys", () => {
     }
 
     await expectNoBrowserErrors(errors);
+  });
+
+  test("keeps public information pages in one responsive, navigable shell", async ({ page }, testInfo) => {
+    const errors = collectBrowserErrors(page);
+    const pages = [
+      ["/about.html", "about"],
+      ["/terms.html", "terms"],
+      ["/privacy.html", "privacy"],
+      ["/changelog.html", "changelog"],
+      ["/audit.html", "audit"],
+      ["/api.html", "api"],
+      ["/mcp.html", "api"],
+      ["/plates/index.html", "plates"],
+    ];
+
+    for (const [path, activePage] of pages) {
+      await page.goto(`${path}?lang=en`);
+      await expect(page.locator(".info-site-header")).toBeVisible();
+      await expect(page.locator(".info-site-footer")).toBeVisible();
+      await expect(page.locator("main#main-content")).toBeVisible();
+      await expect(page.locator(`body[data-info-page="${activePage}"]`)).toBeVisible();
+      await expect(page.locator(".info-site-header [aria-current=page], .info-site-footer [aria-current=page]")).toHaveCount(1);
+      const internalShellLinks = await page.locator(".info-nav a, .info-site-footer a").evaluateAll((links) => links
+        .map((link) => link.href)
+        .filter((href) => new URL(href).origin === location.origin && !new URL(href).pathname.endsWith("llms.txt")));
+      expect(internalShellLinks.every((href) => new URL(href).searchParams.get("lang") === "en")).toBe(true);
+      if (path === "/audit.html") await expect(page.locator("#auditSummary")).not.toBeEmpty();
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
+    }
+
+    await page.goto("/audit.html");
+    await page.locator("#langBtn").click();
+    await expect(page).toHaveURL(/lang=en/);
+    await expect(page.locator('.info-nav a[href="/api.html?lang=en"]')).toBeVisible();
+
+    await page.goto("/about.html?lang=en");
+    await page.keyboard.press("Tab");
+    await expect(page.locator(".info-skip-link")).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(page).toHaveURL(/#main-content$/);
+
+    const originalViewport = page.viewportSize();
+    await page.setViewportSize({ width: 820, height: 900 });
+    await page.goto("/about.html?lang=en");
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
+    await page.setViewportSize(originalViewport);
+
+    await page.goto("/api.html?lang=en");
+    await expect(page.locator("#apiStatus strong").first()).not.toContainText("Loading");
+    await expect(page.locator("#content")).toContainText("Retry-After");
+
+    await page.goto("/changelog.html?lang=en");
+    await expect(page.locator("#changelogStatus strong").first()).not.toContainText("Loading");
+    await expect(page.locator(".changelog-archive")).toBeVisible();
+
+    await page.goto("/plates/index.html");
+    const initialLimit = testInfo.project.name.includes("mobile") ? 40 : 80;
+    await expect(page.locator("[data-popular-card]:visible")).toHaveCount(initialLimit);
+    await page.locator("#popularQuery").fill(" 8 8 ");
+    await expect(page.locator("#popularCount")).toContainText("results");
+    const visiblePlates = await page.locator("[data-popular-card]:visible .plate").allTextContents();
+    expect(visiblePlates.length).toBeGreaterThan(0);
+    expect(visiblePlates.every((plate) => plate.replace(/\s+/g, "").includes("88"))).toBe(true);
+    await page.locator("#popularQuery").fill("NOT-A-PLATE");
+    await expect(page.locator("[data-popular-card]:visible")).toHaveCount(0);
+    await expect(page.locator("#popularCount")).toContainText("0");
+    await page.locator("#popularQuery").clear();
+    await expect(page.locator("[data-popular-card]:visible")).toHaveCount(initialLimit);
+    await page.locator("#popularShowAll").click();
+    await expect(page.locator("[data-popular-card]:visible")).toHaveCount(420);
+    await expect(page.locator("#popularShowAll")).toBeHidden();
+
+    await expectNoBrowserErrors(errors);
+  });
+
+  test("shows recoverable states when information-page freshness data fails", async ({ page }) => {
+    const errors = collectBrowserErrors(page);
+    await page.route("**/data/audit.json", (route) => route.fulfill({ status: 500, body: "unavailable" }));
+
+    await page.goto("/api.html?lang=en");
+    await expect(page.locator("#apiStatus")).toContainText("temporarily unavailable");
+
+    await page.goto("/changelog.html?lang=en");
+    await expect(page.locator("#changelogStatus")).toContainText("temporarily unavailable");
+
+    await page.goto("/audit.html?lang=en");
+    await expect(page.locator("#auditSummary")).toContainText("could not be loaded");
+    await expect(page.locator(".table-wrap")).toHaveAttribute("aria-busy", "false");
+
+    await page.unroute("**/data/audit.json");
+    await page.route("**/data/audit.json", (route) => route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ generated_at: "2026-08-24", summary: {} }),
+    }));
+    await page.route("**/api/v1/index.json", (route) => route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ generated_at: "2026-08-23", datasets: { all: { total_rows: 213572 } } }),
+    }));
+    await page.goto("/api.html?lang=en");
+    await expect(page.locator("#apiStatus")).toContainText("2026-08-23");
+    await expect(page.locator("#apiStatus")).toContainText("2026-08-24");
+    await expect(page.locator("#apiStatus")).toContainText("213,572");
+    await page.goto("/changelog.html?lang=en");
+    await expect(page.locator("#changelogStatus")).toContainText("0 / 0");
+
+    expect(errors).toHaveLength(3);
+    expect(errors.every((error) => error.includes("500 (Internal Server Error)"))).toBe(true);
+  });
+
+  test("keeps every popular-plate link usable when enhancement JavaScript is unavailable", async ({ browser, page }, testInfo) => {
+    const noJsContext = await browser.newContext({
+      baseURL: testInfo.project.use.baseURL,
+      javaScriptEnabled: false,
+      viewport: testInfo.project.use.viewport,
+    });
+    const noJsPage = await noJsContext.newPage();
+    await noJsPage.goto("/plates/index.html");
+    await expect(noJsPage.locator("[data-popular-card]:visible")).toHaveCount(420);
+    await expect(noJsPage.locator(".popular-tools")).toBeHidden();
+    await noJsContext.close();
+
+    await page.route("**/assets/popular-index.js*", (route) => route.abort());
+    await page.goto("/plates/index.html");
+    await expect(page.locator("[data-popular-card]:visible")).toHaveCount(420);
+    await expect(page.locator(".popular-tools")).toBeHidden();
   });
 });
