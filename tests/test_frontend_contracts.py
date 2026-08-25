@@ -345,7 +345,8 @@ class FrontendContractsTests(unittest.TestCase):
         self.assertIn('class="plate broker-plate-value"', index_html)
         self.assertNotIn(".market-plate {", index_html)
         self.assertNotIn(".market-plate", ledger_css)
-        self.assertIn(".info-page .actions a.btn.primary", ledger_css)
+        self.assertIn(".info-page .actions a:not(.primary)", ledger_css)
+        self.assertIn(".lang-toggle:not(.info-lang-toggle) button", ledger_css)
         self.assertIn(".info-lang-toggle button", ledger_css)
         self.assertIn("./assets/ledger.css?v=20260812-11", index_html)
 
