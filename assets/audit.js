@@ -6,7 +6,7 @@
           back: "返回",
           datasetLabel: "資料集",
           statusLabel: "狀態",
-          queryLabel: "期數 / 檔案",
+          queryLabel: "期數／檔案",
           queryPlaceholder: "搜尋期數、PDF 名稱或本地檔案",
           problemsOnlyLabel: "只看問題",
           thDataset: "分類",
@@ -126,8 +126,6 @@
         document.getElementById("thRows").textContent = t("thRows");
         document.getElementById("thTotal").textContent = t("thTotal");
         document.getElementById("thErr").textContent = t("thErr");
-        // Make it obvious to English-only users too.
-        document.getElementById("langBtn").textContent = lang === "zh" ? "中文 / English" : "English / 中文";
       }
 
       function setLang(next) {
@@ -136,7 +134,6 @@
         u.searchParams.set("lang", lang);
         history.replaceState(null, "", u.toString());
         applyLang();
-        dispatchEvent(new CustomEvent("platehk:languagechange", { detail: { lang } }));
       }
 
       function buildDatasetOptions() {
@@ -307,17 +304,6 @@
         statusSel.addEventListener("change", rerender);
         issueQuery.addEventListener("input", rerender);
         problemsOnly.addEventListener("change", rerender);
-
-        document.getElementById("langBtn").addEventListener("click", () => {
-          setLang(lang === "zh" ? "en" : "zh");
-          buildDatasetOptions();
-          buildStatusOptions();
-          document.getElementById("issueQuery").placeholder = t("queryPlaceholder");
-          document.getElementById("statusLabel").textContent = t("statusLabel");
-          document.getElementById("queryLabel").textContent = t("queryLabel");
-          document.getElementById("problemsOnlyLabel").textContent = t("problemsOnlyLabel");
-          if (REPORT) render(REPORT);
-        });
 
         document.querySelector(".table-wrap")?.setAttribute("aria-busy", "true");
         const resp = await fetch("./data/audit.json", { cache: "no-store" });

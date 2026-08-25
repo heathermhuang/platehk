@@ -1141,6 +1141,7 @@ function composeAuctionKey(datasetKey, auctionDate) {
         thPdfEl.textContent = t("thPdf");
         disclaimerEl.textContent = t("disclaimer");
         popularLinkEl.textContent = t("popularLink");
+        aboutLinkEl.textContent = t("aboutLink");
         cameraTopLinkEl.setAttribute("aria-label", t("cameraLinkLabel"));
         cameraTopLinkEl.innerHTML =
           '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8.2 6.2 9.7 4h4.6l1.5 2.2H19c1.1 0 2 .9 2 2V18c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2V8.2c0-1.1.9-2 2-2h3.2Zm3.8 11a4.1 4.1 0 1 0 0-8.2 4.1 4.1 0 0 0 0 8.2Zm0-1.8a2.3 2.3 0 1 1 0-4.6 2.3 2.3 0 0 1 0 4.6Z"/></svg>';
@@ -1153,6 +1154,7 @@ function composeAuctionKey(datasetKey, auctionDate) {
         feedbackLinkEl.textContent = t("feedbackLink");
         cameraTopLinkEl.href = `./camera.html?lang=${currentLang}`;
         popularLinkEl.href = `./plates/index.html?lang=${currentLang}`;
+        aboutLinkEl.href = t("aboutUrl");
         termsLinkEl.href = t("termsUrl");
         privacyLinkEl.href = t("privacyUrl");
         changelogLinkEl.href = t("changelogUrl");

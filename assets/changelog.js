@@ -3,13 +3,22 @@
           pageTitle: "更新日誌 | Plate.hk",
           title: "更新日誌",
           back: "← 返回首頁",
-          updated: "最後更新：2026年8月24日",
+          updated: "最後更新：2026年8月25日",
           currentNote: "產品更新與每日資料同步分開顯示；下方狀態直接讀取最新審核輸出。",
           archiveLabel: (count) => `較早的更新（${count}）`,
           statusLoading: "正在讀取最新資料狀態…",
           statusError: "暫時未能讀取即時狀態；可前往資料審核頁核對。",
           statusLabels: ["資料快照", "來源列數", "可用 PDF"],
           items: [
+            {
+              date: "2026-08-25",
+              title: "所有公開頁面改為獨立中英文版本",
+              points: [
+                "資料說明、審核、API、MCP、更新日誌、條款、私隱、熱門車牌索引及 800 個車牌詳情頁，現在每次只顯示一種語言。",
+                "共用導覽列加入繁／EN 切換，並在頁面之間保留所選語言；首頁的資料說明連結也會跟隨目前語言。",
+                "拆分所有原本合併在同一標題、段落、表格欄位及市場提示內的中英文文案。"
+              ]
+            },
             {
               date: "2026-08-24",
               title: "統一資料頁導覽、內容狀態與熱門車牌瀏覽",
@@ -495,13 +504,22 @@
           pageTitle: "Changelog | Plate.hk",
           title: "Changelog",
           back: "← Back to Home",
-          updated: "Last updated: 24 August 2026",
+          updated: "Last updated: 25 August 2026",
           currentNote: "Product releases and daily data refreshes are shown separately. The status below reads the latest audit output directly.",
           archiveLabel: (count) => `Earlier updates (${count})`,
           statusLoading: "Loading the latest data status…",
           statusError: "Live status is temporarily unavailable. Use the Data Audit page to verify the current snapshot.",
           statusLabels: ["Data snapshot", "Source rows", "Valid PDFs"],
           items: [
+            {
+              date: "2026-08-25",
+              title: "Separated Chinese and English across every public page",
+              points: [
+                "The data guide, audit, API, MCP, changelog, terms, privacy, popular-plate index, and all 800 generated plate detail pages now show one language at a time.",
+                "The shared navigation now includes a Traditional Chinese/English switch and preserves the selected language across pages; the homepage Data Guide link follows the current locale as well.",
+                "Headings, paragraphs, table labels, and market notices that previously merged Chinese and English have been split into locale-specific copy."
+              ]
+            },
             {
               date: "2026-08-24",
               title: "Unified information-page navigation, freshness, and popular-plate browsing",

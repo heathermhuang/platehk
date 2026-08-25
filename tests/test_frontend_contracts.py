@@ -162,19 +162,22 @@ class FrontendContractsTests(unittest.TestCase):
             self.assertIn('data-info-shell-header', html, html_name)
             self.assertIn('data-info-shell-footer', html, html_name)
             self.assertIn('id="main-content"', html, html_name)
-            self.assertIn('assets/info-shell.js?v=20260824-01', html, html_name)
-            self.assertIn('assets/ledger.css?v=20260824-12', html, html_name)
+            self.assertIn('assets/info-shell.js?v=20260825-01', html, html_name)
+            self.assertIn('assets/ledger.css?v=20260825-02', html, html_name)
             self.assertIn('name="theme-color" content="#f4f1e8"', html, html_name)
 
         shell = (ROOT / "assets" / "info-shell.js").read_text(encoding="utf-8")
         self.assertIn('aria-current="page"', shell)
-        self.assertIn("Information pages", shell)
+        self.assertIn("Information page navigation", shell)
+        self.assertIn('id="infoLangZh"', shell)
+        self.assertIn('id="infoLangEn"', shell)
+        self.assertIn('location.assign(', shell)
         self.assertIn("/privacy.html", shell)
         self.assertIn("/mcp.html", shell)
         self.assertIn("https://github.com/heathermhuang/platehk", shell)
 
         changelog = (ROOT / "assets" / "changelog.js").read_text(encoding="utf-8")
-        self.assertIn('date: "2026-08-24"', changelog)
+        self.assertIn('date: "2026-08-25"', changelog)
         self.assertIn('./data/audit.json', changelog)
         self.assertIn('class="changelog-archive"', changelog)
 
@@ -189,6 +192,50 @@ class FrontendContractsTests(unittest.TestCase):
         self.assertIn("MCP-Protocol-Version: 2025-06-18", mcp)
         self.assertIn("vision:ocr", mcp)
         self.assertIn("drop <code>Q</code>", mcp)
+
+    def test_public_pages_do_not_merge_chinese_and_english_in_visible_copy(self) -> None:
+        public_pages = [
+            ROOT / name
+            for name in [
+                "index.html",
+                "about.html",
+                "terms.html",
+                "privacy.html",
+                "changelog.html",
+                "audit.html",
+                "api.html",
+                "mcp.html",
+            ]
+        ]
+        public_pages.extend(
+            path for path in (ROOT / "plates").glob("*.html") if " " not in path.name
+        )
+        merged_legacy_copy = [
+            "資料說明 Guide",
+            "返回搜尋 / Back to Search",
+            "收錄範圍 / Coverage",
+            "直接答案 / Direct Answers",
+            "資料流程 / Method",
+            "限制 / Limits",
+            "頁面狀態 / Page Status",
+            "官方 PDF / Official source",
+            'data-label="日期 / Date"',
+            'data-label="分類 / Dataset"',
+            'data-label="成交價 / Price"',
+            'data-label="來源 / Source"',
+            'data-label="資料集 / Dataset"',
+        ]
+        for page_path in public_pages:
+            page_html = page_path.read_text(encoding="utf-8")
+            with self.subTest(public_page=page_path.relative_to(ROOT)):
+                for legacy_copy in merged_legacy_copy:
+                    self.assertNotIn(legacy_copy, page_html)
+
+        for page_path in [ROOT / "about.html", ROOT / "plates" / "index.html", ROOT / "plates" / "88.html"]:
+            page_html = page_path.read_text(encoding="utf-8")
+            self.assertIn("assets/info-locale.js?v=20260825-01", page_html, page_path.name)
+            self.assertIn("data-copy-zh=", page_html, page_path.name)
+            self.assertIn("data-copy-en=", page_html, page_path.name)
 
     def test_popular_index_is_filterable_without_hiding_crawlable_links(self) -> None:
         index = (ROOT / "plates" / "index.html").read_text(encoding="utf-8")
@@ -211,12 +258,14 @@ class FrontendContractsTests(unittest.TestCase):
         for script_path in required_scripts:
             self.assertIn(f"'{script_path}'", service_worker, script_path)
         for shell_asset in [
-            "./assets/audit.js?v=20260824-02",
+            "./assets/audit.js?v=20260825-01",
             "./assets/api-page.js?v=20260824-03",
-            "./assets/changelog.js?v=20260824-02",
-            "./assets/info-shell.js?v=20260824-01",
-            "./assets/popular-index.js?v=20260824-01",
-            "./assets/ledger.css?v=20260824-12",
+            "./assets/changelog.js?v=20260825-01",
+            "./assets/info-locale.js?v=20260825-01",
+            "./assets/info-shell.js?v=20260825-01",
+            "./assets/popular-index.js?v=20260825-01",
+            "./assets/plate.market.js?v=20260825-01",
+            "./assets/ledger.css?v=20260825-02",
         ]:
             self.assertIn(f"'{shell_asset}'", service_worker, shell_asset)
 
@@ -296,6 +345,9 @@ class FrontendContractsTests(unittest.TestCase):
         self.assertIn('class="plate broker-plate-value"', index_html)
         self.assertNotIn(".market-plate {", index_html)
         self.assertNotIn(".market-plate", ledger_css)
+        self.assertIn(".info-page .actions a:not(.primary)", ledger_css)
+        self.assertIn(".lang-toggle:not(.info-lang-toggle) button", ledger_css)
+        self.assertIn(".info-lang-toggle button", ledger_css)
         self.assertIn("./assets/ledger.css?v=20260812-11", index_html)
 
         generated_market_pages = []
@@ -496,19 +548,20 @@ class FrontendContractsTests(unittest.TestCase):
         )
         index_types = {item["@type"] for item in index_ld["@graph"]}
         self.assertEqual(index_types, {"Organization", "WebSite"})
-        self.assertIn('href="./about.html"', index_html)
+        self.assertIn('id="aboutLink" href="./about.html?lang=zh"', index_html)
 
         plate_html = (ROOT / "plates" / "88.html").read_text(encoding="utf-8")
-        self.assertIn("官方 PDF / Official source", plate_html)
-        self.assertIn("直接答案 / Direct Answers", plate_html)
+        self.assertIn('<span data-lang-only="zh">官方 PDF</span>', plate_html)
+        self.assertIn('<span data-lang-only="en" hidden>Official source</span>', plate_html)
+        self.assertIn('data-copy-zh="直接答案" data-copy-en="Direct Answers"', plate_html)
         self.assertIn("Is this a current valuation?", plate_html)
         self.assertIn("What public auction records exist for Hong Kong plate 88?", plate_html)
         self.assertIn('rel="alternate" type="application/json"', plate_html)
         self.assertIn('<table class="responsive-table">', plate_html)
-        self.assertIn('<td data-label="日期 / Date">', plate_html)
-        self.assertIn('<td data-label="分類 / Dataset">', plate_html)
-        self.assertIn('data-label="成交價 / Price"', plate_html)
-        self.assertIn('<td data-label="來源 / Source">', plate_html)
+        self.assertIn('<td data-label-zh="日期" data-label-en="Date">', plate_html)
+        self.assertIn('<td data-label-zh="分類" data-label-en="Dataset">', plate_html)
+        self.assertIn('data-label-zh="成交價" data-label-en="Price"', plate_html)
+        self.assertIn('<td data-label-zh="來源" data-label-en="Source">', plate_html)
         self.assertIn(".grid > *, .stack, .card { min-width:0; }", plate_html)
         self.assertNotIn("If users search", plate_html)
         self.assertNotIn("built to answer direct searches", plate_html)
@@ -518,10 +571,10 @@ class FrontendContractsTests(unittest.TestCase):
             with self.subTest(plate_page=plate_path.name):
                 generated_plate_html = plate_path.read_text(encoding="utf-8")
                 self.assertIn('<table class="responsive-table">', generated_plate_html)
-                self.assertIn('<td data-label="日期 / Date">', generated_plate_html)
-                self.assertIn('<td data-label="分類 / Dataset">', generated_plate_html)
-                self.assertIn('data-label="成交價 / Price"', generated_plate_html)
-                self.assertIn('<td data-label="來源 / Source">', generated_plate_html)
+                self.assertIn('<td data-label-zh="日期" data-label-en="Date">', generated_plate_html)
+                self.assertIn('<td data-label-zh="分類" data-label-en="Dataset">', generated_plate_html)
+                self.assertIn('data-label-zh="成交價" data-label-en="Price"', generated_plate_html)
+                self.assertIn('<td data-label-zh="來源" data-label-en="Source">', generated_plate_html)
                 self.assertIn(".grid > *, .stack, .card { min-width:0; }", generated_plate_html)
         plate_ld = json.loads(
             re.search(
@@ -547,11 +600,11 @@ class FrontendContractsTests(unittest.TestCase):
         self.assertIn("PVRM、TVRM 實體拍賣及拍牌易有甚麼分別？", about_html)
         self.assertIn("不是現時估值、車主或持有人紀錄、即時放售證明", about_html)
         self.assertIn("GET /api/search?dataset=all&amp;q=88", about_html)
-        self.assertIn("API dataset index", about_html)
+        self.assertIn('data-copy-en="API Dataset Index"', about_html)
         self.assertIn('<table class="responsive-table">', about_html)
-        self.assertIn('data-label="資料集 / Dataset"', about_html)
-        self.assertIn('<td data-label="Rows">', about_html)
-        self.assertIn('<td data-label="Scope">', about_html)
+        self.assertIn('data-label-zh="資料集" data-label-en="Dataset"', about_html)
+        self.assertIn('<td data-label-zh="資料列" data-label-en="Rows">', about_html)
+        self.assertIn('data-label-zh="範圍" data-label-en="Scope"', about_html)
         self.assertIn(".responsive-table th[scope=\"row\"]::before", about_html)
         about_ld = json.loads(
             re.search(
@@ -604,7 +657,8 @@ class FrontendContractsTests(unittest.TestCase):
             canonicals.add(canonical)
             self.assertIn(f"<loc>{canonical}</loc>", sitemap, path.name)
 
-            self.assertIn("直接答案 / Direct Answers", page_html, path.name)
+            self.assertIn('data-copy-zh="直接答案" data-copy-en="Direct Answers"', page_html, path.name)
+            self.assertIn('assets/info-locale.js?v=20260825-01', page_html, path.name)
             self.assertIn("What public auction records exist for Hong Kong plate", page_html, path.name)
             self.assertIn("Is this a current valuation?", page_html, path.name)
             self.assertNotIn("If users search", page_html, path.name)

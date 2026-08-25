@@ -16,8 +16,10 @@ MAX_PAGES = 800
 INDEX_LINKS = 420
 TABLE_ROWS = 18
 LEDGER_CSS_VERSION = "20260812-11"
-INFO_CSS_VERSION = "20260824-12"
-INFO_SHELL_VERSION = "20260824-01"
+INFO_CSS_VERSION = "20260825-02"
+INFO_SHELL_VERSION = "20260825-01"
+INFO_LOCALE_VERSION = "20260825-01"
+POPULAR_INDEX_VERSION = "20260825-01"
 MARKET_SIGNALS_PATH = DATA / "market" / "28car.active.json"
 _MARKET_SIGNALS: dict | None = None
 _DATASET_STATS: dict[str, dict] = {}
@@ -90,15 +92,18 @@ def source_url(row: dict) -> str:
 def source_link_html(row: dict) -> str:
     url = source_url(row)
     if not url:
-        return "<span>來源未連結 / Source unavailable</span>"
+        return '<span data-copy-zh="來源未連結" data-copy-en="Source unavailable">來源未連結</span>'
     is_workbook = urlparse(url).path.lower().endswith((".xls", ".xlsx"))
-    label = "來源檔案 / Source file" if is_workbook else "官方 PDF / Official source"
+    label_zh = "來源檔案" if is_workbook else "官方 PDF"
+    label_en = "Source file" if is_workbook else "Official source"
     page = row.get("page")
     if page not in (None, ""):
-        label += f" (p.{html.escape(str(page))})"
+        label_zh += f"（第 {html.escape(str(page))} 頁）"
+        label_en += f" (p.{html.escape(str(page))})"
     return (
         f'<a href="{html.escape(url, quote=True)}" target="_blank" '
-        f'rel="noopener noreferrer">{label}</a>'
+        f'rel="noopener noreferrer"><span data-lang-only="zh">{label_zh}</span>'
+        f'<span data-lang-only="en" hidden>{label_en}</span></a>'
     )
 
 
@@ -185,8 +190,18 @@ def duplicate_key(row: dict) -> str:
 
 def money(amount) -> str:
     if amount is None:
-        return "未能自動解析 / Unable to parse"
+        return "未能自動解析"
     return f"HK${int(amount):,}"
+
+
+def money_en(amount) -> str:
+    if amount is None:
+        return "Unable to parse"
+    return f"HK${int(amount):,}"
+
+
+def copy_attrs(zh: str, en: str) -> str:
+    return f'data-copy-zh="{html.escape(zh, quote=True)}" data-copy-en="{html.escape(en, quote=True)}"'
 
 
 def format_date_zh(iso: str) -> str:
@@ -212,6 +227,18 @@ def date_label(row: dict) -> str:
     return label
 
 
+def date_label_en(row: dict) -> str:
+    label = str(row.get("auction_date_label") or row.get("year_range") or "").strip()
+    if row.get("date_precision") == "year_range" or (label and len(label) == 9 and label[4] == "-" and label[:4].isdigit()):
+        return label
+    iso = str(row.get("auction_date") or "").strip()
+    try:
+        parsed = date.fromisoformat(iso)
+    except ValueError:
+        return iso or label
+    return f"{parsed.day} {parsed.strftime('%b %Y')}"
+
+
 def overlap_lookup() -> tuple[set[str], set[str]]:
     obj = load_json(DATA / "all.tvrm_legacy_overlap.json")
     return set(obj.get("exact_keys") or []), set(obj.get("keys") or [])
@@ -226,19 +253,19 @@ def row_sort_key(row: dict):
 def classify_plate(plate_norm: str) -> tuple[str, str]:
     if len(plate_norm) == 1:
         if plate_norm.isdigit():
-            return ("單數字 / Single-digit", "Single-digit plate")
-        return ("單字母 / Single-letter", "Single-letter plate")
+            return ("單數字車牌", "Single-digit plate")
+        return ("單字母車牌", "Single-letter plate")
     if plate_norm.startswith("HK"):
-        return ("HK 經典字首 / HK classic", "HK prefix classic")
+        return ("HK 經典字首", "HK prefix classic")
     if plate_norm.startswith("XX"):
-        return ("XX 經典字首 / XX classic", "XX prefix classic")
+        return ("XX 經典字首", "XX prefix classic")
     if plate_norm.isdigit():
-        return ("純數字 / Numeric", "Numeric")
+        return ("純數字車牌", "Numeric")
     if plate_norm.isalpha():
-        return ("純字母 / Alphabetic", "Alphabetic")
+        return ("純字母車牌", "Alphabetic")
     if any(ch.isdigit() for ch in plate_norm) and any(ch.isalpha() for ch in plate_norm):
-        return ("字母數字混合 / Alpha-numeric", "Alpha-numeric")
-    return ("熱門車牌 / Popular plate", "Popular plate")
+        return ("字母數字混合車牌", "Alpha-numeric")
+    return ("熱門車牌", "Popular plate")
 
 
 def plate_interest_bonus(plate_norm: str, count: int) -> int:
@@ -346,7 +373,7 @@ def summary_sentence(entry: dict) -> str:
     top = entry["top_row"]
     first_row = entry["first_row"]
     latest_row = entry["latest_row"]
-    dataset_names = ", ".join(DATASETS[key]["label_en"] for key in entry["dataset_keys"])
+    dataset_names = "、".join(DATASETS[key]["label_zh"] for key in entry["dataset_keys"])
     return (
         f"{plate} 車牌目前收錄 {entry['count']} 筆公開拍賣紀錄，"
         f"最高成交 {money(top.get('amount_hkd'))}，"
@@ -355,34 +382,55 @@ def summary_sentence(entry: dict) -> str:
     )
 
 
+def summary_sentence_en(entry: dict) -> str:
+    plate = entry["plate_display"]
+    top = entry["top_row"]
+    first_row = entry["first_row"]
+    latest_row = entry["latest_row"]
+    dataset_names = ", ".join(DATASETS[key]["label_en"] for key in entry["dataset_keys"])
+    return (
+        f"Plate.hk indexes {entry['count']} historical public-auction record(s) for {plate}. "
+        f"The highest result is {money_en(top.get('amount_hkd'))}; "
+        f"the first indexed record is {date_label_en(first_row)} and the latest is {date_label_en(latest_row)}. "
+        f"Sources include {dataset_names or 'Plate.hk'}."
+    )
+
+
 def answer_summary_html(entry: dict) -> str:
     plate = html.escape(entry["plate_display"])
     top = entry["top_row"]
     top_price = html.escape(money(top.get("amount_hkd")))
     top_date = html.escape(date_label(top))
+    top_date_en = html.escape(date_label_en(top))
     latest_date = html.escape(date_label(entry["latest_row"]))
+    latest_date_en = html.escape(date_label_en(entry["latest_row"]))
     dataset_names = ", ".join(DATASETS[key]["label_en"] for key in entry["dataset_keys"])
     top_source = source_link_html(top)
     return f"""
               <div class="answer-item">
-                <h3>{plate} 有哪些香港公開拍賣紀錄？ / What public auction records exist for Hong Kong plate {plate}?</h3>
-                <p>Plate.hk 目前收錄 <strong>{entry['count']}</strong> 筆 {plate} 歷史公開拍賣紀錄；最高一筆是 <strong>{top_price}</strong>，日期為 <strong>{top_date}</strong>。這是獨立搜尋索引，不是政府網站；請用表內的運輸署來源核對。 {top_source}</p>
+                <h3 {copy_attrs(f'{plate} 有哪些香港公開拍賣紀錄？', f'What public auction records exist for Hong Kong plate {plate}?')}>{plate} 有哪些香港公開拍賣紀錄？</h3>
+                <p data-lang-only="zh">Plate.hk 目前收錄 <strong>{entry['count']}</strong> 筆 {plate} 歷史公開拍賣紀錄；最高一筆是 <strong>{top_price}</strong>，日期為 <strong>{top_date}</strong>。這是獨立搜尋索引，不是政府網站；請用表內的運輸署來源核對。 {top_source}</p>
+                <p data-lang-only="en" hidden>Plate.hk indexes <strong>{entry['count']}</strong> historical public-auction record(s) for {plate}. The highest result is <strong>{top_price}</strong> on <strong>{top_date_en}</strong>. This is an independent index, not a government website; verify it against the linked Transport Department source. {top_source}</p>
               </div>
               <div class="answer-item">
-                <h3>{plate} 車牌最高成交價是多少？ / What is the highest recorded auction price?</h3>
-                <p>Plate.hk 收錄的最高公開拍賣成交紀錄是 <strong>{top_price}</strong>，日期為 <strong>{top_date}</strong>。 {top_source}</p>
+                <h3 {copy_attrs(f'{plate} 車牌最高成交價是多少？', 'What is the highest recorded auction price?')}>{plate} 車牌最高成交價是多少？</h3>
+                <p data-lang-only="zh">Plate.hk 收錄的最高公開拍賣成交紀錄是 <strong>{top_price}</strong>，日期為 <strong>{top_date}</strong>。 {top_source}</p>
+                <p data-lang-only="en" hidden>The highest public-auction result indexed by Plate.hk is <strong>{top_price}</strong> on <strong>{top_date_en}</strong>. {top_source}</p>
               </div>
               <div class="answer-item">
-                <h3>有多少筆紀錄？ / How many records are included?</h3>
-                <p>目前有 <strong>{entry['count']}</strong> 筆去重後紀錄，最近一筆為 <strong>{latest_date}</strong>；涵蓋 {html.escape(dataset_names)}。</p>
+                <h3 {copy_attrs('有多少筆紀錄？', 'How many records are included?')}>有多少筆紀錄？</h3>
+                <p data-lang-only="zh">目前有 <strong>{entry['count']}</strong> 筆去重後紀錄，最近一筆為 <strong>{latest_date}</strong>；涵蓋 {html.escape(dataset_names)}。</p>
+                <p data-lang-only="en" hidden>There are <strong>{entry['count']}</strong> deduplicated records. The latest is <strong>{latest_date_en}</strong>; datasets include {html.escape(dataset_names)}.</p>
               </div>
               <div class="answer-item">
-                <h3>成交價是否代表現時市值？ / Is this a current valuation?</h3>
-                <p>不是。這些數字是歷史公開拍賣成交結果，不是估價、放售價或對未來成交價的保證。</p>
+                <h3 {copy_attrs('成交價是否代表現時市值？', 'Is this a current valuation?')}>成交價是否代表現時市值？</h3>
+                <p data-lang-only="zh">不是。這些數字是歷史公開拍賣成交結果，不是估價、放售價或對未來成交價的保證。</p>
+                <p data-lang-only="en" hidden>No. These are historical public-auction results, not valuations, asking prices, or guarantees of future prices.</p>
               </div>
               <div class="answer-item">
-                <h3>如何核對資料？ / How can the record be verified?</h3>
-                <p>使用下表每一列的官方 PDF 或來源檔案核對車牌、日期和成交價；如有差異，以官方來源為準。<a href="../about.html">查看資料方法與限制</a>。</p>
+                <h3 {copy_attrs('如何核對資料？', 'How can the record be verified?')}>如何核對資料？</h3>
+                <p data-lang-only="zh">使用下表每一列的官方 PDF 或來源檔案核對車牌、日期和成交價；如有差異，以官方來源為準。<a data-preserve-lang href="../about.html">查看資料方法與限制</a>。</p>
+                <p data-lang-only="en" hidden>Check the plate, date, and price against each row's official PDF or source file. The official source prevails if anything differs. <a data-preserve-lang href="../about.html">Read the data method and limits</a>.</p>
               </div>"""
 
 
@@ -391,7 +439,8 @@ def dataset_breakdown_html(entry: dict) -> str:
     for key in entry["dataset_keys"]:
         c = sum(1 for row in entry["rows"] if row["dataset_key"] == key)
         counts.append(
-            f'<div class="dataset-chip"><strong>{html.escape(DATASETS[key]["label_zh"])}</strong><span>{c} records</span></div>'
+            f'<div class="dataset-chip"><strong {copy_attrs(DATASETS[key]["label_zh"], DATASETS[key]["label_en"])}>{html.escape(DATASETS[key]["label_zh"])}</strong>'
+            f'<span {copy_attrs(f"{c} 筆紀錄", f"{c} records")}>{c} 筆紀錄</span></div>'
         )
     return "".join(counts)
 
@@ -403,26 +452,31 @@ def render_page(entries_by_norm: dict[str, dict], entry: dict, related: list[dic
     first_row = entry["first_row"]
     latest_row = entry["latest_row"]
     highest_price = money(top.get("amount_hkd"))
+    highest_price_en = money_en(top.get("amount_hkd"))
     highest_date = date_label(top)
+    highest_date_en = date_label_en(top)
     first_date = date_label(first_row)
+    first_date_en = date_label_en(first_row)
     latest_date = date_label(latest_row)
+    latest_date_en = date_label_en(latest_row)
     category_zh, category_en = classify_plate(plate_norm)
     desc = summary_sentence(entry)
+    desc_en = summary_sentence_en(entry)
     og_title = f"{plate} 車牌拍賣結果 | Plate.hk"
     canonical = f"https://plate.hk/plates/{plate_norm}.html"
     rows_html = "".join(
         f"""
         <tr>
-          <td data-label="日期 / Date">{html.escape(date_label(row))}</td>
-          <td data-label="分類 / Dataset">{html.escape(DATASETS[row['dataset_key']]['label_zh'])}<br><span>{html.escape(DATASETS[row['dataset_key']]['label_en'])}</span></td>
-          <td data-label="成交價 / Price">{html.escape(money(row.get('amount_hkd')))}</td>
-          <td data-label="來源 / Source">{source_link_html(row)}<br><a href="https://plate.hk/?lang=zh&q={plate_norm}">完整站內紀錄 / Full search</a></td>
+          <td data-label-zh="日期" data-label-en="Date"><span data-lang-only="zh">{html.escape(date_label(row))}</span><span data-lang-only="en" hidden>{html.escape(date_label_en(row))}</span></td>
+          <td data-label-zh="分類" data-label-en="Dataset"><span data-lang-only="zh">{html.escape(DATASETS[row['dataset_key']]['label_zh'])}</span><span data-lang-only="en" hidden>{html.escape(DATASETS[row['dataset_key']]['label_en'])}</span></td>
+          <td data-label-zh="成交價" data-label-en="Price"><span data-lang-only="zh">{html.escape(money(row.get('amount_hkd')))}</span><span data-lang-only="en" hidden>{html.escape(money_en(row.get('amount_hkd')))}</span></td>
+          <td data-label-zh="來源" data-label-en="Source">{source_link_html(row)}<br><a data-preserve-lang href="../index.html?q={plate_norm}" {copy_attrs('完整站內紀錄', 'Full search')}>完整站內紀錄</a></td>
         </tr>
         """
         for row in entry["rows"][:TABLE_ROWS]
     )
     related_html = "".join(
-        f'<a class="pill" href="./{item["plate_norm"]}.html">{html.escape(item["plate_display"])}</a>'
+        f'<a class="pill" data-preserve-lang href="./{item["plate_norm"]}.html">{html.escape(item["plate_display"])}</a>'
         for item in related
     )
     answer_summary = answer_summary_html(entry)
@@ -447,7 +501,7 @@ def render_page(entries_by_norm: dict[str, dict], entry: dict, related: list[dic
       .whatsapp-action:hover { background:#064c45 !important; }
       .whatsapp-icon { width:20px; height:20px; flex:0 0 auto; fill:currentColor; }
 """
-        market_script = '      <script src="../assets/plate.market.js?v=20260812-03"></script>\n'
+        market_script = '      <script src="../assets/plate.market.js?v=20260825-01"></script>\n'
         market_grid_selector = ", .market-card"
         market_media_style = "        .market-actions { min-width:0; }\n"
         market_section = f"{market_card}\n\n"
@@ -572,7 +626,7 @@ def render_page(entries_by_norm: dict[str, dict], entry: dict, related: list[dic
     <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg" />
     <link rel="alternate" type="application/json" href="https://plate.hk/api/search?dataset=all&amp;q={plate_norm}&amp;sort=amount_desc&amp;page=1&amp;page_size=200" title="{html.escape(plate)} auction records as JSON" />
     <script type="application/ld+json">{json.dumps(ld_json, ensure_ascii=False)}</script>
-    <link rel="stylesheet" href="../assets/ledger.css?v={LEDGER_CSS_VERSION}" />
+    <link rel="stylesheet" href="../assets/ledger.css?v={INFO_CSS_VERSION}" />
     <style>
       :root {{
         --bg:#f4f1e8; --panel:#fffaf0; --line:#c9c0ad; --ink:#1d1b17; --muted:#5f594d; --accent:#3a5d4b;
@@ -629,59 +683,63 @@ def render_page(entries_by_norm: dict[str, dict], entry: dict, related: list[dic
       }}
     </style>
   </head>
-  <body>
-    <div class="wrap">
+  <body class="info-page info-page--plate" data-info-page="plates" data-title-zh="{html.escape(og_title, quote=True)}" data-title-en="{html.escape(f'{plate} Plate Auction Results | Plate.hk', quote=True)}">
+    <div data-info-shell-header></div>
+    <main class="wrap" id="main-content">
       <div class="hero">
-        <a href="../plates/index.html">← 熱門車牌索引 / Popular Plates</a>
-        <h1>{html.escape(plate)} 車牌拍賣結果</h1>
+        <a data-preserve-lang href="../plates/index.html" {copy_attrs('← 熱門車牌索引', '← Popular Plates')}>← 熱門車牌索引</a>
+        <h1 {copy_attrs(f'{plate} 車牌拍賣結果', f'{plate} Plate Auction Results')}>{html.escape(plate)} 車牌拍賣結果</h1>
         <div style="margin-top:12px;"><span class="plate">{html.escape(plate)}</span></div>
-        <div class="lede">
-          {html.escape(summary_sentence(entry))}<br />
-          Category: {html.escape(category_en)}. This page summarizes {entry['count']} public auction record(s) for {html.escape(plate)}, with a source link beside each displayed result.
-        </div>
+        <div class="lede" data-lang-only="zh">{html.escape(summary_sentence(entry))}</div>
+        <div class="lede" data-lang-only="en" hidden>{html.escape(desc_en)} Category: {html.escape(category_en)}.</div>
         <div class="actions">
-          <a class="btn primary" href="https://plate.hk/?lang=zh&q={plate_norm}">在 Plate.hk 搜尋</a>
-          <a class="btn ghost" href="https://plate.hk/?lang=en&q={plate_norm}">Search in English</a>
+          <a class="btn primary" data-preserve-lang href="../index.html?q={plate_norm}" {copy_attrs('在 Plate.hk 搜尋', 'Search on Plate.hk')}>在 Plate.hk 搜尋</a>
         </div>
         <div class="meta">
-          <div class="metric"><div class="k">最高成交 / Top Sale</div><div class="v">{html.escape(highest_price)}</div></div>
-          <div class="metric"><div class="k">紀錄數 / Records</div><div class="v">{entry['count']}</div></div>
-          <div class="metric"><div class="k">首次紀錄 / First Seen</div><div class="v">{html.escape(first_date)}</div></div>
-          <div class="metric"><div class="k">最近紀錄 / Latest Seen</div><div class="v">{html.escape(latest_date)}</div></div>
+          <div class="metric"><div class="k" {copy_attrs('最高成交', 'Top Sale')}>最高成交</div><div class="v"><span data-lang-only="zh">{html.escape(highest_price)}</span><span data-lang-only="en" hidden>{html.escape(highest_price_en)}</span></div></div>
+          <div class="metric"><div class="k" {copy_attrs('紀錄數', 'Records')}>紀錄數</div><div class="v">{entry['count']}</div></div>
+          <div class="metric"><div class="k" {copy_attrs('首次紀錄', 'First Seen')}>首次紀錄</div><div class="v"><span data-lang-only="zh">{html.escape(first_date)}</span><span data-lang-only="en" hidden>{html.escape(first_date_en)}</span></div></div>
+          <div class="metric"><div class="k" {copy_attrs('最近紀錄', 'Latest Seen')}>最近紀錄</div><div class="v"><span data-lang-only="zh">{html.escape(latest_date)}</span><span data-lang-only="en" hidden>{html.escape(latest_date_en)}</span></div></div>
         </div>
       </div>
 
 {market_section}      <div class="grid">
         <div class="stack">
           <div class="card">
-            <h2>成交紀錄 / Auction Records</h2>
-            <div class="lede">最高成交出現在 {html.escape(highest_date)}。以下列出目前最重要的歷史紀錄，並可直接回站內搜尋完整結果。</div>
+            <h2 {copy_attrs('成交紀錄', 'Auction Records')}>成交紀錄</h2>
+            <div class="lede" data-lang-only="zh">最高成交出現在 {html.escape(highest_date)}。以下列出目前最重要的歷史紀錄，並可直接回站內搜尋完整結果。</div>
+            <div class="lede" data-lang-only="en" hidden>The highest result was recorded on {html.escape(highest_date_en)}. The table lists the most relevant historical records with direct source and full-search links.</div>
             <table class="responsive-table">
               <thead>
-                <tr><th>日期 / Date</th><th>分類 / Dataset</th><th>成交價 / Price</th><th>來源 / Source</th></tr>
+                <tr><th {copy_attrs('日期', 'Date')}>日期</th><th {copy_attrs('分類', 'Dataset')}>分類</th><th {copy_attrs('成交價', 'Price')}>成交價</th><th {copy_attrs('來源', 'Source')}>來源</th></tr>
               </thead>
               <tbody>{rows_html}</tbody>
             </table>
           </div>
           <div class="card">
-            <h2>直接答案 / Direct Answers</h2>
+            <h2 {copy_attrs('直接答案', 'Direct Answers')}>直接答案</h2>
             <div class="answer-list">{answer_summary}</div>
           </div>
         </div>
         <div class="stack">
           <div class="card">
-            <h2>資料概覽 / Coverage</h2>
-            <div class="lede">{html.escape(plate)} 目前歸類為 {html.escape(category_zh)}。資料由 Plate.hk 整理自香港運輸署公開拍賣結果；以下是它在不同資料集中的出現情況。</div>
+            <h2 {copy_attrs('資料概覽', 'Coverage')}>資料概覽</h2>
+            <div class="lede" data-lang-only="zh">{html.escape(plate)} 目前歸類為 {html.escape(category_zh)}。資料由 Plate.hk 整理自香港運輸署公開拍賣結果；以下是它在不同資料集中的出現情況。</div>
+            <div class="lede" data-lang-only="en" hidden>{html.escape(plate)} is classified as {html.escape(category_en)}. Plate.hk compiles these records from public Hong Kong Transport Department auction results; the breakdown shows where the plate appears.</div>
             <div class="dataset-breakdown">{dataset_breakdown}</div>
           </div>
           <div class="card">
-            <h2>延伸瀏覽 / Related Plates</h2>
-            <div class="lede">如果你是搜尋熱門單字母、短字首、品牌或經典號碼，下面這些車牌通常也有相近的搜尋意圖。</div>
+            <h2 {copy_attrs('延伸瀏覽', 'Related Plates')}>延伸瀏覽</h2>
+            <div class="lede" data-lang-only="zh">如果你是搜尋熱門單字母、短字首、品牌或經典號碼，下面這些車牌通常也有相近的搜尋意圖。</div>
+            <div class="lede" data-lang-only="en" hidden>These related marks cover similar single-letter, short-prefix, brand, or classic-number searches.</div>
             <div class="pills">{related_html}</div>
           </div>
         </div>
       </div>
-{market_script}    </div>
+{market_script}    </main>
+    <div data-info-shell-footer></div>
+    <script src="../assets/info-locale.js?v={INFO_LOCALE_VERSION}"></script>
+    <script src="../assets/info-shell.js?v={INFO_SHELL_VERSION}"></script>
   </body>
 </html>
 """
@@ -690,10 +748,10 @@ def render_page(entries_by_norm: dict[str, dict], entry: dict, related: list[dic
 def render_index(entries: list[dict]) -> str:
     top_cards = "\n".join(
         f"""\
-        <a class="card" data-popular-card href="./{item['plate_norm']}.html">
+        <a class="card" data-popular-card data-preserve-lang href="./{item['plate_norm']}.html">
           <div class="plate">{html.escape(item['plate_display'])}</div>
-          <div class="price">{html.escape(money(item['top_row'].get('amount_hkd')))}</div>
-          <div class="meta">{item['count']} records · {html.escape(classify_plate(item['plate_norm'])[1])}</div>
+          <div class="price"><span data-lang-only="zh">{html.escape(money(item['top_row'].get('amount_hkd')))}</span><span data-lang-only="en" hidden>{html.escape(money_en(item['top_row'].get('amount_hkd')))}</span></div>
+          <div class="meta" {copy_attrs(f"{item['count']} 筆紀錄 · {classify_plate(item['plate_norm'])[0]}", f"{item['count']} records · {classify_plate(item['plate_norm'])[1]}")}>{item['count']} 筆紀錄 · {html.escape(classify_plate(item['plate_norm'])[0])}</div>
         </a>"""
         for item in entries[:INDEX_LINKS]
     )
@@ -783,28 +841,27 @@ def render_index(entries: list[dict]) -> str:
       @media (max-width: 620px) {{ .popular-ready .popular-tools {{ grid-template-columns:1fr; align-items:stretch; }} .grid {{ grid-template-columns: 1fr; }} }}
     </style>
   </head>
-  <body class="info-page info-page--plates" data-info-page="plates">
+  <body class="info-page info-page--plates" data-info-page="plates" data-title-zh="熱門車牌拍賣結果索引 | Plate.hk" data-title-en="Popular Plate Auction Results | Plate.hk">
     <div data-info-shell-header></div>
     <main class="wrap" id="main-content">
       <div class="hero">
-        <a href="../index.html">← 返回首頁 / Back to Search</a>
-        <h1>熱門車牌拍賣結果索引</h1>
-        <div class="lede">
-          這裡列出 {min(len(entries), INDEX_LINKS)} 個具代表性的香港車牌歷史成交頁。排序綜合最高公開拍賣成交價、收錄紀錄數、短號碼及常見字首；價格只代表歷史成交，不是現時估值。<br />
-          Browse notable Hong Kong plate auction records ranked by public sale results, record coverage, and memorable plate patterns. Historical prices are not current valuations.
-        </div>
-        <div class="hub-actions"><a href="../about.html">資料方法與限制 / Data guide</a><a href="../index.html">搜尋全部紀錄 / Search all records</a></div>
-        <div class="popular-snapshot">資料快照 / Data snapshot: <time datetime="{TODAY}">{TODAY}</time></div>
+        <a data-preserve-lang href="../index.html" {copy_attrs('← 返回首頁', '← Back to Search')}>← 返回首頁</a>
+        <h1 {copy_attrs('熱門車牌拍賣結果索引', 'Popular Plate Auction Results')}>熱門車牌拍賣結果索引</h1>
+        <div class="lede" data-lang-only="zh">這裡列出 {min(len(entries), INDEX_LINKS)} 個具代表性的香港車牌歷史成交頁。排序綜合最高公開拍賣成交價、收錄紀錄數、短號碼及常見字首；價格只代表歷史成交，不是現時估值。</div>
+        <div class="lede" data-lang-only="en" hidden>Browse {min(len(entries), INDEX_LINKS)} notable Hong Kong plate-auction pages ranked by public sale results, record coverage, and memorable plate patterns. Historical prices are not current valuations.</div>
+        <div class="hub-actions"><a data-preserve-lang href="../about.html" {copy_attrs('資料方法與限制', 'Data Guide')}>資料方法與限制</a><a data-preserve-lang href="../index.html" {copy_attrs('搜尋全部紀錄', 'Search All Records')}>搜尋全部紀錄</a></div>
+        <div class="popular-snapshot"><span {copy_attrs('資料快照', 'Data snapshot')}>資料快照</span>: <time datetime="{TODAY}">{TODAY}</time></div>
       </div>
       <div class="popular-tools">
-        <label for="popularQuery">篩選車牌 / Filter plates<input id="popularQuery" type="search" inputmode="search" placeholder="例如 88、HK、XX" autocomplete="off" /></label>
+        <label for="popularQuery"><span {copy_attrs('篩選車牌', 'Filter plates')}>篩選車牌</span><input id="popularQuery" type="search" inputmode="search" data-placeholder-zh="例如 88、HK、XX" data-placeholder-en="For example: 88, HK, XX" placeholder="例如 88、HK、XX" autocomplete="off" /></label>
         <span class="popular-count" id="popularCount" aria-live="polite"></span>
-        <button type="button" id="popularShowAll">顯示全部 / Show all</button>
+        <button type="button" id="popularShowAll" {copy_attrs('顯示全部', 'Show all')}>顯示全部</button>
       </div>
       <div class="grid" id="popularGrid">{top_cards}</div>
     </main>
     <div data-info-shell-footer></div>
-    <script src="../assets/popular-index.js?v=20260824-01"></script>
+    <script src="../assets/info-locale.js?v={INFO_LOCALE_VERSION}"></script>
+    <script src="../assets/popular-index.js?v={POPULAR_INDEX_VERSION}"></script>
     <script src="../assets/info-shell.js?v={INFO_SHELL_VERSION}"></script>
   </body>
 </html>
@@ -821,19 +878,19 @@ def render_about() -> str:
     first_date = min(first_dates) if first_dates else ""
     latest_date = max(latest_dates) if latest_dates else ""
     descriptions = {
-        "pvrm": "自訂車牌實體拍賣 / personalized registration mark physical auctions",
-        "tvrm_physical": "傳統及特殊車牌實體拍賣 / traditional and special-mark physical auctions",
-        "tvrm_eauction": "普通傳統車牌拍牌易結果 / ordinary traditional marks sold by E-Auction",
-        "tvrm_legacy": "1973-2006 官方工作簿年份區段 / official workbook-backed historical year ranges",
+        "pvrm": ("自訂車牌實體拍賣", "Personalized registration mark physical auctions"),
+        "tvrm_physical": ("傳統及特殊車牌實體拍賣", "Traditional and special-mark physical auctions"),
+        "tvrm_eauction": ("普通傳統車牌拍牌易結果", "Ordinary traditional marks sold by E-Auction"),
+        "tvrm_legacy": ("1973-2006 官方工作簿年份區段", "Official workbook-backed historical year ranges, 1973-2006"),
     }
     coverage_rows = "".join(
         f"""
               <tr>
-                <th scope="row" data-label="資料集 / Dataset">{html.escape(DATASETS[key]['label_zh'])}<br><span>{html.escape(DATASETS[key]['label_en'])}</span></th>
-                <td data-label="Rows">{int(stats.get(key, {}).get('rows') or 0):,}</td>
-                <td data-label="Issues">{int(stats.get(key, {}).get('issues') or 0):,}</td>
-                <td data-label="Latest">{html.escape(format_date_zh(str(stats.get(key, {}).get('latest_date') or '')))}</td>
-                <td data-label="Scope">{html.escape(descriptions[key])}</td>
+                <th scope="row" data-label-zh="資料集" data-label-en="Dataset" {copy_attrs(DATASETS[key]['label_zh'], DATASETS[key]['label_en'])}>{html.escape(DATASETS[key]['label_zh'])}</th>
+                <td data-label-zh="資料列" data-label-en="Rows">{int(stats.get(key, {}).get('rows') or 0):,}</td>
+                <td data-label-zh="期數" data-label-en="Issues">{int(stats.get(key, {}).get('issues') or 0):,}</td>
+                <td data-label-zh="最新日期" data-label-en="Latest"><span data-lang-only="zh">{html.escape(format_date_zh(str(stats.get(key, {}).get('latest_date') or '')))}</span><span data-lang-only="en" hidden>{html.escape(str(stats.get(key, {}).get('latest_date') or ''))}</span></td>
+                <td data-label-zh="範圍" data-label-en="Scope" {copy_attrs(descriptions[key][0], descriptions[key][1])}>{html.escape(descriptions[key][0])}</td>
               </tr>"""
         for key in DATASETS
     )
@@ -1000,26 +1057,27 @@ def render_about() -> str:
       }}
     </style>
   </head>
-  <body class="info-page info-page--about" data-info-page="about">
+  <body class="info-page info-page--about" data-info-page="about" data-title-zh="香港車牌拍賣資料說明與方法 | Plate.hk" data-title-en="Hong Kong Plate Auction Data Guide | Plate.hk">
     <div data-info-shell-header></div>
     <main class="wrap" id="main-content">
       <header class="hero">
-        <a href="./index.html">← 返回搜尋 / Back to Search</a>
-        <h1>香港車牌拍賣資料說明與方法</h1>
-        <p class="lede">Plate.hk 是獨立、唯讀的香港車牌歷史拍賣資料索引，整理香港運輸署公開 PDF 結果及官方工作簿匯出。它不是政府網站；如資料有差異，以官方文件為準。</p>
-        <p class="lede" lang="en">Plate.hk is an independent, read-only index compiled from Hong Kong Transport Department auction-result PDFs and official workbook exports. It is not a government website; official source documents prevail.</p>
+        <a href="./index.html" data-preserve-lang {copy_attrs('← 返回搜尋', '← Back to Search')}>← 返回搜尋</a>
+        <h1 {copy_attrs('香港車牌拍賣資料說明與方法', 'Hong Kong Plate Auction Data Guide')}>香港車牌拍賣資料說明與方法</h1>
+        <p class="lede" data-lang-only="zh">Plate.hk 是獨立、唯讀的香港車牌歷史拍賣資料索引，整理香港運輸署公開 PDF 結果及官方工作簿匯出。它不是政府網站；如資料有差異，以官方文件為準。</p>
+        <p class="lede" data-lang-only="en" hidden>Plate.hk is an independent, read-only index compiled from Hong Kong Transport Department auction-result PDFs and official workbook exports. It is not a government website; official source documents prevail.</p>
         <div class="summary">
-          <div class="metric"><span>Source rows</span><strong>{total_rows:,}</strong></div>
-          <div class="metric"><span>Auction issues / ranges</span><strong>{total_issues:,}</strong></div>
-          <div class="metric"><span>Latest covered date</span><strong>{html.escape(format_date_zh(latest_date))}</strong></div>
+          <div class="metric"><span {copy_attrs('來源資料列', 'Source rows')}>來源資料列</span><strong>{total_rows:,}</strong></div>
+          <div class="metric"><span {copy_attrs('拍賣期數／年份區段', 'Auction issues / ranges')}>拍賣期數／年份區段</span><strong>{total_issues:,}</strong></div>
+          <div class="metric"><span {copy_attrs('最新收錄日期', 'Latest covered date')}>最新收錄日期</span><strong><span data-lang-only="zh">{html.escape(format_date_zh(latest_date))}</span><span data-lang-only="en" hidden>{html.escape(latest_date)}</span></strong></div>
         </div>
       </header>
 
       <section class="card" style="margin-top:14px;" aria-labelledby="coverage-title">
-        <h2 id="coverage-title">收錄範圍 / Coverage</h2>
-        <p>下表是四個來源資料集的建置快照。Source rows 是去除跨資料集重複前的來源列數；「全部車牌」搜尋會隱藏已識別的 legacy 重複紀錄。</p>
+        <h2 id="coverage-title" {copy_attrs('收錄範圍', 'Coverage')}>收錄範圍</h2>
+        <p data-lang-only="zh">下表是四個來源資料集的建置快照。「來源資料列」是去除跨資料集重複前的列數；「全部車牌」搜尋會隱藏已識別的舊工作簿重複紀錄。</p>
+        <p data-lang-only="en" hidden>The table is a build snapshot of four source datasets. Source rows are counted before cross-dataset deduplication; the All Plates search hides identified legacy workbook duplicates.</p>
         <table class="responsive-table">
-          <thead><tr><th>資料集 / Dataset</th><th>Rows</th><th>Issues</th><th>Latest</th><th>Scope</th></tr></thead>
+          <thead><tr><th {copy_attrs('資料集', 'Dataset')}>資料集</th><th {copy_attrs('資料列', 'Rows')}>資料列</th><th {copy_attrs('期數', 'Issues')}>期數</th><th {copy_attrs('最新日期', 'Latest')}>最新日期</th><th {copy_attrs('範圍', 'Scope')}>範圍</th></tr></thead>
           <tbody>{coverage_rows}</tbody>
         </table>
       </section>
@@ -1027,66 +1085,85 @@ def render_about() -> str:
       <div class="grid">
         <div class="stack">
           <section class="card" aria-labelledby="answers-title">
-            <h2 id="answers-title">常見問題與直接答案 / Direct Answers</h2>
-            <h3 id="official-results-answer">在哪裡可以查到香港車牌的官方拍賣成交紀錄？ / Where can I check official Hong Kong vehicle registration mark auction results?</h3>
-            <p>最終權威紀錄請查閱<a href="{TD_URL}" target="_blank" rel="noopener noreferrer">香港運輸署車牌服務</a>及<a href="{TD_HISTORY_URL}" target="_blank" rel="noopener noreferrer">運輸署拍賣歷史</a>。Plate.hk 不是政府網站，而是把 PVRM、TVRM 實體拍賣、拍牌易及官方工作簿歷史資料整理成<a href="./index.html">可搜尋索引</a>；每筆結果在可用時會連回官方來源，方便核對。</p>
-            <p lang="en">For the authoritative record, use the <a href="{TD_URL}" target="_blank" rel="noopener noreferrer">Hong Kong Transport Department vehicle registration mark service</a> and its <a href="{TD_HISTORY_URL}" target="_blank" rel="noopener noreferrer">auction history</a>. Plate.hk is an independent, non-government <a href="./index.html">search index</a> across PVRM, TVRM physical auctions, E-Auction, and official workbook-backed history; each result links to the official source when available.</p>
-            <h3>Plate.hk 的資料來自哪裡？</h3>
-            <p>主要來自香港運輸署發布的 PVRM、TVRM 實體拍賣及拍牌易結果 PDF；1973-2006 歷史區段來自官方工作簿匯出。每個車牌頁會在可用時直接連回相應來源。</p>
-            <h3>PVRM、TVRM 實體拍賣及拍牌易有甚麼分別？ / What is the difference between PVRM, TVRM physical auctions, and E-Auction?</h3>
-            <p><a href="{TD_PVRM_URL}" target="_blank" rel="noopener noreferrer">PVRM</a> 是獲運輸署批准、最多八個英文字母（不包括 I、O、Q）及／或數字的自訂組合，於實體場地拍賣。一般傳統車牌（不包括 HK／XX 字首）自 2025 年起使用<a href="{TD_EAUCTION_URL}" target="_blank" rel="noopener noreferrer">「拍牌易」</a>；HK／XX 字首及特殊傳統車牌繼續實體拍賣。按<a href="{TD_TVRM_APPLICATION_URL}" target="_blank" rel="noopener noreferrer">傳統車牌規則</a>，普通傳統車牌可隨所屬車輛轉讓，特殊傳統車牌不可轉讓；PVRM 所屬車輛過戶時須一併向運輸署提交分配證明書。以運輸署現行規則為準。</p>
-            <p lang="en"><a href="{TD_PVRM_URL}" target="_blank" rel="noopener noreferrer">PVRMs</a> are approved custom combinations of up to eight letters (excluding I, O and Q) and/or numerals, sold at physical auctions. Ordinary traditional marks other than HK/XX prefixes use <a href="{TD_EAUCTION_URL}" target="_blank" rel="noopener noreferrer">E-Auction</a>; HK/XX-prefix and special traditional marks use physical auctions. Under the <a href="{TD_TVRM_APPLICATION_URL}" target="_blank" rel="noopener noreferrer">traditional-mark rules</a>, ordinary traditional marks may transfer with the vehicle and special traditional marks are non-transferable; a PVRM Certificate of Allocation must accompany a transfer of the vehicle bearing that mark. Current Transport Department rules prevail.</p>
-            <h3>歷史成交價等於現時估值、車主資料或放售狀態嗎？ / Does an auction record prove current value, owner, or sale status?</h3>
-            <p>不等於，也不能證明。成交價只描述某次公開拍賣的歷史結果，不是現時估值、車主或持有人紀錄、即時放售證明或未來成交保證。車牌或車輛其後可能已轉讓、取消分配或不再放售。</p>
-            <p lang="en">No. An auction result is a historical transaction record, not a current valuation, owner or holder record, active sale listing, or future-price guarantee. The mark or vehicle may later have been transferred, cancelled, or withdrawn from sale.</p>
-            <h3>如何用 JSON 或 API 搜尋？ / How can I search through JSON or an API?</h3>
-            <p>使用公開的 <a href="./api.html">Plate.hk API 文檔</a>及 <code>GET /api/search?dataset=all&amp;q=88</code>，或從 <a href="./api/v1/index.json">dataset index</a> 取得靜態資料入口。這是 Plate.hk 的獨立 API，不是香港政府或運輸署 API。</p>
-            <h3>Plate.hk 是香港政府或運輸署網站嗎？</h3>
-            <p>不是。Plate.hk 是獨立資料工具；官方文件和運輸署網站始終是最終權威來源。</p>
-            <h3>應如何引用一筆結果？</h3>
-            <p>同時列出車牌顯示方式、拍賣日期、成交價、資料集名稱和來源連結。若版面空格或雙行排列有意義，應保留官方文件中的表示方式。</p>
+            <h2 id="answers-title" {copy_attrs('常見問題與直接答案', 'Direct Answers')}>常見問題與直接答案</h2>
+            <h3 id="official-results-answer" {copy_attrs('在哪裡可以查到香港車牌的官方拍賣成交紀錄？', 'Where can I check official Hong Kong vehicle registration mark auction results?')}>在哪裡可以查到香港車牌的官方拍賣成交紀錄？</h3>
+            <p data-lang-only="zh">最終權威紀錄請查閱<a href="{TD_URL}" target="_blank" rel="noopener noreferrer">香港運輸署車牌服務</a>及<a href="{TD_HISTORY_URL}" target="_blank" rel="noopener noreferrer">運輸署拍賣歷史</a>。Plate.hk 不是政府網站，而是把 PVRM、TVRM 實體拍賣、拍牌易及官方工作簿歷史資料整理成<a href="./index.html" data-preserve-lang>可搜尋索引</a>；每筆結果在可用時會連回官方來源，方便核對。</p>
+            <p data-lang-only="en" hidden>For the authoritative record, use the <a href="{TD_URL}" target="_blank" rel="noopener noreferrer">Hong Kong Transport Department vehicle registration mark service</a> and its <a href="{TD_HISTORY_URL}" target="_blank" rel="noopener noreferrer">auction history</a>. Plate.hk is an independent, non-government <a href="./index.html" data-preserve-lang>search index</a> across PVRM, TVRM physical auctions, E-Auction, and official workbook-backed history; each result links to the official source when available.</p>
+            <h3 {copy_attrs('Plate.hk 的資料來自哪裡？', 'Where does Plate.hk get its data?')}>Plate.hk 的資料來自哪裡？</h3>
+            <p data-lang-only="zh">主要來自香港運輸署發布的 PVRM、TVRM 實體拍賣及拍牌易結果 PDF；1973-2006 歷史區段來自官方工作簿匯出。每個車牌頁會在可用時直接連回相應來源。</p>
+            <p data-lang-only="en" hidden>Most records come from PVRM, TVRM physical-auction, and E-Auction result PDFs published by the Hong Kong Transport Department. Historical ranges from 1973 to 2006 come from official workbook exports. Each plate page links directly to its source when available.</p>
+            <h3 {copy_attrs('PVRM、TVRM 實體拍賣及拍牌易有甚麼分別？', 'What is the difference between PVRM, TVRM physical auctions, and E-Auction?')}>PVRM、TVRM 實體拍賣及拍牌易有甚麼分別？</h3>
+            <p data-lang-only="zh"><a href="{TD_PVRM_URL}" target="_blank" rel="noopener noreferrer">PVRM</a> 是獲運輸署批准、最多八個英文字母（不包括 I、O、Q）及／或數字的自訂組合，於實體場地拍賣。一般傳統車牌（不包括 HK／XX 字首）自 2025 年起使用<a href="{TD_EAUCTION_URL}" target="_blank" rel="noopener noreferrer">「拍牌易」</a>；HK／XX 字首及特殊傳統車牌繼續實體拍賣。按<a href="{TD_TVRM_APPLICATION_URL}" target="_blank" rel="noopener noreferrer">傳統車牌規則</a>，普通傳統車牌可隨所屬車輛轉讓，特殊傳統車牌不可轉讓；PVRM 所屬車輛過戶時須一併向運輸署提交分配證明書。以運輸署現行規則為準。</p>
+            <p data-lang-only="en" hidden><a href="{TD_PVRM_URL}" target="_blank" rel="noopener noreferrer">PVRMs</a> are approved custom combinations of up to eight letters (excluding I, O and Q) and/or numerals, sold at physical auctions. Ordinary traditional marks other than HK/XX prefixes use <a href="{TD_EAUCTION_URL}" target="_blank" rel="noopener noreferrer">E-Auction</a>; HK/XX-prefix and special traditional marks use physical auctions. Under the <a href="{TD_TVRM_APPLICATION_URL}" target="_blank" rel="noopener noreferrer">traditional-mark rules</a>, ordinary traditional marks may transfer with the vehicle and special traditional marks are non-transferable; a PVRM Certificate of Allocation must accompany a transfer of the vehicle bearing that mark. Current Transport Department rules prevail.</p>
+            <h3 {copy_attrs('歷史成交價等於現時估值、車主資料或放售狀態嗎？', 'Does an auction record prove current value, owner, or sale status?')}>歷史成交價等於現時估值、車主資料或放售狀態嗎？</h3>
+            <p data-lang-only="zh">不等於，也不能證明。成交價只描述某次公開拍賣的歷史結果，不是現時估值、車主或持有人紀錄、即時放售證明或未來成交保證。車牌或車輛其後可能已轉讓、取消分配或不再放售。</p>
+            <p data-lang-only="en" hidden>No. An auction result is a historical transaction record, not a current valuation, owner or holder record, active sale listing, or future-price guarantee. The mark or vehicle may later have been transferred, cancelled, or withdrawn from sale.</p>
+            <h3 {copy_attrs('如何用 JSON 或 API 搜尋？', 'How can I search through JSON or an API?')}>如何用 JSON 或 API 搜尋？</h3>
+            <p data-lang-only="zh">使用公開的 <a href="./api.html" data-preserve-lang>Plate.hk API 文檔</a>及 <code>GET /api/search?dataset=all&amp;q=88</code>，或從 <a href="./api/v1/index.json">資料集索引</a>取得靜態資料入口。這是 Plate.hk 的獨立 API，不是香港政府或運輸署 API。</p>
+            <p data-lang-only="en" hidden>Use the public <a href="./api.html" data-preserve-lang>Plate.hk API documentation</a> and <code>GET /api/search?dataset=all&amp;q=88</code>, or use the <a href="./api/v1/index.json">dataset index</a> for static data entry points. This is Plate.hk's independent API, not a Hong Kong government or Transport Department API.</p>
+            <h3 {copy_attrs('Plate.hk 是香港政府或運輸署網站嗎？', 'Is Plate.hk a Hong Kong government or Transport Department website?')}>Plate.hk 是香港政府或運輸署網站嗎？</h3>
+            <p data-lang-only="zh">不是。Plate.hk 是獨立資料工具；官方文件和運輸署網站始終是最終權威來源。</p>
+            <p data-lang-only="en" hidden>No. Plate.hk is an independent data tool. Official documents and the Transport Department website remain the final authority.</p>
+            <h3 {copy_attrs('應如何引用一筆結果？', 'How should I cite a result?')}>應如何引用一筆結果？</h3>
+            <p data-lang-only="zh">同時列出車牌顯示方式、拍賣日期、成交價、資料集名稱和來源連結。若版面空格或雙行排列有意義，應保留官方文件中的表示方式。</p>
+            <p data-lang-only="en" hidden>Include the displayed plate, auction date, sale price, dataset name, and source link. Preserve the official document's spacing or two-line layout when it carries meaning.</p>
           </section>
           <section class="card" aria-labelledby="method-title">
-            <h2 id="method-title">資料流程 / Method</h2>
-            <ol class="steps">
+            <h2 id="method-title" {copy_attrs('資料流程', 'Method')}>資料流程</h2>
+            <ol class="steps" data-lang-only="zh">
               <li>從公開的官方拍賣結果文件建立期數清單。</li>
               <li>提取車牌顯示、拍賣日期、成交價、來源 URL 及頁碼。</li>
               <li>保留原始顯示方式；另建標準化搜尋鍵，方便忽略版面空格搜尋。</li>
               <li>檢查格式、空值、期數列數及 legacy 跨資料集重疊。</li>
               <li>發布靜態搜尋資料、公開 API、審核報告及可核對來源的車牌頁。</li>
             </ol>
+            <ol class="steps" data-lang-only="en" hidden>
+              <li>Build an issue list from publicly available official auction-result documents.</li>
+              <li>Extract the displayed plate, auction date, sale price, source URL, and page number.</li>
+              <li>Preserve the original display while creating a normalized search key that ignores layout spaces.</li>
+              <li>Check formats, missing values, issue row counts, and legacy overlap across datasets.</li>
+              <li>Publish static search data, the public API, audit reports, and source-verifiable plate pages.</li>
+            </ol>
           </section>
         </div>
         <div class="stack">
           <section class="card" aria-labelledby="limits-title">
-            <h2 id="limits-title">限制 / Limits</h2>
-            <ul class="steps">
+            <h2 id="limits-title" {copy_attrs('限制', 'Limits')}>限制</h2>
+            <ul class="steps" data-lang-only="zh">
               <li>最新資料取決於官方文件是否已發布及排程更新是否成功。</li>
               <li>舊工作簿資料部分只能準確到年份區段，不代表單一拍賣日。</li>
               <li>自動提取可能有錯漏；高風險用途必須回看來源文件。</li>
               <li>外部放售訊號與官方拍賣結果是不同資料層，不應混作官方成交。</li>
             </ul>
+            <ul class="steps" data-lang-only="en" hidden>
+              <li>Freshness depends on official publication and successful scheduled updates.</li>
+              <li>Some older workbook records are precise only to a year range, not a single auction date.</li>
+              <li>Automated extraction can contain errors; high-stakes use requires checking the source document.</li>
+              <li>External sale signals and official auction results are separate data layers and must not be presented as the same evidence.</li>
+            </ul>
           </section>
           <section class="card" aria-labelledby="sources-title">
-            <h2 id="sources-title">官方來源與機器入口</h2>
+            <h2 id="sources-title" {copy_attrs('官方來源與機器入口', 'Official Sources and Machine Access')}>官方來源與機器入口</h2>
             <div class="links">
-              <a href="{TD_URL}" target="_blank" rel="noopener noreferrer">運輸署車牌服務</a>
-              <a href="{TD_HISTORY_URL}" target="_blank" rel="noopener noreferrer">運輸署拍賣歷史</a>
-              <a href="./audit.html">資料審核</a>
-              <a href="./api.html">API 文檔</a>
-              <a href="./api/v1/index.json">API dataset index</a>
+              <a href="{TD_URL}" target="_blank" rel="noopener noreferrer" {copy_attrs('運輸署車牌服務', 'Transport Department Plate Service')}>運輸署車牌服務</a>
+              <a href="{TD_HISTORY_URL}" target="_blank" rel="noopener noreferrer" {copy_attrs('運輸署拍賣歷史', 'Transport Department Auction History')}>運輸署拍賣歷史</a>
+              <a href="./audit.html" data-preserve-lang {copy_attrs('資料審核', 'Data Audit')}>資料審核</a>
+              <a href="./api.html" data-preserve-lang {copy_attrs('API 文檔', 'API Documentation')}>API 文檔</a>
+              <a href="./api/v1/index.json" {copy_attrs('API 資料集索引', 'API Dataset Index')}>API 資料集索引</a>
               <a href="./llms.txt">llms.txt</a>
-              <a href="./agent.md">Agent guide</a>
+              <a href="./agent.md" {copy_attrs('智能代理指南', 'Agent Guide')}>智能代理指南</a>
             </div>
           </section>
           <section class="card" aria-labelledby="updated-title">
-            <h2 id="updated-title">頁面狀態 / Page Status</h2>
-            <p>此說明頁於 <time datetime="{TODAY}">{TODAY}</time> 建置；資料時間範圍為 {html.escape(format_date_zh(first_date))} 至 {html.escape(format_date_zh(latest_date))}。這是建置證據，不等於官方已發布當日新拍賣結果。</p>
+            <h2 id="updated-title" {copy_attrs('頁面狀態', 'Page Status')}>頁面狀態</h2>
+            <p data-lang-only="zh">此說明頁於 <time datetime="{TODAY}">{TODAY}</time> 建置；資料時間範圍為 {html.escape(format_date_zh(first_date))} 至 {html.escape(format_date_zh(latest_date))}。這是建置證據，不等於官方已發布當日新拍賣結果。</p>
+            <p data-lang-only="en" hidden>This guide was built on <time datetime="{TODAY}">{TODAY}</time>. The dataset covers {html.escape(first_date)} to {html.escape(latest_date)}. This is build evidence, not proof that the authority published a new auction result that day.</p>
           </section>
         </div>
       </div>
     </main>
     <div data-info-shell-footer></div>
+    <script src="./assets/info-locale.js?v={INFO_LOCALE_VERSION}"></script>
     <script src="./assets/info-shell.js?v={INFO_SHELL_VERSION}"></script>
   </body>
 </html>

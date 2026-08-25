@@ -632,7 +632,7 @@ progress {
     padding: 3px !important;
   }
 
-  .lang-toggle button {
+  .lang-toggle:not(.info-lang-toggle) button {
     min-width: 38px !important;
     min-height: 38px !important;
     padding: 0 10px !important;
@@ -703,6 +703,27 @@ progress {
   border-bottom: 2px solid var(--line-strong);
 }
 
+.info-header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.info-lang-toggle {
+  flex: 0 0 auto;
+  padding: 3px;
+}
+
+.info-lang-toggle button {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+[data-lang-only][hidden] {
+  display: none !important;
+}
+
 .info-brand {
   display: inline-flex;
   min-width: max-content;
@@ -743,7 +764,7 @@ progress {
 
 .info-nav a {
   display: inline-flex;
-  min-height: 40px;
+  min-height: 44px;
   padding: 9px 10px;
   align-items: center;
   border: 1px solid transparent;
@@ -792,15 +813,20 @@ progress {
 .info-page .hero > a,
 .info-page .actions a {
   display: inline-flex;
-  min-height: 40px;
+  min-height: 44px;
   padding: 8px 10px;
   align-items: center;
   border: 1px solid var(--line);
   border-radius: 4px;
-  background: transparent !important;
   font-size: 13px;
   font-weight: 700;
   text-decoration: none;
+}
+
+.info-page .top a,
+.info-page .hero > a,
+.info-page .actions a:not(.primary) {
+  background: transparent !important;
 }
 
 .info-page .hero,
@@ -997,12 +1023,22 @@ progress {
     gap: 10px;
   }
 
+  .info-header-actions {
+    width: 100%;
+    align-items: flex-start;
+    flex-direction: column-reverse;
+  }
+
   .info-nav {
     width: 100%;
     justify-content: flex-start;
     overflow-x: auto;
     padding-bottom: 2px;
     scrollbar-width: thin;
+  }
+
+  .info-lang-toggle {
+    align-self: flex-end;
   }
 
   .info-site-footer {
