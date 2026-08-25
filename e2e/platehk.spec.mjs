@@ -539,10 +539,13 @@ test.describe("Plate.hk browser journeys", () => {
       });
     });
 
-    await page.goto(`/plates/${generatedMarketPage.filename}`);
+    await page.goto(`/plates/${generatedMarketPage.filename}?lang=en`);
     const plate = page.locator("[data-market-card] .market-title .plate");
     await expect(plate).toBeVisible();
     await expect(plate).toHaveText(generatedMarketPlate);
+    await expect(page.locator("[data-market-card] .market-kicker")).toHaveText("External sale signal");
+    await expect(page.locator("[data-market-card] .market-title")).toContainText("may be obtainable");
+    await expect(page.locator("[data-market-card]")).not.toContainText("外部放售訊號");
     await expect(plate).toHaveCSS("background-color", "rgb(240, 201, 77)");
     await expect(plate).toHaveCSS("color", "rgb(23, 22, 18)");
     const decoration = await plate.evaluate((element) => ({
@@ -550,6 +553,12 @@ test.describe("Plate.hk browser journeys", () => {
       after: getComputedStyle(element, "::after").content,
     }));
     expect(decoration).toEqual({ before: "none", after: "none" });
+
+    await page.goto(`/plates/${generatedMarketPage.filename}?lang=zh`);
+    await expect(page.locator("[data-market-card] .market-title .plate")).toBeVisible();
+    await expect(page.locator("[data-market-card] .market-kicker")).toHaveText("外部放售訊號");
+    await expect(page.locator("[data-market-card] .market-title")).toContainText("或可洽購");
+    await expect(page.locator("[data-market-card]")).not.toContainText("External sale signal");
   });
 
   test("shows one external signal while keeping actions on all matching result rows", async ({ page }) => {
