@@ -66,9 +66,22 @@
         border-radius:4px; padding:10px 12px; min-width: 160px;
       }
       .dataset-chip span { color:var(--muted); font-size:12px; }
+      .market-card { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:18px; align-items:center; margin-top:14px; padding:18px; border:1px solid #c7a84d; border-left:5px solid #a87808; border-radius:4px; background:#fff9df; }
+      .market-card[hidden] { display:none; }
+      .market-card h2 { margin:7px 0 9px; font-size:22px; }
+      .market-card p { margin:8px 0 0; color:#665b45; line-height:1.6; max-width:72ch; }
+      .market-kicker { color:#725208; font-size:12px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
+      .market-title { display:flex; align-items:center; flex-wrap:wrap; gap:10px; }
+      .market-card .plate { width:auto; max-width:100%; min-width:92px; min-height:34px; padding:4px 12px; font-size:16px; line-height:1; letter-spacing:0; }
+      .market-price { color:#554214; }
+      .market-actions { display:flex; flex-direction:column; gap:9px; min-width:210px; text-align:center; font-size:12px; }
+      .whatsapp-action { border-color:#0b6f63 !important; background:#075e54 !important; color:#fff !important; display:inline-flex; align-items:center; justify-content:center; gap:9px; }
+      .whatsapp-action:hover { background:#064c45 !important; }
+      .whatsapp-icon { width:20px; height:20px; flex:0 0 auto; fill:currentColor; }
       a { color:var(--accent); }
       @media (max-width: 860px) {
-        .meta, .grid { grid-template-columns: 1fr; }
+        .meta, .grid, .market-card { grid-template-columns: 1fr; }
+        .market-actions { min-width:0; }
         .plate { min-width: 0; width: 100%; font-size: 28px; }
       }
       @media (max-width: 620px) {
@@ -100,6 +113,8 @@
           <div class="metric"><div class="k" data-copy-zh="最近紀錄" data-copy-en="Latest Seen">最近紀錄</div><div class="v"><span data-lang-only="zh">2007年12月15日</span><span data-lang-only="en" hidden>15 Dec 2007</span></div></div>
         </div>
       </div>
+
+      <section class="market-card" data-market-card data-plate="WV" hidden aria-live="polite"></section>
 
       <div class="grid">
         <div class="stack">
@@ -166,6 +181,7 @@
           </div>
         </div>
       </div>
+      <script src="../assets/plate.market.js?v=20260825-01"></script>
     </main>
     <div data-info-shell-footer></div>
     <script src="../assets/info-locale.js?v=20260825-01"></script>
