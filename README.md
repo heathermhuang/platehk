@@ -11,7 +11,7 @@ Open-source search, audit, and publishing pipeline for Hong Kong vehicle registr
 
 Plate.hk turns Transport Department source documents into a searchable static website, a public JSON API, SEO landing pages, and Cloudflare-ready deployment artifacts. The repository covers personalized marks, traditional TVRM auctions, E-Auction records, historical legacy ranges, and camera-assisted lookup.
 
-The current public UI uses a flat Ledger visual system: compact auction-record tables, square Hong Kong plate branding, dense generated plate pages, and bilingual legal/policy pages designed to stay calm and source-first rather than decorative.
+The current public UI uses a flat Ledger visual system: compact auction-record tables, square Hong Kong plate branding, dense generated plate pages, and separate Traditional Chinese and English legal/policy pages designed to stay calm and source-first rather than decorative.
 
 ## Live project
 
@@ -141,7 +141,7 @@ Legacy runtime code has been removed; production and local runtime paths use the
 The production frontend is intentionally static-first and style-light:
 
 - `assets/ledger.css` carries the current flat Ledger visual layer across the homepage, policy pages, camera page, API/audit pages, and generated plate pages
-- `assets/info-shell.js` gives About, Terms, Privacy, Changelog, Audit, API, MCP, and Popular Plates one shared header, active navigation state, language-aware links, and grouped footer
+- `assets/info-shell.js` gives About, Terms, Privacy, Changelog, Audit, API, MCP, and Popular Plates one shared header, active navigation state, one-language-at-a-time copy and links, and a grouped footer
 - `assets/popular-index.js` adds filtering and staged disclosure to the Popular Plates index while leaving every plate link visible when JavaScript is unavailable
 - `assets/logo.svg` and `assets/favicon.svg` use a square Hong Kong-style plate mark with centered `HONG / KONG` text
 - Search result rows are tuned as dense auction ledger records on desktop and readable cards on mobile
