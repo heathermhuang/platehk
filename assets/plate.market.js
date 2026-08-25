@@ -3,6 +3,26 @@
   if (!card) return;
   const plate = String(card.dataset.plate || "").replace(/[^A-Z0-9]/g, "");
   if (!plate) return;
+  const lang = new URLSearchParams(location.search).get("lang") === "en" ? "en" : "zh";
+  const t = lang === "en" ? {
+    priceRequest: "Price on request",
+    kicker: "External sale signal",
+    obtainable: "may be obtainable",
+    plateLabel: "Plate",
+    asking: "Current asking price: ",
+    body: "Plate.hk can first verify whether the listing is still active, then contact and negotiate confidentially for a buyer. Third-party data may be stale or wrong and does not guarantee availability or transferability.",
+    mandate: "Verify and negotiate on WhatsApp",
+    source: "View the 28car listing",
+  } : {
+    priceRequest: "價格另議",
+    kicker: "外部放售訊號",
+    obtainable: "或可洽購",
+    plateLabel: "車牌",
+    asking: "目前叫價：",
+    body: "Plate.hk 可先核實刊登是否仍然有效，再代表買方保密接洽及議價。第三方資料可能過期或有誤，並不保證可買到或可轉名。",
+    mandate: "WhatsApp 委託核實及議價",
+    source: "查看 28car 來源刊登",
+  };
 
   const node = (tag, className, text) => {
     const element = document.createElement(tag);
@@ -43,28 +63,28 @@
         : [];
       const price = prices.length
         ? (prices[0] === prices.at(-1) ? money(prices[0]) : `${money(prices[0])}–${money(prices.at(-1))}`)
-        : "價格另議 / Price on request";
+        : t.priceRequest;
 
       const copy = node("div");
-      copy.append(node("div", "market-kicker", "外部放售訊號 / External sale signal"));
+      copy.append(node("div", "market-kicker", t.kicker));
       const title = node("h2", "market-title");
       const plateBadge = node("span", "plate", plate);
-      plateBadge.setAttribute("aria-label", `車牌 / Plate ${plate}`);
-      title.append(plateBadge, document.createTextNode(" "), node("span", "", "或可洽購 / may be obtainable"));
+      plateBadge.setAttribute("aria-label", `${t.plateLabel} ${plate}`);
+      title.append(plateBadge, document.createTextNode(" "), node("span", "", t.obtainable));
       copy.append(title);
-      const priceLine = node("div", "market-price", "目前叫價 / Asking: ");
+      const priceLine = node("div", "market-price", t.asking);
       priceLine.append(node("strong", "", price));
       copy.append(priceLine);
-      copy.append(node("p", "", "Plate.hk 可先核實刊登是否仍然有效，再代表買方保密接洽及議價。第三方資料可能過期或有誤，並不保證可買到或可轉名。"));
+      copy.append(node("p", "", t.body));
 
       const actions = node("div", "market-actions");
       if (signal.inquiry_enabled === true) {
         const mandate = node("a", "btn primary whatsapp-action");
-        mandate.href = `../?lang=zh&q=${encodeURIComponent(plate)}&broker=1`;
-        mandate.append(whatsappIcon(), node("span", "", "WhatsApp 委託核實及議價"));
+        mandate.href = `../?lang=${lang}&q=${encodeURIComponent(plate)}&broker=1`;
+        mandate.append(whatsappIcon(), node("span", "", t.mandate));
         actions.append(mandate);
       }
-      const source = node("a", "", "查看 28car 來源刊登");
+      const source = node("a", "", t.source);
       source.href = sourceUrl.toString();
       source.target = "_blank";
       source.rel = "nofollow noopener noreferrer";

@@ -703,6 +703,27 @@ progress {
   border-bottom: 2px solid var(--line-strong);
 }
 
+.info-header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.info-lang-toggle {
+  flex: 0 0 auto;
+  padding: 3px;
+}
+
+.info-lang-toggle button {
+  min-width: 40px;
+  min-height: 40px;
+}
+
+[data-lang-only][hidden] {
+  display: none !important;
+}
+
 .info-brand {
   display: inline-flex;
   min-width: max-content;
@@ -997,12 +1018,22 @@ progress {
     gap: 10px;
   }
 
+  .info-header-actions {
+    width: 100%;
+    align-items: flex-start;
+    flex-direction: column-reverse;
+  }
+
   .info-nav {
     width: 100%;
     justify-content: flex-start;
     overflow-x: auto;
     padding-bottom: 2px;
     scrollbar-width: thin;
+  }
+
+  .info-lang-toggle {
+    align-self: flex-end;
   }
 
   .info-site-footer {

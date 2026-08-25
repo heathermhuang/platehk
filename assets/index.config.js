@@ -192,6 +192,7 @@ const INDEX_I18N = {
           apiQueryWindowExceeded: "短查詢只提供前幾頁結果，請輸入更多字符以縮窄搜尋範圍。",
           apiInvalidPaging: "請求的頁數或每頁數量不被接受，請重試。",
           popularLink: "熱門車牌",
+          aboutLink: "資料說明",
           cameraLinkLabel: "相機搜尋",
           termsLink: "使用條款",
           privacyLink: "私隱政策",
@@ -201,6 +202,7 @@ const INDEX_I18N = {
           githubLink: "GitHub",
           feedbackLink: "反饋表格",
           termsUrl: "./terms.html?lang=zh",
+          aboutUrl: "./about.html?lang=zh",
           privacyUrl: "./privacy.html?lang=zh",
           changelogUrl: "./changelog.html?lang=zh",
           auditUrl: "./audit.html?lang=zh",
@@ -401,6 +403,7 @@ const INDEX_I18N = {
           apiQueryWindowExceeded: "Short queries only expose the first few pages. Enter more characters to narrow the search.",
           apiInvalidPaging: "The requested page or page size was not accepted. Please try again.",
           popularLink: "Popular Plates",
+          aboutLink: "Data Guide",
           cameraLinkLabel: "Camera search",
           termsLink: "Terms of Use",
           privacyLink: "Privacy Policy",
@@ -410,6 +413,7 @@ const INDEX_I18N = {
           githubLink: "GitHub",
           feedbackLink: "Feedback Form",
           termsUrl: "./terms.html?lang=en",
+          aboutUrl: "./about.html?lang=en",
           privacyUrl: "./privacy.html?lang=en",
           changelogUrl: "./changelog.html?lang=en",
           auditUrl: "./audit.html?lang=en",
@@ -427,6 +431,7 @@ const INDEX_I18N = {
       const termsLinkEl = document.getElementById("termsLink");
       const cameraTopLinkEl = document.getElementById("cameraTopLink");
       const popularLinkEl = document.getElementById("popularLink");
+      const aboutLinkEl = document.getElementById("aboutLink");
       const privacyLinkEl = document.getElementById("privacyLink");
       const changelogLinkEl = document.getElementById("changelogLink");
       const auditLinkEl = document.getElementById("auditLink");

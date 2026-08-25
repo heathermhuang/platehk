@@ -302,24 +302,24 @@ test.describe("Plate.hk browser journeys", () => {
     await expect(page.locator("#answers-title")).toBeVisible();
     await expect(page.getByText("PVRM、TVRM 實體拍賣及拍牌易有甚麼分別？", { exact: false })).toBeVisible();
     await expect(page.locator('a[href*="pvrm_auction"]').first()).toBeVisible();
-    await expect(page.getByText("GET /api/search?dataset=all&q=88", { exact: true })).toBeVisible();
+    await expect(page.locator('[data-lang-only="zh"] code').filter({ hasText: "GET /api/search?dataset=all&q=88" })).toBeVisible();
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
     if (isMobile) {
       await expect(page.locator(".responsive-table tbody tr").first()).toHaveCSS("display", "block");
       await expect(page.locator(".responsive-table tbody tr").first().locator("th")).toHaveCSS("display", "grid");
-      await expect(page.locator(".responsive-table tbody tr").first().locator("td").nth(3)).toHaveAttribute("data-label", "Scope");
+      await expect(page.locator(".responsive-table tbody tr").first().locator("td").nth(3)).toHaveAttribute("data-label", "範圍");
     }
 
     await page.goto("/plates/88.html");
     await expect(page.locator("h1")).toContainText("88 車牌拍賣結果");
-    await expect(page.getByText("直接答案 / Direct Answers", { exact: true })).toBeVisible();
-    await expect(page.getByText("What public auction records exist for Hong Kong plate 88?", { exact: false })).toBeVisible();
+    await expect(page.getByText("直接答案", { exact: true })).toBeVisible();
+    await expect(page.getByText("What public auction records exist for Hong Kong plate 88?", { exact: false })).toBeHidden();
     await expect(page.locator('a[href*="td.gov.hk"]').first()).toBeVisible();
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
     if (isMobile) {
       await expect(page.locator(".responsive-table tbody tr").first()).toHaveCSS("display", "block");
       await expect(page.locator(".responsive-table tbody tr").first().locator("td").first()).toHaveCSS("display", "grid");
-      await expect(page.locator(".responsive-table tbody tr").first().locator("td").nth(3)).toHaveAttribute("data-label", "來源 / Source");
+      await expect(page.locator(".responsive-table tbody tr").first().locator("td").nth(3)).toHaveAttribute("data-label", "來源");
     }
 
     await expectNoBrowserErrors(errors);
@@ -705,7 +705,7 @@ test.describe("Plate.hk browser journeys", () => {
     }
 
     await page.goto("/audit.html");
-    await page.locator("#langBtn").click();
+    await page.locator("#infoLangEn").click();
     await expect(page).toHaveURL(/lang=en/);
     await expect(page.locator('.info-nav a[href="/api.html?lang=en"]')).toBeVisible();
 
@@ -729,7 +729,7 @@ test.describe("Plate.hk browser journeys", () => {
     await expect(page.locator("#changelogStatus strong").first()).not.toContainText("Loading");
     await expect(page.locator(".changelog-archive")).toBeVisible();
 
-    await page.goto("/plates/index.html");
+    await page.goto("/plates/index.html?lang=en");
     const initialLimit = testInfo.project.name.includes("mobile") ? 40 : 80;
     await expect(page.locator("[data-popular-card]:visible")).toHaveCount(initialLimit);
     await page.locator("#popularQuery").fill(" 8 8 ");
@@ -745,6 +745,46 @@ test.describe("Plate.hk browser journeys", () => {
     await page.locator("#popularShowAll").click();
     await expect(page.locator("[data-popular-card]:visible")).toHaveCount(420);
     await expect(page.locator("#popularShowAll")).toBeHidden();
+
+    await expectNoBrowserErrors(errors);
+  });
+
+  test("renders separate Chinese and English versions for every public page family", async ({ page }) => {
+    const errors = collectBrowserErrors(page);
+    const pageFamilies = [
+      ["/about.html", "香港車牌拍賣資料說明與方法", "Hong Kong Plate Auction Data Guide"],
+      ["/terms.html", "使用條款", "Terms of Use"],
+      ["/privacy.html", "私隱政策", "Privacy Policy"],
+      ["/changelog.html", "更新日誌", "Changelog"],
+      ["/audit.html", "資料審核", "Data Audit"],
+      ["/api.html", "API 文檔", "API Docs"],
+      ["/mcp.html", "MCP 文件", "MCP Docs"],
+      ["/plates/index.html", "熱門車牌拍賣結果索引", "Popular Plate Auction Results"],
+      ["/plates/88.html", "88 車牌拍賣結果", "88 Plate Auction Results"],
+    ];
+
+    for (const [path, chineseHeading, englishHeading] of pageFamilies) {
+      await page.goto(`${path}?lang=zh`);
+      await expect(page.locator("html")).toHaveAttribute("lang", "zh-HK");
+      await expect(page.locator("h1")).toHaveText(chineseHeading);
+      await expect(page.locator("h1")).not.toContainText(englishHeading);
+      await expect(page.locator(".info-nav")).toContainText("搜尋");
+      await expect(page.locator(".info-nav")).not.toContainText("Search");
+      await expect(page.locator("#infoLangZh")).toHaveAttribute("aria-pressed", "true");
+
+      await page.goto(`${path}?lang=en`);
+      await expect(page.locator("html")).toHaveAttribute("lang", "en");
+      await expect(page.locator("h1")).toHaveText(englishHeading);
+      await expect(page.locator("h1")).not.toContainText(chineseHeading);
+      await expect(page.locator(".info-nav")).toContainText("Search");
+      await expect(page.locator(".info-nav")).not.toContainText("搜尋");
+      await expect(page.locator("#infoLangEn")).toHaveAttribute("aria-pressed", "true");
+    }
+
+    await page.goto("/plates/88.html?lang=en");
+    await expect(page.getByText("Direct Answers", { exact: true })).toBeVisible();
+    await expect(page.getByText("直接答案", { exact: true })).toBeHidden();
+    await expect(page.locator(".responsive-table tbody tr").first().locator("td").first()).toHaveAttribute("data-label", "Date");
 
     await expectNoBrowserErrors(errors);
   });
