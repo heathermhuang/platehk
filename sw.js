@@ -31,7 +31,7 @@ const ASSETS = [
   './assets/info-shell.js?v=20260825-01',
   './assets/popular-index.js?v=20260825-01',
   './assets/plate.market.js?v=20260825-01',
-  './assets/ledger.css?v=20260825-01',
+  './assets/ledger.css?v=20260825-02',
   './terms.html',
   './privacy.html',
   './changelog.html',

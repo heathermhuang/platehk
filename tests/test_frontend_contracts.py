@@ -163,7 +163,7 @@ class FrontendContractsTests(unittest.TestCase):
             self.assertIn('data-info-shell-footer', html, html_name)
             self.assertIn('id="main-content"', html, html_name)
             self.assertIn('assets/info-shell.js?v=20260825-01', html, html_name)
-            self.assertIn('assets/ledger.css?v=20260825-01', html, html_name)
+            self.assertIn('assets/ledger.css?v=20260825-02', html, html_name)
             self.assertIn('name="theme-color" content="#f4f1e8"', html, html_name)
 
         shell = (ROOT / "assets" / "info-shell.js").read_text(encoding="utf-8")
@@ -265,7 +265,7 @@ class FrontendContractsTests(unittest.TestCase):
             "./assets/info-shell.js?v=20260825-01",
             "./assets/popular-index.js?v=20260825-01",
             "./assets/plate.market.js?v=20260825-01",
-            "./assets/ledger.css?v=20260825-01",
+            "./assets/ledger.css?v=20260825-02",
         ]:
             self.assertIn(f"'{shell_asset}'", service_worker, shell_asset)
 
@@ -345,6 +345,8 @@ class FrontendContractsTests(unittest.TestCase):
         self.assertIn('class="plate broker-plate-value"', index_html)
         self.assertNotIn(".market-plate {", index_html)
         self.assertNotIn(".market-plate", ledger_css)
+        self.assertIn(".info-page .actions a.btn.primary", ledger_css)
+        self.assertIn(".info-lang-toggle button", ledger_css)
         self.assertIn("./assets/ledger.css?v=20260812-11", index_html)
 
         generated_market_pages = []

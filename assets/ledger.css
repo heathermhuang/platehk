@@ -716,8 +716,8 @@ progress {
 }
 
 .info-lang-toggle button {
-  min-width: 40px;
-  min-height: 40px;
+  min-width: 44px;
+  min-height: 44px;
 }
 
 [data-lang-only][hidden] {
@@ -764,7 +764,7 @@ progress {
 
 .info-nav a {
   display: inline-flex;
-  min-height: 40px;
+  min-height: 44px;
   padding: 9px 10px;
   align-items: center;
   border: 1px solid transparent;
@@ -813,7 +813,7 @@ progress {
 .info-page .hero > a,
 .info-page .actions a {
   display: inline-flex;
-  min-height: 40px;
+  min-height: 44px;
   padding: 8px 10px;
   align-items: center;
   border: 1px solid var(--line);
@@ -822,6 +822,12 @@ progress {
   font-size: 13px;
   font-weight: 700;
   text-decoration: none;
+}
+
+.info-page .actions a.btn.primary {
+  border-color: var(--accent) !important;
+  background: var(--accent) !important;
+  color: var(--accent-ink) !important;
 }
 
 .info-page .hero,
@@ -1054,6 +1060,11 @@ progress {
   .info-brand img {
     width: 40px;
     height: 40px;
+  }
+
+  .info-lang-toggle button {
+    min-width: 44px !important;
+    min-height: 44px !important;
   }
 
   .info-nav a {
