@@ -6,6 +6,7 @@
       skip: "跳到內容",
       homeLabel: "Plate.hk 香港車牌拍賣資料庫首頁",
       brandSubtitle: "香港車牌拍賣資料庫",
+      languageLabel: "語言",
       navLabel: "資料頁導覽",
       nav: { search: "搜尋", plates: "熱門車牌", about: "資料說明", audit: "資料審核", api: "開發者" },
       intro: "獨立整理香港運輸署公開車牌拍賣紀錄。資料有差異時，以官方來源為準。",
@@ -16,6 +17,7 @@
       skip: "Skip to content",
       homeLabel: "Plate.hk vehicle registration marks database home",
       brandSubtitle: "Vehicle Registration Marks Database",
+      languageLabel: "Language",
       navLabel: "Information page navigation",
       nav: { search: "Search", plates: "Popular Plates", about: "Data Guide", audit: "Data Audit", api: "Developers" },
       intro: "An independent index of public Hong Kong plate-auction records. Official sources prevail.",
@@ -64,7 +66,7 @@
           <nav class="info-nav" aria-label="${t.navLabel}">
             ${navItems.map((item) => `<a href="${withLanguage(item.path, lang)}"${item.key === page ? ' aria-current="page"' : ""}>${t.nav[item.key]}</a>`).join("")}
           </nav>
-          <div class="lang-toggle info-lang-toggle" role="group" aria-label="Language">
+          <div class="lang-toggle info-lang-toggle" role="group" aria-label="${t.languageLabel}">
             <button id="infoLangZh" type="button" aria-pressed="${lang === "zh"}">繁</button>
             <button id="infoLangEn" type="button" aria-pressed="${lang === "en"}">EN</button>
           </div>

@@ -779,6 +779,7 @@ test.describe("Plate.hk browser journeys", () => {
       await expect(page.locator("h1")).not.toContainText(englishHeading);
       await expect(page.locator(".info-nav")).toContainText("搜尋");
       await expect(page.locator(".info-nav")).not.toContainText("Search");
+      await expect(page.locator(".info-lang-toggle")).toHaveAttribute("aria-label", "語言");
       await expect(page.locator("#infoLangZh")).toHaveAttribute("aria-pressed", "true");
 
       await page.goto(`${path}?lang=en`);
@@ -787,6 +788,7 @@ test.describe("Plate.hk browser journeys", () => {
       await expect(page.locator("h1")).not.toContainText(chineseHeading);
       await expect(page.locator(".info-nav")).toContainText("Search");
       await expect(page.locator(".info-nav")).not.toContainText("搜尋");
+      await expect(page.locator(".info-lang-toggle")).toHaveAttribute("aria-label", "Language");
       await expect(page.locator("#infoLangEn")).toHaveAttribute("aria-pressed", "true");
     }
 
