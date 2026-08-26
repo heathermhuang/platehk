@@ -4,7 +4,7 @@ This project now has a full Cloudflare Workers runtime for the public site:
 - static frontend files are served from Workers Assets
 - `/api/*` dynamic routes are served by the Worker
 - public data is served from `api/v1/*` static assets
-- search/results/issues/issue are driven from static JSON and chunked dataset files
+- search uses canonical bounded indexes; results use issue shards and sorted dataset chunks
 - OCR remains server-side and calls OpenAI from the Worker
 - protected OCR now also has OAuth 2.0 discovery and token issuance for machine clients
 - worker now exposes a minimal streamable HTTP MCP endpoint at `/mcp`
@@ -28,7 +28,7 @@ The old hosted runtime is no longer part of the repository.
 
 - Cloudflare Workers Static Assets serve the public frontend and static data.
 - Worker handles dynamic API routes under `/api/*`.
-- Search/results/issues/issue are built from static manifests, issue shards, presets, and chunked result files.
+- Search is built from canonical bounded indexes. Results use presets for the first amount-ranked pages, issue shards for date order, and sorted result chunks for other paginated sorts.
 - OCR stays server-side and calls OpenAI from the Worker.
 - Machine clients can discover auth at `/.well-known/oauth-authorization-server` and obtain bearer tokens from `/api/oauth/token`.
 - OAuth Protected Resource Metadata is published at `/.well-known/oauth-protected-resource`.
@@ -101,10 +101,7 @@ npm run cf:deploy
    - Rate Limiting binding
    - Durable Object
    - or another centralized counter
-2. Add Worker-specific QA for:
-   - `/api/search`
-   - `/api/results`
-   - `/api/issues`
+2. Keep Worker-specific QA coverage for the remaining protected and issue-detail routes:
    - `/api/issue`
    - `/api/vision_session`
    - `/api/vision_plate`
@@ -114,8 +111,8 @@ npm run cf:deploy
 ## Risk notes
 
 - The Worker runtime is designed to preserve the current API contract first.
-- The biggest remaining migration risk is behavior parity around:
+- The biggest remaining migration risk is operational parity around:
   - search ranking
-  - short-query throttling
+  - canonical search-index and sorted-result-index availability
   - cache behavior
   - OCR token/session enforcement

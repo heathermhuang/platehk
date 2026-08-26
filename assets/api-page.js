@@ -3,7 +3,7 @@
           pageTitle: "API 文檔 | Plate.hk",
           title: "API 文檔",
           back: "← 返回首頁",
-          updated: "最後更新：2026年8月24日",
+          updated: "最後更新：2026年8月26日",
           statusLoading: "正在讀取最新資料狀態…",
           statusError: "暫時未能讀取即時狀態；API 端點仍可按下方方式使用。",
           statusLabels: ["API 索引", "審核執行", "搜尋筆數"],
@@ -16,11 +16,11 @@
             </div>
             <p><code>dataset</code> 可用 <code>all</code>、<code>pvrm</code>、<code>tvrm_physical</code>、<code>tvrm_eauction</code> 或 <code>tvrm_legacy</code>；<code>q</code> 是車牌搜尋字串。回應包含 <code>total</code>、分頁資料及每筆拍賣紀錄。</p>
             <p><code>curl -G 'https://plate.hk/api/search' --data-urlencode 'dataset=all' --data-urlencode 'q=88' --data-urlencode 'page_size=20'</code></p>
+            <p>如要在沒有搜尋字串時按日期、金額或車牌排序瀏覽，可用 <code>GET /api/results?dataset=all&amp;sort=date_desc&amp;page=1</code>。</p>
 
             <h2>限制與錯誤處理</h2>
             <ul>
               <li><code>page_size</code> 必須為 1 至 200；超出範圍會回應 <code>400 invalid_paging</code>。</li>
-              <li>深層分頁可能回應 <code>400 query_window_exceeded</code>；應縮窄車牌查詢或使用資料分片。</li>
               <li>公開讀取端點設有速率限制；收到 <code>429 rate_limited</code> 時，請按 <code>Retry-After</code> 標頭稍後重試。</li>
             </ul>
 
@@ -31,6 +31,7 @@
               <div><code>GET https://plate.hk/api/v1/pvrm/issues.manifest.json</code></div>
               <div><code>GET https://plate.hk/api/v1/pvrm/issues/{YYYY-MM-DD}.json</code></div>
               <div><code>GET https://plate.hk/api/v1/pvrm/auctions.json</code></div>
+              <div><code>GET https://plate.hk/api/v1/pvrm/results.chunks.json</code></div>
               <div><code>GET https://plate.hk/api/v1/pvrm/preset.amount_desc.top1000.json</code></div>
               <div><code>GET https://plate.hk/api/v1/tvrm_physical/...</code></div>
               <div><code>GET https://plate.hk/api/v1/tvrm_eauction/...</code></div>
@@ -76,7 +77,7 @@
           pageTitle: "API Docs | Plate.hk",
           title: "API Docs",
           back: "← Back to Home",
-          updated: "Last updated: 24 Aug 2026",
+          updated: "Last updated: 26 Aug 2026",
           statusLoading: "Loading the latest data status…",
           statusError: "Live status is temporarily unavailable. The API remains available through the endpoints below.",
           statusLabels: ["API index", "Audit run", "Search rows"],
@@ -89,11 +90,11 @@
             </div>
             <p><code>dataset</code> accepts <code>all</code>, <code>pvrm</code>, <code>tvrm_physical</code>, <code>tvrm_eauction</code>, or <code>tvrm_legacy</code>; <code>q</code> is the plate query. The response includes <code>total</code>, paging fields, and auction-result rows.</p>
             <p><code>curl -G 'https://plate.hk/api/search' --data-urlencode 'dataset=all' --data-urlencode 'q=88' --data-urlencode 'page_size=20'</code></p>
+            <p>To browse without a query and sort by date, amount, or plate, use <code>GET /api/results?dataset=all&amp;sort=date_desc&amp;page=1</code>.</p>
 
             <h2>Limits and errors</h2>
             <ul>
               <li><code>page_size</code> must be between 1 and 200. Out-of-range values return <code>400 invalid_paging</code>.</li>
-              <li>Deep pagination may return <code>400 query_window_exceeded</code>. Narrow the plate query or use dataset shards.</li>
               <li>Public read endpoints are rate limited. On <code>429 rate_limited</code>, wait for the <code>Retry-After</code> interval before retrying.</li>
             </ul>
 
@@ -104,6 +105,7 @@
               <div><code>GET https://plate.hk/api/v1/pvrm/issues.manifest.json</code></div>
               <div><code>GET https://plate.hk/api/v1/pvrm/issues/{YYYY-MM-DD}.json</code></div>
               <div><code>GET https://plate.hk/api/v1/pvrm/auctions.json</code></div>
+              <div><code>GET https://plate.hk/api/v1/pvrm/results.chunks.json</code></div>
               <div><code>GET https://plate.hk/api/v1/pvrm/preset.amount_desc.top1000.json</code></div>
               <div><code>GET https://plate.hk/api/v1/tvrm_physical/...</code></div>
               <div><code>GET https://plate.hk/api/v1/tvrm_eauction/...</code></div>

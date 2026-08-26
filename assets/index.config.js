@@ -156,6 +156,7 @@ const INDEX_I18N = {
           nextIssue: "下一期",
           thisIssue: "本期",
           updatePrefix: "最後更新：",
+          updateUnavailable: "資料更新時間未提供",
           statusFmt: (total, matched, mode) => `共 ${total} 筆，符合 ${matched} 筆。${mode}`,
           modeAll: (p, totalPages) => `第 ${p} / ${totalPages} 頁，每頁 200 筆。`,
           modeIssue: (count, p, totalPages) => `本期共 ${count} 筆，第 ${p} / ${totalPages} 頁，每頁 200 筆。`,
@@ -189,7 +190,6 @@ const INDEX_I18N = {
           apiSearchLocalFallback: "已自動改用本機資料搜尋（首次可能較慢）。",
           apiSearchOfflineFallback: "目前離線，改用本機資料搜尋中…",
           apiRateLimited: (retry) => retry ? `請求過於頻繁，請在 ${retry} 秒後再試。` : "請求過於頻繁，請稍後再試。",
-          apiQueryWindowExceeded: "短查詢只提供前幾頁結果，請輸入更多字符以縮窄搜尋範圍。",
           apiInvalidPaging: "請求的頁數或每頁數量不被接受，請重試。",
           popularLink: "熱門車牌",
           aboutLink: "資料說明",
@@ -367,6 +367,7 @@ const INDEX_I18N = {
           nextIssue: "Next issue",
           thisIssue: "This issue",
           updatePrefix: "Last updated: ",
+          updateUnavailable: "Dataset update unavailable",
           statusFmt: (total, matched, mode) => `Total ${total} records, ${matched} matched. ${mode}`,
           modeAll: (p, totalPages) => `Page ${p} / ${totalPages}, 200 rows per page.`,
           modeIssue: (count, p, totalPages) => `This issue has ${count} rows. Page ${p} / ${totalPages}, 200 rows per page.`,
@@ -400,7 +401,6 @@ const INDEX_I18N = {
           apiSearchLocalFallback: "Automatically switched to local data search (first run may be slower).",
           apiSearchOfflineFallback: "You are offline. Falling back to local search…",
           apiRateLimited: (retry) => retry ? `Too many requests. Please try again in ${retry} seconds.` : "Too many requests. Please try again shortly.",
-          apiQueryWindowExceeded: "Short queries only expose the first few pages. Enter more characters to narrow the search.",
           apiInvalidPaging: "The requested page or page size was not accepted. Please try again.",
           popularLink: "Popular Plates",
           aboutLink: "Data Guide",
@@ -491,7 +491,7 @@ const INDEX_I18N = {
       const searchProgressBarEl = document.getElementById("searchProgressBar");
       const searchProgressTextEl = document.getElementById("searchProgressText");
 
-      let manifest = { total_rows: 0, issue_count: 0, issues: [] };
+      let manifest = { generated_at: null, total_rows: 0, issue_count: 0, issues: [] };
       let auctionsByDate = {};
       const loadedIssues = new Map();
       const loadingIssues = new Map();

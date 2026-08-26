@@ -3,11 +3,11 @@ import {
   apiJsonResponse,
   badRequest,
   buildPagedDateDescRows,
+  buildPagedSortedRows,
   compareSearchRows,
   enforcePageSize,
   enforcePublicReadRateLimit,
   enforceRateLimit,
-  enforceSearchWindow,
   getOAuthClientMap,
   getOpenAiConfig,
   getOAuthJwksDocument,
@@ -180,8 +180,9 @@ async function loadCompleteSearchIndexRows(env, request, query) {
 
   let path = "";
   if (query.length === 1) {
-    if (!Number(meta?.prefix_counts?.[query] || 0)) return [];
-    path = `${base}/prefix1/${encodeURIComponent(query)}.json`;
+    const charCount = Number(meta?.char_counts?.[query] || 0);
+    if (!charCount) return [];
+    path = `${base}/char1/${encodeURIComponent(query)}.json`;
   } else {
     const tokens = [...new Set(Array.from(
       { length: query.length - 1 },
@@ -281,10 +282,15 @@ function slicePage(rows, page, pageSize) {
   return rows.slice(offset, offset + pageSize);
 }
 
+function isLocalDevelopmentRequest(request) {
+  const hostname = new URL(request.url).hostname;
+  return hostname === "localhost" || hostname === "127.0.0.1";
+}
+
 function rowMatchesSearch(row, query, mode) {
   const rank = searchMatchRank(row, query);
   if (rank == null) return false;
-  if (mode === "exact_prefix" || query.length <= 2) {
+  if (mode === "exact_prefix") {
     return rank <= 1;
   }
   return true;
@@ -335,15 +341,17 @@ async function loadAllVisibleTotal(env, request) {
 }
 
 async function loadStaticIssuesPayload(env, request, dataset) {
-  const [manifest, auctionMap, preset] = await Promise.all([
+  const [manifest, auctionMap, preset, index] = await Promise.all([
     loadDatasetIssueManifest(env, request.url, dataset),
     loadDatasetAuctionMap(env, request.url, dataset),
     loadDatasetPreset(env, request.url, dataset),
+    loadDatasetIndex(env, request.url),
   ]);
   const topAmount = Array.isArray(preset) && preset.length ? Number(preset[0]?.amount_hkd || 0) || null : null;
   const issues = Array.isArray(manifest?.issues) ? manifest.issues : [];
   return {
     dataset,
+    generated_at: manifest?.generated_at || index?.generated_at || null,
     total_rows: Number(manifest?.total_rows || 0),
     issue_count: Number(manifest?.issue_count || 0),
     top_amount_hkd: topAmount,
@@ -452,13 +460,19 @@ async function loadStaticDatasetResults(env, request, dataset, sort, page, pageS
   if (sort === "date_desc") {
     return buildPagedDateDescRows(env, request.url, dataset, page, pageSize);
   }
-  const [rows, auctionMap] = await Promise.all([
-    loadDatasetAllRows(env, request.url, dataset),
-    loadDatasetAuctionMap(env, request.url, dataset),
-  ]);
-  const mapped = rows.map((row) => mapStaticRow(row, dataset, auctionMap.get(String(row?.auction_date || "")) || null));
-  const sorted = sortRowsForResults(mapped, sort);
-  return { total, rows: slicePage(sorted, page, pageSize) };
+  try {
+    return await buildPagedSortedRows(env, request.url, dataset, sort, page, pageSize);
+  } catch (error) {
+    if (!(error instanceof ApiError) || error.code !== "results_index_unavailable" || !isLocalDevelopmentRequest(request)) {
+      throw error;
+    }
+    const [rows, auctionMap] = await Promise.all([
+      loadDatasetAllRows(env, request.url, dataset),
+      loadDatasetAuctionMap(env, request.url, dataset),
+    ]);
+    const mapped = rows.map((row) => mapStaticRow(row, dataset, auctionMap.get(String(row?.auction_date || "")) || null));
+    return { total, rows: slicePage(sortRowsForResults(mapped, sort), page, pageSize) };
+  }
 }
 
 async function loadStaticAllResults(env, request, sort, page, pageSize) {
@@ -473,16 +487,26 @@ async function loadStaticAllResults(env, request, sort, page, pageSize) {
   if (sort === "date_desc") {
     return buildPagedDateDescRows(env, request.url, "all", page, pageSize);
   }
-  const rows = await loadDatasetAllRows(env, request.url, "all");
-  const mapped = rows.map((row) => mapStaticRow(row, "all", null));
-  const sorted = sortRowsForResults(mapped, sort);
-  return { total: Number(manifest?.total_rows || sorted.length), rows: slicePage(sorted, page, pageSize) };
+  try {
+    return await buildPagedSortedRows(env, request.url, "all", sort, page, pageSize);
+  } catch (error) {
+    if (!(error instanceof ApiError) || error.code !== "results_index_unavailable" || !isLocalDevelopmentRequest(request)) {
+      throw error;
+    }
+    const rows = await loadDatasetAllRows(env, request.url, "all");
+    const mapped = rows.map((row) => mapStaticRow(row, "all", null));
+    return {
+      total: Number(manifest?.total_rows || mapped.length),
+      rows: slicePage(sortRowsForResults(mapped, sort), page, pageSize),
+    };
+  }
 }
 
 async function searchStaticDataset(env, request, dataset, query, issue, sort, mode, page, pageSize) {
   if (!issue) {
     const indexedPayload = await searchCompleteIndex(env, request, dataset, query, sort, mode, page, pageSize);
     if (indexedPayload) return indexedPayload;
+    if (!isLocalDevelopmentRequest(request)) throw new ApiError("search_index_unavailable", 503);
   }
   const auctionMap = await loadDatasetAuctionMap(env, request.url, dataset);
   const rows = issue
@@ -510,6 +534,9 @@ async function searchStaticAll(env, request, query, issue, sort, mode, page, pag
     const matched = sortSearchMatches(collectSearchMatches(issuePayload.rows, query, mode), sort, query);
     return buildPagedSearchPayload("all", query, issue, mode, sort, page, pageSize, matched);
   }
+  const indexedPayload = await searchCompleteIndex(env, request, "all", query, sort, mode, page, pageSize);
+  if (indexedPayload) return indexedPayload;
+  if (!isLocalDevelopmentRequest(request)) throw new ApiError("search_index_unavailable", 503);
   const hotPayload = await loadHotSearchCache(env, request, query, page, pageSize, sort);
   if (hotPayload) return hotPayload;
   if (query.length === 1 && sort === "amount_desc") {
@@ -544,8 +571,6 @@ async function searchStaticAll(env, request, query, issue, sort, mode, page, pag
       );
     }
   }
-  const indexedPayload = await searchCompleteIndex(env, request, "all", query, sort, mode, page, pageSize);
-  if (indexedPayload) return indexedPayload;
   const rows = await loadDatasetAllRows(env, request.url, "all");
   const matched = sortSearchMatches(
     collectSearchMatches(rows, query, mode, (row) => mapStaticRow(row, "all", null)),
@@ -633,7 +658,6 @@ async function handleSearch(request, env, ctx) {
   if (query.length > 16) return badRequest("q too long");
   if (!Number.isInteger(page) || page < 1) return badRequest("invalid paging");
   enforcePageSize("search", pageSize, 200);
-  enforceSearchWindow(dataset, query, page);
   if (issue && !validIssueId(dataset, issue)) return badRequest("invalid issue");
   if (!["amount_desc", "amount_asc", "date_desc", "plate_asc"].includes(sort)) return badRequest("invalid sort");
   if (!["", "exact_prefix"].includes(mode)) return badRequest("invalid mode");

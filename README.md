@@ -51,7 +51,7 @@ The current public UI uses a flat Ledger visual system: compact auction-record t
 ## What This Repo Includes
 
 - Searchable auction data for Hong Kong plate sales across multiple datasets
-- A static frontend with issue shards, hot-search caches, and SEO pages
+- A static frontend with issue shards, bounded search indexes, chunked result exports, and SEO pages
 - Source-grounded Dataset and Breadcrumb structured data on generated plate pages
 - Agent-readable citation guidance through `llms.txt`, `agent.md`, API discovery, and MCP
 - A public `/api/v1` JSON surface for dataset browsing
@@ -131,7 +131,7 @@ The current production shape is:
 - Cloudflare Worker handles `/api/*` routes and the vision-assisted lookup flow
 - The Worker performs exact-plate lookups against a non-browsable, minimal external-sale signal asset
 - Fresh exact sale signals can launch a short, client-side WhatsApp buyer-enquiry draft
-- Static JSON shards power search, issue browsing, and high-frequency cached queries
+- Canonical bounded indexes power search, issue shards power date browsing, and sorted result chunks back paginated result views
 - SEO pages under `plates/` expose popular plate result pages to search engines
 
 Legacy runtime code has been removed; production and local runtime paths use the Cloudflare Worker plus static assets.
@@ -209,6 +209,7 @@ These are the artifacts most contributors need to understand:
 | `data/all.tvrm_legacy_overlap.json` | Deduplication hints for cross-dataset aggregation |
 | `data/audit.json` | Audit view payload listing source coverage and parse quality |
 | `data/market/28car.active.json` | Gitignored local/runner-only 28car signal snapshot: plate, price signal, listing reference/link, and freshness only |
+| `api/v1/*/results.chunks.json` and `api/v1/*/results.sorted/` | Full-dataset export manifests and bounded sort indexes for paginated results |
 | `api/v1/` | Static API payloads consumed by external clients and the site |
 
 The historical workbook sources remain in-repo because they are still part of the build graph:

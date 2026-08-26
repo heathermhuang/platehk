@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
-import copy
 import json
 import shutil
 import subprocess
-from datetime import date
 from pathlib import Path
 
 
@@ -32,13 +30,6 @@ def _write_json(p: Path, obj) -> None:
     p.write_text(json.dumps(obj, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
 
 
-def _without_generated_at(obj):
-    value = copy.deepcopy(obj)
-    if isinstance(value, dict):
-        value.pop("generated_at", None)
-    return value
-
-
 def _copy(src: Path, dst: Path) -> None:
     dst.parent.mkdir(parents=True, exist_ok=True)
     if dst.exists():
@@ -61,13 +52,16 @@ def _copy(src: Path, dst: Path) -> None:
 
 
 def build() -> int:
+    all_manifest = _read_json(DATASETS["all"] / "issues.manifest.json")
+    dataset_generated_at = str(all_manifest.get("generated_at") or "").strip()
     index = {
         "version": "v1",
-        "generated_at": date.today().isoformat(),
+        "generated_at": dataset_generated_at or None,
         "datasets": {},
         "notes": [
             "All data comes from Transport Department published PDFs and official workbook exports. If any discrepancy is found, the official published results shall prevail.",
-            "This API is a static Open Data API. For full-text search, use the issue shards and build your own index, or use an external query service.",
+            "This API is a static Open Data API. Download complete datasets through each dataset's results_chunks_manifest; every listed chunk is a JSON array.",
+            "For full-text search, use the issue shards and build your own index, or use an external query service.",
         ],
     }
 
@@ -84,6 +78,7 @@ def build() -> int:
         expected_root_files = {
             "issues.manifest.json",
             "auctions.json",
+            "results.chunks.json",
             "results.slim.json",
             "preset.amount_desc.top1000.json",
         }
@@ -93,6 +88,21 @@ def build() -> int:
         _copy(base / "auctions.json", out / "auctions.json")
         _copy(base / "results.slim.json", out / "results.slim.json")
         _copy(base / "preset.amount_desc.top1000.json", out / "preset.amount_desc.top1000.json")
+        total_rows = int(manifest.get("total_rows") or 0)
+        _write_json(out / "results.chunks.json", {
+            "schema_version": 1,
+            "format": "json-array-chunks",
+            "dataset": key,
+            "total_rows": total_rows,
+            "chunk_rows": total_rows,
+            "chunks": ([{
+                "file": "results.slim.json",
+                "count": total_rows,
+                "start": 0,
+                "end": total_rows - 1,
+            }] if total_rows else []),
+            "sort_indexes": {},
+        })
         if (base / "plates.json").exists():
             _copy(base / "plates.json", out / "plates.json")
             expected_root_files.add("plates.json")
@@ -127,10 +137,14 @@ def build() -> int:
             "latest_issue": latest_issue.get("auction_date"),
             "latest_issue_key": latest_issue.get(issue_key_field) or latest_issue.get("auction_date"),
             "issue_key_field": issue_key_field,
+            "results_export": {
+                "format": "json-array-chunks",
+                "manifest": f"/api/v1/{key}/results.chunks.json",
+            },
             "files": {
                 "issues_manifest": f"/api/v1/{key}/issues.manifest.json",
                 "auctions": f"/api/v1/{key}/auctions.json",
-                "results_slim": f"/api/v1/{key}/results.slim.json",
+                "results_chunks_manifest": f"/api/v1/{key}/results.chunks.json",
                 "preset_amount_desc_top1000": f"/api/v1/{key}/preset.amount_desc.top1000.json",
                 "issue_shard_template": (
                     f"/api/v1/{key}/issues/{{auction_key}}.json"
@@ -142,13 +156,7 @@ def build() -> int:
             "pdfs_listed": len(auctions),
         }
 
-    index_path = API / "index.json"
-    if index_path.exists():
-        existing_index = _read_json(index_path)
-        if _without_generated_at(existing_index) == _without_generated_at(index):
-            index["generated_at"] = existing_index.get("generated_at") or index["generated_at"]
-
-    _write_json(index_path, index)
+    _write_json(API / "index.json", index)
     return 0
 
 

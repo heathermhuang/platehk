@@ -9,6 +9,25 @@ window.createPlateIndexDataFlow = function createPlateIndexDataFlow({
   applyLanguage,
   buildIssueOptions,
 }) {
+  function parseDatasetGeneratedAt(value) {
+    if (typeof value !== "string" || !value.trim()) return null;
+    const raw = value.trim();
+    const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(raw);
+    if (dateOnly) {
+      const year = Number(dateOnly[1]);
+      const month = Number(dateOnly[2]);
+      const day = Number(dateOnly[3]);
+      const parsed = new Date(year, month - 1, day);
+      return parsed.getFullYear() === year
+        && parsed.getMonth() === month - 1
+        && parsed.getDate() === day
+        ? parsed
+        : null;
+    }
+    const parsed = new Date(raw);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+
   function cancelActiveFilterRequest() {
     if (!activeFilterRequestController) return;
     try {
@@ -275,9 +294,6 @@ window.createPlateIndexDataFlow = function createPlateIndexDataFlow({
   function readableApiError(err) {
     if ((err?.status === 429 || err?.code === "rate_limited")) {
       return t("apiRateLimited")(Number(err?.retryAfter || 0) || 0);
-    }
-    if (err?.code === "query_window_exceeded") {
-      return t("apiQueryWindowExceeded");
     }
     if (err?.code === "invalid_paging") {
       return t("apiInvalidPaging");
@@ -580,7 +596,8 @@ window.createPlateIndexDataFlow = function createPlateIndexDataFlow({
     currentDataset = datasetKey in DATASETS ? datasetKey : "all";
     localStorage.setItem("dataset", currentDataset);
 
-    manifest = { total_rows: 0, issue_count: 0, issues: [], top_amount_hkd: null };
+    manifest = { generated_at: null, total_rows: 0, issue_count: 0, issues: [], top_amount_hkd: null };
+    lastUpdatedDate = null;
     auctionsByDate = {};
     loadedIssues.clear();
     loadingIssues.clear();
@@ -598,8 +615,9 @@ window.createPlateIndexDataFlow = function createPlateIndexDataFlow({
     }
 
     const payload = await apiIssues(currentDataset);
-    lastUpdatedDate = new Date();
+    lastUpdatedDate = parseDatasetGeneratedAt(payload.generated_at);
     manifest = {
+      generated_at: lastUpdatedDate ? payload.generated_at.trim() : null,
       total_rows: Number(payload.total_rows || 0),
       issue_count: Number(payload.issue_count || 0),
       issues: Array.isArray(payload.issues) ? payload.issues : [],

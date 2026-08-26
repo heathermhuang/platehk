@@ -17,6 +17,8 @@ TARGET = ROOT / ".tmp" / "cloudflare-public"
 RESULTS_CHUNK_ROWS = 12000
 MAX_WORKERS_ASSET_BYTES = 25 * 1024 * 1024
 SEARCH_INDEX_SCHEMA_VERSION = 1
+RESULTS_CHUNK_SCHEMA_VERSION = 1
+BOUNDED_RESULT_SORTS = ("amount_desc", "amount_asc", "plate_asc")
 
 ROOT_FILES = [
     "index.html",
@@ -181,8 +183,12 @@ def build_complete_search_index(rows: list[dict], dataset_dir: Path) -> None:
     98 MB unified dataset into a Worker request.
     """
     search_dir = dataset_dir / "search-index"
+    if search_dir.exists():
+        shutil.rmtree(search_dir)
+    char_dir = search_dir / "char1"
     prefix_dir = search_dir / "prefix1"
     bigram_dir = search_dir / "bigram"
+    char_dir.mkdir(parents=True, exist_ok=True)
     prefix_dir.mkdir(parents=True, exist_ok=True)
     bigram_dir.mkdir(parents=True, exist_ok=True)
 
@@ -190,6 +196,7 @@ def build_complete_search_index(rows: list[dict], dataset_dir: Path) -> None:
     row_metadata_ids: dict[str, int] = {}
     result_states: list[list] = []
     result_state_ids: dict[str, int] = {}
+    char_rows: dict[str, list[list]] = {}
     prefix_rows: dict[str, list[list]] = {}
     bigram_rows: dict[str, list[list]] = {}
 
@@ -234,6 +241,8 @@ def build_complete_search_index(rows: list[dict], dataset_dir: Path) -> None:
             row.get("amount_hkd"),
             result_state_id,
         ]
+        for token in set(plate):
+            char_rows.setdefault(token, []).append(compact_row)
         prefix_rows.setdefault(plate[0], []).append(compact_row)
         for token in {plate[idx:idx + 2] for idx in range(len(plate) - 1)}:
             bigram_rows.setdefault(token, []).append(compact_row)
@@ -242,9 +251,12 @@ def build_complete_search_index(rows: list[dict], dataset_dir: Path) -> None:
         "schema_version": SEARCH_INDEX_SCHEMA_VERSION,
         "row_metadata": row_metadata,
         "result_states": result_states,
+        "char_counts": {token: len(bucket) for token, bucket in sorted(char_rows.items())},
         "prefix_counts": {token: len(bucket) for token, bucket in sorted(prefix_rows.items())},
         "bigram_counts": {token: len(bucket) for token, bucket in sorted(bigram_rows.items())},
     })
+    for token, bucket in sorted(char_rows.items()):
+        write_json(char_dir / f"{token}.json", {"rows": bucket})
     for token, bucket in sorted(prefix_rows.items()):
         write_json(prefix_dir / f"{token}.json", {"rows": bucket})
     for token, bucket in sorted(bigram_rows.items()):
@@ -376,35 +388,97 @@ def copy_plate_pages() -> None:
     (TARGET / "about.html").write_text(module.render_about(), encoding="utf-8")
 
 
+def _result_amount(row: dict) -> int:
+    value = row.get("amount_hkd")
+    return -1 if value is None else int(value)
+
+
+def _sort_result_rows(rows: list[dict], sort: str) -> list[dict]:
+    ordered = list(rows)
+    if sort == "amount_desc":
+        ordered.sort(key=lambda row: str(row.get("single_line") or ""))
+        ordered.sort(key=lambda row: str(row.get("auction_date") or ""), reverse=True)
+        ordered.sort(key=_result_amount, reverse=True)
+    elif sort == "amount_asc":
+        ordered.sort(key=lambda row: str(row.get("single_line") or ""))
+        ordered.sort(key=lambda row: str(row.get("auction_date") or ""))
+        ordered.sort(key=_result_amount)
+    elif sort == "plate_asc":
+        ordered.sort(key=lambda row: str(row.get("auction_date") or ""), reverse=True)
+        ordered.sort(key=lambda row: str(row.get("single_line") or ""))
+    else:
+        raise ValueError(f"Unsupported bounded result sort: {sort}")
+    return ordered
+
+
+def _write_result_chunks(dataset_dir: Path, rows: list[dict], rel_dir: str) -> list[dict]:
+    chunks_dir = dataset_dir / rel_dir
+    if chunks_dir.exists():
+        shutil.rmtree(chunks_dir)
+    chunks_dir.mkdir(parents=True, exist_ok=True)
+    chunks = []
+    for idx in range(0, len(rows), RESULTS_CHUNK_ROWS):
+        chunk = rows[idx:idx + RESULTS_CHUNK_ROWS]
+        filename = f"{idx // RESULTS_CHUNK_ROWS:04d}.json"
+        rel_file = f"{rel_dir}/{filename}"
+        write_json(dataset_dir / rel_file, chunk)
+        chunks.append({
+            "file": rel_file,
+            "count": len(chunk),
+            "start": idx,
+            "end": idx + len(chunk) - 1,
+        })
+    return chunks
+
+
 def build_results_chunks(dataset: str) -> None:
     src = ROOT / "api" / "v1" / dataset / "results.slim.json"
     if not src.exists():
         return
     rows = json.loads(src.read_text())
     dataset_dir = TARGET / "api" / "v1" / dataset
-    chunks_dir = dataset_dir / "results.chunks"
-    if chunks_dir.exists():
-        shutil.rmtree(chunks_dir)
-    chunks_dir.mkdir(parents=True, exist_ok=True)
-
     manifest = {
+        "schema_version": RESULTS_CHUNK_SCHEMA_VERSION,
+        "format": "json-array-chunks",
         "dataset": dataset,
         "total_rows": len(rows),
         "chunk_rows": RESULTS_CHUNK_ROWS,
-        "chunks": [],
+        "chunks": _write_result_chunks(dataset_dir, rows, "results.chunks"),
+        "sort_indexes": {},
     }
-    for idx in range(0, len(rows), RESULTS_CHUNK_ROWS):
-        chunk = rows[idx:idx + RESULTS_CHUNK_ROWS]
-        filename = f"{idx // RESULTS_CHUNK_ROWS:04d}.json"
-        rel_file = f"results.chunks/{filename}"
-        write_json(dataset_dir / rel_file, chunk)
-        manifest["chunks"].append({
-            "file": rel_file,
-            "count": len(chunk),
-            "start": idx,
-            "end": idx + len(chunk) - 1,
-        })
+    sorted_root = dataset_dir / "results.sorted"
+    if sorted_root.exists():
+        shutil.rmtree(sorted_root)
+    for sort in BOUNDED_RESULT_SORTS:
+        sorted_rows = _sort_result_rows(rows, sort)
+        manifest["sort_indexes"][sort] = {
+            "sort": sort,
+            "chunks": _write_result_chunks(dataset_dir, sorted_rows, f"results.sorted/{sort}"),
+        }
     write_json(dataset_dir / "results.chunks.json", manifest)
+
+
+def update_results_export_catalog() -> None:
+    index_path = TARGET / "api" / "v1" / "index.json"
+    if not index_path.exists():
+        return
+    index = json.loads(index_path.read_text(encoding="utf-8"))
+    datasets = index.get("datasets")
+    if not isinstance(datasets, dict):
+        return
+    for dataset, metadata in datasets.items():
+        if not isinstance(metadata, dict):
+            continue
+        manifest_path = f"/api/v1/{dataset}/results.chunks.json"
+        files = metadata.setdefault("files", {})
+        if isinstance(files, dict):
+            files.pop("results_slim", None)
+            files["results_chunks_manifest"] = manifest_path
+        metadata["results_export"] = {
+            "format": "json-array-chunks",
+            "manifest": manifest_path,
+        }
+    write_json(index_path, index)
 
 
 def prune_oversized_assets() -> None:
@@ -484,6 +558,7 @@ def main(*, require_market_snapshot: bool = False) -> None:
     for dataset in API_V1_DATASETS:
         copy_path(ROOT / "api" / "v1" / dataset, api_v1_dir / dataset)
         build_results_chunks(dataset)
+    update_results_export_catalog()
     build_complete_search_index(load_complete_search_index_rows(), api_v1_dir / "all")
     prune_oversized_assets()
     stamp_service_worker_cache_name()

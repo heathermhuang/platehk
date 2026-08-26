@@ -183,7 +183,6 @@ class FrontendContractsTests(unittest.TestCase):
 
         api = (ROOT / "assets" / "api-page.js").read_text(encoding="utf-8")
         self.assertIn("page_size", api)
-        self.assertIn("query_window_exceeded", api)
         self.assertIn("Retry-After", api)
         self.assertIn('./data/audit.json', api)
 
@@ -259,7 +258,7 @@ class FrontendContractsTests(unittest.TestCase):
             self.assertIn(f"'{script_path}'", service_worker, script_path)
         for shell_asset in [
             "./assets/audit.js?v=20260825-01",
-            "./assets/api-page.js?v=20260824-03",
+            "./assets/api-page.js?v=20260826-01",
             "./assets/changelog.js?v=20260825-01",
             "./assets/info-locale.js?v=20260825-01",
             "./assets/info-shell.js?v=20260825-01",
@@ -421,7 +420,6 @@ class FrontendContractsTests(unittest.TestCase):
         self.assertIn("enforcePublicReadRateLimit(request, `search:${dataset}`", worker_api)
         self.assertIn('enforcePageSize("search", pageSize, 200)', worker_api)
         self.assertIn('enforcePageSize("results", pageSize, 200)', worker_api)
-        self.assertIn("enforceSearchWindow(dataset, query, page)", worker_api)
         self.assertIn("export function enforcePublicReadRateLimit(", worker_lib)
 
     def test_frontend_maps_rate_limited_api_states_to_readable_messages(self) -> None:
@@ -429,11 +427,9 @@ class FrontendContractsTests(unittest.TestCase):
         index_data = (ROOT / "assets" / "index.data.js").read_text(encoding="utf-8")
         camera_js = (ROOT / "assets" / "camera.js").read_text(encoding="utf-8")
         self.assertIn("apiRateLimited", index_config)
-        self.assertIn("apiQueryWindowExceeded", index_config)
         self.assertIn("apiInvalidPaging", index_config)
         self.assertIn("readableApiError(", index_data)
         self.assertIn('err?.status === 429', index_data)
-        self.assertIn('err?.code === "query_window_exceeded"', index_data)
         self.assertIn('err?.code === "invalid_paging"', index_data)
         self.assertIn("visionCooldownActive", camera_js)
         self.assertIn("remainingVisionCooldownMs(", camera_js)
@@ -772,7 +768,6 @@ class FrontendContractsTests(unittest.TestCase):
         secrets_scan = (ROOT / "scripts" / "scan_repo_secrets.py").read_text(encoding="utf-8")
         summarize_security = (ROOT / "scripts" / "summarize_security_events.py").read_text(encoding="utf-8")
         gitignore = (ROOT / ".gitignore").read_text(encoding="utf-8")
-        self.assertIn("enforceSearchWindow(", worker_lib)
         self.assertIn("enforcePageSize(", worker_lib)
         self.assertIn("enforcePublicReadRateLimit(", worker_lib)
         self.assertIn("pip_audit", check_security)
