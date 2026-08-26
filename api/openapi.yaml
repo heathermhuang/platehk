@@ -73,9 +73,14 @@ paths:
       responses:
         "200":
           description: OK
-  /api/v1/{dataset}/results.slim.json:
+  /api/v1/{dataset}/results.chunks.json:
     get:
-      summary: Full dataset as a flat array (large)
+      summary: Full-dataset chunk manifest
+      description: |
+        Lists the bounded JSON-array chunks that make up the complete dataset.
+        Fetch the manifest first, then retrieve each relative `chunks[].file` under
+        `/api/v1/{dataset}/`. Manifests also expose generated `sort_indexes` used
+        by the dynamic results endpoint.
       parameters:
         - in: path
           name: dataset
@@ -85,7 +90,66 @@ paths:
             enum: [all, pvrm, tvrm_physical, tvrm_eauction, tvrm_legacy]
       responses:
         "200":
-          description: OK
+          description: Chunk manifest
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [schema_version, format, dataset, total_rows, chunks]
+                properties:
+                  schema_version:
+                    type: integer
+                    enum: [1]
+                  format:
+                    type: string
+                    enum: [json-array-chunks]
+                  dataset:
+                    type: string
+                  total_rows:
+                    type: integer
+                  chunk_rows:
+                    type: integer
+                  chunks:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ResultChunk"
+                  sort_indexes:
+                    type: object
+                    additionalProperties:
+                      type: object
+                      required: [sort, chunks]
+                      properties:
+                        sort:
+                          type: string
+                        chunks:
+                          type: array
+                          items:
+                            $ref: "#/components/schemas/ResultChunk"
+  /api/v1/{dataset}/results.chunks/{chunk}.json:
+    get:
+      summary: One full-dataset JSON-array chunk
+      parameters:
+        - in: path
+          name: dataset
+          required: true
+          schema:
+            type: string
+            enum: [all, pvrm, tvrm_physical, tvrm_eauction, tvrm_legacy]
+        - in: path
+          name: chunk
+          required: true
+          schema:
+            type: string
+            pattern: "^[0-9]{4}$"
+      responses:
+        "200":
+          description: JSON array of result rows
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
   /api/v1/{dataset}/preset.amount_desc.top1000.json:
     get:
       summary: Convenience preset (top 1000 by amount desc)
@@ -121,6 +185,103 @@ paths:
       responses:
         "200":
           description: OK
+  /api/issues:
+    get:
+      summary: Dynamic issue catalog with dataset freshness
+      parameters:
+        - in: query
+          name: dataset
+          required: true
+          schema:
+            type: string
+            enum: [all, pvrm, tvrm_physical, tvrm_eauction, tvrm_legacy]
+      responses:
+        "200":
+          description: Issue catalog
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [dataset, generated_at, total_rows, issue_count, issues]
+                properties:
+                  dataset:
+                    type: string
+                  generated_at:
+                    type: string
+                    format: date
+                    nullable: true
+                  total_rows:
+                    type: integer
+                  issue_count:
+                    type: integer
+                  top_amount_hkd:
+                    type: integer
+                    nullable: true
+                  issues:
+                    type: array
+                    items:
+                      type: object
+  /api/results:
+    get:
+      summary: Page through public auction records without a search query
+      parameters:
+        - in: query
+          name: dataset
+          required: true
+          schema:
+            type: string
+            enum: [all, pvrm, tvrm_physical, tvrm_eauction, tvrm_legacy]
+        - in: query
+          name: sort
+          required: false
+          schema:
+            type: string
+            enum: [amount_desc, amount_asc, date_desc, plate_asc]
+            default: date_desc
+        - in: query
+          name: page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - in: query
+          name: page_size
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 200
+      responses:
+        "200":
+          description: Paged public auction records
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [dataset, sort, page, page_size, total, rows]
+                properties:
+                  dataset:
+                    type: string
+                  sort:
+                    type: string
+                  page:
+                    type: integer
+                  page_size:
+                    type: integer
+                  total:
+                    type: integer
+                  rows:
+                    type: array
+                    items:
+                      type: object
+        "400":
+          description: Invalid dataset, sort, or paging value
+        "429":
+          description: Rate limited
+        "503":
+          description: Required bounded result index is unavailable
   /api/search:
     get:
       summary: Search public auction records by vehicle registration mark
@@ -211,6 +372,8 @@ paths:
           description: Invalid dataset, query, filter, sort, or paging value
         "429":
           description: Rate limited
+        "503":
+          description: Canonical search index is unavailable
   /api/market_signal:
     get:
       summary: Check recent external sale signals for exact plates
@@ -351,3 +514,17 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+  schemas:
+    ResultChunk:
+      type: object
+      required: [file, count, start, end]
+      properties:
+        file:
+          type: string
+          example: results.chunks/0000.json
+        count:
+          type: integer
+        start:
+          type: integer
+        end:
+          type: integer

@@ -24,7 +24,7 @@ const ASSETS = [
   './assets/vendor/qrcode-generator.js',
   './assets/landing.js',
   './assets/audit.js?v=20260825-01',
-  './assets/api-page.js?v=20260824-03',
+  './assets/api-page.js?v=20260826-01',
   './assets/changelog.js?v=20260825-01',
   './assets/camera.js',
   './assets/info-locale.js?v=20260825-01',

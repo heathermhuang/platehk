@@ -120,13 +120,6 @@ export function validIssueId(dataset, issueId) {
   return /^\d{4}-\d{2}-\d{2}$/.test(value);
 }
 
-export function shortQuerySearchPageCap(dataset, normalizedQuery) {
-  const qLen = String(normalizedQuery || "").length;
-  if (qLen <= 1) return dataset === "all" ? 3 : 5;
-  if (qLen === 2) return dataset === "all" ? 5 : 10;
-  return null;
-}
-
 export function requireMethod(request, method) {
   if (request.method !== method) return methodNotAllowed();
   return null;
@@ -194,14 +187,6 @@ export function enforcePageSize(endpointKey, pageSize, maxPageSize = 200) {
   const n = Number(pageSize);
   if (!Number.isInteger(n) || n < 1 || n > maxPageSize) {
     throw new ApiError("invalid_paging", 400, { endpoint: endpointKey, pageSize: n });
-  }
-}
-
-export function enforceSearchWindow(dataset, normalizedQuery, page) {
-  const maxPage = shortQuerySearchPageCap(dataset, normalizedQuery);
-  if (page < 1) throw new ApiError("invalid_paging", 400);
-  if (maxPage !== null && page > maxPage) {
-    throw new ApiError("query_window_exceeded", 400, { dataset, page, maxPage });
   }
 }
 
@@ -368,6 +353,37 @@ export async function loadDatasetResultsChunk(env, requestUrl, dataset, relFile)
   return Array.isArray(rows) ? rows : [];
 }
 
+export async function buildPagedSortedRows(env, requestUrl, dataset, sort, page, pageSize) {
+  const manifest = await loadDatasetResultsChunkManifest(env, requestUrl, dataset);
+  const sortIndex = manifest?.sort_indexes?.[sort];
+  if (!sortIndex || !Array.isArray(sortIndex.chunks)) {
+    throw new ApiError("results_index_unavailable", 503);
+  }
+
+  const offset = (page - 1) * pageSize;
+  const limit = offset + pageSize;
+  const auctionMap = dataset === "all"
+    ? null
+    : await loadDatasetAuctionMap(env, requestUrl, dataset);
+  const out = [];
+  for (const chunkMeta of sortIndex.chunks) {
+    const start = Number(chunkMeta?.start || 0);
+    const count = Number(chunkMeta?.count || 0);
+    const endExclusive = start + count;
+    if (endExclusive <= offset) continue;
+    if (start >= limit) break;
+
+    const rows = await loadDatasetResultsChunk(env, requestUrl, dataset, String(chunkMeta?.file || ""));
+    const localStart = Math.max(0, offset - start);
+    const localEnd = Math.min(rows.length, limit - start);
+    for (const row of rows.slice(localStart, localEnd)) {
+      const auctionMeta = auctionMap?.get(String(row?.auction_date || "")) || null;
+      out.push(mapStaticRow(row, dataset, auctionMeta));
+    }
+  }
+  return { total: Number(manifest?.total_rows || 0), rows: out };
+}
+
 export async function loadDatasetAllRows(env, requestUrl, dataset) {
   const cacheKey = `${requestUrl}::allRows::${dataset}`;
   if (STATIC_JSON_CACHE.has(cacheKey)) return STATIC_JSON_CACHE.get(cacheKey);
@@ -376,7 +392,7 @@ export async function loadDatasetAllRows(env, requestUrl, dataset) {
   const chunks = [];
   for (const chunkMeta of manifest.chunks) {
     const rows = await loadDatasetResultsChunk(env, requestUrl, dataset, String(chunkMeta.file || ""));
-    if (rows.length) chunks.push(...rows);
+    for (const row of rows) chunks.push(row);
   }
   if (Number(manifest.total_rows || 0) <= 20000) {
     STATIC_JSON_CACHE.set(cacheKey, chunks);
@@ -395,6 +411,17 @@ export async function buildPagedDateDescRows(env, requestUrl, dataset, page, pag
   for (const issue of issues) {
     const auctionDate = String(issue?.auction_date || "");
     if (!auctionDate) continue;
+    const rawManifestCount = issue?.count;
+    const manifestCount = Number(rawManifestCount);
+    const hasManifestCount = rawManifestCount !== null
+      && rawManifestCount !== undefined
+      && rawManifestCount !== ""
+      && Number.isSafeInteger(manifestCount)
+      && manifestCount >= 0;
+    if (hasManifestCount && seen + manifestCount <= offset) {
+      seen += manifestCount;
+      continue;
+    }
     const issueRows = await loadDatasetIssueRows(
       env,
       requestUrl,
@@ -403,14 +430,15 @@ export async function buildPagedDateDescRows(env, requestUrl, dataset, page, pag
       String(issue?.file || `issues/${auctionDate}.json`)
     );
     const issueMeta = dataset === "all" ? issue : (auctionMap.get(auctionDate) || issue || null);
-    for (const row of issueRows) {
-      if (seen >= offset && out.length < pageSize) {
-        out.push(mapStaticRow(row, dataset, issueMeta));
-      }
-      seen += 1;
-      if (seen >= limit && out.length >= pageSize) {
-        return { total: Number(manifest?.total_rows || seen), rows: out };
-      }
+    const issueStart = seen;
+    const localStart = Math.max(0, offset - issueStart);
+    const localEnd = Math.min(issueRows.length, limit - issueStart);
+    for (const row of issueRows.slice(localStart, localEnd)) {
+      out.push(mapStaticRow(row, dataset, issueMeta));
+    }
+    seen += issueRows.length;
+    if (seen >= limit && out.length >= pageSize) {
+      return { total: Number(manifest?.total_rows || seen), rows: out };
     }
   }
   return { total: Number(manifest?.total_rows || seen), rows: out };
