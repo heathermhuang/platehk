@@ -20,9 +20,9 @@
           m4v: "白天 / 正面 / 單一香港牌",
           privacyNote: "點擊 AI 辨識時，本站只會上傳白框內裁切後的車牌圖像供伺服器端 vision 模型判讀，不會上傳整個相機畫面。",
           guideLeft: "把車牌放進框內",
-          guideRight: "對準後會自動 AI 辨識",
+          guideRight: "點 AI 辨識才會上傳框內裁切圖像",
           start: "開始相機",
-          aiScan: "AI 辨識",
+          aiScan: "AI 辨識 · 上傳框內",
           stop: "停止相機",
           openSearch: "打開完整搜尋頁",
           statusTitle: "辨識狀態",
@@ -34,7 +34,7 @@
           statusError: "需要調整",
           statusDetected: "已完成辨識",
           detectedHintIdle: "尚未辨識到穩定車牌",
-          detectedHintReady: "把車牌放進白框就會自動辨識，也可手動點 AI 辨識",
+          detectedHintReady: "相機預覽已啟動；點 AI 辨識才會上傳白框內裁切圖像",
           detectedHintSingle: "可直接點候選或手動修正",
           detectedHintDetected: (q) => `目前穩定候選：${q}`,
           manualPlaceholder: "手動輸入車牌，例如 HK88 或 1R1S LAM",
@@ -95,9 +95,9 @@
           m4v: "Daylight / front view / single HK plate",
           privacyNote: "When you tap AI Scan, only the cropped plate region inside the frame is uploaded for server-side vision OCR, not the full camera view.",
           guideLeft: "Place the plate inside the frame",
-          guideRight: "Auto AI scan when aligned",
+          guideRight: "AI Scan uploads the cropped frame",
           start: "Start camera",
-          aiScan: "AI Scan",
+          aiScan: "AI Scan · Upload crop",
           stop: "Stop camera",
           openSearch: "Open full search page",
           statusTitle: "Recognition status",
@@ -109,7 +109,7 @@
           statusError: "Needs attention",
           statusDetected: "Recognition complete",
           detectedHintIdle: "No stable plate detected yet",
-          detectedHintReady: "Place the plate inside the frame to auto-scan, or tap AI Scan manually",
+          detectedHintReady: "Camera preview is live; only AI Scan uploads the cropped frame",
           detectedHintSingle: "Tap a candidate or correct it manually",
           detectedHintDetected: (q) => `Current stable candidate: ${q}`,
           manualPlaceholder: "Type a plate manually, e.g. HK88 or 1R1S LAM",
@@ -219,10 +219,6 @@
       let latestConfidence = 0;
       let latestRawText = "";
       let searchAbort = null;
-      let autoScanTimer = null;
-      let lastFrameSignature = null;
-      let stableFrameHits = 0;
-      let lastVisionScanAt = 0;
       let visionCooldownUntil = 0;
       let visionSessionToken = "";
       let visionSessionExpiresAt = 0;
@@ -358,7 +354,10 @@
       }
 
       function updateNavLinks() {
-        openSearchLinkEl.href = `./index.html?lang=${currentLang}`;
+        const activeQuery = normalizePlate(manualInputEl.value) || lastSearchedQuery;
+        const searchParams = new URLSearchParams({ lang: currentLang });
+        if (activeQuery) searchParams.set("q", activeQuery);
+        openSearchLinkEl.href = `./index.html?${searchParams.toString()}`;
         brandHomeLinkEl.href = `./index.html?lang=${currentLang}`;
         brandHomeLinkEl.setAttribute("aria-label", t("backHome"));
         backHomeEl.href = `./index.html?lang=${currentLang}`;
@@ -443,11 +442,6 @@
         resetResultsUi();
       }
 
-      function resetAutoScanState() {
-        stableFrameHits = 0;
-        lastFrameSignature = null;
-      }
-
       function visionSendingText() {
         return currentLang === "zh" ? "AI：正在傳送白框內圖像…" : "AI: sending cropped plate image…";
       }
@@ -520,7 +514,7 @@
         resultsHintEl.textContent = t("resultsHintFound")(query, total.toLocaleString());
         resultsEl.innerHTML = rows
           .map((row) => {
-            const searchHref = `./index.html?lang=${currentLang}&q=${encodeURIComponent(normalizePlate(row.single_line || row.double_line))}`;
+            const searchHref = `./index.html?lang=${currentLang}&q=${encodeURIComponent(normalizePlate(plateText(row)))}`;
             const pdfHref = row.pdf_url || row.source_url || "";
             return `
               <article class="result-row">
@@ -593,33 +587,6 @@
         return canvasEl.toDataURL("image/jpeg", 0.92);
       }
 
-      function currentFrameSignature() {
-        const ctx = canvasEl.getContext("2d", { willReadFrequently: true });
-        const img = ctx.getImageData(0, 0, canvasEl.width, canvasEl.height);
-        const data = img.data;
-        const cols = 12;
-        const rows = 4;
-        const sig = [];
-        const stepX = canvasEl.width / cols;
-        const stepY = canvasEl.height / rows;
-        for (let row = 0; row < rows; row += 1) {
-          for (let col = 0; col < cols; col += 1) {
-            const x = Math.min(canvasEl.width - 1, Math.floor((col + 0.5) * stepX));
-            const y = Math.min(canvasEl.height - 1, Math.floor((row + 0.5) * stepY));
-            const idx = (y * canvasEl.width + x) * 4;
-            sig.push(data[idx] / 255);
-          }
-        }
-        return sig;
-      }
-
-      function signatureDistance(a, b) {
-        if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return 1;
-        let sum = 0;
-        for (let i = 0; i < a.length; i += 1) sum += Math.abs(a[i] - b[i]);
-        return sum / a.length;
-      }
-
       async function searchPlate(query) {
         const q = normalizePlate(query);
         if (!q) return;
@@ -627,6 +594,7 @@
         searchAbort = new AbortController();
         lastSearchedQuery = q;
         manualInputEl.value = q;
+        updateNavLinks();
         resultsBadgeEl.className = "status-badge";
         resultsBadgeEl.textContent = t("resultsBadgeLoading");
         resultsHintEl.textContent = "";
@@ -673,8 +641,6 @@
         }
         if (!drawFrameToCanvas()) return;
         scanRunning = true;
-        lastVisionScanAt = Date.now();
-        resetAutoScanState();
         aiScanBtnEl.disabled = true;
         try {
           setStatus("", t("statusVision"));
@@ -757,46 +723,6 @@
         }
       }
 
-      function scheduleAutoVisionScan(delay = 700) {
-        if (autoScanTimer) clearTimeout(autoScanTimer);
-        if (!mediaStream) return;
-        autoScanTimer = setTimeout(async () => {
-          if (!mediaStream || scanRunning) {
-            scheduleAutoVisionScan(700);
-            return;
-          }
-          if (!drawFrameToCanvas()) {
-            scheduleAutoVisionScan(700);
-            return;
-          }
-          const sig = currentFrameSignature();
-          const diff = signatureDistance(lastFrameSignature, sig);
-          lastFrameSignature = sig;
-          if (diff < 0.22) {
-            stableFrameHits += 1;
-          } else if (diff < 0.32) {
-            stableFrameHits = Math.max(stableFrameHits, 1);
-          } else {
-            stableFrameHits = 0;
-          }
-          const now = Date.now();
-          const cooldownMs = remainingVisionCooldownMs();
-          if (cooldownMs > 0) {
-            scheduleAutoVisionScan(Math.min(1000, Math.max(350, cooldownMs + 60)));
-            return;
-          }
-          const sinceLastScan = now - lastVisionScanAt;
-          const readyForAutoScan =
-            (stableFrameHits >= 1 && diff < 0.22) ||
-            (stableFrameHits >= 2 && diff < 0.32) ||
-            sinceLastScan > 4200;
-          if (readyForAutoScan && sinceLastScan > 1800) {
-            await runVisionScan();
-          }
-          scheduleAutoVisionScan(800);
-        }, delay);
-      }
-
       async function startCamera() {
         try {
           cameraEmptyEl.textContent = t("statusLoading");
@@ -818,8 +744,6 @@
           setStatus("ok", t("statusReady"));
           ocrMetaEl.textContent = t("ocrMetaIdle");
           renderCandidates([]);
-          resetAutoScanState();
-          scheduleAutoVisionScan(450);
         } catch (err) {
           cameraEmptyEl.hidden = false;
           cameraEmptyEl.textContent = t("cameraPermissionHelp");
@@ -829,8 +753,6 @@
       }
 
       function stopCamera() {
-        if (autoScanTimer) clearTimeout(autoScanTimer);
-        autoScanTimer = null;
         if (searchAbort) searchAbort.abort();
         searchAbort = null;
         if (mediaStream) {
@@ -843,7 +765,6 @@
         startBtnEl.disabled = false;
         aiScanBtnEl.disabled = true;
         stopBtnEl.disabled = true;
-        resetAutoScanState();
         setStatus("", t("statusIdle"));
       }
 
@@ -867,6 +788,7 @@
         manualInputEl.addEventListener("input", () => {
           const next = normalizePlate(manualInputEl.value);
           if (next !== manualInputEl.value) manualInputEl.value = next;
+          updateNavLinks();
         });
         manualInputEl.addEventListener("keydown", (ev) => {
           if (ev.key === "Enter") {
@@ -890,8 +812,3 @@
       applyLanguage();
       bindEvents();
       setIdleUi();
-      if (location.protocol === "https:" || location.hostname === "localhost" || location.hostname === "127.0.0.1") {
-        setTimeout(() => {
-          startCamera();
-        }, 120);
-      }

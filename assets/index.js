@@ -1162,7 +1162,10 @@ function composeAuctionKey(datasetKey, auctionDate) {
         apiLinkEl.href = t("apiUrl");
         githubLinkEl.href = t("githubUrl");
         feedbackLinkEl.href = t("feedbackUrl");
-        updatedAtEl.textContent = `${t("updatePrefix")}${formatLastUpdated(lastUpdatedDate)}`;
+        const lastUpdatedLabel = formatLastUpdated(lastUpdatedDate);
+        updatedAtEl.textContent = lastUpdatedLabel
+          ? `${t("updatePrefix")}${lastUpdatedLabel}`
+          : t("updateUnavailable");
         renderSearchHistory();
         buildDatasetOptions();
         buildSortOptions();
