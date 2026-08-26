@@ -4,7 +4,7 @@ This document captures the current application threat model, attack surface, and
 
 ## Assessment Date
 
-- Reviewed: 2026-08-12
+- Reviewed: 2026-08-26
 - Scope:
   - static frontend
   - Cloudflare Worker API routes
@@ -87,7 +87,7 @@ This document captures the current application threat model, attack surface, and
 | Information Disclosure | 28car seller data | Medium -> Lowered | Allowlisted ingestion schema discards seller names, phones, descriptions, photos, comments, and views |
 | Repudiation | Abuse visibility | Medium | Rate limiting, Worker error logging, and security summarization tooling |
 | Information Disclosure | Secrets and local files | Medium | Worker secrets, ignored local env files, repository secret scan, and static publish allowlist |
-| Denial of Service | Public read APIs | Medium | Endpoint-specific IP rate limiting, page-size caps, short-query page caps, and cache-backed responses |
+| Denial of Service | Public read APIs | Medium | Endpoint-specific IP rate limiting, page-size caps, bounded static indexes, and cache-backed responses |
 | Denial of Service | Vision OCR | High -> Lowered | Session token, size limits, minute/hour rate limiting, client backoff, and upstream timeout |
 | Elevation of Privilege | OAuth token issuance | Medium | Fixed client map, timing-safe secret comparison, scoped access tokens, and JWKS verification |
 
@@ -113,7 +113,9 @@ This document captures the current application threat model, attack surface, and
 - Public read API protections:
   - endpoint-specific IP rate limits
   - public page-size caps on list/search endpoints
-  - short-query page caps to reduce low-entropy dataset enumeration
+  - canonical bounded search indexes with no production fallback to full-dataset scans
+  - sorted result chunks and issue shards that bound production pagination reads
+  - fail-closed `503` responses when required search or result indexes are unavailable
   - normalized, bounded query inputs
   - no-store API response headers
   - cache-backed responses for hot static payloads
@@ -154,6 +156,6 @@ This document captures the current application threat model, attack surface, and
 ## Future Security Work
 
 1. Add Cloudflare Rate Limiting or Durable Object backed counters for public APIs.
-2. Add alerting thresholds on repeated `query_window_exceeded`, `invalid_paging`, and `vision_token_invalid` patterns.
+2. Add alerting thresholds on repeated `search_index_unavailable`, `results_index_unavailable`, `invalid_paging`, and `vision_token_invalid` patterns.
 3. Consider user- or session-aware throttling if authenticated features are added later.
 4. Move security-event aggregation to a Worker or Cloudflare log sink if operational monitoring needs grow.

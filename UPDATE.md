@@ -5,7 +5,7 @@
 ## 目標
 - 抓到最新 PDF
 - 抓到最新官方開放/即將舉行活動，輸出 `data/events.json`
-- 重新清洗並輸出 `results.slim.json`、分片 `issues/*.json`、`issues.manifest.json`
+- 重新清洗並輸出 `results.slim.json`、`results.chunks.json`、排序分片、`issues/*.json`、`issues.manifest.json`
 - 產出 `data/audit.json` 供 `audit.html` 檢查
 - 確保 `python3 scripts/verify_data_integrity.py` 通過
 
