@@ -223,7 +223,13 @@ class FrontendContractsTests(unittest.TestCase):
         self.assertIn("The result array is named <code>rows</code>, not <code>results</code>", api)
         self.assertIn("/api/v1/{dataset}/results.chunks.json", api)
         self.assertIn("not a DATA.GOV.HK vehicle-registration-mark auction API", api)
+        self.assertIn('href="./about.html" data-preserve-lang', api)
+        self.assertIn('href="./api/openapi.yaml"', api)
         self.assertIn('./data/audit.json', api)
+
+        index_js = (ROOT / "assets" / "index.js").read_text(encoding="utf-8")
+        self.assertIn("Plate.hk: Classification and Sources", index_js)
+        self.assertIn("Plate.hk: Public API", index_js)
 
         mcp = (ROOT / "mcp.html").read_text(encoding="utf-8")
         self.assertNotIn("MCP 文件 | PVRM", mcp)
@@ -668,6 +674,50 @@ class FrontendContractsTests(unittest.TestCase):
         self.assertEqual(about_types, {"Organization", "WebPage", "Dataset", "FAQPage", "BreadcrumbList"})
         about_dataset = next(item for item in about_ld["@graph"] if item["@type"] == "Dataset")
         self.assertEqual(about_dataset["provider"], {"@id": "https://plate.hk/#organization"})
+        self.assertTrue(
+            {
+                "https://www.1823.gov.hk/en/faq/knowing-how-to-change-the-id-of-your-vehicle",
+                "https://www.elegislation.gov.hk/hk/cap374E/s12",
+                "https://www.elegislation.gov.hk/hk/cap374E/s17",
+            }.issubset(set(about_dataset["isBasedOn"]))
+        )
+        about_faq = next(item for item in about_ld["@graph"] if item["@type"] == "FAQPage")
+        faq_answers = {
+            item["name"]: item["acceptedAnswer"]["text"]
+            for item in about_faq["mainEntity"]
+        }
+        self.assertIn(
+            "Can a Hong Kong PVRM or traditional special registration mark be transferred?",
+            faq_answers,
+        )
+        self.assertIn("regulation 17", faq_answers[
+            "Can a Hong Kong PVRM or traditional special registration mark be transferred?"
+        ])
+        self.assertIn("Is DATA.GOV.HK the source of Plate.hk auction records?", faq_answers)
+
+        dataset_labels = {
+            "pvrm": "PVRM",
+            "tvrm_physical": "TVRM Physical",
+            "tvrm_eauction": "TVRM E-Auction",
+            "tvrm_legacy": "TVRM 1973-2006",
+        }
+        for dataset, label in dataset_labels.items():
+            manifest = json.loads(
+                (ROOT / "data" / ("" if dataset == "pvrm" else dataset) / "issues.manifest.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            row = re.search(
+                rf'<tr>\s*<th[^>]+data-copy-en="{re.escape(label)}".*?</tr>',
+                about_html,
+                re.DOTALL,
+            )
+            self.assertIsNotNone(row, dataset)
+            row_html = row.group(0)
+            self.assertIn(f'>{int(manifest["issue_count"]):,}<', row_html, dataset)
+            latest = str((manifest.get("issues") or [{}])[0].get("auction_date") or "")
+            if latest:
+                self.assertIn(f'>{latest}<', row_html, dataset)
 
         sitemap = (ROOT / "sitemap.xml").read_text(encoding="utf-8")
         for url in ["https://plate.hk/about.html", "https://plate.hk/camera.html", "https://plate.hk/mcp.html"]:
@@ -690,6 +740,13 @@ class FrontendContractsTests(unittest.TestCase):
         self.assertIn("Official auction result source discovery", agent_md)
         self.assertIn("Classification and transferability guardrails", agent_md)
         self.assertIn("The array is not named `results`", agent_md)
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        api_readme = (ROOT / "api" / "README.md").read_text(encoding="utf-8")
+        openapi = (ROOT / "api" / "openapi.yaml").read_text(encoding="utf-8")
+        self.assertIn("`rows` array", readme)
+        self.assertIn("不是 `results`", api_readme)
+        self.assertIn("url: https://plate.hk/about.html", openapi)
+        self.assertIn("DATA.GOV.HK is not the auction-record source", openapi)
         self.assertIn('</about.html>; rel="describedby"', worker)
         self.assertIn("module.render_about()", cloudflare_builder)
 
