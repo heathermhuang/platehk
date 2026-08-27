@@ -104,18 +104,24 @@ class FrontendContractsTests(unittest.TestCase):
     def test_logo_wordmark_uses_plate_hk(self) -> None:
         logo = (ROOT / "assets" / "logo.svg").read_text(encoding="utf-8")
         favicon = (ROOT / "assets" / "favicon.svg").read_text(encoding="utf-8")
+        ledger = (ROOT / "assets" / "ledger.css").read_text(encoding="utf-8")
+        plate_fill = re.search(r"--plate-fill:\s*(#[0-9a-fA-F]{6})", ledger)
+        plate_ink = re.search(r"--plate-ink:\s*(#[0-9a-fA-F]{6})", ledger)
+        self.assertIsNotNone(plate_fill)
+        self.assertIsNotNone(plate_ink)
         self.assertIn(">PLATE</text>", logo)
         self.assertIn(">HK</text>", logo)
         self.assertNotIn(">HONG</text>", logo)
-        self.assertIn('fill="#ffeb00"', logo)
         self.assertIn(">PLATE</text>", favicon)
         self.assertIn(">HK</text>", favicon)
         self.assertNotIn(">P</text>", favicon)
-        self.assertIn('fill="#ffeb00"', favicon)
+        for asset in (logo, favicon):
+            self.assertIn(f'fill="{plate_fill.group(1)}"', asset)
+            self.assertIn(f'fill="{plate_ink.group(1)}"', asset)
 
     def test_plate_logo_assets_are_wired_across_surfaces(self) -> None:
-        logo_ref = "logo.svg?v=20260827-04"
-        favicon_ref = "favicon.svg?v=20260827-04"
+        logo_ref = "logo.svg?v=20260827-05"
+        favicon_ref = "favicon.svg?v=20260827-05"
         for path in ("index.html", "camera.html", "assets/index.js", "assets/index.share.js"):
             self.assertIn(logo_ref, (ROOT / path).read_text(encoding="utf-8"), path)
         for path in (
@@ -133,7 +139,7 @@ class FrontendContractsTests(unittest.TestCase):
             "scripts/build_popular_plate_pages.py",
         ):
             self.assertIn(favicon_ref, (ROOT / path).read_text(encoding="utf-8"), path)
-        self.assertIn("pvrm-static-v151", (ROOT / "sw.js").read_text(encoding="utf-8"))
+        self.assertIn("pvrm-static-v152", (ROOT / "sw.js").read_text(encoding="utf-8"))
 
     def test_camera_prototype_page_and_links_exist(self) -> None:
         camera = (ROOT / "camera.html").read_text(encoding="utf-8")

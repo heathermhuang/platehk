@@ -169,7 +169,7 @@ function composeAuctionKey(datasetKey, auctionDate) {
 
       function logoForDataset() {
         return {
-          src: "./assets/logo.svg?v=20260827-04",
+          src: "./assets/logo.svg?v=20260827-05",
           altZh: "Plate.hk 香港車牌拍賣資料庫標誌",
           altEn: "Plate.hk Hong Kong vehicle registration marks logo",
         };
@@ -1298,7 +1298,7 @@ function composeAuctionKey(datasetKey, auctionDate) {
           if (location.hostname === "localhost" || location.hostname === "127.0.0.1") return;
           // Avoid sticky cached SW on some static hosts.
           navigator.serviceWorker
-            .register("./sw.js?v=20260827-04", { updateViaCache: "none" })
+            .register("./sw.js?v=20260827-05", { updateViaCache: "none" })
             .catch(() => {});
         });
       }

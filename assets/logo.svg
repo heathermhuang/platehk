@@ -2,8 +2,8 @@
   <title>Plate.hk Hong Kong registration plate logo</title>
   <desc>Compact yellow rear-plate mark with PLATE over HK.</desc>
   <metadata>PLATE HK</metadata>
-  <rect x="4" y="21" width="152" height="118" rx="10" fill="#101010"/>
-  <rect x="12" y="29" width="136" height="102" rx="5" fill="#ffeb00"/>
-  <text x="80" y="76" text-anchor="middle" textLength="116" lengthAdjust="spacingAndGlyphs" font-family="DIN Condensed, Arial Narrow, Arial, sans-serif" font-size="50" font-weight="700" fill="#050505">PLATE</text>
-  <text x="80" y="121" text-anchor="middle" textLength="54" lengthAdjust="spacingAndGlyphs" font-family="DIN Condensed, Arial Narrow, Arial, sans-serif" font-size="58" font-weight="700" fill="#050505">HK</text>
+  <rect x="4" y="21" width="152" height="118" rx="10" fill="#171612"/>
+  <rect x="12" y="29" width="136" height="102" rx="5" fill="#f0c94d"/>
+  <text x="80" y="76" text-anchor="middle" textLength="116" lengthAdjust="spacingAndGlyphs" font-family="DIN Condensed, Arial Narrow, Arial, sans-serif" font-size="50" font-weight="700" fill="#171612">PLATE</text>
+  <text x="80" y="121" text-anchor="middle" textLength="54" lengthAdjust="spacingAndGlyphs" font-family="DIN Condensed, Arial Narrow, Arial, sans-serif" font-size="58" font-weight="700" fill="#171612">HK</text>
 </svg>
