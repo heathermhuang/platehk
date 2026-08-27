@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pvrm-static-v151';
+const CACHE_NAME = 'pvrm-static-v152';
 const ASSETS = [
   './',
   './index.html',
@@ -39,7 +39,7 @@ const ASSETS = [
   './assets/action-icon.svg',
   './assets/action-share-icon.svg',
   './assets/search.worker.js',
-  './assets/favicon.svg?v=20260827-04',
+  './assets/favicon.svg?v=20260827-05',
   './data/auctions.json',
   './data/events.json',
   './data/all.search.meta.json',

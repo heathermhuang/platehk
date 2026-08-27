@@ -623,7 +623,7 @@ def render_page(entries_by_norm: dict[str, dict], entry: dict, related: list[dic
     <meta name="twitter:description" content="{html.escape(desc)}" />
     <meta name="twitter:image" content="https://plate.hk/assets/logo.svg" />
     <meta name="twitter:image:alt" content="Plate.hk Hong Kong vehicle registration marks database logo" />
-    <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg?v=20260827-04" />
+    <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg?v=20260827-05" />
     <link rel="alternate" type="application/json" href="https://plate.hk/api/search?dataset=all&amp;q={plate_norm}&amp;sort=amount_desc&amp;page=1&amp;page_size=200" title="{html.escape(plate)} auction records as JSON" />
     <script type="application/ld+json">{json.dumps(ld_json, ensure_ascii=False)}</script>
     <link rel="stylesheet" href="../assets/ledger.css?v={INFO_CSS_VERSION}" />
@@ -800,7 +800,7 @@ def render_index(entries: list[dict]) -> str:
     <meta name="twitter:title" content="熱門車牌拍賣結果索引 | Plate.hk" />
     <meta name="twitter:description" content="快速瀏覽熱門香港車牌的歷史公開拍賣成交結果與官方來源。" />
     <meta name="twitter:image" content="https://plate.hk/assets/logo.svg" />
-    <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg?v=20260827-04" />
+    <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg?v=20260827-05" />
     <script type="application/ld+json">{json.dumps(ld_json, ensure_ascii=False)}</script>
     <meta name="theme-color" content="#f4f1e8" />
     <link rel="stylesheet" href="../assets/ledger.css?v={INFO_CSS_VERSION}" />
@@ -1016,7 +1016,7 @@ def render_about() -> str:
     <meta name="twitter:title" content="Plate.hk data guide and methodology" />
     <meta name="twitter:description" content="Sources, coverage, verification method, and limits of Hong Kong plate auction data." />
     <meta name="twitter:image" content="https://plate.hk/assets/logo.svg" />
-    <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg?v=20260827-04" />
+    <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg?v=20260827-05" />
     <link rel="alternate" type="application/json" href="https://plate.hk/api/v1/index.json" title="Plate.hk public API dataset index" />
     <script type="application/ld+json">{json.dumps(ld_json, ensure_ascii=False)}</script>
     <link rel="stylesheet" href="./assets/ledger.css?v={INFO_CSS_VERSION}" />
