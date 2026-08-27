@@ -103,8 +103,37 @@ class FrontendContractsTests(unittest.TestCase):
 
     def test_logo_wordmark_uses_plate_hk(self) -> None:
         logo = (ROOT / "assets" / "logo.svg").read_text(encoding="utf-8")
-        self.assertIn("PLATE", logo)
-        self.assertIn(".HK", logo)
+        favicon = (ROOT / "assets" / "favicon.svg").read_text(encoding="utf-8")
+        self.assertIn(">PLATE</text>", logo)
+        self.assertIn(">HK</text>", logo)
+        self.assertNotIn(">HONG</text>", logo)
+        self.assertIn('fill="#ffeb00"', logo)
+        self.assertIn(">PLATE</text>", favicon)
+        self.assertIn(">HK</text>", favicon)
+        self.assertNotIn(">P</text>", favicon)
+        self.assertIn('fill="#ffeb00"', favicon)
+
+    def test_plate_logo_assets_are_wired_across_surfaces(self) -> None:
+        logo_ref = "logo.svg?v=20260827-04"
+        favicon_ref = "favicon.svg?v=20260827-04"
+        for path in ("index.html", "camera.html", "assets/index.js", "assets/index.share.js"):
+            self.assertIn(logo_ref, (ROOT / path).read_text(encoding="utf-8"), path)
+        for path in (
+            "index.html",
+            "camera.html",
+            "landing.html",
+            "about.html",
+            "api.html",
+            "audit.html",
+            "changelog.html",
+            "mcp.html",
+            "privacy.html",
+            "terms.html",
+            "plates/index.html",
+            "scripts/build_popular_plate_pages.py",
+        ):
+            self.assertIn(favicon_ref, (ROOT / path).read_text(encoding="utf-8"), path)
+        self.assertIn("pvrm-static-v151", (ROOT / "sw.js").read_text(encoding="utf-8"))
 
     def test_camera_prototype_page_and_links_exist(self) -> None:
         camera = (ROOT / "camera.html").read_text(encoding="utf-8")

@@ -143,7 +143,7 @@ The production frontend is intentionally static-first and style-light:
 - `assets/ledger.css` carries the current flat Ledger visual layer across the homepage, policy pages, camera page, API/audit pages, and generated plate pages
 - `assets/info-shell.js` gives About, Terms, Privacy, Changelog, Audit, API, MCP, and Popular Plates one shared header, active navigation state, one-language-at-a-time copy and links, and a grouped footer
 - `assets/popular-index.js` adds filtering and staged disclosure to the Popular Plates index while leaving every plate link visible when JavaScript is unavailable
-- `assets/logo.svg` and `assets/favicon.svg` use a square Hong Kong-style plate mark with centered `HONG / KONG` text
+- `assets/logo.svg` and `assets/favicon.svg` use a compact yellow Hong Kong rear-plate mark with centered `PLATE / HK` text
 - Search result rows are tuned as dense auction ledger records on desktop and readable cards on mobile
 - `assets/index.share.js` generates branded share posters in-browser from the current row data
 - `scripts/build_popular_plate_pages.py` regenerates the `plates/` SEO pages with the same Ledger styling
