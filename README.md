@@ -212,6 +212,8 @@ These are the artifacts most contributors need to understand:
 | `api/v1/*/results.chunks.json` and `api/v1/*/results.sorted/` | Full-dataset export manifests and bounded sort indexes for paginated results |
 | `api/v1/` | Static API payloads consumed by external clients and the site |
 
+The dynamic search API returns paging metadata plus a `rows` array. Complete static exports start at `api/v1/{dataset}/results.chunks.json`; resolve each manifest `chunks[].file` under the same dataset path.
+
 The historical workbook sources remain in-repo because they are still part of the build graph:
 
 - `data/TVRM auction result (1973-2026).xls`
@@ -222,6 +224,7 @@ The historical workbook sources remain in-repo because they are still part of th
 Plate.hk is built from Hong Kong Transport Department publications and bundled legacy workbook sources.
 
 - Official source documents remain the source of truth
+- Auction records come from Transport Department result PDFs and official workbook exports, not a DATA.GOV.HK vehicle-registration-mark auction dataset
 - Search results link back to the original source document for manual verification
 - If a generated record disagrees with an official handout or workbook, the official publication should prevail
 

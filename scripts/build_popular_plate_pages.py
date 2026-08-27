@@ -33,6 +33,9 @@ TD_HISTORY_URL = (
     "https://www.td.gov.hk/en/about_us/history_of_transport_department/"
     "licensing_services/auction_of_vehicle_registration_marks__/index.html"
 )
+TD_TRANSFER_URL = "https://www.1823.gov.hk/en/faq/knowing-how-to-change-the-id-of-your-vehicle"
+HKE_LEG_SPECIAL_MARK_URL = "https://www.elegislation.gov.hk/hk/cap374E/s12"
+HKE_LEG_PVRM_TRANSFER_URL = "https://www.elegislation.gov.hk/hk/cap374E/s17"
 TD_PVRM_URL = "https://www.td.gov.hk/en/public_services/vehicle_registration_mark/pvrm_auction/index.html"
 TD_TVRM_APPLICATION_URL = "https://www.td.gov.hk/en/public_services/vehicle_registration_mark/tvrm_application/index.html"
 TD_EAUCTION_URL = "https://www.td.gov.hk/en/public_services/vehicle_registration_mark/tvrm_auction/"
@@ -879,7 +882,7 @@ def render_about() -> str:
     latest_date = max(latest_dates) if latest_dates else ""
     descriptions = {
         "pvrm": ("自訂車牌實體拍賣", "Personalized registration mark physical auctions"),
-        "tvrm_physical": ("傳統及特殊車牌實體拍賣", "Traditional and special-mark physical auctions"),
+        "tvrm_physical": ("HK／XX 字首及特殊傳統車牌實體拍賣", "HK/XX-prefix and special traditional-mark physical auctions"),
         "tvrm_eauction": ("普通傳統車牌拍牌易結果", "Ordinary traditional marks sold by E-Auction"),
         "tvrm_legacy": ("1973-2006 官方工作簿年份區段", "Official workbook-backed historical year ranges, 1973-2006"),
     }
@@ -912,7 +915,16 @@ def render_about() -> str:
         "spatialCoverage": {"@type": "Place", "name": "Hong Kong"},
         "variableMeasured": ["auction date", "vehicle registration mark", "sale price in HKD", "auction type", "source document"],
         "measurementTechnique": "Source-document extraction, normalized search indexing, cross-dataset overlap checks, and automated integrity auditing.",
-        "isBasedOn": [TD_URL, TD_HISTORY_URL, TD_PVRM_URL, TD_TVRM_APPLICATION_URL, TD_EAUCTION_URL],
+        "isBasedOn": [
+            TD_URL,
+            TD_HISTORY_URL,
+            TD_PVRM_URL,
+            TD_TVRM_APPLICATION_URL,
+            TD_EAUCTION_URL,
+            TD_TRANSFER_URL,
+            HKE_LEG_SPECIAL_MARK_URL,
+            HKE_LEG_PVRM_TRANSFER_URL,
+        ],
         "subjectOf": [
             f"{SITE_URL}/audit.html",
             f"{SITE_URL}/api.html",
@@ -939,7 +951,23 @@ def render_about() -> str:
                 "name": "What is the difference between PVRM, TVRM physical auctions, and E-Auction?",
                 "acceptedAnswer": {
                     "@type": "Answer",
-                    "text": "PVRMs are approved personalized combinations sold at physical auctions. Ordinary traditional marks other than HK or XX prefixes use E-Auction; HK or XX prefixes and special traditional marks use physical auctions.",
+                    "text": "PVRMs are approved personalized combinations sold at physical auctions. Ordinary traditional marks other than HK or XX prefixes use E-Auction; HK or XX prefix marks and special traditional marks use physical auctions as separate categories. Classify a result from its dataset and official source, not from appearance alone.",
+                },
+            },
+            {
+                "@type": "Question",
+                "name": "Can a Hong Kong PVRM or traditional special registration mark be transferred?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "A PVRM cannot be transferred as a standalone mark but can pass with its vehicle under the certificate procedure in regulation 17 of Cap. 374E. A traditional special registration mark is cancelled when vehicle ownership changes under regulation 12. Ordinary traditional marks follow different retention and assignment rules.",
+                },
+            },
+            {
+                "@type": "Question",
+                "name": "Is DATA.GOV.HK the source of Plate.hk auction records?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "No. Plate.hk auction records are compiled from Transport Department result PDFs and official workbook exports. DATA.GOV.HK may provide legislation resources, but it is not the cited auction-record source for this dataset.",
                 },
             },
             {
@@ -1090,11 +1118,14 @@ def render_about() -> str:
             <p data-lang-only="zh">最終權威紀錄請查閱<a href="{TD_URL}" target="_blank" rel="noopener noreferrer">香港運輸署車牌服務</a>及<a href="{TD_HISTORY_URL}" target="_blank" rel="noopener noreferrer">運輸署拍賣歷史</a>。Plate.hk 不是政府網站，而是把 PVRM、TVRM 實體拍賣、拍牌易及官方工作簿歷史資料整理成<a href="./index.html" data-preserve-lang>可搜尋索引</a>；每筆結果在可用時會連回官方來源，方便核對。</p>
             <p data-lang-only="en" hidden>For the authoritative record, use the <a href="{TD_URL}" target="_blank" rel="noopener noreferrer">Hong Kong Transport Department vehicle registration mark service</a> and its <a href="{TD_HISTORY_URL}" target="_blank" rel="noopener noreferrer">auction history</a>. Plate.hk is an independent, non-government <a href="./index.html" data-preserve-lang>search index</a> across PVRM, TVRM physical auctions, E-Auction, and official workbook-backed history; each result links to the official source when available.</p>
             <h3 {copy_attrs('Plate.hk 的資料來自哪裡？', 'Where does Plate.hk get its data?')}>Plate.hk 的資料來自哪裡？</h3>
-            <p data-lang-only="zh">主要來自香港運輸署發布的 PVRM、TVRM 實體拍賣及拍牌易結果 PDF；1973-2006 歷史區段來自官方工作簿匯出。每個車牌頁會在可用時直接連回相應來源。</p>
-            <p data-lang-only="en" hidden>Most records come from PVRM, TVRM physical-auction, and E-Auction result PDFs published by the Hong Kong Transport Department. Historical ranges from 1973 to 2006 come from official workbook exports. Each plate page links directly to its source when available.</p>
+            <p data-lang-only="zh">主要來自香港運輸署發布的 PVRM、TVRM 實體拍賣及拍牌易結果 PDF；1973-2006 歷史區段來自官方工作簿匯出。每個車牌頁會在可用時直接連回相應來源。Plate.hk 的拍賣紀錄不是來自 DATA.GOV.HK；DATA.GOV.HK 的法例資源也不應被描述成車牌拍賣資料集。</p>
+            <p data-lang-only="en" hidden>Most records come from PVRM, TVRM physical-auction, and E-Auction result PDFs published by the Hong Kong Transport Department. Historical ranges from 1973 to 2006 come from official workbook exports. Each plate page links directly to its source when available. Plate.hk auction records do not come from DATA.GOV.HK; a DATA.GOV.HK legislation resource must not be described as a vehicle-registration-mark auction dataset.</p>
             <h3 {copy_attrs('PVRM、TVRM 實體拍賣及拍牌易有甚麼分別？', 'What is the difference between PVRM, TVRM physical auctions, and E-Auction?')}>PVRM、TVRM 實體拍賣及拍牌易有甚麼分別？</h3>
-            <p data-lang-only="zh"><a href="{TD_PVRM_URL}" target="_blank" rel="noopener noreferrer">PVRM</a> 是獲運輸署批准、最多八個英文字母（不包括 I、O、Q）及／或數字的自訂組合，於實體場地拍賣。一般傳統車牌（不包括 HK／XX 字首）自 2025 年起使用<a href="{TD_EAUCTION_URL}" target="_blank" rel="noopener noreferrer">「拍牌易」</a>；HK／XX 字首及特殊傳統車牌繼續實體拍賣。按<a href="{TD_TVRM_APPLICATION_URL}" target="_blank" rel="noopener noreferrer">傳統車牌規則</a>，普通傳統車牌可隨所屬車輛轉讓，特殊傳統車牌不可轉讓；PVRM 所屬車輛過戶時須一併向運輸署提交分配證明書。以運輸署現行規則為準。</p>
-            <p data-lang-only="en" hidden><a href="{TD_PVRM_URL}" target="_blank" rel="noopener noreferrer">PVRMs</a> are approved custom combinations of up to eight letters (excluding I, O and Q) and/or numerals, sold at physical auctions. Ordinary traditional marks other than HK/XX prefixes use <a href="{TD_EAUCTION_URL}" target="_blank" rel="noopener noreferrer">E-Auction</a>; HK/XX-prefix and special traditional marks use physical auctions. Under the <a href="{TD_TVRM_APPLICATION_URL}" target="_blank" rel="noopener noreferrer">traditional-mark rules</a>, ordinary traditional marks may transfer with the vehicle and special traditional marks are non-transferable; a PVRM Certificate of Allocation must accompany a transfer of the vehicle bearing that mark. Current Transport Department rules prevail.</p>
+            <p data-lang-only="zh"><a href="{TD_PVRM_URL}" target="_blank" rel="noopener noreferrer">PVRM</a> 是獲運輸署批准、最多八個英文字母（不包括 I、O、Q）及／或數字的自訂組合，於實體場地拍賣。一般傳統車牌（不包括 HK／XX 字首）自 2025 年起使用<a href="{TD_EAUCTION_URL}" target="_blank" rel="noopener noreferrer">「拍牌易」</a>；HK／XX 字首及特殊傳統車牌是 TVRM 實體拍賣內的不同類別。不可只按外觀分類：應查看每筆紀錄的資料集及官方來源；例如本站收錄的 W、R、D、H、S、V 單字母紀錄來自 PVRM 官方結果。</p>
+            <p data-lang-only="en" hidden><a href="{TD_PVRM_URL}" target="_blank" rel="noopener noreferrer">PVRMs</a> are approved custom combinations of up to eight letters (excluding I, O and Q) and/or numerals, sold at physical auctions. Ordinary traditional marks other than HK/XX prefixes use <a href="{TD_EAUCTION_URL}" target="_blank" rel="noopener noreferrer">E-Auction</a>; HK/XX-prefix marks and special traditional marks are separate categories within TVRM physical auctions. Do not classify a mark from appearance alone: use the row's dataset and official source. For example, Plate.hk's W, R, D, H, S, and V single-letter records come from official PVRM results.</p>
+            <h3 {copy_attrs('車牌可以獨立轉讓嗎？', 'Can a mark be transferred on its own?')}>車牌可以獨立轉讓嗎？</h3>
+            <p data-lang-only="zh">規則因類別而異。<a href="{HKE_LEG_PVRM_TRANSFER_URL}" target="_blank" rel="noopener noreferrer">《道路交通（車輛登記及領牌）規例》第 17 條</a>訂明 PVRM 可隨所屬車輛過戶並辦理分配證明書手續，但不可把號碼本身獨立轉讓。<a href="{HKE_LEG_SPECIAL_MARK_URL}" target="_blank" rel="noopener noreferrer">第 12 條</a>則訂明特殊傳統車牌在車輛轉手時會被取消；普通傳統車牌另有保留及重新編配程序。<a href="{TD_TRANSFER_URL}" target="_blank" rel="noopener noreferrer">1823 車牌轉移指引</a>提供操作摘要。這是一般資料，不是法律意見；以現行法例及運輸署決定為準。</p>
+            <p data-lang-only="en" hidden>The rules differ by category. <a href="{HKE_LEG_PVRM_TRANSFER_URL}" target="_blank" rel="noopener noreferrer">Regulation 17 of Cap. 374E</a> provides for a PVRM to pass with its vehicle through the Certificate of Allocation procedure, but the mark cannot be transferred on its own. Under <a href="{HKE_LEG_SPECIAL_MARK_URL}" target="_blank" rel="noopener noreferrer">regulation 12</a>, a traditional special registration mark is cancelled when vehicle ownership changes; ordinary traditional marks have separate retention and reassignment procedures. The <a href="{TD_TRANSFER_URL}" target="_blank" rel="noopener noreferrer">1823 registration-mark transfer guide</a> summarizes the operational steps. This is general information, not legal advice; current legislation and Transport Department decisions prevail.</p>
             <h3 {copy_attrs('歷史成交價等於現時估值、車主資料或放售狀態嗎？', 'Does an auction record prove current value, owner, or sale status?')}>歷史成交價等於現時估值、車主資料或放售狀態嗎？</h3>
             <p data-lang-only="zh">不等於，也不能證明。成交價只描述某次公開拍賣的歷史結果，不是現時估值、車主或持有人紀錄、即時放售證明或未來成交保證。車牌或車輛其後可能已轉讓、取消分配或不再放售。</p>
             <p data-lang-only="en" hidden>No. An auction result is a historical transaction record, not a current valuation, owner or holder record, active sale listing, or future-price guarantee. The mark or vehicle may later have been transferred, cancelled, or withdrawn from sale.</p>

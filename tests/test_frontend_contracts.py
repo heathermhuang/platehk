@@ -139,7 +139,7 @@ class FrontendContractsTests(unittest.TestCase):
             "scripts/build_popular_plate_pages.py",
         ):
             self.assertIn(favicon_ref, (ROOT / path).read_text(encoding="utf-8"), path)
-        self.assertIn("pvrm-static-v152", (ROOT / "sw.js").read_text(encoding="utf-8"))
+        self.assertIn("pvrm-static-v153", (ROOT / "sw.js").read_text(encoding="utf-8"))
 
     def test_camera_prototype_page_and_links_exist(self) -> None:
         camera = (ROOT / "camera.html").read_text(encoding="utf-8")
@@ -212,6 +212,7 @@ class FrontendContractsTests(unittest.TestCase):
         self.assertIn("https://github.com/heathermhuang/platehk", shell)
 
         changelog = (ROOT / "assets" / "changelog.js").read_text(encoding="utf-8")
+        self.assertIn('date: "2026-08-27"', changelog)
         self.assertIn('date: "2026-08-25"', changelog)
         self.assertIn('./data/audit.json', changelog)
         self.assertIn('class="changelog-archive"', changelog)
@@ -219,6 +220,9 @@ class FrontendContractsTests(unittest.TestCase):
         api = (ROOT / "assets" / "api-page.js").read_text(encoding="utf-8")
         self.assertIn("page_size", api)
         self.assertIn("Retry-After", api)
+        self.assertIn("The result array is named <code>rows</code>, not <code>results</code>", api)
+        self.assertIn("/api/v1/{dataset}/results.chunks.json", api)
+        self.assertIn("not a DATA.GOV.HK vehicle-registration-mark auction API", api)
         self.assertIn('./data/audit.json', api)
 
         mcp = (ROOT / "mcp.html").read_text(encoding="utf-8")
@@ -293,8 +297,8 @@ class FrontendContractsTests(unittest.TestCase):
             self.assertIn(f"'{script_path}'", service_worker, script_path)
         for shell_asset in [
             "./assets/audit.js?v=20260825-01",
-            "./assets/api-page.js?v=20260826-01",
-            "./assets/changelog.js?v=20260825-01",
+            "./assets/api-page.js?v=20260827-02",
+            "./assets/changelog.js?v=20260827-02",
             "./assets/info-locale.js?v=20260825-01",
             "./assets/info-shell.js?v=20260825-01",
             "./assets/popular-index.js?v=20260825-01",
@@ -578,7 +582,16 @@ class FrontendContractsTests(unittest.TestCase):
             ).group(1)
         )
         index_types = {item["@type"] for item in index_ld["@graph"]}
-        self.assertEqual(index_types, {"Organization", "WebSite"})
+        self.assertEqual(index_types, {"Organization", "WebSite", "Dataset"})
+        index_dataset = next(item for item in index_ld["@graph"] if item["@type"] == "Dataset")
+        self.assertEqual(index_dataset["provider"], {"@id": "https://plate.hk/#organization"})
+        self.assertEqual(
+            {item["contentUrl"] for item in index_dataset["distribution"]},
+            {
+                "https://plate.hk/api/v1/index.json",
+                "https://plate.hk/api/v1/all/results.chunks.json",
+            },
+        )
         self.assertIn('id="aboutLink" href="./about.html?lang=zh"', index_html)
 
         plate_html = (ROOT / "plates" / "88.html").read_text(encoding="utf-8")
@@ -629,6 +642,13 @@ class FrontendContractsTests(unittest.TestCase):
         self.assertIn("independent, non-government", about_html)
         self.assertIn("歷史成交價等於現時估值、車主資料或放售狀態嗎？", about_html)
         self.assertIn("PVRM、TVRM 實體拍賣及拍牌易有甚麼分別？", about_html)
+        self.assertIn("車牌可以獨立轉讓嗎？", about_html)
+        self.assertIn("Can a mark be transferred on its own?", about_html)
+        self.assertIn("Plate.hk 的拍賣紀錄不是來自 DATA.GOV.HK", about_html)
+        self.assertIn("Plate.hk auction records do not come from DATA.GOV.HK", about_html)
+        self.assertIn("https://www.elegislation.gov.hk/hk/cap374E/s12", about_html)
+        self.assertIn("https://www.elegislation.gov.hk/hk/cap374E/s17", about_html)
+        self.assertIn("W, R, D, H, S, and V", about_html)
         self.assertIn("不是現時估值、車主或持有人紀錄、即時放售證明", about_html)
         self.assertIn("GET /api/search?dataset=all&amp;q=88", about_html)
         self.assertIn('data-copy-en="API Dataset Index"', about_html)
@@ -664,8 +684,12 @@ class FrontendContractsTests(unittest.TestCase):
         self.assertIn("Citation and verification guidance", llms)
         self.assertIn("Direct source-discovery answer", llms)
         self.assertIn("not a current valuation", llms)
+        self.assertIn("not a vehicle-registration-mark auction dataset", llms)
+        self.assertIn("top-level array name rows, not results", llms)
         self.assertIn("Data guide and methodology", agent_md)
         self.assertIn("Official auction result source discovery", agent_md)
+        self.assertIn("Classification and transferability guardrails", agent_md)
+        self.assertIn("The array is not named `results`", agent_md)
         self.assertIn('</about.html>; rel="describedby"', worker)
         self.assertIn("module.render_about()", cloudflare_builder)
 
