@@ -1,8 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="Hong Kong vehicle registration marks favicon">
-  <title>HONG KONG vehicle registration mark</title>
-  <desc>Flat square Hong Kong registration plate mark for the Plate.hk database.</desc>
-  <metadata>PLATE .HK</metadata>
-  <rect x="8" y="8" width="112" height="112" rx="8" fill="#f0c94d" stroke="#171612" stroke-width="6"/>
-  <text x="64" y="56" text-anchor="middle" font-family="Space Grotesk, system-ui, -apple-system, BlinkMacSystemFont, Arial, sans-serif" font-size="25" font-weight="800" letter-spacing=".6" fill="#171612">HONG</text>
-  <text x="64" y="86" text-anchor="middle" font-family="Space Grotesk, system-ui, -apple-system, BlinkMacSystemFont, Arial, sans-serif" font-size="25" font-weight="800" letter-spacing=".6" fill="#171612">KONG</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="Plate.hk favicon styled as a Hong Kong registration plate">
+  <title>Plate.hk Hong Kong registration plate favicon</title>
+  <desc>Compact yellow rear-plate mark with PLATE over HK.</desc>
+  <metadata>PLATE HK</metadata>
+  <rect x="3" y="17" width="122" height="94" rx="8" fill="#101010"/>
+  <rect x="10" y="24" width="108" height="80" rx="4" fill="#ffeb00"/>
+  <text x="64" y="61" text-anchor="middle" textLength="92" lengthAdjust="spacingAndGlyphs" font-family="DIN Condensed, Arial Narrow, Arial, sans-serif" font-size="40" font-weight="700" fill="#050505">PLATE</text>
+  <text x="64" y="97" text-anchor="middle" textLength="43" lengthAdjust="spacingAndGlyphs" font-family="DIN Condensed, Arial Narrow, Arial, sans-serif" font-size="47" font-weight="700" fill="#050505">HK</text>
 </svg>

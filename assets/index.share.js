@@ -163,7 +163,7 @@ window.createPlateIndexShareModal = function createPlateIndexShareModal({
       const img = new Image();
       img.onload = () => resolve(img);
       img.onerror = () => reject(new Error("logo load failed"));
-      img.src = "./assets/logo.svg?v=20260512-08";
+      img.src = "./assets/logo.svg?v=20260827-04";
     });
   }
 
