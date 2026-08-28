@@ -12,6 +12,8 @@
 
 `page_size` 必須為 1 至 200。深層分頁可能回應 `400 query_window_exceeded`；收到 `429 rate_limited` 時應按 `Retry-After` 稍後重試。
 
+`/api/search` 的結果陣列固定使用 `rows` 欄位（不是 `results`），頂層欄位為 `dataset`、`q`、`issue`、`mode`、`sort`、`page`、`page_size`、`total` 及 `rows`。
+
 相機 OCR 使用獨立的受保護流程：瀏覽器先取得 vision session，再向 `POST /api/vision_plate` 傳送白框內裁切後的圖像。機器客戶端需使用帶有 `vision:ocr` scope 的 bearer token；它不屬於公開靜態 Open Data API。
 
 批量同步及無資料庫讀取可使用靜態 JSON：
@@ -21,6 +23,7 @@
 - `GET /api/v1/pvrm/issues/{YYYY-MM-DD}.json`
 - `GET /api/v1/pvrm/auctions.json`
 - `GET /api/v1/pvrm/preset.amount_desc.top1000.json`
+- `GET /api/v1/{dataset}/results.chunks.json`：完整資料 manifest；其 `chunks[].file` 必須接在同一 `/api/v1/{dataset}/` 路徑下
 
 以及：
 - `GET /api/v1/tvrm_physical/...`
@@ -30,6 +33,8 @@
 `tvrm_legacy` 現在只保留 `1973-2006` 年份區段資料：
 - `data/TVRM auction result (1973-2026).xls` 提供歷史年份區段
 - `data/TVRM auction result (2006-2026).xlsx` 的 `2007+` rows 會併入 `tvrm_physical` / `tvrm_eauction` 的正式日期分期
+
+拍賣紀錄的來源是運輸署結果 PDF 及官方工作簿匯出。不要把 DATA.GOV.HK 的法例資源描述成車牌拍賣資料集或本 API 的拍賣紀錄來源。
 
 因此 `tvrm_legacy` 現在固定為：
 - `date_precision = "year_range"`：`auction_date` 只是 shard key，顯示時應使用 `auction_date_label`

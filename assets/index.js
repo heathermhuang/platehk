@@ -299,12 +299,12 @@ function composeAuctionKey(datasetKey, auctionDate) {
                 currentLang === "zh"
                   ? [
                       "PVRM 是自訂車牌，採實體舉牌拍賣。",
-                      "TVRM 實體拍賣涵蓋「HK」/「XX」字首及特殊車牌；TVRM 拍牌易則涵蓋一般普通車牌。",
+                      "TVRM 實體拍賣涵蓋「HK」/「XX」字首及特殊車牌，兩者是不同類別；TVRM 拍牌易則涵蓋一般普通車牌。分類時應查看資料集及官方來源，不可只按車牌外觀。",
                       "1973-2006 歷史年份分段資料來自官方工作簿；2007 年起已有正式拍賣日期，已併回實體拍賣 / 拍牌易分期。",
                     ]
                   : [
                       "PVRM covers personalized marks and is sold by physical paddle auction.",
-                      'TVRM physical auctions cover "HK"/"XX" prefix marks and special marks, while E-Auction covers ordinary marks.',
+                      'TVRM physical auctions cover "HK"/"XX" prefix marks and special marks as separate categories, while E-Auction covers ordinary marks. Classify a row from its dataset and official source, not appearance alone.',
                       "The 1973-2006 historical ranges come from the official workbook; 2007 onward exact-date rows are merged back into dated physical / e-auction issues.",
                     ],
             },
@@ -315,11 +315,13 @@ function composeAuctionKey(datasetKey, auctionDate) {
                   ? [
                       "先用「全部車牌」跨資料集搜尋，再按日期跳進單一期數頁，通常最清楚。",
                       "如你要核對官方結果，請打開每筆記錄右側的原始 PDF / 來源檔案。",
+                      "公開搜尋 API 是 /api/search，完整靜態資料入口是 /api/v1/index.json；這些是 Plate.hk 的獨立介面，不是政府或 DATA.GOV.HK 車牌拍賣 API。",
                       "網站只整理拍賣結果與來源；如規則和法例有差異，應以運輸署頁面及相關法例為準。",
                     ]
                   : [
                       "Start with the all-datasets view, then jump into a single issue page from the date column for a cleaner view.",
                       "Open the source PDF / source file on each row when you need to verify an official result.",
+                      "The public search API is /api/search and the static catalog is /api/v1/index.json. These are independent Plate.hk interfaces, not a government or DATA.GOV.HK plate-auction API.",
                       "This site reorganizes published results only. If any rule differs, Transport Department pages and the legislation prevail.",
                     ],
             },
@@ -331,6 +333,8 @@ function composeAuctionKey(datasetKey, auctionDate) {
                 { text: currentLang === "zh" ? "運輸署：拍賣取得車牌總覽" : "TD: Obtaining Vehicle Registration Mark by Auction", href: OFFICIAL.vrm[lang] },
                 { text: currentLang === "zh" ? "運輸署：車牌拍賣歷史" : "TD: History of VRM Auctions", href: OFFICIAL.vrm.history },
                 { text: currentLang === "zh" ? "拍牌易網站" : "E-Auction Website", href: OFFICIAL.tvrm.eauction },
+                { text: currentLang === "zh" ? "Plate.hk：資料分類與來源" : "Plate.hk: Classification and Sources", href: `https://plate.hk/about.html?lang=${currentLang}` },
+                { text: currentLang === "zh" ? "Plate.hk：公開 API" : "Plate.hk: Public API", href: `https://plate.hk/api.html?lang=${currentLang}` },
               ],
             },
           ];

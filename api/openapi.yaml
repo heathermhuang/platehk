@@ -5,10 +5,14 @@ info:
   description: |
     Public JSON API and static data endpoints for Hong Kong vehicle registration mark auction results.
     Auction data sources are Transport Department published PDF handouts and a bundled legacy TVRM workbook.
+    DATA.GOV.HK is not the auction-record source for this API; legislation resources hosted there are a separate evidence plane.
     Plate.hk is an independent, non-government index. Verify material results against the original source.
     The exact-match market-signal endpoint may also report a recent, unverified third-party 28car listing signal.
 servers:
   - url: https://plate.hk
+externalDocs:
+  description: Plate.hk data classification, provenance, and legal limits
+  url: https://plate.hk/about.html
 paths:
   /api/oauth/token:
     post:

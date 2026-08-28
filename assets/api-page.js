@@ -3,7 +3,7 @@
           pageTitle: "API 文檔 | Plate.hk",
           title: "API 文檔",
           back: "← 返回首頁",
-          updated: "最後更新：2026年8月26日",
+          updated: "最後更新：2026年8月27日",
           statusLoading: "正在讀取最新資料狀態…",
           statusError: "暫時未能讀取即時狀態；API 端點仍可按下方方式使用。",
           statusLabels: ["API 索引", "審核執行", "搜尋筆數"],
@@ -16,6 +16,22 @@
             </div>
             <p><code>dataset</code> 可用 <code>all</code>、<code>pvrm</code>、<code>tvrm_physical</code>、<code>tvrm_eauction</code> 或 <code>tvrm_legacy</code>；<code>q</code> 是車牌搜尋字串。回應包含 <code>total</code>、分頁資料及每筆拍賣紀錄。</p>
             <p><code>curl -G 'https://plate.hk/api/search' --data-urlencode 'dataset=all' --data-urlencode 'q=88' --data-urlencode 'page_size=20'</code></p>
+            <h2>搜尋回應格式</h2>
+            <p>結果陣列的欄位名稱是 <code>rows</code>，不是 <code>results</code>。以下是穩定的頂層格式；每一列可包含 <code>dataset_key</code>、<code>auction_date</code>、<code>single_line</code>、<code>double_line</code>、<code>amount_hkd</code> 及 <code>pdf_url</code>。</p>
+            <pre class="box"><code>{
+  "dataset": "all",
+  "q": "88",
+  "issue": null,
+  "mode": null,
+  "sort": "amount_desc",
+  "page": 1,
+  "page_size": 20,
+  "total": 123,
+  "rows": []
+}</code></pre>
+            <pre class="box"><code>const response = await fetch("https://plate.hk/api/search?dataset=all&amp;q=88&amp;page_size=20");
+const payload = await response.json();
+for (const row of payload.rows) console.log(row.single_line, row.amount_hkd, row.pdf_url);</code></pre>
             <p>如要在沒有搜尋字串時按日期、金額或車牌排序瀏覽，可用 <code>GET /api/results?dataset=all&amp;sort=date_desc&amp;page=1</code>。</p>
 
             <h2>限制與錯誤處理</h2>
@@ -37,6 +53,7 @@
               <div><code>GET https://plate.hk/api/v1/tvrm_eauction/...</code></div>
               <div><code>GET https://plate.hk/api/v1/tvrm_legacy/...</code></div>
             </div>
+            <p>完整資料必須先讀取 <code>/api/v1/{dataset}/results.chunks.json</code>，再把 manifest 內每個 <code>chunks[].file</code> 接到同一 dataset 路徑。不要省略 <code>/api/v1/{dataset}/</code>，也不要猜測根目錄下的 manifest 或 shard URL。</p>
 
             <p>另外，相機辨識頁會使用站內動態 API，把白框內裁切後的車牌圖像送到伺服器端 vision 模型判讀：</p>
             <div class="box">
@@ -45,7 +62,7 @@
             </div>
             <p>此 endpoint 不屬於公開靜態 Open Data API；它依賴伺服器端 OpenAI key，且只回傳單次車牌辨識結果。</p>
 
-            <p><code>tvrm_legacy</code> 現在只保留 <code>1973-2006</code> 的年份區段資料；新工作簿裡 <code>2007+</code> 的逐筆正式拍賣日期已併入 <code>tvrm_physical</code> / <code>tvrm_eauction</code> 的日期分期。</p>
+            <p><code>tvrm_legacy</code> 現在只保留官方工作簿匯出的 <code>1973-2006</code> 年份區段資料；新工作簿裡 <code>2007+</code> 的逐筆正式拍賣日期已併入 <code>tvrm_physical</code> / <code>tvrm_eauction</code> 的日期分期。Plate.hk 的拍賣紀錄來源是運輸署結果 PDF 及官方工作簿匯出，不是 DATA.GOV.HK 車牌拍賣 API。</p>
             <p>首頁「全部車牌」搜尋會用到少量靜態輔助檔與熱門查詢快取；若你要做類似搜尋，可額外抓取這些檔案：</p>
             <div class="box">
               <div><code>GET https://plate.hk/data/all.search.meta.json</code></div>
@@ -69,7 +86,7 @@
             </ol>
 
             <h2>OpenAPI</h2>
-            <p>資料 schema 以 <code>api/openapi.yaml</code> 為準。</p>
+            <p>資料 schema 以 <a href="./api/openapi.yaml"><code>/api/openapi.yaml</code></a> 為準；資料分類、來源及法律限制見<a href="./about.html" data-preserve-lang>資料說明</a>。</p>
 
           `,
         },
@@ -77,7 +94,7 @@
           pageTitle: "API Docs | Plate.hk",
           title: "API Docs",
           back: "← Back to Home",
-          updated: "Last updated: 26 Aug 2026",
+          updated: "Last updated: 27 Aug 2026",
           statusLoading: "Loading the latest data status…",
           statusError: "Live status is temporarily unavailable. The API remains available through the endpoints below.",
           statusLabels: ["API index", "Audit run", "Search rows"],
@@ -90,6 +107,22 @@
             </div>
             <p><code>dataset</code> accepts <code>all</code>, <code>pvrm</code>, <code>tvrm_physical</code>, <code>tvrm_eauction</code>, or <code>tvrm_legacy</code>; <code>q</code> is the plate query. The response includes <code>total</code>, paging fields, and auction-result rows.</p>
             <p><code>curl -G 'https://plate.hk/api/search' --data-urlencode 'dataset=all' --data-urlencode 'q=88' --data-urlencode 'page_size=20'</code></p>
+            <h2>Search response contract</h2>
+            <p>The result array is named <code>rows</code>, not <code>results</code>. This is the stable top-level shape; each row can include <code>dataset_key</code>, <code>auction_date</code>, <code>single_line</code>, <code>double_line</code>, <code>amount_hkd</code>, and <code>pdf_url</code>.</p>
+            <pre class="box"><code>{
+  "dataset": "all",
+  "q": "88",
+  "issue": null,
+  "mode": null,
+  "sort": "amount_desc",
+  "page": 1,
+  "page_size": 20,
+  "total": 123,
+  "rows": []
+}</code></pre>
+            <pre class="box"><code>const response = await fetch("https://plate.hk/api/search?dataset=all&amp;q=88&amp;page_size=20");
+const payload = await response.json();
+for (const row of payload.rows) console.log(row.single_line, row.amount_hkd, row.pdf_url);</code></pre>
             <p>To browse without a query and sort by date, amount, or plate, use <code>GET /api/results?dataset=all&amp;sort=date_desc&amp;page=1</code>.</p>
 
             <h2>Limits and errors</h2>
@@ -111,6 +144,7 @@
               <div><code>GET https://plate.hk/api/v1/tvrm_eauction/...</code></div>
               <div><code>GET https://plate.hk/api/v1/tvrm_legacy/...</code></div>
             </div>
+            <p>For a complete export, fetch <code>/api/v1/{dataset}/results.chunks.json</code> first, then resolve each manifest <code>chunks[].file</code> under the same dataset path. Do not omit <code>/api/v1/{dataset}/</code> or invent root-level manifest and shard URLs.</p>
 
             <p>The camera search page also uses a dynamic server-side vision endpoint that receives only the cropped plate region inside the guide frame:</p>
             <div class="box">
@@ -119,7 +153,7 @@
             </div>
             <p>This endpoint is separate from the public static Open Data API. It requires a server-side OpenAI key and returns a single plate recognition result.</p>
 
-            <p><code>tvrm_legacy</code> now keeps only the <code>1973-2006</code> year-range dataset. Exact-dated workbook rows from <code>2007+</code> have been merged into the dated <code>tvrm_physical</code> / <code>tvrm_eauction</code> issues.</p>
+            <p><code>tvrm_legacy</code> now keeps only the official-workbook-exported <code>1973-2006</code> year-range dataset. Exact-dated workbook rows from <code>2007+</code> have been merged into the dated <code>tvrm_physical</code> / <code>tvrm_eauction</code> issues. Plate.hk auction records come from Transport Department result PDFs and official workbook exports, not a DATA.GOV.HK vehicle-registration-mark auction API.</p>
             <p>The homepage <code>All Plates</code> search also uses a small set of static helper files and hot-query cache; if you want similar behavior, fetch:</p>
             <div class="box">
               <div><code>GET https://plate.hk/data/all.search.meta.json</code></div>
@@ -143,7 +177,7 @@
             </ol>
 
             <h2>OpenAPI</h2>
-            <p>Schema is defined in <code>api/openapi.yaml</code>.</p>
+            <p>Schema is defined in <a href="./api/openapi.yaml"><code>/api/openapi.yaml</code></a>. See the <a href="./about.html" data-preserve-lang>data guide</a> for classification, provenance, and legal limits.</p>
 
           `,
         },

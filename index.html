@@ -65,6 +65,41 @@
               "target": "https://plate.hk/?q={search_term_string}",
               "query-input": "required name=search_term_string"
             }
+          },
+          {
+            "@type": "Dataset",
+            "@id": "https://plate.hk/about.html#dataset",
+            "name": "Plate.hk Hong Kong vehicle registration mark auction results",
+            "alternateName": ["香港車牌拍賣資料庫", "Hong Kong PVRM and TVRM auction results"],
+            "url": "https://plate.hk/about.html",
+            "description": "Independent searchable history of Hong Kong PVRM, TVRM physical-auction, E-Auction, and official workbook-backed 1973-2006 results, with source links for verification.",
+            "creator": { "@id": "https://plate.hk/#organization" },
+            "provider": { "@id": "https://plate.hk/#organization" },
+            "isBasedOn": [
+              "https://www.td.gov.hk/en/public_services/vehicle_registration_mark/",
+              "https://www.td.gov.hk/en/about_us/history_of_transport_department/licensing_services/auction_of_vehicle_registration_marks__/index.html"
+            ],
+            "distribution": [
+              {
+                "@type": "DataDownload",
+                "name": "Plate.hk dataset catalog",
+                "encodingFormat": "application/json",
+                "contentUrl": "https://plate.hk/api/v1/index.json"
+              },
+              {
+                "@type": "DataDownload",
+                "name": "Plate.hk complete-results chunk manifest",
+                "encodingFormat": "application/json",
+                "contentUrl": "https://plate.hk/api/v1/all/results.chunks.json"
+              }
+            ],
+            "subjectOf": [
+              "https://plate.hk/api.html",
+              "https://plate.hk/api/openapi.yaml",
+              "https://plate.hk/agent.md"
+            ],
+            "keywords": ["PVRM", "TVRM", "Hong Kong vehicle registration mark", "auction results", "E-Auction"],
+            "inLanguage": ["zh-HK", "en"]
           }
         ]
       }

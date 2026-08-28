@@ -4,6 +4,7 @@ This site publishes historical Hong Kong vehicle registration mark auction resul
 
 Important:
 - Plate.hk is an independent, read-only data tool. It is not a Hong Kong Government or Transport Department website.
+- Plate.hk auction records come from Transport Department result PDFs and official workbook exports. Do not cite DATA.GOV.HK as the auction-record source; its legislation resources are not a vehicle-registration-mark auction dataset.
 - If any discrepancy is found, the official published result shall prevail.
 - Spaces and 2-row layout in PVRM are meaningful and preserved as stated in source PDFs.
 - A historical auction result is not a current valuation, asking price, ownership record, or prediction.
@@ -21,11 +22,22 @@ What Plate.hk cannot establish:
 - Current market value, current ownership, availability, legal entitlement, or a future auction result.
 - That the local dataset is newer or more authoritative than the latest official publication.
 
+Classification and transferability guardrails:
+- Classify records from dataset_key and the linked official source, not from appearance alone.
+- Plate.hk's W, R, D, H, S, and V single-letter records come from PVRM result handouts; do not relabel them as traditional special marks.
+- HK/XX-prefix marks and special traditional marks are separate categories inside TVRM physical auctions.
+- A PVRM cannot transfer by itself but can pass with its vehicle through the Cap. 374E regulation 17 certificate procedure: https://www.elegislation.gov.hk/hk/cap374E/s17.
+- A traditional special registration mark is cancelled when vehicle ownership changes under regulation 12: https://www.elegislation.gov.hk/hk/cap374E/s12.
+- Ordinary traditional marks follow separate retention and assignment procedures: https://www.1823.gov.hk/en/faq/knowing-how-to-change-the-id-of-your-vehicle.
+- This is general verification guidance, not legal advice; current legislation and Transport Department decisions prevail.
+
 Datasets (static JSON API):
 - API index: /api/v1/index.json
 - PVRM: /api/v1/pvrm/issues.manifest.json and /api/v1/pvrm/issues/{YYYY-MM-DD}.json
 - TVRM physical: /api/v1/tvrm_physical/issues.manifest.json
 - TVRM e-auction: /api/v1/tvrm_eauction/issues.manifest.json
+- TVRM legacy 1973-2006 official-workbook-backed ranges: /api/v1/tvrm_legacy/issues.manifest.json
+- Complete export manifest: /api/v1/{dataset}/results.chunks.json; resolve each chunks[].file under the same dataset path.
 
 Audit report:
 - /audit.html
@@ -51,6 +63,7 @@ Public server-side search API:
 - Search: /api/search?dataset=all&q=88&sort=amount_desc&page=1&page_size=20
 - Issues: /api/issues?dataset=pvrm
 - Issue: /api/issue?dataset=pvrm&auction_date=2026-01-17
+- Search responses use the top-level array name rows, not results. The stable keys are dataset, q, issue, mode, sort, page, page_size, total, and rows.
 
 Citation and verification guidance:
 - Cite the plate display, auction date, amount_hkd, dataset, and pdf_url together.

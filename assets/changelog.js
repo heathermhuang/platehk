@@ -3,13 +3,22 @@
           pageTitle: "更新日誌 | Plate.hk",
           title: "更新日誌",
           back: "← 返回首頁",
-          updated: "最後更新：2026年8月25日",
+          updated: "最後更新：2026年8月27日",
           currentNote: "產品更新與每日資料同步分開顯示；下方狀態直接讀取最新審核輸出。",
           archiveLabel: (count) => `較早的更新（${count}）`,
           statusLoading: "正在讀取最新資料狀態…",
           statusError: "暫時未能讀取即時狀態；可前往資料審核頁核對。",
           statusLabels: ["資料快照", "來源列數", "可用 PDF"],
           items: [
+            {
+              date: "2026-08-27",
+              title: "強化 API、資料來源與車牌分類的引用指引",
+              points: [
+                "API 文檔新增可直接執行的搜尋回應格式、rows 欄位及完整 results.chunks manifest 路徑，避免代理猜測不存在的欄位或 URL。",
+                "資料說明及代理入口明確區分 PVRM、HK／XX 字首、特殊傳統車牌及普通傳統車牌，並加入第 12、17 條及 1823 的轉移規則來源。",
+                "官方工作簿 1973-2006 來源及 DATA.GOV.HK 邊界改為直接答案；首頁結構化資料亦公開 API catalog 與完整資料 manifest。"
+              ]
+            },
             {
               date: "2026-08-25",
               title: "所有公開頁面改為獨立中英文版本",
@@ -504,13 +513,22 @@
           pageTitle: "Changelog | Plate.hk",
           title: "Changelog",
           back: "← Back to Home",
-          updated: "Last updated: 25 August 2026",
+          updated: "Last updated: 27 August 2026",
           currentNote: "Product releases and daily data refreshes are shown separately. The status below reads the latest audit output directly.",
           archiveLabel: (count) => `Earlier updates (${count})`,
           statusLoading: "Loading the latest data status…",
           statusError: "Live status is temporarily unavailable. Use the Data Audit page to verify the current snapshot.",
           statusLabels: ["Data snapshot", "Source rows", "Valid PDFs"],
           items: [
+            {
+              date: "2026-08-27",
+              title: "Strengthened citation guidance for the API, sources, and mark classification",
+              points: [
+                "API docs now show the executable search-response shape, the rows field, and exact results.chunks manifest flow so agents do not invent fields or URLs.",
+                "The data guide and agent surfaces now distinguish PVRMs, HK/XX-prefix marks, special traditional marks, and ordinary traditional marks, with regulation 12, regulation 17, and 1823 transfer sources.",
+                "The 1973-2006 official-workbook provenance and DATA.GOV.HK boundary are direct answers; homepage structured data also exposes the API catalog and complete-data manifest."
+              ]
+            },
             {
               date: "2026-08-25",
               title: "Separated Chinese and English across every public page",
