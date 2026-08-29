@@ -591,6 +591,7 @@ class FrontendContractsTests(unittest.TestCase):
         self.assertEqual(index_types, {"Organization", "WebSite", "Dataset"})
         index_dataset = next(item for item in index_ld["@graph"] if item["@type"] == "Dataset")
         self.assertEqual(index_dataset["provider"], {"@id": "https://plate.hk/#organization"})
+        self.assertEqual(index_dataset["license"], "https://plate.hk/terms.html")
         self.assertEqual(
             {item["contentUrl"] for item in index_dataset["distribution"]},
             {
@@ -638,6 +639,7 @@ class FrontendContractsTests(unittest.TestCase):
         plate_dataset = next(item for item in plate_ld["@graph"] if item["@type"] == "Dataset")
         self.assertGreaterEqual(len(plate_dataset["description"]), 50)
         self.assertEqual(plate_dataset["provider"], {"@id": "https://plate.hk/#organization"})
+        self.assertEqual(plate_dataset["license"], "https://plate.hk/terms.html")
         self.assertTrue(all(url.startswith("https://www.td.gov.hk/") for url in plate_dataset["isBasedOn"]))
 
         about_html = (ROOT / "about.html").read_text(encoding="utf-8")
@@ -674,6 +676,7 @@ class FrontendContractsTests(unittest.TestCase):
         self.assertEqual(about_types, {"Organization", "WebPage", "Dataset", "FAQPage", "BreadcrumbList"})
         about_dataset = next(item for item in about_ld["@graph"] if item["@type"] == "Dataset")
         self.assertEqual(about_dataset["provider"], {"@id": "https://plate.hk/#organization"})
+        self.assertEqual(about_dataset["license"], "https://plate.hk/terms.html")
         self.assertTrue(
             {
                 "https://www.1823.gov.hk/en/faq/knowing-how-to-change-the-id-of-your-vehicle",
@@ -796,6 +799,7 @@ class FrontendContractsTests(unittest.TestCase):
             )
             dataset = next(item for item in graph if item["@type"] == "Dataset")
             self.assertEqual(dataset["provider"], {"@id": "https://plate.hk/#organization"}, path.name)
+            self.assertEqual(dataset["license"], "https://plate.hk/terms.html", path.name)
             self.assertGreaterEqual(len(dataset["description"]), 50, path.name)
             for source in dataset.get("isBasedOn", []):
                 self.assertTrue(

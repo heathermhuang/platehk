@@ -28,6 +28,7 @@ SITE_URL = "https://plate.hk"
 SITE_NAME = "Plate.hk"
 SITE_ORGANIZATION_ID = f"{SITE_URL}/#organization"
 SITE_WEBSITE_ID = f"{SITE_URL}/#website"
+DATASET_LICENSE_URL = f"{SITE_URL}/terms.html"
 TD_URL = "https://www.td.gov.hk/en/public_services/vehicle_registration_mark/"
 TD_HISTORY_URL = (
     "https://www.td.gov.hk/en/about_us/history_of_transport_department/"
@@ -525,6 +526,7 @@ def render_page(entries_by_norm: dict[str, dict], entry: dict, related: list[dic
         "mainEntityOfPage": {"@id": page_id},
         "creator": {"@id": SITE_ORGANIZATION_ID},
         "provider": {"@id": SITE_ORGANIZATION_ID},
+        "license": DATASET_LICENSE_URL,
         "dateModified": TODAY,
         "spatialCoverage": {"@type": "Place", "name": "Hong Kong"},
         "variableMeasured": ["auction date", "vehicle registration mark", "sale price in HKD", "auction dataset"],
@@ -911,6 +913,7 @@ def render_about() -> str:
         "url": canonical,
         "creator": {"@id": SITE_ORGANIZATION_ID},
         "provider": {"@id": SITE_ORGANIZATION_ID},
+        "license": DATASET_LICENSE_URL,
         "dateModified": TODAY,
         "spatialCoverage": {"@type": "Place", "name": "Hong Kong"},
         "variableMeasured": ["auction date", "vehicle registration mark", "sale price in HKD", "auction type", "source document"],
