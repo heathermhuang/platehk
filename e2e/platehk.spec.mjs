@@ -498,7 +498,7 @@ test.describe("Plate.hk browser journeys", () => {
     const openedUrl = await page.evaluate(() => window.__platehkOpenedUrls[0]);
     const whatsappUrl = new URL(openedUrl);
     expect(whatsappUrl.origin).toBe("https://wa.me");
-    expect(whatsappUrl.pathname).toBe("/85268591577");
+    expect(whatsappUrl.pathname).toBe("/85293247246");
     const composedMessage = whatsappUrl.searchParams.get("text");
     expect(composedMessage).toContain("plate 88");
     expect(composedMessage).toContain("HK$900,000");

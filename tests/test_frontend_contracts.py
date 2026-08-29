@@ -50,7 +50,7 @@ class FrontendContractsTests(unittest.TestCase):
         self.assertIn("function createPlateMarketFlow(", market_js)
         self.assertIn("./api/market_signal", market_js)
         self.assertIn("https://wa.me/", market_js)
-        self.assertIn('const WHATSAPP_NUMBER = "85268591577"', market_js)
+        self.assertIn('const WHATSAPP_NUMBER = "85293247246"', market_js)
         self.assertIn("window.open(url", market_js)
         self.assertNotIn("./api/broker_inquiry", market_js)
         self.assertNotIn('id="brokerContact"', html)

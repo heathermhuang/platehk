@@ -11,7 +11,7 @@ window.createPlateMarketFlow = function createPlateMarketFlow({
   brokerNoteEl,
   brokerSubmitEl,
 }) {
-  const WHATSAPP_NUMBER = "85268591577";
+  const WHATSAPP_NUMBER = "85293247246";
   const MAX_VISIBLE_SIGNALS = 1;
   const COPY = {
     zh: {
