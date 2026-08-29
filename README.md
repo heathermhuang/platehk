@@ -264,7 +264,7 @@ python3 scripts/build_cloudflare_public.py
 
 Use `--max-pages 0` only for an intentional full scan. Full scans and `--require-complete` runs abort before writing when any requested page fails; bounded exploratory scans can retain recent prior signals while recording explicit partial coverage. A layout change, `robots.txt` restriction, or page with zero parsed records therefore cannot silently replace production with a false complete snapshot. The cloud-owned `Auto Update Data` workflow runs a required-complete privacy-minimized scan before rebuilding SEO pages each day, then deploys every successful refresh after the same repository checks pass. Market-only changes are deployed but never committed.
 
-When a fresh exact signal exists, the buyer CTA opens a short form for the target plate, maximum budget, and an optional note. Submitting the form composes a prefilled WhatsApp message to the configured business number and opens it in a new tab. Plate.hk does not POST or store the form values; the buyer decides whether to send the draft in WhatsApp. The temporary destination is configured as `WHATSAPP_NUMBER` in `assets/index.market.js` and should be replaced when the dedicated business number is ready.
+When a fresh exact signal exists, the buyer CTA opens a short form for the target plate, maximum budget, and an optional note. Submitting the form composes a prefilled WhatsApp message to the configured business number and opens it in a new tab. Plate.hk does not POST or store the form values; the buyer decides whether to send the draft in WhatsApp. The dedicated conversation account is configured as `WHATSAPP_NUMBER` in `assets/index.market.js`.
 
 ## Security
 
