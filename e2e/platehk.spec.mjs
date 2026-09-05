@@ -465,6 +465,8 @@ test.describe("Plate.hk browser journeys", () => {
             listing_id: "n100001",
             source_url: "https://m.28car.com/num_dsp.php?h_vid=50000001&h_f_do=1",
             inquiry_enabled: true,
+            introduction_enabled: true,
+            introduction_whatsapp_number: "85261112222",
           }] : [],
         },
       });
@@ -496,16 +498,25 @@ test.describe("Plate.hk browser journeys", () => {
     await page.locator("#brokerNote").fill("Initial approach only");
     await page.locator("#brokerSubmit").click();
     const openedUrl = await page.evaluate(() => window.__platehkOpenedUrls[0]);
-    const whatsappUrl = new URL(openedUrl);
-    expect(whatsappUrl.origin).toBe("https://wa.me");
-    expect(whatsappUrl.pathname).toBe("/85293247246");
-    const composedMessage = whatsappUrl.searchParams.get("text");
-    expect(composedMessage).toContain("plate 88");
-    expect(composedMessage).toContain("HK$900,000");
-    expect(composedMessage).toContain("Initial approach only");
+    const introductionUrl = new URL(openedUrl);
+    expect(introductionUrl.origin).toBe("https://wa.me");
+    expect(introductionUrl.pathname).toBe("/85261112222");
+    const composedMessage = introductionUrl.searchParams.get("text");
+    expect(composedMessage).toContain("[PLATEHK BUY]");
+    expect(composedMessage).toContain("Plate: 88");
+    expect(composedMessage).toContain("Budget-HKD: 900000");
+    expect(composedMessage).toContain("Note: Initial approach only");
     expect(composedMessage).toContain("m.28car.com");
 
     await page.locator("#brokerClose").click();
+    await expect(page.locator("#marketSignal .market-seller-btn")).toBeVisible();
+    await page.locator("#marketSignal .market-seller-btn").click();
+    const sellerOpenedUrl = await page.evaluate(() => window.__platehkOpenedUrls[1]);
+    const sellerWhatsAppUrl = new URL(sellerOpenedUrl);
+    expect(sellerWhatsAppUrl.origin).toBe("https://wa.me");
+    expect(sellerWhatsAppUrl.pathname).toBe("/85261112222");
+    expect(sellerWhatsAppUrl.searchParams.get("text")).toContain("[PLATEHK SELL]");
+    expect(sellerWhatsAppUrl.searchParams.get("text")).toContain("Plate: 88");
     await page.locator("#q").fill("HK30");
     await waitForResultRows(page, 1);
     await expect(page.locator("#marketSignal")).toBeHidden();

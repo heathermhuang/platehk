@@ -28,6 +28,7 @@ class FakeElement {
   }
   closest(selector) {
     if (selector === "[data-market-inquire]" && Object.hasOwn(this.dataset, "marketInquire")) return this;
+    if (selector === "[data-market-sell]" && Object.hasOwn(this.dataset, "marketSell")) return this;
     return null;
   }
   focus() {}
@@ -77,7 +78,8 @@ globalThis.document = {
   createElement() { return new FakeElement(); },
 };
 globalThis.window = {
-  open() {},
+  openedUrls: [],
+  open(url) { this.openedUrls.push(url); },
   setTimeout(callback) { callback(); },
 };
 
@@ -86,6 +88,8 @@ const signals = {
     plate: "HUANG",
     availability_detected: true,
     inquiry_enabled: true,
+    introduction_enabled: true,
+    introduction_whatsapp_number: "85261112222",
     asking_prices_hkd: [],
     has_contact_price: true,
     observed_at: "2026-08-11T14:11:42Z",
@@ -95,6 +99,8 @@ const signals = {
     plate: "DRHUANG",
     availability_detected: true,
     inquiry_enabled: true,
+    introduction_enabled: true,
+    introduction_whatsapp_number: "85261112222",
     asking_prices_hkd: [100000],
     has_contact_price: false,
     observed_at: "2026-08-11T14:11:42Z",
@@ -149,6 +155,16 @@ assert.equal(rowActions.get("HUANG88").children.length, 0);
 assert.equal((marketSignalEl.innerHTML.match(/class="market-signal-item"/g) || []).length, 1);
 assert.match(marketSignalEl.innerHTML, /data-market-plate="HUANG"/);
 assert.doesNotMatch(marketSignalEl.innerHTML, /data-market-plate="DRHUANG"/);
+assert.match(marketSignalEl.innerHTML, /data-market-sell="HUANG"/);
+
+const sellerButton = new FakeElement();
+sellerButton.dataset.marketSell = "HUANG";
+marketSignalEl.listeners.get("click")({ target: sellerButton });
+const sellerUrl = new URL(window.openedUrls.at(-1));
+assert.equal(sellerUrl.origin, "https://wa.me");
+assert.equal(sellerUrl.pathname, "/85261112222");
+assert.match(sellerUrl.searchParams.get("text"), /^\[PLATEHK SELL\]/);
+assert.match(sellerUrl.searchParams.get("text"), /Plate: HUANG/);
 
 const drHuangButton = rowActions.get("DRHUANG").children[0];
 rowsEl.listeners.get("click")({ target: drHuangButton });

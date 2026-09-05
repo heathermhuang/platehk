@@ -43,6 +43,10 @@ node --check cloudflare-worker/src/api.mjs
 node --check cloudflare-worker/src/index.mjs
 node --check assets/camera.js
 node --check assets/index.market.js
+node --check services/whatsapp-introductions/src/server.mjs
+node --check services/whatsapp-introductions/src/workflow.mjs
+node --check services/whatsapp-introductions/src/openwa-adapter.mjs
+node --test services/whatsapp-introductions/test/introduction.test.mjs
 node tests/market_worker_test.mjs
 node tests/worker_data_access_regression_test.mjs
 

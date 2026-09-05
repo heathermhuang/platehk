@@ -27,7 +27,9 @@
     "APP_ENV": "production",
     "OPENAI_BASE_URL": "https://api.openai.com/v1",
     "OPENAI_VISION_MODEL": "gpt-4.1-mini",
-    "OPENAI_TIMEOUT_SECONDS": "20"
+    "OPENAI_TIMEOUT_SECONDS": "20",
+    "INTRODUCTION_SERVICE_URL": "",
+    "INTRODUCTION_WHATSAPP_NUMBER": ""
   },
   "secrets": {
     "required": [
