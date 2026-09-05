@@ -4,14 +4,14 @@ This document captures the current application threat model, attack surface, and
 
 ## Assessment Date
 
-- Reviewed: 2026-08-26
+- Reviewed: 2026-09-05
 - Scope:
   - static frontend
   - Cloudflare Worker API routes
   - OCR vision endpoint
   - generated public data artifacts
   - MCP and OAuth discovery surfaces
-  - external sale-signal ingestion and WhatsApp buyer enquiries
+  - external sale-signal ingestion and the isolated WhatsApp introduction pilot
 
 ## System Overview
 
@@ -20,6 +20,7 @@ This document captures the current application threat model, attack surface, and
 - Sensitive integrations:
   - OpenAI Responses API for server-side plate vision OCR
   - Worker secrets for OCR, session signing, and optional OAuth clients
+  - Stripe Checkout/refunds and an isolated OpenWA browser session on Render
 - Primary public entry points:
   - `/api/search`
   - `/api/results`
@@ -47,6 +48,7 @@ This document captures the current application threat model, attack surface, and
   - OAuth signing keys and client secrets
   - temporary user-submitted OCR image payloads in transit
   - rate-limit state and operational logs
+  - introduction contacts, consent/match state, Stripe identifiers, proxy credentials, and WhatsApp session data
 
 ## Trust Boundaries
 
@@ -56,7 +58,10 @@ This document captures the current application threat model, attack surface, and
 4. Cloudflare Worker -> OpenAI API
 5. Build scripts -> generated public data
 6. Market ingester -> public 28car listing pages
-7. Browser -> WhatsApp/Meta when the buyer opens the composed message link
+7. Browser -> WhatsApp/Meta when a buyer or seller opens the locally composed message link
+8. WhatsApp -> isolated Render/OpenWA service -> encrypted single-instance state
+9. Introduction service -> Stripe Checkout and refund APIs
+10. OpenWA browser -> fixed proxy -> WhatsApp Web
 
 ## Attack Surface
 
@@ -83,8 +88,10 @@ This document captures the current application threat model, attack surface, and
 | Spoofing | Browser OCR requests | Medium | Same-origin checks plus signed vision session token and Strict cookie binding |
 | Spoofing | Machine OCR clients | Medium | OAuth client credentials and scoped bearer tokens |
 | Tampering | Query params / JSON body | Medium | Strict dataset validation, normalized query handling, JSON content-type enforcement |
-| Information Disclosure | WhatsApp enquiry drafts | Medium -> Lowered | Form values remain client-side until the buyer opens WhatsApp; Plate.hk has no mandate intake or storage endpoint |
+| Information Disclosure | WhatsApp introduction data | High -> Lowered | Draft values remain client-side until Send; two-stage consent, buyer-specific match approval, encrypted state, and 30-day contact-record deletion |
 | Information Disclosure | 28car seller data | Medium -> Lowered | Allowlisted ingestion schema discards seller names, phones, descriptions, photos, comments, and views |
+| Repudiation | Paid introduction delivery | Medium -> Lowered | Stripe event IDs, idempotent outbox actions, unique group IDs, and buyer confirmation in the three-party group |
+| Spoofing | Self-identified seller | High -> Medium | Seller is never presented as ownership-verified; buyer must approve that exact seller before payment and disclosure |
 | Repudiation | Abuse visibility | Medium | Rate limiting, Worker error logging, and security summarization tooling |
 | Information Disclosure | Secrets and local files | Medium | Worker secrets, ignored local env files, repository secret scan, and static publish allowlist |
 | Denial of Service | Public read APIs | Medium | Endpoint-specific IP rate limiting, page-size caps, bounded static indexes, and cache-backed responses |
@@ -127,6 +134,11 @@ This document captures the current application threat model, attack surface, and
   - active-listing verification before a WhatsApp action is shown
   - short form values are composed locally and never submitted to Plate.hk
   - no seller contact fields in the scrape output
+  - introduction controls remain disabled unless both the Render service URL and secondary public number are configured
+  - buyer consent, seller consent, buyer match approval, payment, group creation, and delivery confirmation are separate states
+  - Stripe webhook signatures and amount/currency/session metadata are verified before group creation
+  - introduction state is AES-256-GCM encrypted and limited to one persistent Render instance
+  - stale outbox work is recoverable; Checkout, group creation, and refunds use deterministic idempotency controls
 - Repository safeguards:
   - `scripts/scan_repo_secrets.py`
   - `.github/workflows/security.yml`
@@ -140,9 +152,12 @@ This document captures the current application threat model, attack surface, and
 3. Vision OCR still incurs external API cost and should be monitored for unusual spikes.
 4. Local developer secrets in ignored files remain a manual operational risk until rotated or moved fully into managed secret stores.
 5. Static search indexes and public JSON artifacts intentionally expose auction data at scale, so abuse prevention is mostly rate/cost control rather than confidentiality.
-6. WhatsApp receives the prefilled text when the buyer opens the external compose link and then operates under WhatsApp/Meta terms and privacy practices.
+6. WhatsApp receives a prefilled draft only after the user opens WhatsApp; the separate introduction service receives it only after the user presses Send.
 7. A third-party listing signal can be stale or legally non-transferable even within the freshness window; human verification remains mandatory.
 8. The approved daily full crawl remains dependent on 28car's public layout and `robots.txt`; the scraper fails closed, but source-policy and terms changes still require operational review.
+9. OpenWA remains unofficial and may break or cause restriction of the secondary WhatsApp number. A fixed proxy does not remove this risk.
+10. The seller is self-identified rather than ownership-verified. Plate.hk must not describe the seller or plate as verified.
+11. Render, the proxy provider, WhatsApp/Meta, and Stripe are separate processors and availability dependencies.
 
 ## Required Operational Follow-Up
 
@@ -152,6 +167,9 @@ This document captures the current application threat model, attack surface, and
 4. Run `python3 scripts/scan_repo_secrets.py` before public commits or releases.
 5. Keep `api/openapi.yaml`, API docs, and Worker routes aligned.
 6. Review the daily crawl after any 28car policy, terms, or layout change.
+7. Keep `STATE_ENCRYPTION_KEY`, Stripe secrets, proxy credentials, and the OpenWA profile only in Render-managed secret/storage surfaces.
+8. Do not activate `INTRODUCTION_SERVICE_URL` and `INTRODUCTION_WHATSAPP_NUMBER` until a secondary-number QR canary and a Stripe test payment/refund pass.
+9. Stop the pilot on repeated authentication failures, a WhatsApp restriction warning, or any mismatch between the authenticated and configured secondary number.
 
 ## Future Security Work
 

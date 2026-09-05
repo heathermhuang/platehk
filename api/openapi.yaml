@@ -410,7 +410,7 @@ paths:
               schema:
                 oneOf:
                   - type: object
-                    required: [plate, availability_detected, inquiry_enabled]
+                    required: [plate, availability_detected, inquiry_enabled, introduction_enabled]
                     properties:
                       plate:
                         type: string
@@ -418,6 +418,12 @@ paths:
                         type: boolean
                       inquiry_enabled:
                         type: boolean
+                      introduction_enabled:
+                        type: boolean
+                        description: True only when the separate introduction service is configured.
+                      introduction_whatsapp_number:
+                        type: string
+                        description: Public secondary WhatsApp number used to compose an introduction draft locally in the browser.
                       source:
                         type: string
                         enum: [28car]
@@ -451,7 +457,7 @@ paths:
                         type: array
                         items:
                           type: object
-                          required: [plate, availability_detected, inquiry_enabled]
+                          required: [plate, availability_detected, inquiry_enabled, introduction_enabled]
         "429":
           description: Rate limited
   /api/vision_plate:

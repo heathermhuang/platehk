@@ -720,12 +720,33 @@ async function loadActiveMarketOffers(request, env, plate) {
   return { payload, offers };
 }
 
-function publicMarketSignal(plate, payload, offers) {
+function introductionServiceBaseUrl(env) {
+  try {
+    const url = new URL(String(env.INTRODUCTION_SERVICE_URL || ""));
+    if (url.protocol !== "https:" || url.username || url.password) return null;
+    url.search = "";
+    url.hash = "";
+    return url;
+  } catch {
+    return null;
+  }
+}
+
+function introductionWhatsAppNumber(env) {
+  const value = String(env.INTRODUCTION_WHATSAPP_NUMBER || "").replace(/\D/g, "");
+  return /^\d{8,15}$/.test(value) ? value : "";
+}
+
+function publicMarketSignal(plate, payload, offers, env) {
+  const introductionNumber = introductionWhatsAppNumber(env);
+  const introductionEnabled = Boolean(introductionServiceBaseUrl(env) && introductionNumber);
   if (!payload || !offers.length) {
     return {
       plate,
       availability_detected: false,
       inquiry_enabled: true,
+      introduction_enabled: introductionEnabled,
+      ...(introductionEnabled ? { introduction_whatsapp_number: introductionNumber } : {}),
     };
   }
   const prices = [...new Set(offers
@@ -751,6 +772,8 @@ function publicMarketSignal(plate, payload, offers) {
     source_url: String(primary.source_url),
     source_attribution: "28car",
     inquiry_enabled: true,
+    introduction_enabled: introductionEnabled,
+    ...(introductionEnabled ? { introduction_whatsapp_number: introductionNumber } : {}),
   };
 }
 
@@ -784,7 +807,7 @@ async function handleMarketSignal(request, env) {
     const signals = plates
       .map((plate) => {
         const payload = payloads.get(plate[0]) || null;
-        return publicMarketSignal(plate, payload, activeMarketOffers(payload, plate));
+        return publicMarketSignal(plate, payload, activeMarketOffers(payload, plate), env);
       })
       .filter((signal) => signal.availability_detected);
     return jsonResponse({ plates_requested: plates.length, signals });
@@ -794,7 +817,7 @@ async function handleMarketSignal(request, env) {
   if (plate.length > 16) return badRequest("plate too long");
   enforcePublicReadRateLimit(request, "market-signal", 90, 600);
   const { payload, offers } = await loadActiveMarketOffers(request, env, plate);
-  return jsonResponse(publicMarketSignal(plate, payload, offers));
+  return jsonResponse(publicMarketSignal(plate, payload, offers, env));
 }
 
 async function handleVisionSession(request, env) {

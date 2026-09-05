@@ -1,0 +1,30 @@
+{
+  "name": "platehk-whatsapp-introductions",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.22.2"
+  },
+  "scripts": {
+    "postinstall": "node scripts/prepare-openwa-assets.mjs",
+    "start": "node src/server.mjs",
+    "test": "node --test",
+    "check": "node --check src/server.mjs && node --check src/workflow.mjs && node --check src/openwa-adapter.mjs"
+  },
+  "dependencies": {
+    "@open-wa/core": "5.0.0-alpha.8",
+    "@open-wa/driver-playwright": "5.0.0-alpha.8",
+    "qrcode-terminal": "0.12.0",
+    "stripe": "22.6.1"
+  },
+  "overrides": {
+    "@open-wa/core": {
+      "effect": {
+        "uuid": "14.0.2"
+      },
+      "uuid": "11.1.1"
+    },
+    "deepmerge-ts": "8.0.2"
+  }
+}
