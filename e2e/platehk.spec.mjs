@@ -466,7 +466,7 @@ test.describe("Plate.hk browser journeys", () => {
             source_url: "https://m.28car.com/num_dsp.php?h_vid=50000001&h_f_do=1",
             inquiry_enabled: true,
             introduction_enabled: true,
-            introduction_whatsapp_number: "85261112222",
+            introduction_whatsapp_number: "85293247246",
           }] : [],
         },
       });
@@ -500,7 +500,7 @@ test.describe("Plate.hk browser journeys", () => {
     const openedUrl = await page.evaluate(() => window.__platehkOpenedUrls[0]);
     const introductionUrl = new URL(openedUrl);
     expect(introductionUrl.origin).toBe("https://wa.me");
-    expect(introductionUrl.pathname).toBe("/85261112222");
+    expect(introductionUrl.pathname).toBe("/85293247246");
     const composedMessage = introductionUrl.searchParams.get("text");
     expect(composedMessage).toContain("[PLATEHK BUY]");
     expect(composedMessage).toContain("Plate: 88");
@@ -514,7 +514,7 @@ test.describe("Plate.hk browser journeys", () => {
     const sellerOpenedUrl = await page.evaluate(() => window.__platehkOpenedUrls[1]);
     const sellerWhatsAppUrl = new URL(sellerOpenedUrl);
     expect(sellerWhatsAppUrl.origin).toBe("https://wa.me");
-    expect(sellerWhatsAppUrl.pathname).toBe("/85261112222");
+    expect(sellerWhatsAppUrl.pathname).toBe("/85293247246");
     expect(sellerWhatsAppUrl.searchParams.get("text")).toContain("[PLATEHK SELL]");
     expect(sellerWhatsAppUrl.searchParams.get("text")).toContain("Plate: 88");
     await page.locator("#q").fill("HK30");
@@ -529,7 +529,7 @@ test.describe("Plate.hk browser journeys", () => {
   test("uses the canonical yellow plate on generated market landing pages", async ({ page }) => {
     expect(generatedMarketPage).toBeTruthy();
     expect(generatedMarketPlate).toBeTruthy();
-    await page.route(`**/plates/${generatedMarketPage.filename}`, (route) => route.fulfill({
+    await page.route((url) => url.pathname === `/plates/${generatedMarketPage.filename}`, (route) => route.fulfill({
       body: generatedMarketPage.html,
       contentType: "text/html",
     }));

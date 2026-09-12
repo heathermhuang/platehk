@@ -142,6 +142,23 @@ test("OpenWA messages normalize direct and group senders without storing self me
   });
 });
 
+test("shared account ignores ordinary chats and unrelated groups without recording them", async () => {
+  const h = harness();
+  const initial = structuredClone(await h.store.read((state) => state));
+  await h.workflow.handleMessage(message("ordinary", buyer, "Can we talk tomorrow?"));
+  await h.workflow.handleMessage(message("ordinary-group", buyer, "Hello", { groupId: "111111111@g.us" }));
+  await h.workflow.handleMessage(message("unrelated-confirm", buyer, "INTRO ABC123", { groupId: "111111111@g.us" }));
+  await h.workflow.handleMessage(message("group-draft", buyer, sellerStartMessage({ plate: "AB123" }), { groupId: "111111111@g.us" }));
+  assert.deepEqual(await h.store.read((state) => state), initial);
+  assert.equal(h.sent.length, 0);
+
+  const result = await reachPaidGroup(h);
+  const before = structuredClone(await h.store.read((state) => state));
+  await h.workflow.handleMessage(message("wrong-group", buyer, `INTRO ${result.introduction.confirmCode}`, { groupId: "111111111@g.us" }));
+  await h.workflow.handleMessage(message("wrong-member", seller, `INTRO ${result.introduction.confirmCode}`, { groupId: result.introduction.groupId }));
+  assert.deepEqual(await h.store.read((state) => state), before);
+});
+
 test("paid introduction requires seller consent and buyer approval before group creation", async () => {
   const h = harness();
   const result = await reachPaidGroup(h);

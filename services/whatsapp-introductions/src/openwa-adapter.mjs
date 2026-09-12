@@ -117,7 +117,7 @@ export class OpenWAAdapter {
 
     this.client.events.on("launch.auth.qr.generated", (event) => {
       const qr = event?.details?.qr;
-      console.warn("OpenWA authentication required. Scan this QR from the secondary WhatsApp account.");
+      console.warn("OpenWA authentication required. Scan this QR from the configured Plate.hk WhatsApp account.");
       if (qr) qrcode.generate(qr, { small: true }, (ascii) => console.warn(ascii));
     });
     this.client.events.on("session.state.changed", (event) => {

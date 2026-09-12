@@ -113,11 +113,26 @@ export class IntroductionWorkflow {
   }
 
   async handleMessage(message) {
+    const command = parseCommand(message.body);
+    const intent = message.isGroup ? null : parseIntent(message.body);
+    // The configured account also handles ordinary Plate.hk conversations.
+    // Ignore unrelated traffic before persisting message IDs or draining work.
+    if (message.isGroup) {
+      if (command?.type !== "intro_confirm") return;
+      const relevant = await this.store.read((state) => Object.values(state.introductions).some((item) =>
+        item.groupId === message.chatId
+        && item.status === "awaiting_buyer_confirmation"
+        && item.confirmCode === command.code
+        && state.leads[item.leadId]?.buyerChatId === message.senderId,
+      ));
+      if (!relevant) return;
+    } else if (!intent && (!command || command.type === "intro_confirm")) {
+      return;
+    }
     const now = this.now();
     await this.store.transact((state) => {
       if (state.processedMessages[message.id]) return;
       state.processedMessages[message.id] = iso(now);
-      const command = parseCommand(message.body);
 
       if (message.isGroup) {
         if (command?.type !== "intro_confirm") return;
@@ -144,7 +159,6 @@ export class IntroductionWorkflow {
         return;
       }
 
-      const intent = parseIntent(message.body);
       if (intent?.role === "buyer") {
         this.handleBuyerIntent(state, message, intent, now);
         return;
