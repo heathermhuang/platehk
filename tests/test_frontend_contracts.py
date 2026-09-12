@@ -51,6 +51,9 @@ class FrontendContractsTests(unittest.TestCase):
         self.assertIn("./api/market_signal", market_js)
         self.assertIn("https://wa.me/", market_js)
         self.assertIn('const WHATSAPP_NUMBER = "85293247246"', market_js)
+        self.assertIn('"[PLATEHK BUY]"', market_js)
+        self.assertIn("introduction_whatsapp_number", market_js)
+        self.assertIn("data-market-sell", market_js)
         self.assertIn("window.open(url", market_js)
         self.assertNotIn("./api/broker_inquiry", market_js)
         self.assertNotIn('id="brokerContact"', html)
@@ -139,7 +142,7 @@ class FrontendContractsTests(unittest.TestCase):
             "scripts/build_popular_plate_pages.py",
         ):
             self.assertIn(favicon_ref, (ROOT / path).read_text(encoding="utf-8"), path)
-        self.assertIn("pvrm-static-v153", (ROOT / "sw.js").read_text(encoding="utf-8"))
+        self.assertIn("pvrm-static-v154", (ROOT / "sw.js").read_text(encoding="utf-8"))
 
     def test_camera_prototype_page_and_links_exist(self) -> None:
         camera = (ROOT / "camera.html").read_text(encoding="utf-8")
@@ -308,7 +311,7 @@ class FrontendContractsTests(unittest.TestCase):
             "./assets/info-locale.js?v=20260825-01",
             "./assets/info-shell.js?v=20260825-01",
             "./assets/popular-index.js?v=20260825-01",
-            "./assets/plate.market.js?v=20260825-01",
+            "./assets/plate.market.js?v=20260905-01",
             "./assets/ledger.css?v=20260825-02",
         ]:
             self.assertIn(f"'{shell_asset}'", service_worker, shell_asset)

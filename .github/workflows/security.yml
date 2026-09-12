@@ -20,6 +20,13 @@ jobs:
           cache: pip
           cache-dependency-path: requirements.txt
 
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22.22.2"
+          cache: npm
+          cache-dependency-path: services/whatsapp-introductions/package-lock.json
+
       - name: Install runtime and security tooling
         run: |
           python --version
@@ -32,6 +39,11 @@ jobs:
 
       - name: Audit Python dependencies
         run: python -m pip_audit -r requirements.txt --progress-spinner=off
+
+      - name: Audit WhatsApp introduction service dependencies
+        run: |
+          npm ci --prefix services/whatsapp-introductions
+          npm audit --prefix services/whatsapp-introductions --omit=dev
 
       - name: Run local verification suite
         env:

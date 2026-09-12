@@ -505,7 +505,7 @@ def render_page(entries_by_norm: dict[str, dict], entry: dict, related: list[dic
       .whatsapp-action:hover { background:#064c45 !important; }
       .whatsapp-icon { width:20px; height:20px; flex:0 0 auto; fill:currentColor; }
 """
-        market_script = '      <script src="../assets/plate.market.js?v=20260825-01"></script>\n'
+        market_script = '      <script src="../assets/plate.market.js?v=20260905-01"></script>\n'
         market_grid_selector = ", .market-card"
         market_media_style = "        .market-actions { min-width:0; }\n"
         market_section = f"{market_card}\n\n"

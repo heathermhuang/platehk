@@ -1,0 +1,49 @@
+services:
+  - type: web
+    name: platehk-whatsapp-introductions
+    runtime: docker
+    plan: 0.5c-512mb
+    region: singapore
+    dockerContext: ./services/whatsapp-introductions
+    dockerfilePath: ./services/whatsapp-introductions/Dockerfile
+    healthCheckPath: /health
+    autoDeployTrigger: checksPass
+    buildFilter:
+      paths:
+        - services/whatsapp-introductions/**
+      ignoredPaths: []
+    disk:
+      name: platehk-introduction-state
+      mountPath: /home/node/data
+      sizeGB: 1
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: BASE_URL
+        value: https://platehk-whatsapp-introductions.onrender.com
+      - key: DATA_DIR
+        value: /home/node/data
+      - key: CHROME_EXECUTABLE_PATH
+        value: /usr/bin/chromium
+      - key: INTRO_FEE_HKD
+        value: 199
+      - key: BUYER_OFFER_DAYS
+        value: 7
+      - key: INTRO_CONFIRMATION_HOURS
+        value: 24
+      - key: GROUP_LIFETIME_DAYS
+        value: 7
+      - key: PII_RETENTION_DAYS
+        value: 30
+      - key: WHATSAPP_PUBLIC_NUMBER
+        sync: false
+      - key: OPENWA_PROXY_URL
+        sync: false
+      - key: STATE_ENCRYPTION_KEY
+        generateValue: true
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false

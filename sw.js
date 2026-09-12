@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pvrm-static-v153';
+const CACHE_NAME = 'pvrm-static-v154';
 const ASSETS = [
   './',
   './index.html',
@@ -30,7 +30,7 @@ const ASSETS = [
   './assets/info-locale.js?v=20260825-01',
   './assets/info-shell.js?v=20260825-01',
   './assets/popular-index.js?v=20260825-01',
-  './assets/plate.market.js?v=20260825-01',
+  './assets/plate.market.js?v=20260905-01',
   './assets/ledger.css?v=20260825-02',
   './terms.html',
   './privacy.html',

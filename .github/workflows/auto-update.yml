@@ -116,6 +116,7 @@ jobs:
             plates \
             index.html \
             landing.html \
+            about.html \
             audit.html \
             api.html \
             camera.html \

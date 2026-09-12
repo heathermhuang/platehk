@@ -18,16 +18,17 @@ window.createPlateMarketFlow = function createPlateMarketFlow({
       kicker: "外部放售訊號",
       titleSuffix: "或可洽購",
       plateLabelText: (plate) => `車牌 ${plate}`,
-      body: "我們在第三方平台發現近期放售訊號。Plate.hk 可先核實是否仍可交易，再以買方代表身份私下接洽及議價。",
+      body: "我們在第三方平台發現近期放售訊號。Plate.hk 可記錄買方出價，並在雙方同意後安排三方 WhatsApp 介紹。",
       price: "目前叫價",
       priceRange: "目前叫價範圍",
       priceContact: "部分放售須另議價格",
       observed: (date) => `最近核對：${date}`,
       disclaimer: "第三方刊登可能已過期、資料有誤或不符合轉移規則；這不是可買到或可轉名的保證。",
-      inquire: "WhatsApp 委託核實及議價",
+      inquire: "透過 WhatsApp 提交買方出價",
+      seller: "我是賣方：接收買家出價",
       source: "查看 28car 來源刊登",
-      dialogTitle: "WhatsApp 保密洽購",
-      dialogIntro: "告訴我們你的預算和要求，我們會為你準備 WhatsApp 訊息。",
+      dialogTitle: "WhatsApp 買方出價",
+      dialogIntro: "告訴我們你的預算和要求，我們會準備一則由你確認後才傳送的 WhatsApp 訊息。",
       plateLabel: "目標車牌",
       budgetLabel: "最高預算（HKD）",
       noteLabel: "補充資料（選填）",
@@ -40,7 +41,7 @@ window.createPlateMarketFlow = function createPlateMarketFlow({
         `目前叫價：${asking}`,
         `我的最高預算：${budget}`,
         note ? `補充資料：${note}` : "",
-        "請先核實放售是否仍然有效，並代表我保密接洽及議價。",
+        "請記錄我的買方出價，並告知可用的賣方聯絡方式。",
         sourceUrl ? `來源：${sourceUrl}` : "",
       ].filter(Boolean).join("\n"),
     },
@@ -48,16 +49,17 @@ window.createPlateMarketFlow = function createPlateMarketFlow({
       kicker: "External sale signal",
       titleSuffix: "may be obtainable",
       plateLabelText: (plate) => `Plate ${plate}`,
-      body: "We found a recent offer signal on a third-party platform. Plate.hk can verify that it is still actionable, then approach and negotiate as your confidential buyer representative.",
+      body: "We found a recent sale signal on a third-party platform. Plate.hk can record a buyer offer and, with both parties' consent, arrange a three-party WhatsApp introduction.",
       price: "Current asking price",
       priceRange: "Current asking range",
       priceContact: "Some offers require a price enquiry",
       observed: (date) => `Last checked: ${date}`,
       disclaimer: "Third-party listings may be stale, inaccurate, or incompatible with transfer rules. This is not a guarantee of availability or transferability.",
-      inquire: "Ask via WhatsApp",
+      inquire: "Submit a buyer offer via WhatsApp",
+      seller: "I am the seller: receive buyer offers",
       source: "View the source listing on 28car",
-      dialogTitle: "Confidential WhatsApp enquiry",
-      dialogIntro: "Add your budget and any context, and we will prepare the WhatsApp message for you.",
+      dialogTitle: "WhatsApp buyer offer",
+      dialogIntro: "Add your budget and context. We prepare a WhatsApp message that is not sent until you confirm it.",
       plateLabel: "Target plate",
       budgetLabel: "Maximum budget (HKD)",
       noteLabel: "Additional context (optional)",
@@ -70,7 +72,7 @@ window.createPlateMarketFlow = function createPlateMarketFlow({
         `Current asking price: ${asking}`,
         `My maximum budget: ${budget}`,
         note ? `Additional context: ${note}` : "",
-        "Please verify that the listing is active and negotiate confidentially for me.",
+        "Please record my buyer offer and tell me what seller contact route is available.",
         sourceUrl ? `Source: ${sourceUrl}` : "",
       ].filter(Boolean).join("\n"),
     },
@@ -110,6 +112,11 @@ window.createPlateMarketFlow = function createPlateMarketFlow({
     } catch {
       return "";
     }
+  }
+
+  function validIntroductionNumber(signal) {
+    const digits = String(signal?.introduction_whatsapp_number || "").replace(/\D/g, "");
+    return signal?.introduction_enabled === true && /^\d{8,15}$/.test(digits) ? digits : "";
   }
 
   function formatMoney(amount) {
@@ -212,6 +219,7 @@ window.createPlateMarketFlow = function createPlateMarketFlow({
       ? `<span class="market-contact-price">${escapeHtml(copy.priceContact)}</span>`
       : "";
     const enabled = signal.inquiry_enabled === true;
+    const introductionEnabled = Boolean(validIntroductionNumber(signal));
     return `
       <article class="market-signal-item" data-market-plate="${escapeHtml(plate)}">
       <div class="market-signal-copy">
@@ -229,6 +237,7 @@ window.createPlateMarketFlow = function createPlateMarketFlow({
         <button class="market-inquire-btn" type="button" data-market-inquire="${escapeHtml(plate)}" ${enabled ? "" : "disabled"}>
           ${whatsappIcon()}<span>${escapeHtml(copy.inquire)}</span>
         </button>
+        ${introductionEnabled && sourceUrl ? `<button class="market-seller-btn" type="button" data-market-sell="${escapeHtml(plate)}">${escapeHtml(copy.seller)}</button>` : ""}
         ${sourceLink}
       </div>
       </article>
@@ -298,8 +307,34 @@ window.createPlateMarketFlow = function createPlateMarketFlow({
       note: brokerNoteEl.value.trim(),
       sourceUrl: validSourceUrl(activeSignal.source_url),
     });
-    const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+    let url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+    const introductionNumber = validIntroductionNumber(activeSignal);
+    if (introductionNumber) {
+      const sourceUrl = validSourceUrl(activeSignal.source_url);
+      const note = brokerNoteEl.value.trim();
+      const introductionMessage = [
+        "[PLATEHK BUY]",
+        `Plate: ${normalizePlate(activeSignal.plate)}`,
+        `Budget-HKD: ${Number(brokerBudgetEl.value)}`,
+        sourceUrl ? `Source: ${sourceUrl}` : "",
+        note ? `Note: ${note}` : "",
+      ].filter(Boolean).join("\n");
+      url = `https://wa.me/${introductionNumber}?text=${encodeURIComponent(introductionMessage)}`;
+    }
     window.open(url, "_blank", "noopener,noreferrer");
+  }
+
+  function openSellerWhatsApp(plate) {
+    const signal = currentSignals.get(normalizePlate(plate));
+    const introductionNumber = validIntroductionNumber(signal);
+    if (!signal?.availability_detected || !introductionNumber) return;
+    const sourceUrl = validSourceUrl(signal.source_url);
+    const introductionMessage = [
+      "[PLATEHK SELL]",
+      `Plate: ${normalizePlate(signal.plate)}`,
+      sourceUrl ? `Source: ${sourceUrl}` : "",
+    ].filter(Boolean).join("\n");
+    window.open(`https://wa.me/${introductionNumber}?text=${encodeURIComponent(introductionMessage)}`, "_blank", "noopener,noreferrer");
   }
 
   async function fetchSignals(plates) {
@@ -365,8 +400,10 @@ window.createPlateMarketFlow = function createPlateMarketFlow({
   }
 
   marketSignalEl.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-market-inquire]");
-    if (button) openModal(button.dataset.marketInquire);
+    const inquiryButton = event.target.closest("[data-market-inquire]");
+    if (inquiryButton) openModal(inquiryButton.dataset.marketInquire);
+    const sellerButton = event.target.closest("[data-market-sell]");
+    if (sellerButton) openSellerWhatsApp(sellerButton.dataset.marketSell);
   });
   rowsEl.addEventListener("click", (event) => {
     const button = event.target.closest("[data-market-inquire]");

@@ -10,8 +10,9 @@
     obtainable: "may be obtainable",
     plateLabel: "Plate",
     asking: "Current asking price: ",
-    body: "Plate.hk can first verify whether the listing is still active, then contact and negotiate confidentially for a buyer. Third-party data may be stale or wrong and does not guarantee availability or transferability.",
-    mandate: "Verify and negotiate on WhatsApp",
+    body: "Plate.hk can record a buyer offer and, with both parties' consent, arrange a three-party WhatsApp introduction. Third-party data may be stale or wrong and does not guarantee availability or transferability.",
+    mandate: "Submit a buyer offer via WhatsApp",
+    seller: "I am the seller: receive buyer offers",
     source: "View the 28car listing",
   } : {
     priceRequest: "價格另議",
@@ -19,8 +20,9 @@
     obtainable: "或可洽購",
     plateLabel: "車牌",
     asking: "目前叫價：",
-    body: "Plate.hk 可先核實刊登是否仍然有效，再代表買方保密接洽及議價。第三方資料可能過期或有誤，並不保證可買到或可轉名。",
-    mandate: "WhatsApp 委託核實及議價",
+    body: "Plate.hk 可記錄買方出價，並在雙方同意後安排三方 WhatsApp 介紹。第三方資料可能過期或有誤，並不保證可買到或可轉名。",
+    mandate: "透過 WhatsApp 提交買方出價",
+    seller: "我是賣方：接收買家出價",
     source: "查看 28car 來源刊登",
   };
 
@@ -83,6 +85,21 @@
         mandate.href = `../?lang=${lang}&q=${encodeURIComponent(plate)}&broker=1`;
         mandate.append(whatsappIcon(), node("span", "", t.mandate));
         actions.append(mandate);
+      }
+      if (signal.introduction_enabled === true) {
+        const number = String(signal.introduction_whatsapp_number || "").replace(/\D/g, "");
+        if (/^\d{8,15}$/.test(number)) {
+          const seller = node("a", "btn", t.seller);
+          const message = [
+            "[PLATEHK SELL]",
+            `Plate: ${plate}`,
+            `Source: ${sourceUrl.toString()}`,
+          ].join("\n");
+          seller.href = `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
+          seller.target = "_blank";
+          seller.rel = "noopener noreferrer";
+          actions.append(seller);
+        }
       }
       const source = node("a", "", t.source);
       source.href = sourceUrl.toString();
