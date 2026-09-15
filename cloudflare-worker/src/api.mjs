@@ -1,3 +1,4 @@
+import { parseFilters, matchesFilters, filterKeys, comparableRows } from "../../assets/decision-core.mjs";
 import {
   ApiError,
   apiJsonResponse,
@@ -27,6 +28,7 @@ import {
   loadDatasetSlimRows,
   mapStaticRow,
   normalizeQuery,
+  normalizeSearchQuery,
   notFound,
   plateNormForRow,
   readJsonBody,
@@ -206,13 +208,15 @@ async function loadCompleteSearchIndexRows(env, request, query) {
     .filter(Boolean);
 }
 
-async function searchCompleteIndex(env, request, dataset, query, sort, mode, page, pageSize) {
+async function searchCompleteIndex(env, request, dataset, query, sort, mode, page, pageSize, filters = null) {
   const indexedRows = await loadCompleteSearchIndexRows(env, request, query);
   if (indexedRows == null) return null;
   const datasetRows = dataset === "all"
     ? await dedupeAllIndexRows(env, request, indexedRows)
     : indexedRows.filter((row) => row.dataset_key === dataset);
-  const matched = sortSearchMatches(collectSearchMatches(datasetRows, query, mode), sort, query);
+  const candidates = filters ? datasetRows.filter(row => matchesFilters(row, filters)) : datasetRows;
+  const matching = collectSearchMatches(candidates, query, mode);
+  const matched = filters ? sortRowsForResults(matching, sort) : sortSearchMatches(matching, sort, query);
   return buildPagedSearchPayload(dataset, query, null, mode, sort, page, pageSize, matched);
 }
 
@@ -290,6 +294,7 @@ function isLocalDevelopmentRequest(request) {
 function rowMatchesSearch(row, query, mode) {
   const rank = searchMatchRank(row, query);
   if (rank == null) return false;
+  if (mode === "exact") return rank === 0;
   if (mode === "exact_prefix") {
     return rank <= 1;
   }
@@ -653,15 +658,21 @@ async function handleSearch(request, env, ctx) {
   const page = Number(url.searchParams.get("page") || 1);
   const pageSize = Number(url.searchParams.get("page_size") || 200);
   if (!validDataset(dataset, true)) return badRequest("invalid dataset");
-  const query = normalizeQuery(rawQuery);
+  const query = normalizeSearchQuery(rawQuery);
   if (!query) return badRequest("q is required");
+  if (!/^[A-HJ-NPR-Z0-9]+$/.test(query)) return badRequest("invalid query characters");
   if (query.length > 16) return badRequest("q too long");
   if (!Number.isInteger(page) || page < 1) return badRequest("invalid paging");
   enforcePageSize("search", pageSize, 200);
   if (issue && !validIssueId(dataset, issue)) return badRequest("invalid issue");
   if (!["amount_desc", "amount_asc", "date_desc", "plate_asc"].includes(sort)) return badRequest("invalid sort");
-  if (!["", "exact_prefix"].includes(mode)) return badRequest("invalid mode");
+  if (!["", "exact_prefix", "exact"].includes(mode)) return badRequest("invalid mode");
 
+  let filters = null;
+  if (filterKeys.some(key => url.searchParams.has(key))) {
+    try { filters = parseFilters(url.searchParams); } catch (error) { return badRequest(error.message); }
+    if (issue) return badRequest("discovery filters do not support issue");
+  }
   let minuteLimit = dataset === "all" ? 180 : 300;
   let hourLimit = dataset === "all" ? 1800 : 3600;
   if (query.length <= 2) {
@@ -676,10 +687,36 @@ async function handleSearch(request, env, ctx) {
 
   const cacheTtl = !issue ? (dataset === "all" ? 600 : (query.length <= 2 ? 300 : 0)) : 0;
   return withApiCache(request, ctx, cacheTtl, async () => {
+    if (filters) {
+      const payload = await searchCompleteIndex(env, request, dataset, query, sort, mode, page, pageSize, filters);
+      if (!payload) throw new ApiError("search_index_unavailable", 503);
+      return jsonResponse({ ...payload, filters });
+    }
     const payload = dataset === "all"
       ? await searchStaticAll(env, request, query, issue, sort, mode, page, pageSize)
       : await searchStaticDataset(env, request, dataset, query, issue, sort, mode, page, pageSize);
     return jsonResponse(payload);
+  });
+}
+
+async function handleComparables(request, env, ctx) {
+  const methodErr = requireGetLike(request);
+  if (methodErr) return methodErr;
+  const query = normalizeSearchQuery(new URL(request.url).searchParams.get("q"));
+  if (!/^[A-HJ-NPR-Z0-9]{1,16}$/.test(query)) return badRequest("invalid query");
+  enforcePublicReadRateLimit(request, "comparables", 60, 600);
+  return withApiCache(request, ctx, 600, async () => {
+    const exact = await searchCompleteIndex(env, request, "all", query, "date_desc", "exact", 1, 200);
+    if (!exact) throw new ApiError("search_index_unavailable", 503);
+    const target = exact.rows.find(row => row.amount_hkd != null && Number(row.amount_hkd) > 0);
+    if (!target) return jsonResponse({ query, rows: [], reason: "no_priced_history", total_history: exact.total });
+    const digits = query.match(/\d+$/)?.[0] || "";
+    const token = digits.length >= 2 ? digits.slice(-2) : query[0];
+    const candidates = await loadCompleteSearchIndexRows(env, request, token);
+    if (!candidates) throw new ApiError("search_index_unavailable", 503);
+    return jsonResponse({ query, target, match_text: token, total_history: exact.total,
+      method: "Latest dated positive-price observation per other plate, same source dataset and letter/digit shape, sharing the displayed fragment. Structural examples, not a valuation or legal classification.",
+      rows: comparableRows(target, await dedupeAllIndexRows(env, request, candidates), token) });
   });
 }
 
@@ -1043,6 +1080,7 @@ export async function handleApiRequest(request, env, ctx) {
     if (route === "issue") return await handleIssue(request, env, ctx);
     if (route === "results") return await handleResults(request, env, ctx);
     if (route === "search") return await handleSearch(request, env, ctx);
+    if (route === "comparables") return await handleComparables(request, env, ctx);
     if (route === "market_signal") return await handleMarketSignal(request, env, ctx);
     if (route === "oauth/token") return await handleOauthToken(request, env, ctx);
     if (route === "vision_session") return await handleVisionSession(request, env, ctx);

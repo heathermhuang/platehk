@@ -11,6 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 TEXT_EXTENSIONS = {
     ".py",
     ".js",
+    ".mjs",
     ".html",
     ".css",
     ".md",

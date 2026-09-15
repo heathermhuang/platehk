@@ -25,39 +25,7 @@
     <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg?v=20260827-05" />
     <link rel="dns-prefetch" href="//fonts.googleapis.com" />
     <link rel="dns-prefetch" href="//fonts.gstatic.com" />
-    <script>
-      (() => {
-        const host = typeof location !== "undefined" ? location.hostname : "";
-        if (!["plate.hk", "www.plate.hk"].includes(host)) return;
-        const GA_ID = "G-8N8TVEGQHM";
-        const dnt =
-          (typeof navigator !== "undefined" &&
-            (navigator.doNotTrack === "1" || navigator.msDoNotTrack === "1")) ||
-          (typeof window !== "undefined" && window.doNotTrack === "1");
-        if (dnt) return;
-
-        window.dataLayer = window.dataLayer || [];
-        window.gtag = function () {
-          window.dataLayer.push(arguments);
-        };
-        window.gtag("js", new Date());
-        window.gtag("config", GA_ID);
-
-        const loadAnalytics = () => {
-          const s = document.createElement("script");
-          s.async = true;
-          s.src = `https://www.googletagmanager.com/gtag/js?id=${GA_ID}`;
-          s.referrerPolicy = "strict-origin-when-cross-origin";
-          document.head.appendChild(s);
-        };
-
-        if ("requestIdleCallback" in window) {
-          window.requestIdleCallback(loadAnalytics, { timeout: 2000 });
-        } else {
-          window.addEventListener("load", loadAnalytics, { once: true });
-        }
-      })();
-    </script>
+    <script defer src="/assets/analytics.js?v=20260915-01"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link

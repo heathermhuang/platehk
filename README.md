@@ -281,3 +281,9 @@ The isolated service under `services/whatsapp-introductions/` implements the HK$
 ## License
 
 [MIT](./LICENSE)
+
+## Plate decision tools
+
+Price lookup, budget/pattern discovery, exact history and structural comparisons,
+browser-local shortlists, official availability guidance and calendar reminders are
+documented in [Decision tools](docs/DECISION_TOOLS.md).

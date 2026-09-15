@@ -12,6 +12,12 @@ import {
 
 const PRIMARY_HOSTS = new Set(["plate.hk", "www.plate.hk"]);
 const STATIC_HTML_ROUTES = new Set([
+  "/prices",
+  "/discover",
+  "/auctions",
+  "/availability",
+  "/plate",
+  "/shortlist",
   "/about",
   "/api",
   "/audit",
@@ -301,7 +307,9 @@ async function serveAsset(request, env) {
   const isPublicDataJson = primaryHost
     && url.pathname.startsWith("/data/")
     && contentType.includes("application/json");
-  const noindex = (genericNoindex && contentType.includes("text/html")) || isPublicDataJson;
+  const privateDecisionView = ["/plate.html", "/shortlist.html"].includes(url.pathname)
+    || (url.pathname === "/discover.html" && url.searchParams.has("q"));
+  const noindex = ((genericNoindex || privateDecisionView) && contentType.includes("text/html")) || isPublicDataJson;
   if (!primaryHost && contentType.includes("text/html")) {
     const rewritten = (await response.text()).replaceAll("https://plate.hk", url.origin);
     const headers = securityHeadersForAsset(request, response, { noindex });
@@ -316,6 +324,7 @@ async function serveAsset(request, env) {
     });
   }
   const headers = securityHeadersForAsset(request, response, { noindex });
+  if (primaryHost && privateDecisionView) headers.set("x-robots-tag", "noindex, follow");
   if (url.pathname.endsWith(".md")) headers.set("content-type", "text/markdown; charset=utf-8");
   if (primaryHost) appendDiscoveryLinkHeaders(headers, url);
   if (isHome) headers.append("vary", "Accept");

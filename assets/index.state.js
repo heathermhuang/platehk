@@ -27,10 +27,10 @@ window.createPlateIndexStateFlow = function createPlateIndexStateFlow({
 
   function normalizeLiveQueryValue(value) {
     return String(value || "")
+      .normalize("NFKC")
       .toUpperCase()
       .replace(/I/g, "1")
-      .replace(/O/g, "0")
-      .replace(/Q/g, "");
+      .replace(/O/g, "0");
   }
 
   function buildStateSearch({ dataset, issue, q, sort, lang } = {}) {

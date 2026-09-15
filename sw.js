@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pvrm-static-v154';
+const CACHE_NAME = 'pvrm-static-v155';
 const ASSETS = [
   './',
   './index.html',
@@ -10,6 +10,16 @@ const ASSETS = [
   './mcp.html',
   './plates/index.html',
   './landing.html',
+  './prices.html',
+  './discover.html',
+  './auctions.html',
+  './availability.html',
+  './shortlist.html',
+  './plate.html',
+  './assets/decision.js?v=20260915-01',
+  './assets/decision-core.mjs',
+  './assets/decision.css?v=20260915-01',
+  './assets/analytics.js?v=20260915-01',
   './assets/index.js',
   './assets/index.config.js',
   './assets/index.home.js',

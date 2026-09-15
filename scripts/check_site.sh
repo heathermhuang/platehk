@@ -49,6 +49,7 @@ node --check services/whatsapp-introductions/src/openwa-adapter.mjs
 node --test services/whatsapp-introductions/test/introduction.test.mjs
 node tests/market_worker_test.mjs
 node tests/worker_data_access_regression_test.mjs
+node --test tests/decision_tools_test.mjs
 
 if [[ "${CHECK_SITE_SKIP_TESTS:-0}" != "1" ]]; then
   "${PYTHON_BIN}" -m unittest discover -s tests

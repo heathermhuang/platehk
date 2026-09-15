@@ -22,6 +22,12 @@ BOUNDED_RESULT_SORTS = ("amount_desc", "amount_asc", "plate_asc")
 
 ROOT_FILES = [
     "index.html",
+    "prices.html",
+    "discover.html",
+    "auctions.html",
+    "availability.html",
+    "plate.html",
+    "shortlist.html",
     "landing.html",
     "audit.html",
     "api.html",
@@ -535,8 +541,13 @@ def main(*, require_market_snapshot: bool = False) -> None:
         shutil.rmtree(TARGET)
     TARGET.mkdir(parents=True, exist_ok=True)
 
+    decision_spec = importlib.util.spec_from_file_location("build_decision_pages", ROOT / "scripts/build_decision_pages.py")
+    decision_module = importlib.util.module_from_spec(decision_spec)
+    decision_spec.loader.exec_module(decision_module)
+    decision_module.build(TARGET)
     for rel in ROOT_FILES:
-        copy_path(ROOT / rel, TARGET / rel)
+        if rel not in {f"{page}.html" for page in decision_module.PAGES}:
+            copy_path(ROOT / rel, TARGET / rel)
 
     for rel in ROOT_DIRS:
         copy_path(ROOT / rel, TARGET / rel)
@@ -561,6 +572,11 @@ def main(*, require_market_snapshot: bool = False) -> None:
     update_results_export_catalog()
     build_complete_search_index(load_complete_search_index_rows(), api_v1_dir / "all")
     prune_oversized_assets()
+    for page in TARGET.rglob("*.html"):
+        content = page.read_text(encoding="utf-8")
+        if '/assets/analytics.js?' not in content:
+            content = content.replace('</head>', '<script defer src="/assets/analytics.js?v=20260915-01"></script>\n</head>')
+            page.write_text(content, encoding="utf-8")
     stamp_service_worker_cache_name()
 
     print(f"Built Cloudflare publish directory at {TARGET}")

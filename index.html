@@ -105,39 +105,7 @@
         ]
       }
     </script>
-    <script>
-      (() => {
-        const host = typeof location !== "undefined" ? location.hostname : "";
-        if (!["plate.hk", "www.plate.hk"].includes(host)) return;
-        const GA_ID = "G-8N8TVEGQHM";
-        const dnt =
-          (typeof navigator !== "undefined" &&
-            (navigator.doNotTrack === "1" || navigator.msDoNotTrack === "1")) ||
-          (typeof window !== "undefined" && window.doNotTrack === "1");
-        if (dnt) return;
-
-        window.dataLayer = window.dataLayer || [];
-        window.gtag = function () {
-          window.dataLayer.push(arguments);
-        };
-        window.gtag("js", new Date());
-        window.gtag("config", GA_ID);
-
-        const loadAnalytics = () => {
-          const s = document.createElement("script");
-          s.async = true;
-          s.src = `https://www.googletagmanager.com/gtag/js?id=${GA_ID}`;
-          s.referrerPolicy = "strict-origin-when-cross-origin";
-          document.head.appendChild(s);
-        };
-
-        if ("requestIdleCallback" in window) {
-          window.requestIdleCallback(loadAnalytics, { timeout: 2000 });
-        } else {
-          window.addEventListener("load", loadAnalytics, { once: true });
-        }
-      })();
-    </script>
+    <script defer src="/assets/analytics.js?v=20260915-01"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -2259,6 +2227,7 @@
             </div>
           </div>
         </div>
+        <nav class="decision-entry-links" aria-label="Plate tools"><a href="/prices.html">查價 / Prices</a> · <a href="/discover.html">按預算找牌 / Discover</a> · <a href="/auctions.html">日程 / Auctions</a> · <a href="/shortlist.html">收藏 / Shortlist</a></nav>
         <div class="search-assist" id="searchAssist">
           <div class="search-note" id="searchNote"></div>
           <div class="search-history" id="searchHistory" hidden></div>
@@ -2362,17 +2331,17 @@
         </form>
       </div>
     </div>
-    <script src="./assets/index.config.js?v=20260826-02"></script>
+    <script src="./assets/index.config.js?v=20260915-01"></script>
     <script src="./assets/index.home.js?v=20260807-01"></script>
     <script src="./assets/index.offline-data.js?v=20260426-01"></script>
-    <script src="./assets/index.data.js?v=20260826-02"></script>
-    <script src="./assets/index.state.js?v=20260405-01"></script>
+    <script src="./assets/index.data.js?v=20260915-01"></script>
+    <script src="./assets/index.state.js?v=20260915-01"></script>
     <script src="./assets/index.issue.js?v=20260405-01"></script>
     <script src="./assets/index.present.js?v=20260328-06"></script>
     <script src="./assets/vendor/qrcode-generator.js?v=20260503-01"></script>
     <script src="./assets/index.webmcp.js?v=20260418-01"></script>
     <script src="./assets/index.share.js?v=20260827-05"></script>
     <script src="./assets/index.market.js?v=20260905-01"></script>
-    <script src="./assets/index.js?v=20260826-02"></script>
+    <script src="./assets/index.js?v=20260915-01"></script>
   </body>
 </html>
