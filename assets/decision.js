@@ -32,7 +32,7 @@ function toggleSave(plate) {
 function saveButton(plate){const b=make('button');b.type='button';b.dataset.savePlate=plate;b.addEventListener('click',()=>toggleSave(plate));return b;}
 function rowCard(row,reason='') {
   const plate=plateOf(row); const card=make('article',null,'decision-result');
-  const heading=make('h3');const plateLink=link('',detailHref(plate));plateLink.append(make('span',row.single_line||plate,'plate'));add(heading,plateLink);card.append(heading);
+  const heading=make('h3');const href=/^\/plates\/[A-Z0-9]+\.html$/.test(row.detail_path||'') ? row.detail_path+`?lang=${lang}` : detailHref(plate);const plateLink=link('',href);plateLink.append(make('span',row.single_line||plate,'plate'));add(heading,plateLink);card.append(heading);
   card.append(make('p',priceOf(row)),make('p',`${(lang==='zh' && row.auction_date_label) || row.year_range || row.auction_date || text('日期未提供','Date unavailable')} · ${datasetName(row.dataset_key)}`));
   if(reason)card.append(make('p',reason,'decision-note'));
   const actions=make('div',null,'decision-actions'); const source=sourceUrl(row);

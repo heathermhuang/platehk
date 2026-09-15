@@ -646,6 +646,15 @@ async function handleResults(request, env, ctx) {
   });
 }
 
+async function addDetailPaths(payload, request, env) {
+  const manifest = await getStaticJson(env, request.url, "./data/popular_plates_manifest.json");
+  const paths = new Map((Array.isArray(manifest) ? manifest : [])
+    .filter(item => /^[A-Z0-9]+$/.test(item.plate_norm || "") && item.href === `/plates/${item.plate_norm}.html`)
+    .map(item => [item.plate_norm, item.href]));
+  return { ...payload, rows: (payload.rows || []).map(row => ({...row,
+    detail_path: paths.get(plateNormForRow(row)) || `/plate.html?q=${encodeURIComponent(plateNormForRow(row))}` })) };
+}
+
 async function handleSearch(request, env, ctx) {
   const methodErr = requireGetLike(request);
   if (methodErr) return methodErr;
@@ -690,12 +699,12 @@ async function handleSearch(request, env, ctx) {
     if (filters) {
       const payload = await searchCompleteIndex(env, request, dataset, query, sort, mode, page, pageSize, filters);
       if (!payload) throw new ApiError("search_index_unavailable", 503);
-      return jsonResponse({ ...payload, filters });
+      return jsonResponse(await addDetailPaths({ ...payload, filters }, request, env));
     }
     const payload = dataset === "all"
       ? await searchStaticAll(env, request, query, issue, sort, mode, page, pageSize)
       : await searchStaticDataset(env, request, dataset, query, issue, sort, mode, page, pageSize);
-    return jsonResponse(payload);
+    return jsonResponse(await addDetailPaths(payload, request, env));
   });
 }
 
@@ -714,9 +723,9 @@ async function handleComparables(request, env, ctx) {
     const token = digits.length >= 2 ? digits.slice(-2) : query[0];
     const candidates = await loadCompleteSearchIndexRows(env, request, token);
     if (!candidates) throw new ApiError("search_index_unavailable", 503);
-    return jsonResponse({ query, target, match_text: token, total_history: exact.total,
+    return jsonResponse(await addDetailPaths({ query, target, match_text: token, total_history: exact.total,
       method: "Latest dated positive-price observation per other plate, same source dataset and letter/digit shape, sharing the displayed fragment. Structural examples, not a valuation or legal classification.",
-      rows: comparableRows(target, await dedupeAllIndexRows(env, request, candidates), token) });
+      rows: comparableRows(target, await dedupeAllIndexRows(env, request, candidates), token) }, request, env));
   });
 }
 

@@ -34,6 +34,7 @@ if [[ "$SMOKE" -eq 1 ]]; then
     data/hot_search/all_amount_desc/88.json \
     api/v1/index.json \
     index.html \
+    prices.html discover.html auctions.html availability.html plate.html shortlist.html \
     about.html \
     camera.html \
     mcp.html \
@@ -60,6 +61,7 @@ else
     data \
     api/v1 \
     index.html \
+    prices.html discover.html auctions.html availability.html plate.html shortlist.html \
     about.html \
     camera.html \
     api.html \

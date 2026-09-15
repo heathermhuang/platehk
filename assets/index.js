@@ -888,11 +888,13 @@ function composeAuctionKey(datasetKey, auctionDate) {
             .map((r, idx) => {
               const doublePlate = formatDoubleLine(r.double_line);
               const href = rowLink(r);
+              const detailPath = /^\/plates\/[A-Z0-9]+\.html$/.test(r.detail_path || "") ? r.detail_path : `/plate.html?q=${encodeURIComponent(normalizePlate(r.single_line || r.double_line))}`;
+              const detailHref = `${detailPath}${detailPath.includes("?") ? "&" : "?"}lang=${currentLang}`;
               const linkText = linkTextForRow(r);
               return `
                 <tr data-plate="${escapeHtml(normalizePlate(r.single_line || r.double_line))}">
                   <td class="col-date" data-label="${escapeHtml(t("thDate"))}">${renderDateCell(r, idx)}</td>
-                  <td class="col-single" data-label="${escapeHtml(t("thSingle"))}"><a href="/plate.html?q=${encodeURIComponent(normalizePlate(r.single_line || r.double_line))}&lang=${currentLang}" aria-label="${escapeHtml(t("plateDetails"))}">${formatSingleLine(r.single_line)}</a></td>
+                  <td class="col-single" data-label="${escapeHtml(t("thSingle"))}"><a href="${detailHref}" aria-label="${escapeHtml(t("plateDetails"))}">${formatSingleLine(r.single_line)}</a></td>
                   <td class="col-double" data-label="${escapeHtml(t("thDouble"))}">${doublePlate}</td>
                   <td class="col-price" data-label="${escapeHtml(t("thPrice"))}">${formatPrice(r)}</td>
                   <td class="col-category" data-label="${escapeHtml(t("thCategory"))}">${renderCategoryCell(r)}</td>

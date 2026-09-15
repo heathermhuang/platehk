@@ -50,3 +50,12 @@ jobs:
           CHECK_SECURITY_SKIP_DEPS: "1"
           PYTHON_BIN: python
         run: ./scripts/check_site.sh
+
+      - name: Install browser test dependencies
+        run: npm ci
+
+      - name: Install Chromium for browser regression checks
+        run: npx playwright install --with-deps chromium
+
+      - name: Verify plate decision flows on desktop and mobile
+        run: npx playwright test e2e/decision.spec.mjs

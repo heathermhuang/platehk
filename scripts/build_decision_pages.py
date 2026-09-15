@@ -22,7 +22,7 @@ def link(url, zh, en):
 
 def query_form(action='/plate.html'):
  return f'''<form action="{action}" class="decision-form" data-query-form>
- <label for="decisionQuery">{bilingual('車牌或號碼片段','Plate or number fragment','span')}</label>
+ <label for="decisionQuery">{bilingual('車牌片段' if action=='/discover.html' else '完整車牌號碼','Plate fragment' if action=='/discover.html' else 'Exact plate number','span')}</label>
  <input id="decisionQuery" name="q" maxlength="32" autocomplete="off" required placeholder="AA88" aria-describedby="queryHelp">
  <input type="hidden" name="lang" value="zh" data-form-lang>
  <button type="submit">{bilingual('搜尋','Search','span')}</button></form>
