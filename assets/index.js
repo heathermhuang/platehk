@@ -20,11 +20,11 @@ function composeAuctionKey(datasetKey, auctionDate) {
       function normalizePlate(v) {
         const raw = Array.isArray(v) ? v.join("") : v == null ? "" : String(v);
         return raw
+          .normalize("NFKC")
           .toUpperCase()
           .replace(/\s+/g, "")
           .replace(/I/g, "1")
           .replace(/O/g, "0")
-          .replace(/Q/g, "")
           .trim();
       }
 
@@ -858,7 +858,17 @@ function composeAuctionKey(datasetKey, auctionDate) {
         return resolvedLabel;
       }
 
-      function render(list, totalCount, modeText) {
+      function render(list, totalCount, modeText, options = {}) {
+        if (options.state) {
+          renderedRows = []; renderedTotalCount = 0;
+          resultsContextEl.hidden = true;
+          rowsEl.innerHTML = `<tr class="empty-row"><td colspan="${visibleResultsColumnCount()}"><p role="alert">${escapeHtml(options.message)}</p>${options.state === "error" ? `<button type="button" data-search-retry>${escapeHtml(t("retrySearch"))}</button>` : ""}</td></tr>`;
+          statusEl.textContent = options.message;
+          searchHistoryEl.hidden = true;
+          marketFlow.update({ query: "", rows: [] });
+          return;
+        }
+        resultsContextEl.hidden = false;
         renderedRows = list;
         renderedTotalCount = totalCount;
         syncResultsTableMode();
@@ -869,6 +879,7 @@ function composeAuctionKey(datasetKey, auctionDate) {
               <td colspan="${visibleResultsColumnCount()}">
                 <div class="empty-main">${escapeHtml(empty.main)}</div>
                 <div class="empty-sub">${escapeHtml(empty.sub)}</div>
+                <p><a href="/availability.html?lang=${currentLang}">${escapeHtml(t("checkAvailability"))}</a> · <a href="/discover.html?lang=${currentLang}">${escapeHtml(t("findAlternatives"))}</a></p>
               </td>
             </tr>
           `;
@@ -877,11 +888,13 @@ function composeAuctionKey(datasetKey, auctionDate) {
             .map((r, idx) => {
               const doublePlate = formatDoubleLine(r.double_line);
               const href = rowLink(r);
+              const detailPath = /^\/plates\/[A-Z0-9]+\.html$/.test(r.detail_path || "") ? r.detail_path : `/plate.html?q=${encodeURIComponent(normalizePlate(r.single_line || r.double_line))}`;
+              const detailHref = `${detailPath}${detailPath.includes("?") ? "&" : "?"}lang=${currentLang}`;
               const linkText = linkTextForRow(r);
               return `
                 <tr data-plate="${escapeHtml(normalizePlate(r.single_line || r.double_line))}">
                   <td class="col-date" data-label="${escapeHtml(t("thDate"))}">${renderDateCell(r, idx)}</td>
-                  <td class="col-single" data-label="${escapeHtml(t("thSingle"))}">${formatSingleLine(r.single_line)}</td>
+                  <td class="col-single" data-label="${escapeHtml(t("thSingle"))}"><a href="${detailHref}" aria-label="${escapeHtml(t("plateDetails"))}">${formatSingleLine(r.single_line)}</a></td>
                   <td class="col-double" data-label="${escapeHtml(t("thDouble"))}">${doublePlate}</td>
                   <td class="col-price" data-label="${escapeHtml(t("thPrice"))}">${formatPrice(r)}</td>
                   <td class="col-category" data-label="${escapeHtml(t("thCategory"))}">${renderCategoryCell(r)}</td>
@@ -1217,6 +1230,7 @@ function composeAuctionKey(datasetKey, auctionDate) {
       }
 
       rowsEl.addEventListener("click", (ev) => {
+        if (ev.target.closest("[data-search-retry]")) { applyFilters(); return; }
         const issueLink = ev.target.closest(".issue-jump-link");
         if (issueLink) {
           ev.preventDefault();

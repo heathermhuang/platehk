@@ -94,12 +94,12 @@ class FrontendContractsTests(unittest.TestCase):
         self.assertRegex(index_state_js, re.compile(r'params\.get\("issue"\)'))
         self.assertRegex(index_state_js, re.compile(r'params\.set\("issue", nextIssue\)'))
 
-    def test_plate_normalization_ignores_q_in_main_and_worker(self) -> None:
+    def test_search_preserves_invalid_q_for_validation(self) -> None:
         index_js = (ROOT / "assets" / "index.js").read_text(encoding="utf-8")
         worker = (ROOT / "assets" / "search.worker.js").read_text(encoding="utf-8")
         camera_js = (ROOT / "assets" / "camera.js").read_text(encoding="utf-8")
-        self.assertIn('.replace(/Q/g, "")', index_js)
-        self.assertIn(".replace(/Q/g, '')", worker)
+        self.assertNotIn('.replace(/Q/g, "")', index_js)
+        self.assertNotIn(".replace(/Q/g, '')", worker)
         self.assertIn('.replace(/I/g, "1")', camera_js)
         self.assertIn('.replace(/O/g, "0")', camera_js)
         self.assertIn('.replace(/Q/g, "")', camera_js)
@@ -142,7 +142,7 @@ class FrontendContractsTests(unittest.TestCase):
             "scripts/build_popular_plate_pages.py",
         ):
             self.assertIn(favicon_ref, (ROOT / path).read_text(encoding="utf-8"), path)
-        self.assertIn("pvrm-static-v154", (ROOT / "sw.js").read_text(encoding="utf-8"))
+        self.assertIn("pvrm-static-v155", (ROOT / "sw.js").read_text(encoding="utf-8"))
 
     def test_camera_prototype_page_and_links_exist(self) -> None:
         camera = (ROOT / "camera.html").read_text(encoding="utf-8")
@@ -436,7 +436,6 @@ class FrontendContractsTests(unittest.TestCase):
         for source in [index_js, index_state_js, search_worker, worker_lib]:
             self.assertRegex(source, re.compile(r'I["\']?,\s*["\']1|/I/g,\s*["\']1["\']|replaceAll\("I", "1"\)'))
             self.assertRegex(source, re.compile(r'O["\']?,\s*["\']0|/O/g,\s*["\']0["\']|replaceAll\("O", "0"\)'))
-            self.assertRegex(source, re.compile(r'Q["\']?,\s*["\']["\']|/Q/g,\s*["\']["\']|replaceAll\("Q", ""\)'))
 
         self.assertIn('.replace(/I/g, "1")', camera_js)
         self.assertIn('.replace(/O/g, "0")', camera_js)

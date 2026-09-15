@@ -454,6 +454,7 @@ window.createPlateIndexDataFlow = function createPlateIndexDataFlow({
 
   async function applyFilters({ resetPage = true } = {}) {
     const version = ++renderVersion;
+    const startedAt = performance.now();
     const q = normalizePlate(qEl.value);
     const selectedIssue = issueEl.value || "";
     const sortMode = sortEl.value;
@@ -464,7 +465,13 @@ window.createPlateIndexDataFlow = function createPlateIndexDataFlow({
     setSearchProgress(-1, 0);
     if (resetPage) currentPage = 1;
 
+    if (q && !/^[A-HJ-NPR-Z0-9]{1,16}$/.test(q)) {
+      render([], 0, "", { state: "invalid", message: t("invalidQuery") });
+      bottomPrevEl.disabled = bottomNextEl.disabled = true;
+      return;
+    }
     const serverApiOk = await detectServerApi();
+    if (version !== renderVersion) return;
     if (!serverApiOk) {
       const offlineMsg = isOfflineNow() ? t("apiSearchOfflineFallback") : t("apiSearchUnavailable");
       statusEl.textContent = offlineMsg;
@@ -474,7 +481,7 @@ window.createPlateIndexDataFlow = function createPlateIndexDataFlow({
       bottomNextEl.disabled = true;
       bottomInfoEl.textContent = t("bottomAll")(1, 1);
       updateIssueTotal(selectedIssue || "");
-      render([], 0, offlineMsg);
+      render([], 0, "", { state: "error", message: offlineMsg });
       return;
     }
 
@@ -518,6 +525,8 @@ window.createPlateIndexDataFlow = function createPlateIndexDataFlow({
           total.toLocaleString(),
           ""
         );
+        window.PlateAnalytics?.track("search_complete", {plate: q, result_count: total, duration_ms: performance.now()-startedAt,
+          exact_match: (res.rows || []).some(row => isExactPlateMatch(row, q)), dataset: currentDataset, page_number: currentPage});
         rememberSearchQuery(q);
         if (activeFilterRequestController === requestController) activeFilterRequestController = null;
         return;
@@ -588,7 +597,8 @@ window.createPlateIndexDataFlow = function createPlateIndexDataFlow({
       bottomNextEl.disabled = true;
       bottomInfoEl.textContent = t("bottomAll")(1, 1);
       updateIssueTotal(selectedIssue || "");
-      render([], 0, t("loadFailed")(readableApiError(err)));
+      window.PlateAnalytics?.track("search_error", {dataset: currentDataset, error_kind: "request_failed"});
+      render([], 0, "", { state: "error", message: t("searchFailed") });
     }
   }
 

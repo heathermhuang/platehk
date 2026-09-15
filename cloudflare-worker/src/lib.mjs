@@ -64,15 +64,14 @@ export function userAgentFingerprint(request) {
   return cheapHashHex(request.headers.get("user-agent") || "").slice(0, 16);
 }
 
+export function normalizeSearchQuery(value) {
+  return String(value || "").normalize("NFKC").trim().toUpperCase()
+    .replace(/\s+/g, "").replaceAll("I", "1").replaceAll("O", "0");
+}
+
 export function normalizeQuery(value) {
-  return String(value || "")
-    .trim()
-    .toUpperCase()
-    .replace(/\s+/g, "")
-    .replace(/[^A-Z0-9]+/g, "")
-    .replaceAll("I", "1")
-    .replaceAll("O", "0")
-    .replaceAll("Q", "");
+  return String(value || "").trim().toUpperCase().replace(/\s+/g, "")
+    .replace(/[^A-Z0-9]+/g, "").replaceAll("I", "1").replaceAll("O", "0").replaceAll("Q", "");
 }
 
 export function normalizePlateForSearch(value) {

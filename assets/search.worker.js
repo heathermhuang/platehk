@@ -61,7 +61,7 @@ async function fetchJsonWithTimeout(url, timeoutMs) {
 
 function normalizePlate(v) {
   const raw = Array.isArray(v) ? v.join('') : v == null ? '' : String(v);
-  return raw.toUpperCase().replace(/\s+/g, '').replace(/I/g, '1').replace(/O/g, '0').replace(/Q/g, '').trim();
+  return raw.normalize('NFKC').toUpperCase().replace(/\s+/g, '').replace(/I/g, '1').replace(/O/g, '0').trim();
 }
 
 function isMatched(row, q) {

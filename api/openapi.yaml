@@ -286,12 +286,33 @@ paths:
           description: Rate limited
         "503":
           description: Required bounded result index is unavailable
+  /api/comparables:
+    get:
+      summary: Dated structural examples for a plate with priced auction history
+      description: Same source dataset and letter/digit structure, sharing a fragment. Latest positive-price dated record per alternative plate, at most eight, sorted by date. Not a valuation, legal classification, owner lookup or listing. Sparse history returns an empty rows array with a reason.
+      parameters:
+        - in: query
+          name: q
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 16
+      responses:
+        "200":
+          description: Query, target row when available, method, total_history and rows containing match_text and comparison_reason.
+        "400":
+          description: Invalid plate query
+        "503":
+          description: Complete source index unavailable
   /api/search:
     get:
       summary: Search public auction records by vehicle registration mark
       description: |
         Searches the independent Plate.hk index. This is not an official Hong Kong Government API.
         Verify material results against the original Transport Department source URL returned with the row.
+        Full-width characters are normalized. I/O become 1/0; Q and other invalid characters are rejected.
+        Optional discovery filters apply before pagination and cannot be combined with issue. Always supply q.
       parameters:
         - in: query
           name: dataset
@@ -325,7 +346,7 @@ paths:
           required: false
           schema:
             type: string
-            enum: [exact_prefix]
+            enum: [exact_prefix, exact]
         - in: query
           name: page
           required: false
@@ -341,6 +362,46 @@ paths:
             minimum: 1
             maximum: 200
             default: 200
+        - in: query
+          name: prefix
+          description: Required leading plate characters.
+          schema:
+            type: string
+        - in: query
+          name: suffix
+          description: Required trailing plate characters.
+          schema:
+            type: string
+        - in: query
+          name: min_amount
+          description: Minimum historical auction amount in HKD; excludes unpriced records.
+          schema:
+            type: integer
+        - in: query
+          name: max_amount
+          description: Maximum historical auction amount in HKD; not a current asking price.
+          schema:
+            type: integer
+        - in: query
+          name: digits
+          description: Number of numeric characters, from zero to eight.
+          schema:
+            type: integer
+        - in: query
+          name: pattern
+          description: repeated or palindrome applied to numeric characters.
+          schema:
+            type: string
+        - in: query
+          name: from
+          description: Inclusive ISO date; excludes coarse year ranges.
+          schema:
+            type: string
+        - in: query
+          name: to
+          description: Inclusive ISO date; excludes coarse year ranges.
+          schema:
+            type: string
       responses:
         "200":
           description: Matching public auction records and pagination metadata

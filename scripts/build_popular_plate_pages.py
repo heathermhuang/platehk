@@ -67,6 +67,10 @@ DATASETS = {
 STATIC_PAGES = [
     "https://plate.hk/",
     "https://plate.hk/landing.html",
+    "https://plate.hk/prices.html",
+    "https://plate.hk/discover.html",
+    "https://plate.hk/auctions.html",
+    "https://plate.hk/availability.html",
     "https://plate.hk/about.html",
     "https://plate.hk/api.html",
     "https://plate.hk/audit.html",
@@ -474,7 +478,7 @@ def render_page(entries_by_norm: dict[str, dict], entry: dict, related: list[dic
           <td data-label-zh="日期" data-label-en="Date"><span data-lang-only="zh">{html.escape(date_label(row))}</span><span data-lang-only="en" hidden>{html.escape(date_label_en(row))}</span></td>
           <td data-label-zh="分類" data-label-en="Dataset"><span data-lang-only="zh">{html.escape(DATASETS[row['dataset_key']]['label_zh'])}</span><span data-lang-only="en" hidden>{html.escape(DATASETS[row['dataset_key']]['label_en'])}</span></td>
           <td data-label-zh="成交價" data-label-en="Price"><span data-lang-only="zh">{html.escape(money(row.get('amount_hkd')))}</span><span data-lang-only="en" hidden>{html.escape(money_en(row.get('amount_hkd')))}</span></td>
-          <td data-label-zh="來源" data-label-en="Source">{source_link_html(row)}<br><a data-preserve-lang href="../index.html?q={plate_norm}" {copy_attrs('完整站內紀錄', 'Full search')}>完整站內紀錄</a></td>
+          <td data-label-zh="來源" data-label-en="Source">{source_link_html(row)}<br><a data-preserve-lang href="../?q={plate_norm}" {copy_attrs('完整站內紀錄', 'Full search')}>完整站內紀錄</a></td>
         </tr>
         """
         for row in entry["rows"][:TABLE_ROWS]
@@ -484,6 +488,7 @@ def render_page(entries_by_norm: dict[str, dict], entry: dict, related: list[dic
         for item in related
     )
     answer_summary = answer_summary_html(entry)
+    decision_panel = f'<section class="decision-main decision-comparables" data-plate-detail="{html.escape(plate_norm, quote=True)}" aria-label="Comparable historical sales"></section>'
     dataset_breakdown = dataset_breakdown_html(entry)
     market_card = market_signal_html(plate_norm)
     market_style = ""
@@ -698,7 +703,7 @@ def render_page(entries_by_norm: dict[str, dict], entry: dict, related: list[dic
         <div class="lede" data-lang-only="zh">{html.escape(summary_sentence(entry))}</div>
         <div class="lede" data-lang-only="en" hidden>{html.escape(desc_en)} Category: {html.escape(category_en)}.</div>
         <div class="actions">
-          <a class="btn primary" data-preserve-lang href="../index.html?q={plate_norm}" {copy_attrs('在 Plate.hk 搜尋', 'Search on Plate.hk')}>在 Plate.hk 搜尋</a>
+          <a class="btn primary" data-preserve-lang href="../?q={plate_norm}" {copy_attrs('在 Plate.hk 搜尋', 'Search on Plate.hk')}>在 Plate.hk 搜尋</a>
         </div>
         <div class="meta">
           <div class="metric"><div class="k" {copy_attrs('最高成交', 'Top Sale')}>最高成交</div><div class="v"><span data-lang-only="zh">{html.escape(highest_price)}</span><span data-lang-only="en" hidden>{html.escape(highest_price_en)}</span></div></div>
@@ -742,6 +747,10 @@ def render_page(entries_by_norm: dict[str, dict], entry: dict, related: list[dic
         </div>
       </div>
 {market_script}    </main>
+    {decision_panel}
+    <link rel="stylesheet" href="/assets/decision.css?v=20260915-01">
+    <script type="module" src="/assets/decision.js?v=20260915-01"></script>
+    <script defer src="/assets/analytics.js?v=20260915-01"></script>
     <div data-info-shell-footer></div>
     <script src="../assets/info-locale.js?v={INFO_LOCALE_VERSION}"></script>
     <script src="../assets/info-shell.js?v={INFO_SHELL_VERSION}"></script>

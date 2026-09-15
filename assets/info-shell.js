@@ -8,7 +8,7 @@
       brandSubtitle: "香港車牌拍賣資料庫",
       languageLabel: "語言",
       navLabel: "資料頁導覽",
-      nav: { search: "搜尋", plates: "熱門車牌", about: "資料說明", audit: "資料審核", api: "開發者" },
+      nav: { prices: "查價", discover: "找車牌", auctions: "日程", shortlist: "收藏", search: "搜尋", plates: "熱門車牌", about: "資料說明", audit: "資料審核", api: "開發者" },
       intro: "獨立整理香港運輸署公開車牌拍賣紀錄。資料有差異時，以官方來源為準。",
       groups: { data: "資料", developers: "開發者", legal: "政策與聯絡" },
       links: { about: "資料說明", audit: "資料審核", changelog: "更新日誌", api: "API 文檔", mcp: "MCP 文件", terms: "使用條款", privacy: "私隱政策", feedback: "反饋表格" },
@@ -19,7 +19,7 @@
       brandSubtitle: "Vehicle Registration Marks Database",
       languageLabel: "Language",
       navLabel: "Information page navigation",
-      nav: { search: "Search", plates: "Popular Plates", about: "Data Guide", audit: "Data Audit", api: "Developers" },
+      nav: { prices: "Prices", discover: "Discover", auctions: "Auctions", shortlist: "Shortlist", search: "Search", plates: "Popular Plates", about: "Data Guide", audit: "Data Audit", api: "Developers" },
       intro: "An independent index of public Hong Kong plate-auction records. Official sources prevail.",
       groups: { data: "Data", developers: "Developers", legal: "Legal & Contact" },
       links: { about: "Data Guide", audit: "Data Audit", changelog: "Changelog", api: "API Docs", mcp: "MCP Docs", terms: "Terms of Use", privacy: "Privacy Policy", feedback: "Feedback Form" },
@@ -33,6 +33,9 @@
   };
   const navItems = [
     { key: "search", path: "/" },
+    { key: "discover", path: "/discover.html" },
+    { key: "auctions", path: "/auctions.html" },
+    { key: "shortlist", path: "/shortlist.html" },
     { key: "plates", path: "/plates/index.html" },
     { key: "about", path: "/about.html" },
     { key: "audit", path: "/audit.html" },
