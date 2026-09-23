@@ -186,12 +186,50 @@ def page_url(page: int) -> str:
     return f"{LISTING_URL}&h_page={page}"
 
 
+class EmptyListingPage(RuntimeError):
+    pass
+
+
 def fetch_page(page: int, timeout_seconds: float, limiter: PoliteRateLimiter) -> tuple[int, list[ListingSignal]]:
-    source = fetch_text(page_url(page), timeout_seconds, limiter)
-    _, signals = parse_page(source)
-    if not signals:
-        raise RuntimeError(f"No listing records parsed from page {page}; source layout may have changed")
-    return page, signals
+    for _ in range(2):
+        source = fetch_text(page_url(page), timeout_seconds, limiter)
+        _, signals = parse_page(source)
+        if signals:
+            return page, signals
+    raise EmptyListingPage(f"No listing records parsed from page {page}; source layout may have changed")
+
+
+def confirmed_tail_page_count(
+    total_pages: int,
+    requested_pages: list[int],
+    successful_pages: list[int],
+    failed_pages: list[int],
+    empty_pages: set[int],
+    timeout_seconds: float,
+    limiter: PoliteRateLimiter,
+) -> int:
+    """Accept only an empty suffix of a full crawl, confirmed by fresh source pages."""
+    if not failed_pages or set(failed_pages) != empty_pages:
+        return total_pages
+    candidate = min(failed_pages) - 1
+    if (
+        candidate < 1
+        or requested_pages != list(range(1, total_pages + 1))
+        or successful_pages != list(range(1, candidate + 1))
+        or sorted(failed_pages) != list(range(candidate + 1, total_pages + 1))
+    ):
+        return total_pages
+    try:
+        current_total, first_signals = parse_page(fetch_text(page_url(1), timeout_seconds, limiter))
+        if current_total != candidate or not first_signals:
+            return total_pages
+        tail_total, tail_signals = parse_page(fetch_text(page_url(candidate), timeout_seconds, limiter))
+        if tail_total != candidate or not tail_signals:
+            return total_pages
+    except (OSError, urllib.error.URLError, RuntimeError) as exc:
+        print(f"Unable to confirm pagination shrink: {exc}")
+        return total_pages
+    return candidate
 
 
 def read_existing(path: Path) -> dict[str, Any]:
@@ -401,6 +439,7 @@ def main() -> None:
     requested_pages = list(range(args.start_page, last_page + 1))
     fetched_by_page: dict[int, list[ListingSignal]] = {}
     failed_pages: list[int] = []
+    empty_pages: set[int] = set()
     if 1 in requested_pages:
         fetched_by_page[1] = first_signals
 
@@ -418,11 +457,21 @@ def main() -> None:
                 print(f"Parsed page {parsed_page}/{last_page}: {len(signals)} signals")
             except Exception as exc:  # keep a partial, explicitly labelled snapshot
                 failed_pages.append(page)
+                if isinstance(exc, EmptyListingPage):
+                    empty_pages.add(page)
                 print(f"Page {page} failed: {exc}")
 
     successful_pages = sorted(fetched_by_page)
     if not successful_pages:
         raise SystemExit("No listing pages were parsed successfully")
+    current_total = confirmed_tail_page_count(
+        total_pages, requested_pages, successful_pages, failed_pages, empty_pages, args.timeout, limiter,
+    )
+    if current_total < total_pages:
+        print(f"Confirmed pagination shrink from {total_pages} to {current_total}; ignoring empty trailing pages")
+        total_pages = current_total
+        requested_pages = list(range(1, total_pages + 1))
+        failed_pages = []
     try:
         assert_refresh_publishable(
             max_pages=args.max_pages,
