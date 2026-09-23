@@ -7,6 +7,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -171,6 +172,110 @@ class MarketSignalTests(unittest.TestCase):
             signal_path.write_text(json.dumps(payload), encoding="utf-8")
             builder._MARKET_SIGNALS = None
             self.assertEqual(builder.market_signal_html("NEW8"), "")
+
+
+class MarketPaginationTests(unittest.TestCase):
+    def page(self, total: int) -> str:
+        source = (ROOT / "tests" / "fixtures" / "28car_listing_page.html").read_text(encoding="utf-8")
+        return source.replace("genPage(3, 1)", f"genPage({total}, 1)")
+
+    def run_refresh(self, responses, *, fails=False, existing=True, start_page=1, max_pages=0):
+        # Use the real parser, concurrent crawl, completeness gate and output writer.
+        # Only network responses and pacing are replaced; no external site is contacted.
+        queues = {page: list(values) for page, values in responses.items()}
+        unexpected_requests = []
+
+        def fetch(url, *_args):
+            page = int(url.rsplit("h_page=", 1)[1])
+            if not queues.get(page):
+                unexpected_requests.append(page)
+                raise RuntimeError(f"Unexpected request for page {page}")
+            value = queues[page].pop(0)
+            if isinstance(value, Exception):
+                raise value
+            return value
+
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp) / "signals.json"
+            previous = '{"signals":{}}\n'
+            if existing:
+                output.write_text(previous, encoding="utf-8")
+            argv = [str(SCRIPT), "--output", str(output), "--max-pages", str(max_pages),
+                    "--start-page", str(start_page), "--require-complete"]
+            with mock.patch.object(sys, "argv", argv), \
+                    mock.patch.object(market, "assert_robots_allows"), \
+                    mock.patch.object(market.PoliteRateLimiter, "wait"), \
+                    mock.patch.object(market, "fetch_text", side_effect=fetch):
+                if fails:
+                    with self.assertRaisesRegex(SystemExit, "Complete refresh required"):
+                        market.main()
+                    self.assertEqual(unexpected_requests, [])
+                    if existing:
+                        self.assertEqual(output.read_text(encoding="utf-8"), previous)
+                    else:
+                        self.assertFalse(output.exists())
+                    return None
+                market.main()
+                self.assertEqual(unexpected_requests, [])
+            return json.loads(output.read_text(encoding="utf-8"))
+
+    def test_empty_page_recovers_on_bounded_retry(self):
+        payload = self.run_refresh({1: [self.page(2)], 2: ["", self.page(2)]})
+        self.assertTrue(payload["coverage"]["complete"])
+        self.assertEqual(payload["coverage"]["total_pages_reported"], 2)
+
+    def test_successful_crawl_does_not_recheck_pagination(self):
+        payload = self.run_refresh({1: [self.page(2)], 2: [self.page(2)]})
+        self.assertTrue(payload["coverage"]["complete"])
+
+    def test_confirmed_empty_tail_shrink_publishes_complete_coverage(self):
+        for original_total in (3, 4):
+            with self.subTest(original_total=original_total):
+                responses = {1: [self.page(original_total), self.page(2)],
+                             2: [self.page(original_total), self.page(2)]}
+                responses.update({page: ["", ""] for page in range(3, original_total + 1)})
+                payload = self.run_refresh(responses)
+                self.assertEqual(payload["coverage"], {
+                    "complete": True, "total_pages_reported": 2,
+                    "requested_pages": 2, "successful_pages": 2, "failed_pages": [],
+                })
+
+    def test_unconfirmed_shrink_preserves_existing_snapshot(self):
+        cases = {
+            "unchanged": (self.page(3), self.page(2)),
+            "grown": (self.page(4), self.page(2)),
+            "missing_pagination": ("", self.page(2)),
+            "no_first_page_records": ("genPage(2, 1)", self.page(2)),
+            "contradictory_tail": (self.page(2), self.page(3)),
+            "empty_tail": (self.page(2), "genPage(2, 2)"),
+            "first_page_network_error": (OSError("network unavailable"), self.page(2)),
+            "tail_network_error": (self.page(2), OSError("network unavailable")),
+        }
+        for name, (first, tail) in cases.items():
+            with self.subTest(name=name):
+                self.run_refresh({1: [self.page(3), first], 2: [self.page(3), tail],
+                                  3: ["", ""]}, fails=True)
+
+    def test_empty_interior_page_is_never_ignored(self):
+        self.run_refresh({1: [self.page(3), self.page(1)], 2: ["", ""],
+                          3: [self.page(3)]}, fails=True)
+
+    def test_network_failure_at_tail_is_never_ignored(self):
+        self.run_refresh({1: [self.page(3), self.page(2)], 2: [self.page(3)],
+                          3: [OSError("network unavailable")]}, fails=True)
+
+    def test_mixed_empty_and_network_failures_are_never_ignored(self):
+        self.run_refresh({1: [self.page(3)], 2: ["", ""],
+                          3: [OSError("network unavailable")]}, fails=True)
+
+    def test_partial_page_range_cannot_confirm_shrink(self):
+        self.run_refresh({1: [self.page(3)], 2: [self.page(3)], 3: ["", ""]},
+                         start_page=2, fails=True)
+        self.run_refresh({1: [self.page(3)], 2: ["", ""]}, max_pages=2, fails=True)
+
+    def test_unconfirmed_failure_does_not_create_snapshot(self):
+        self.run_refresh({1: [self.page(2), self.page(2)], 2: ["", ""]},
+                         fails=True, existing=False)
 
 
 if __name__ == "__main__":
