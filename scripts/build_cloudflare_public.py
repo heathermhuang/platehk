@@ -388,9 +388,17 @@ def copy_plate_pages() -> None:
     entries_by_norm = {entry["plate_norm"]: entry for entry in entries}
     for idx, entry in enumerate(entries):
         related = entries[max(0, idx - 4): idx] + entries[idx + 1: idx + 5]
-        page = module.render_page(entries_by_norm, entry, related)
-        (target_plates / f"{entry['plate_norm']}.html").write_text(page, encoding="utf-8")
+        filename = f"{entry['plate_norm']}.html"
+        prior_path = ROOT / "plates" / filename
+        previous = prior_path.read_text(encoding="utf-8") if prior_path.exists() else None
+        candidate = module.render_page(entries_by_norm, entry, related)
+        modified_at = module.page_modified_at(previous, candidate)
+        page = candidate if modified_at == module.TODAY else module.render_page(entries_by_norm, entry, related, modified_at)
+        (target_plates / filename).write_text(page, encoding="utf-8")
     (target_plates / "index.html").write_text(module.render_index(entries), encoding="utf-8")
+    directory = target_plates / "directory"
+    directory.mkdir(parents=True, exist_ok=True)
+    (directory / "index.html").write_text(module.render_directory(entries), encoding="utf-8")
     (TARGET / "about.html").write_text(module.render_about(), encoding="utf-8")
 
 

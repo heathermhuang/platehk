@@ -1,6 +1,51 @@
 import { test, expect } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 
+test('featured directory serves crawlable links to the selected plate pages', async ({ page }) => {
+  await page.goto('/plates/directory/index.html');
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('精選車牌');
+  await expect(page.locator('.directory-list a')).toHaveCount(800);
+  await page.getByRole('link', { name: '88', exact: true }).click();
+  await expect(page).toHaveURL(/\/plates\/88\.html/);
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('88');
+});
+
+test('English answer pages keep an English canonical and rendered language', async ({ page }) => {
+  for (const path of ['', 'prices.html', 'discover.html', 'auctions.html', 'availability.html', 'about.html']) {
+    const response = await page.goto(`/${path}?lang=en`);
+    const canonical = `${new URL(page.url()).origin}/${path}?lang=en`;
+    expect(await response.text()).toContain(`<link rel="canonical" href="${canonical}">`);
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', canonical);
+    expect(await page.locator('meta[name="description"]').getAttribute('content')).toMatch(/^(Search |Look |Explore |Check |Find |Sources,)/);
+  }
+});
+
+test('a plate without an exact sale can show qualified historical comparisons', async ({ page, request }) => {
+  const response = await request.get('/api/comparables?q=AH168');
+  expect(response.ok()).toBe(true);
+  const cohort = await response.json();
+  expect(cohort.cohort).toBe('traditional_pattern_same_number_prefix_tier');
+  expect(cohort.total_history).toBe(0);
+  expect(cohort.sample_size).toBeGreaterThanOrEqual(5);
+  expect(cohort.statistics.median).toBeGreaterThan(0);
+  for (const row of cohort.rows) {
+    expect(row.single_line.replace(/\s/g, '')).toMatch(/^[A-Z]{2}168$/);
+    expect(row.single_line.replace(/\s/g, '')).not.toBe('AH168');
+    expect(row.pdf_url || row.source_url).toBeTruthy();
+  }
+  await page.goto('/plate.html?q=AH168&lang=en');
+  await expect(page.locator('#plateHistory')).toContainText('No indexed auction record');
+  await expect(page.locator('#plateComparables')).toContainText('distinct comparable plates');
+  await expect(page.locator('#plateComparables')).toContainText('Median');
+  await expect(page.locator('#plateComparables article.decision-result').first()).toContainText('168');
+  await expect(page.locator('#plateComparables article.decision-result').first().getByRole('link', { name: 'Check source' })).toHaveAttribute('href', /https:\/\/www\.td\.gov\.hk\//);
+  if (cohort.sample_size > cohort.rows.length) {
+    await page.getByRole('button', { name: /Show more comparable sales/ }).click();
+    await expect(page.locator('#plateComparables article.decision-result')).toHaveCount(Math.min(16, cohort.sample_size));
+  }
+});
+
 test('main lookup normalizes full-width input and separates invalid, empty and failed searches', async ({ page }) => {
   await page.goto('/?lang=en&q=AA88');
   await expect(page.locator('#rows tr[data-plate="AA88"]')).toHaveCount(1);

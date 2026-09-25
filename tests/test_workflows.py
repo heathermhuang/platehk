@@ -390,6 +390,7 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn("about.html", listing)
         self.assertIn("mcp.html", listing)
         self.assertIn("plates/index.html", listing)
+        self.assertIn("plates/directory/index.html", listing)
         self.assertIn("plates/88.html", listing)
         self.assertIn("sitemap.xml", listing)
         self.assertIn("robots.txt", listing)
@@ -409,6 +410,7 @@ class WorkflowTests(unittest.TestCase):
         publish = ROOT / ".tmp" / "cloudflare-public"
         self.assertTrue((publish / "index.html").exists())
         self.assertTrue((publish / "about.html").exists())
+        self.assertTrue((publish / "plates" / "directory" / "index.html").exists())
         self.assertTrue((publish / "data" / "hot_search" / "manifest.json").exists())
         self.assertTrue((publish / "data" / "events.json").exists())
         self.assertTrue((publish / "data" / "TVRM auction result (1973-2026).xls").exists())

@@ -75,3 +75,51 @@ export function comparableRows(target, rows, token, limit = 8) {
   }
   return [...byPlate.values()].sort((a,b)=>String(b.auction_date).localeCompare(String(a.auction_date)) || normalize(a.single_line).localeCompare(normalize(b.single_line))).slice(0,limit);
 }
+
+// A historical comparison cohort for two-letter traditional-pattern marks.
+// This structural group is not an official legal classification. The number
+// must match in full; HK/XX, repeated-letter prefixes, PVRM,
+// coarse year ranges, unsold events and the queried mark stay separate.
+export function traditionalPatternComparableCohort(query, rows, limit = 8, referenceDate = new Date().toISOString().slice(0, 10), offset = 0) {
+  const target = normalize(query);
+  const parsed = /^([A-Z]{2})(\d{1,4})$/.exec(target);
+  if (!parsed || ['HK', 'XX'].includes(parsed[1])) return null;
+  const [, prefix, number] = parsed;
+  const repeatedPrefix = prefix[0] === prefix[1];
+  const latestByPlate = new Map();
+  for (const row of rows) {
+    if (!['tvrm_physical', 'tvrm_eauction', 'tvrm_legacy'].includes(row.dataset_key)) continue;
+    const plate = normalize(row.single_line || (row.double_line || []).join(''));
+    const candidate = /^([A-Z]{2})(\d{1,4})$/.exec(plate);
+    if (!candidate || plate === target || candidate[2] !== number) continue;
+    if (['HK', 'XX'].includes(candidate[1]) || (candidate[1][0] === candidate[1][1]) !== repeatedPrefix) continue;
+    if (row.year_range || row.date_precision === 'year_range' || !/^\d{4}-\d{2}-\d{2}$/.test(row.auction_date || '')) continue;
+    if (row.result_status && row.result_status !== 'sold') continue;
+    const amount = Number(row.amount_hkd);
+    if (!Number.isFinite(amount) || amount <= 0 || !(row.pdf_url || row.source_url)) continue;
+    const previous = latestByPlate.get(plate);
+    if (!previous || row.auction_date > previous.auction_date) latestByPlate.set(plate, row);
+  }
+  const all = [...latestByPlate.values()].sort((a, b) => b.auction_date.localeCompare(a.auction_date));
+  if (!all.length) return { rows: [], sample_size: 0, window: 'none', statistics: null };
+  const cutoffDate = new Date(`${referenceDate}T00:00:00Z`);
+  cutoffDate.setUTCFullYear(cutoffDate.getUTCFullYear() - 3);
+  const cutoff = cutoffDate.toISOString().slice(0, 10);
+  const recent = all.filter(row => row.auction_date >= cutoff);
+  const selected = recent.length >= 5 ? recent : all;
+  const prices = selected.map(row => Number(row.amount_hkd)).sort((a, b) => a - b);
+  const percentile = fraction => {
+    const position = fraction * (prices.length - 1);
+    const lower = Math.floor(position);
+    const upper = Math.ceil(position);
+    return Math.round(prices[lower] + (prices[upper] - prices[lower]) * (position - lower));
+  };
+  return {
+    rows: selected.slice(offset, offset + limit).map(row => ({ ...row, match_text: number, comparison_reason: 'same_number_prefix_tier' })),
+    sample_size: selected.length,
+    window: recent.length >= 5 ? 'recent_three_years' : 'all_exact_dates',
+    date_from: selected.at(-1).auction_date,
+    date_to: selected[0].auction_date,
+    statistics: selected.length >= 5 ? { p25: percentile(0.25), median: percentile(0.5), p75: percentile(0.75) } : null,
+  };
+}

@@ -27,6 +27,38 @@ const STATIC_HTML_ROUTES = new Set([
   "/privacy",
   "/terms",
 ]);
+const ENGLISH_SEO_PAGES = new Map([
+  ["/", ["All HK Vehicle Registration Marks Database | Plate.hk", "Search historical Hong Kong vehicle registration mark auction results across PVRM, traditional physical auctions and E-Auction, with links to official sources."]],
+  ["/prices.html", ["Hong Kong Plate Price History | Plate.hk", "Look up historical Hong Kong plate auction results and inspect comparable sales with official source links."]],
+  ["/discover.html", ["Find Plates by Budget and Pattern | Plate.hk", "Explore historical Hong Kong plate auction results by number pattern, date and sale price."]],
+  ["/auctions.html", ["Hong Kong Plate Auctions and Results | Plate.hk", "Check upcoming Hong Kong plate auctions, application windows and official result sources."]],
+  ["/availability.html", ["Plate Availability and Application Guide | Plate.hk", "Find official Hong Kong vehicle registration mark availability and application services."]],
+  ["/about.html", ["Hong Kong Plate Auction Data Guide and Methodology | Plate.hk", "Sources, coverage, verification methods and limits of Hong Kong vehicle registration mark auction results."]],
+]);
+const MAX_LOCALIZED_HTML_BYTES = 512 * 1024;
+
+function englishSeoHtml(html, pathname) {
+  const details = ENGLISH_SEO_PAGES.get(pathname);
+  if (!details) return html;
+  const headEnd = html.indexOf("</head>");
+  if (headEnd < 0) throw new Error(`Missing head in English page ${pathname}`);
+  const canonical = `https://plate.hk${pathname}?lang=en`;
+  let head = html.slice(0, headEnd);
+  const replaceRequired = (pattern, replacement) => {
+    if (!pattern.test(head)) throw new Error(`Missing English SEO metadata in ${pathname}`);
+    head = head.replace(pattern, replacement);
+  };
+  replaceRequired(/<title>[^<]*<\/title>/i, `<title>${details[0]}</title>`);
+  replaceRequired(/<meta\s+name="description"\s+content="[^"]*"\s*\/?>/i,
+    `<meta name="description" content="${details[1]}">`);
+  replaceRequired(/<link\s+rel="canonical"\s+href="[^"]+"\s*\/?>/i,
+    `<link rel="canonical" href="${canonical}">`);
+  head = head.replace(/<meta\s+property="og:url"\s+content="[^"]+"\s*\/?>/i,
+    `<meta property="og:url" content="${canonical}">`);
+  head = head.replace(/<meta\s+property="og:locale"\s+content="[^"]+"\s*\/?>/i,
+    '<meta property="og:locale" content="en_HK">');
+  return (head + html.slice(headEnd)).replace(/<html lang="zh-HK">/i, '<html lang="en">');
+}
 
 function isPrimaryHost(hostname) {
   return PRIMARY_HOSTS.has(String(hostname || "").toLowerCase());
@@ -304,6 +336,17 @@ async function serveAsset(request, env) {
   const response = await env.ASSETS.fetch(requestForHtmlAsset(request, url));
   if (!response.ok) return response;
   const contentType = String(response.headers.get("content-type") || "").toLowerCase();
+  let localizedHtml = null;
+  if (request.method === "GET" && contentType.includes("text/html")
+      && url.searchParams.get("lang") === "en" && ENGLISH_SEO_PAGES.has(url.pathname)) {
+    const advertisedSize = Number(response.headers.get("content-length") || 0);
+    if (advertisedSize > MAX_LOCALIZED_HTML_BYTES) return new Response("Localized page too large", { status: 500 });
+    const html = await response.text();
+    if (new TextEncoder().encode(html).length > MAX_LOCALIZED_HTML_BYTES) {
+      return new Response("Localized page too large", { status: 500 });
+    }
+    localizedHtml = englishSeoHtml(html, url.pathname);
+  }
   const isPublicDataJson = primaryHost
     && url.pathname.startsWith("/data/")
     && contentType.includes("application/json");
@@ -311,9 +354,11 @@ async function serveAsset(request, env) {
     || (url.pathname === "/discover.html" && url.searchParams.has("q"));
   const noindex = ((genericNoindex || privateDecisionView) && contentType.includes("text/html")) || isPublicDataJson;
   if (!primaryHost && contentType.includes("text/html")) {
-    const rewritten = (await response.text()).replaceAll("https://plate.hk", url.origin);
+    const rewritten = (localizedHtml ?? await response.text()).replaceAll("https://plate.hk", url.origin);
     const headers = securityHeadersForAsset(request, response, { noindex });
     headers.delete("content-length");
+    headers.delete("content-encoding");
+    headers.delete("etag");
     if (url.pathname.endsWith(".md")) headers.set("content-type", "text/markdown; charset=utf-8");
     if (primaryHost) appendDiscoveryLinkHeaders(headers, url);
     if (isHome) headers.append("vary", "Accept");
@@ -324,11 +369,16 @@ async function serveAsset(request, env) {
     });
   }
   const headers = securityHeadersForAsset(request, response, { noindex });
+  if (localizedHtml !== null) {
+    headers.delete("content-length");
+    headers.delete("content-encoding");
+    headers.delete("etag");
+  }
   if (primaryHost && privateDecisionView) headers.set("x-robots-tag", "noindex, follow");
   if (url.pathname.endsWith(".md")) headers.set("content-type", "text/markdown; charset=utf-8");
   if (primaryHost) appendDiscoveryLinkHeaders(headers, url);
   if (isHome) headers.append("vary", "Accept");
-  return new Response(response.body, {
+  return new Response(localizedHtml ?? response.body, {
     status: response.status,
     statusText: response.statusText,
     headers,

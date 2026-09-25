@@ -1,20 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://plate.hk/</loc><lastmod>2026-09-25</lastmod></url>
-  <url><loc>https://plate.hk/landing.html</loc><lastmod>2026-09-25</lastmod></url>
-  <url><loc>https://plate.hk/prices.html</loc><lastmod>2026-09-25</lastmod></url>
-  <url><loc>https://plate.hk/discover.html</loc><lastmod>2026-09-25</lastmod></url>
-  <url><loc>https://plate.hk/auctions.html</loc><lastmod>2026-09-25</lastmod></url>
-  <url><loc>https://plate.hk/availability.html</loc><lastmod>2026-09-25</lastmod></url>
-  <url><loc>https://plate.hk/about.html</loc><lastmod>2026-09-25</lastmod></url>
-  <url><loc>https://plate.hk/api.html</loc><lastmod>2026-09-25</lastmod></url>
-  <url><loc>https://plate.hk/audit.html</loc><lastmod>2026-09-25</lastmod></url>
-  <url><loc>https://plate.hk/camera.html</loc><lastmod>2026-09-25</lastmod></url>
-  <url><loc>https://plate.hk/changelog.html</loc><lastmod>2026-09-25</lastmod></url>
-  <url><loc>https://plate.hk/mcp.html</loc><lastmod>2026-09-25</lastmod></url>
-  <url><loc>https://plate.hk/terms.html</loc><lastmod>2026-09-25</lastmod></url>
-  <url><loc>https://plate.hk/privacy.html</loc><lastmod>2026-09-25</lastmod></url>
-  <url><loc>https://plate.hk/plates/index.html</loc><lastmod>2026-09-25</lastmod></url>
+  <url><loc>https://plate.hk/</loc></url>
+  <url><loc>https://plate.hk/?lang=en</loc></url>
+  <url><loc>https://plate.hk/landing.html</loc></url>
+  <url><loc>https://plate.hk/prices.html</loc></url>
+  <url><loc>https://plate.hk/prices.html?lang=en</loc></url>
+  <url><loc>https://plate.hk/discover.html</loc></url>
+  <url><loc>https://plate.hk/discover.html?lang=en</loc></url>
+  <url><loc>https://plate.hk/auctions.html</loc></url>
+  <url><loc>https://plate.hk/auctions.html?lang=en</loc></url>
+  <url><loc>https://plate.hk/availability.html</loc></url>
+  <url><loc>https://plate.hk/availability.html?lang=en</loc></url>
+  <url><loc>https://plate.hk/about.html</loc></url>
+  <url><loc>https://plate.hk/about.html?lang=en</loc></url>
+  <url><loc>https://plate.hk/api.html</loc></url>
+  <url><loc>https://plate.hk/audit.html</loc></url>
+  <url><loc>https://plate.hk/camera.html</loc></url>
+  <url><loc>https://plate.hk/changelog.html</loc></url>
+  <url><loc>https://plate.hk/mcp.html</loc></url>
+  <url><loc>https://plate.hk/terms.html</loc></url>
+  <url><loc>https://plate.hk/privacy.html</loc></url>
+  <url><loc>https://plate.hk/plates/index.html</loc></url>
+  <url><loc>https://plate.hk/plates/directory/index.html</loc></url>
   <url><loc>https://plate.hk/plates/W.html</loc><lastmod>2026-09-25</lastmod></url>
   <url><loc>https://plate.hk/plates/R.html</loc><lastmod>2026-09-25</lastmod></url>
   <url><loc>https://plate.hk/plates/D.html</loc><lastmod>2026-09-25</lastmod></url>

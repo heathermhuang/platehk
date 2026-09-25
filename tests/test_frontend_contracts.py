@@ -142,7 +142,7 @@ class FrontendContractsTests(unittest.TestCase):
             "scripts/build_popular_plate_pages.py",
         ):
             self.assertIn(favicon_ref, (ROOT / path).read_text(encoding="utf-8"), path)
-        self.assertIn("pvrm-static-v155", (ROOT / "sw.js").read_text(encoding="utf-8"))
+        self.assertIn("pvrm-static-v156", (ROOT / "sw.js").read_text(encoding="utf-8"))
 
     def test_camera_prototype_page_and_links_exist(self) -> None:
         camera = (ROOT / "camera.html").read_text(encoding="utf-8")
@@ -295,6 +295,43 @@ class FrontendContractsTests(unittest.TestCase):
         self.assertIn("card.hidden", script)
         self.assertIn('data-popular-card', builder)
         self.assertIn('assets/popular-index.js', builder)
+
+    def test_featured_directory_links_every_sitemapped_plate(self) -> None:
+        manifest = json.loads((ROOT / "data" / "popular_plates_manifest.json").read_text(encoding="utf-8"))
+        directory = (ROOT / "plates" / "directory" / "index.html").read_text(encoding="utf-8")
+        linked = set(re.findall(r'href="\.\./([A-Z0-9]+\.html)"', directory))
+        expected = {f'{item["plate_norm"]}.html' for item in manifest}
+        self.assertEqual(linked, expected)
+        self.assertIn('href="./directory/index.html"', (ROOT / "plates" / "index.html").read_text(encoding="utf-8"))
+
+    def test_plate_lastmod_tracks_meaningful_changes(self) -> None:
+        import importlib.util
+
+        spec = importlib.util.spec_from_file_location("build_popular_lastmod", ROOT / "scripts" / "build_popular_plate_pages.py")
+        assert spec and spec.loader
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        old = '{"dateModified": "2026-09-24", "name": "88", "price": 11400000}'
+        refreshed = '{"dateModified": "2026-09-25", "name": "88", "price": 11400000}'
+        changed = '{"dateModified": "2026-09-25", "name": "88", "price": 11500000}'
+        self.assertEqual(module.page_modified_at(old, refreshed, "2026-09-25"), "2026-09-24")
+        self.assertEqual(module.page_modified_at(old, changed, "2026-09-25"), "2026-09-25")
+
+    def test_sitemap_dates_match_generated_pages(self) -> None:
+        import xml.etree.ElementTree as ET
+
+        sitemap = ET.parse(ROOT / "sitemap.xml")
+        namespace = {"s": "http://www.sitemaps.org/schemas/sitemap/0.9"}
+        rows = {item.findtext("s:loc", namespaces=namespace): item.findtext("s:lastmod", namespaces=namespace)
+                for item in sitemap.findall("s:url", namespace)}
+        manifest = json.loads((ROOT / "data" / "popular_plates_manifest.json").read_text(encoding="utf-8"))
+        self.assertEqual(len(rows), len(manifest) + 22)
+        self.assertIsNone(rows["https://plate.hk/"])
+        self.assertIsNone(rows["https://plate.hk/plates/directory/index.html"])
+        for path in ("", "prices.html", "discover.html", "auctions.html", "availability.html", "about.html"):
+            self.assertIn(f"https://plate.hk/{path}?lang=en", rows)
+        for item in manifest:
+            self.assertEqual(rows[f'https://plate.hk{item["href"]}'], item["lastmod"])
 
     def test_service_worker_precaches_every_required_homepage_script(self) -> None:
         html = (ROOT / "index.html").read_text(encoding="utf-8")
@@ -757,6 +794,10 @@ class FrontendContractsTests(unittest.TestCase):
 
     def test_all_generated_plate_pages_have_unique_source_grounded_schema(self) -> None:
         sitemap = (ROOT / "sitemap.xml").read_text(encoding="utf-8")
+        lastmod_by_plate = {
+            item["plate_norm"]: item["lastmod"]
+            for item in json.loads((ROOT / "data" / "popular_plates_manifest.json").read_text(encoding="utf-8"))
+        }
         pages = sorted(
             path
             for path in (ROOT / "plates").glob("*.html")
@@ -802,6 +843,7 @@ class FrontendContractsTests(unittest.TestCase):
             dataset = next(item for item in graph if item["@type"] == "Dataset")
             self.assertEqual(dataset["provider"], {"@id": "https://plate.hk/#organization"}, path.name)
             self.assertEqual(dataset["license"], "https://plate.hk/terms.html", path.name)
+            self.assertEqual(dataset["dateModified"], lastmod_by_plate[path.stem], path.name)
             self.assertGreaterEqual(len(dataset["description"]), 50, path.name)
             for source in dataset.get("isBasedOn", []):
                 self.assertTrue(

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import html
 import json
+import re
 from collections import defaultdict
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
@@ -66,12 +67,18 @@ DATASETS = {
 
 STATIC_PAGES = [
     "https://plate.hk/",
+    "https://plate.hk/?lang=en",
     "https://plate.hk/landing.html",
     "https://plate.hk/prices.html",
+    "https://plate.hk/prices.html?lang=en",
     "https://plate.hk/discover.html",
+    "https://plate.hk/discover.html?lang=en",
     "https://plate.hk/auctions.html",
+    "https://plate.hk/auctions.html?lang=en",
     "https://plate.hk/availability.html",
+    "https://plate.hk/availability.html?lang=en",
     "https://plate.hk/about.html",
+    "https://plate.hk/about.html?lang=en",
     "https://plate.hk/api.html",
     "https://plate.hk/audit.html",
     "https://plate.hk/camera.html",
@@ -80,6 +87,7 @@ STATIC_PAGES = [
     "https://plate.hk/terms.html",
     "https://plate.hk/privacy.html",
     "https://plate.hk/plates/index.html",
+    "https://plate.hk/plates/directory/index.html",
 ]
 
 
@@ -453,7 +461,7 @@ def dataset_breakdown_html(entry: dict) -> str:
     return "".join(counts)
 
 
-def render_page(entries_by_norm: dict[str, dict], entry: dict, related: list[dict]) -> str:
+def render_page(entries_by_norm: dict[str, dict], entry: dict, related: list[dict], modified_at: str = TODAY) -> str:
     plate = entry["plate_display"]
     plate_norm = entry["plate_norm"]
     top = entry["top_row"]
@@ -532,7 +540,7 @@ def render_page(entries_by_norm: dict[str, dict], entry: dict, related: list[dic
         "creator": {"@id": SITE_ORGANIZATION_ID},
         "provider": {"@id": SITE_ORGANIZATION_ID},
         "license": DATASET_LICENSE_URL,
-        "dateModified": TODAY,
+        "dateModified": modified_at,
         "spatialCoverage": {"@type": "Place", "name": "Hong Kong"},
         "variableMeasured": ["auction date", "vehicle registration mark", "sale price in HKD", "auction dataset"],
         "inLanguage": ["zh-HK", "en"],
@@ -558,7 +566,7 @@ def render_page(entries_by_norm: dict[str, dict], entry: dict, related: list[dic
                 "url": canonical,
                 "name": og_title,
                 "description": desc,
-                "dateModified": TODAY,
+                "dateModified": modified_at,
                 "inLanguage": ["zh-HK", "en"],
                 "isPartOf": {"@id": SITE_WEBSITE_ID},
                 "mainEntity": {"@id": dataset_id},
@@ -749,7 +757,7 @@ def render_page(entries_by_norm: dict[str, dict], entry: dict, related: list[dic
 {market_script}    </main>
     {decision_panel}
     <link rel="stylesheet" href="/assets/decision.css?v=20260915-01">
-    <script type="module" src="/assets/decision.js?v=20260915-01"></script>
+    <script type="module" src="/assets/decision.js?v=20260925-01"></script>
     <script defer src="/assets/analytics.js?v=20260915-01"></script>
     <div data-info-shell-footer></div>
     <script src="../assets/info-locale.js?v={INFO_LOCALE_VERSION}"></script>
@@ -863,7 +871,7 @@ def render_index(entries: list[dict]) -> str:
         <h1 {copy_attrs('熱門車牌拍賣結果索引', 'Popular Plate Auction Results')}>熱門車牌拍賣結果索引</h1>
         <div class="lede" data-lang-only="zh">這裡列出 {min(len(entries), INDEX_LINKS)} 個具代表性的香港車牌歷史成交頁。排序綜合最高公開拍賣成交價、收錄紀錄數、短號碼及常見字首；價格只代表歷史成交，不是現時估值。</div>
         <div class="lede" data-lang-only="en" hidden>Browse {min(len(entries), INDEX_LINKS)} notable Hong Kong plate-auction pages ranked by public sale results, record coverage, and memorable plate patterns. Historical prices are not current valuations.</div>
-        <div class="hub-actions"><a data-preserve-lang href="../about.html" {copy_attrs('資料方法與限制', 'Data Guide')}>資料方法與限制</a><a data-preserve-lang href="../index.html" {copy_attrs('搜尋全部紀錄', 'Search All Records')}>搜尋全部紀錄</a></div>
+        <div class="hub-actions"><a data-preserve-lang href="./directory/index.html" {copy_attrs('瀏覽所有精選車牌', 'Browse All Featured Plates')}>瀏覽所有精選車牌</a><a data-preserve-lang href="../about.html" {copy_attrs('資料方法與限制', 'Data Guide')}>資料方法與限制</a><a data-preserve-lang href="../index.html" {copy_attrs('搜尋全部紀錄', 'Search All Records')}>搜尋全部紀錄</a></div>
         <div class="popular-snapshot"><span {copy_attrs('資料快照', 'Data snapshot')}>資料快照</span>: <time datetime="{TODAY}">{TODAY}</time></div>
       </div>
       <div class="popular-tools">
@@ -880,6 +888,69 @@ def render_index(entries: list[dict]) -> str:
   </body>
 </html>
 """
+
+
+def render_directory(entries: list[dict]) -> str:
+    groups = [
+        ("numeric", "純數字", "Numeric", lambda plate: plate.isdigit()),
+        ("hkxx", "HK／XX 字首", "HK / XX prefixes", lambda plate: plate.startswith(("HK", "XX"))),
+        ("af", "字母 A–F", "Letters A–F", lambda plate: plate.isalpha() and plate[0] <= "F"),
+        ("gm", "字母 G–M", "Letters G–M", lambda plate: plate.isalpha() and "G" <= plate[0] <= "M"),
+        ("ns", "字母 N–S", "Letters N–S", lambda plate: plate.isalpha() and "N" <= plate[0] <= "S"),
+        ("tz", "字母 T–Z", "Letters T–Z", lambda plate: plate.isalpha() and plate[0] >= "T"),
+        ("mixed", "字母數字混合", "Letters and numbers", lambda plate: True),
+    ]
+    remaining = list(entries)
+    sections = []
+    for slug, zh, en, matches in groups:
+        selected = [entry for entry in remaining if matches(entry["plate_norm"])]
+        remaining = [entry for entry in remaining if not matches(entry["plate_norm"])]
+        if not selected:
+            continue
+        links = "".join(
+            f'<li><a data-preserve-lang href="../{entry["plate_norm"]}.html">'
+            f'{html.escape(entry["plate_display"])}</a> '
+            f'<span data-lang-only="zh">{html.escape(money(entry["top_row"].get("amount_hkd")))} · {entry["count"]} 筆紀錄</span>'
+            f'<span data-lang-only="en" hidden>{html.escape(money_en(entry["top_row"].get("amount_hkd")))} · {entry["count"]} records</span></li>'
+            for entry in selected
+        )
+        sections.append(
+            f'<section id="{slug}"><h2 {copy_attrs(zh, en)}>{zh}</h2>'
+            f'<p>{len(selected)} <span data-lang-only="zh">個車牌</span><span data-lang-only="en" hidden>plates</span></p>'
+            f'<ul class="directory-list">{links}</ul></section>'
+        )
+    assert not remaining
+    canonical = f"{SITE_URL}/plates/directory/index.html"
+    ld_json = {"@context": "https://schema.org", "@graph": [
+        {"@type": "CollectionPage", "@id": f"{canonical}#webpage", "url": canonical,
+         "name": "Featured Hong Kong plate auction records directory",
+         "description": "Browse source-linked historical auction result pages by plate pattern.",
+         "isPartOf": {"@id": SITE_WEBSITE_ID}},
+        {"@type": "BreadcrumbList", "itemListElement": [
+            {"@type": "ListItem", "position": 1, "name": "Plate.hk", "item": f"{SITE_URL}/"},
+            {"@type": "ListItem", "position": 2, "name": "Popular plates", "item": f"{SITE_URL}/plates/index.html"},
+            {"@type": "ListItem", "position": 3, "name": "Featured plates directory", "item": canonical},
+        ]},
+    ]}
+    return f"""<!doctype html><html lang="zh-HK"><head>
+    <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>精選車牌拍賣結果目錄 | Plate.hk</title>
+    <meta name="description" content="按號碼類型瀏覽 {len(entries)} 個香港車牌歷史拍賣結果頁，查看成交日期、價錢及官方來源。">
+    <meta name="robots" content="index,follow,max-image-preview:large">
+    <link rel="canonical" href="{canonical}">
+    <script type="application/ld+json">{json.dumps(ld_json, ensure_ascii=False)}</script>
+    <link rel="stylesheet" href="/assets/ledger.css?v={INFO_CSS_VERSION}">
+    <style>.directory-wrap{{max-width:1120px;margin:auto;padding:28px 18px 60px}}.directory-wrap h1{{font-size:clamp(28px,4vw,44px)}}.directory-wrap section{{margin-top:30px}}.directory-wrap section p{{color:var(--muted)}}.directory-list{{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px 20px;list-style:none;padding:0}}.directory-list li{{padding:8px;border-bottom:1px solid var(--line)}}.directory-list a{{font-weight:800}}.directory-list span{{display:block;font-size:12px;color:var(--muted);margin-top:3px}}</style>
+    </head><body class="info-page" data-info-page="plates" data-title-zh="精選車牌拍賣結果目錄 | Plate.hk" data-title-en="Featured Plate Auction Records Directory | Plate.hk">
+    <div data-info-shell-header></div><main class="directory-wrap" id="main-content">
+    <a data-preserve-lang href="../index.html" {copy_attrs('← 熱門車牌', '← Popular plates')}>← 熱門車牌</a>
+    <h1 {copy_attrs('精選車牌拍賣結果目錄', 'Featured Plate Auction Records Directory')}>精選車牌拍賣結果目錄</h1>
+    <p data-lang-only="zh">按類型瀏覽 {len(entries)} 個精選歷史成交頁。成交價不是現時估值；每頁均可核對來源。</p>
+    <p data-lang-only="en" hidden>Browse {len(entries)} featured historical result pages by plate pattern. Auction prices are not current valuations; check each page's source.</p>
+    {''.join(sections)}
+    </main><div data-info-shell-footer></div>
+    <script src="/assets/info-locale.js?v={INFO_LOCALE_VERSION}"></script><script src="/assets/info-shell.js?v={INFO_SHELL_VERSION}"></script>
+    </body></html>"""
 
 
 def render_about() -> str:
@@ -1045,6 +1116,8 @@ def render_about() -> str:
     <meta name="robots" content="index,follow,max-image-preview:large" />
     <meta name="theme-color" content="#f4f1e8" />
     <link rel="canonical" href="{canonical}" />
+    <link rel="alternate" hreflang="zh-HK" href="{canonical}" />
+    <link rel="alternate" hreflang="en" href="{canonical}?lang=en" />
     <meta property="og:type" content="article" />
     <meta property="og:site_name" content="Plate.hk" />
     <meta property="og:title" content="香港車牌拍賣資料說明與方法 | Plate.hk" />
@@ -1213,11 +1286,50 @@ def render_about() -> str:
 """
 
 
+_MODIFIED_DATE_RE = re.compile(r'("dateModified": ")\d{4}-\d{2}-\d{2}(?=")')
+
+
+def meaningful_page_html(page: str) -> str:
+    return _MODIFIED_DATE_RE.sub(r'\g<1>CONTENT_DATE', page)
+
+
+def page_modified_at(previous: str | None, current: str, today: str = TODAY) -> str:
+    if previous and meaningful_page_html(previous) == meaningful_page_html(current):
+        match = _MODIFIED_DATE_RE.search(previous)
+        if match:
+            old_date = match.group(0)[-10:]
+            try:
+                date.fromisoformat(old_date)
+                return old_date
+            except ValueError:
+                pass
+    return today
+
+
+def render_sitemap(manifest: list[dict]) -> str:
+    rows = [f'  <url><loc>{html.escape(loc)}</loc></url>' for loc in STATIC_PAGES]
+    rows.extend(
+        f'  <url><loc>https://plate.hk{html.escape(item["href"])}</loc><lastmod>{item["lastmod"]}</lastmod></url>'
+        for item in manifest
+    )
+    return (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        + "\n".join(rows)
+        + "\n</urlset>\n"
+    )
+
+
 def build():
     entries = build_plate_data()
     entries_by_norm = {entry["plate_norm"]: entry for entry in entries}
 
     OUT.mkdir(parents=True, exist_ok=True)
+    previous_pages = {
+        page.name: page.read_text(encoding="utf-8")
+        for page in OUT.glob("*.html")
+        if " " not in page.name and page.name != "index.html"
+    }
     for old_page in OUT.glob("*.html"):
         if " " in old_page.name:
             continue
@@ -1226,8 +1338,10 @@ def build():
     manifest = []
     for idx, entry in enumerate(entries):
         related = entries[max(0, idx - 4): idx] + entries[idx + 1: idx + 5]
-        page = render_page(entries_by_norm, entry, related)
         filename = f"{entry['plate_norm']}.html"
+        candidate = render_page(entries_by_norm, entry, related)
+        modified_at = page_modified_at(previous_pages.get(filename), candidate)
+        page = candidate if modified_at == TODAY else render_page(entries_by_norm, entry, related, modified_at)
         (OUT / filename).write_text(page)
         manifest.append(
             {
@@ -1238,26 +1352,20 @@ def build():
                 "record_count": entry["count"],
                 "first_seen": date_label(entry["first_row"]),
                 "latest_seen": date_label(entry["latest_row"]),
+                "lastmod": modified_at,
             }
         )
 
     (OUT / "index.html").write_text(render_index(entries))
+    directory = OUT / "directory"
+    directory.mkdir(parents=True, exist_ok=True)
+    (directory / "index.html").write_text(render_directory(entries), encoding="utf-8")
     (ROOT / "about.html").write_text(render_about())
     (DATA / "popular_plates_manifest.json").write_text(
         json.dumps(manifest, ensure_ascii=False, separators=(",", ":"))
     )
 
-    sitemap_rows = [f'  <url><loc>{loc}</loc><lastmod>{TODAY}</lastmod></url>' for loc in STATIC_PAGES]
-    sitemap_rows.extend(
-        f'  <url><loc>https://plate.hk{item["href"]}</loc><lastmod>{TODAY}</lastmod></url>'
-        for item in manifest
-    )
-    (ROOT / "sitemap.xml").write_text(
-        '<?xml version="1.0" encoding="UTF-8"?>\n'
-        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
-        + "\n".join(sitemap_rows)
-        + "\n</urlset>\n"
-    )
+    (ROOT / "sitemap.xml").write_text(render_sitemap(manifest), encoding="utf-8")
 
     print(f"Built {len(manifest)} popular plate pages into {OUT}")
 
