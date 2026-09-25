@@ -1,4 +1,4 @@
-import { parseFilters, matchesFilters, filterKeys, comparableRows } from "../../assets/decision-core.mjs";
+import { parseFilters, matchesFilters, filterKeys, comparableRows, traditionalPatternComparableCohort } from "../../assets/decision-core.mjs";
 import {
   ApiError,
   apiJsonResponse,
@@ -711,21 +711,38 @@ async function handleSearch(request, env, ctx) {
 async function handleComparables(request, env, ctx) {
   const methodErr = requireGetLike(request);
   if (methodErr) return methodErr;
-  const query = normalizeSearchQuery(new URL(request.url).searchParams.get("q"));
+  const params = new URL(request.url).searchParams;
+  const query = normalizeSearchQuery(params.get("q"));
   if (!/^[A-HJ-NPR-Z0-9]{1,16}$/.test(query)) return badRequest("invalid query");
+  const page = Number(params.get("page") || 1);
+  const pageSize = Number(params.get("page_size") || 8);
+  if (!Number.isSafeInteger(page) || page < 1 || page > 100 || !Number.isInteger(pageSize) || pageSize < 1 || pageSize > 50) return badRequest("invalid paging");
   enforcePublicReadRateLimit(request, "comparables", 60, 600);
   return withApiCache(request, ctx, 600, async () => {
     const exact = await searchCompleteIndex(env, request, "all", query, "date_desc", "exact", 1, 200);
     if (!exact) throw new ApiError("search_index_unavailable", 503);
     const target = exact.rows.find(row => row.amount_hkd != null && Number(row.amount_hkd) > 0);
-    if (!target) return jsonResponse({ query, rows: [], reason: "no_priced_history", total_history: exact.total });
+    const traditionalPattern = /^([A-Z]{2})(\d{1,4})$/.exec(query);
+    const useTraditionalPatternCohort = traditionalPattern
+      && !["HK", "XX"].includes(traditionalPattern[1])
+      && target?.dataset_key !== "pvrm";
+    if (!target && !useTraditionalPatternCohort) return jsonResponse({ query, rows: [], reason: "no_priced_history", total_history: exact.total });
     const digits = query.match(/\d+$/)?.[0] || "";
     const token = digits.length >= 2 ? digits.slice(-2) : query[0];
-    const candidates = await loadCompleteSearchIndexRows(env, request, token);
+    const candidates = await loadCompleteSearchIndexRows(env, request, useTraditionalPatternCohort ? digits : token);
     if (!candidates) throw new ApiError("search_index_unavailable", 503);
-    return jsonResponse(await addDetailPaths({ query, target, match_text: token, total_history: exact.total,
+    const deduped = await dedupeAllIndexRows(env, request, candidates);
+    if (useTraditionalPatternCohort) {
+      const cohort = traditionalPatternComparableCohort(query, deduped, pageSize, new Date().toISOString().slice(0, 10), (page - 1) * pageSize);
+      return jsonResponse(await addDetailPaths({
+        query, target: target || null, total_history: exact.total, page, page_size: pageSize,
+        method: "Other two-letter traditional-pattern marks with the same complete number and prefix tier; latest confirmed priced event per plate. Structural comparison, not an official classification or current valuation.",
+        cohort: "traditional_pattern_same_number_prefix_tier", ...cohort,
+      }, request, env));
+    }
+    return jsonResponse(await addDetailPaths({ query, target, match_text: token, total_history: exact.total, page, page_size: pageSize,
       method: "Latest dated positive-price observation per other plate, same source dataset and letter/digit shape, sharing the displayed fragment. Structural examples, not a valuation or legal classification.",
-      rows: comparableRows(target, await dedupeAllIndexRows(env, request, candidates), token) }, request, env));
+      rows: page === 1 ? comparableRows(target, deduped, token, pageSize) : [] }, request, env));
   });
 }
 

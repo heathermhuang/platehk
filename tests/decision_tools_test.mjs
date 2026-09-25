@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import { readFileSync } from 'node:fs';
-import { normalize, validQuery, parseFilters, matchesFilters, comparableRows, calendarEvent } from '../assets/decision-core.mjs';
+import { normalize, validQuery, parseFilters, matchesFilters, comparableRows, traditionalPatternComparableCohort, calendarEvent } from '../assets/decision-core.mjs';
 import { normalizeSearchQuery, normalizeQuery } from '../cloudflare-worker/src/lib.mjs';
 import worker from '../cloudflare-worker/src/index.mjs';
 globalThis.caches = { default: { async match(){return undefined;}, async put(){} } };
@@ -38,6 +38,35 @@ test('comparables stay in the same dataset and shape, exclude null and duplicate
  const candidate={single_line:'BB88',dataset_key:'tvrm_physical',amount_hkd:20000,auction_date:'2025-01-01'};
  const out=comparableRows(target,[candidate,{...candidate,auction_date:'2026-01-01'},{...candidate,single_line:'CC88',dataset_key:'pvrm'},{...candidate,single_line:'B888'},{...candidate,single_line:'DD88',amount_hkd:null},{...candidate,single_line:'EE88',year_range:'1990-1999'}],'88');
  assert.equal(out.length,1);assert.equal(out[0].auction_date,'2026-01-01');assert.equal(out[0].match_text,'88');
+});
+test('traditional-pattern comparison uses complete number, prefix tier and distinct recent sales',()=>{
+ const candidate=(plate,price,date,changes={})=>({single_line:plate,dataset_key:'tvrm_eauction',amount_hkd:price,auction_date:date,result_status:'sold',pdf_url:'https://www.td.gov.hk/result.pdf',...changes});
+ const rows=[
+  candidate('RX168',43000,'2026-08-20'),candidate('RX168',39000,'2025-08-20'),
+  candidate('ZV168',44000,'2026-08-06'),candidate('XY168',51000,'2026-06-25'),
+  candidate('YC168',60000,'2026-04-16'),candidate('ZK168',49000,'2026-03-26'),
+  candidate('ZX168',99000,'2025-12-04'),candidate('AB168',25000,'2020-01-01'),
+  candidate('AA168',155000,'2026-01-01'),candidate('HK168',300000,'2026-01-01'),
+  candidate('AH168',18000,'2026-01-01'),candidate('TT168',null,'2026-01-01'),
+  candidate('GG168',5000,'2026-01-01',{result_status:'unsold'}),
+  candidate('FG168',20000,'2026-01-01',{dataset_key:'pvrm'}),
+  candidate('NJ168',30000,'2026-01-01',{year_range:'2020-2026'}),
+ ];
+ const out=traditionalPatternComparableCohort('AH168',rows,8,'2026-09-25');
+ assert.equal(out.sample_size,6);
+ assert.equal(out.window,'recent_three_years');
+ assert.equal(out.statistics.median,50000);
+ assert.deepEqual(out.rows.map(row=>row.single_line),['RX168','ZV168','XY168','YC168','ZK168','ZX168']);
+ const secondPage=traditionalPatternComparableCohort('AH168',rows,3,'2026-09-25',3);
+ assert.deepEqual(secondPage.rows.map(row=>row.single_line),['YC168','ZK168','ZX168']);
+ assert.deepEqual(secondPage.statistics,out.statistics);
+ const sparse=traditionalPatternComparableCohort('AH168',rows.slice(0,5),8,'2026-09-25');
+ assert.equal(sparse.sample_size,4);
+ assert.equal(sparse.statistics,null);
+ const expanded=traditionalPatternComparableCohort('AH168',[...rows.slice(0,5),candidate('AB168',25000,'2020-01-01'),candidate('CD168',27000,'2019-01-01')],8,'2026-09-25');
+ assert.equal(expanded.window,'all_exact_dates');
+ assert.equal(expanded.sample_size,6);
+ assert.equal(traditionalPatternComparableCohort('HK168',rows),null);
 });
 test('calendar downloads use UTC, stable UID, escaped text, UTF-8 folding and one-day reminder',()=>{
  const event={id:'eauction-2026-09-17',start_at:'2026-09-17T12:00:00+08:00',end_at:'2026-09-21T12:00:00+08:00'};

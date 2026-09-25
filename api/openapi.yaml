@@ -288,8 +288,8 @@ paths:
           description: Required bounded result index is unavailable
   /api/comparables:
     get:
-      summary: Dated structural examples for a plate with priced auction history
-      description: Same source dataset and letter/digit structure, sharing a fragment. Latest positive-price dated record per alternative plate, at most eight, sorted by date. Not a valuation, legal classification, owner lookup or listing. Sparse history returns an empty rows array with a reason.
+      summary: Source-linked comparable historical auction sales for a plate
+      description: Two-letter traditional-pattern marks use other marks with the same complete number and prefix tier, even when the queried mark has no recorded sale. This structural group does not establish the official ordinary or special category. The cohort uses each other plate's latest positive-price event, preferring the last three years when at least five distinct plates qualify; coarse year ranges, unsold events, HK/XX, PVRM, and the queried mark are excluded. Returns sample size, date range, and historical P25/median/P75 only with at least five qualifying plates. Other marks retain bounded same-dataset structural examples. This is not a current valuation, legal classification, owner lookup or listing.
       parameters:
         - in: query
           name: q
@@ -298,9 +298,23 @@ paths:
             type: string
             minLength: 1
             maxLength: 16
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 1
+        - in: query
+          name: page_size
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 8
       responses:
         "200":
-          description: Query, target row when available, method, total_history and rows containing match_text and comparison_reason.
+          description: Query, target row when available, method, total_history, page, page_size, and source-linked rows. Traditional-pattern cohorts also include sample_size, window, date_from, date_to, and statistics when qualified.
         "400":
           description: Invalid plate query
         "503":

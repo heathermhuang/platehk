@@ -8,9 +8,10 @@ const notice = value => {const el=document.querySelector('#decisionNotice');if(e
 const detailHref = plate => `/plate.html?q=${encodeURIComponent(plate)}&lang=${lang}`;
 function link(label,href) { const a=make('a',label);a.href=href;return a; }
 function sourceUrl(row) {
-  try { const u=new URL(row.source_url || row.pdf_url,'https://plate.hk/');
-    return u.protocol==='https:' && ['plate.hk','www.plate.hk','td.gov.hk','www.td.gov.hk'].includes(u.hostname) ? u.href : null;
-  }catch{return null;}
+  for(const raw of [row.pdf_url,row.source_url])try { if(typeof raw!=='string'||!raw.trim())continue;const u=new URL(raw,'https://plate.hk/');
+    if(u.protocol==='https:' && ['plate.hk','www.plate.hk','td.gov.hk','www.td.gov.hk'].includes(u.hostname))return u.href;
+  }catch{}
+  return null;
 }
 const plateOf = row => normalize(row.single_line || (row.double_line || []).join(''));
 const priceOf = row => row.amount_hkd == null ? (row.result_text || text('沒有成交價','No sale price')) : 'HK$'+Number(row.amount_hkd).toLocaleString('en-HK');
@@ -98,11 +99,34 @@ async function loadHistory(plate,host,page=1){
 }
 async function loadComparables(plate,host) {
  host.replaceChildren(make('h2',text('相似歷史成交','Comparable historical sales')));
- host.append(make('p',text('按相同資料集、字母／數字結構及號碼片段選取，按日期排序。並非估價、可轉讓性判斷或放售證明。','Selected by source dataset, letter/digit structure and a shared fragment, ordered by date. Not a valuation, transferability judgment or evidence of a current listing.')));
  const content=make('div');host.append(content);
  try{const result=await getJson(`/api/comparables?q=${encodeURIComponent(plate)}`);if(!Array.isArray(result.rows))throw new Error('invalid_response');
-  if(!result.rows.length)content.append(make('p',text('沒有足夠相似的有價成交紀錄；不提供估價。','No sufficiently similar priced records found; no estimate is offered.')));
-  const list=make('div',null,'decision-results');for(const row of result.rows)list.append(rowCard(row,text(`相同資料集及字數結構；包含「${row.match_text}」。每個車牌取最近一筆有價紀錄。`,`Same dataset and letter/digit shape; contains “${row.match_text}”. Latest priced record per plate.`)));content.append(list);refreshSaveButtons();
+  const traditionalPattern=result.cohort==='traditional_pattern_same_number_prefix_tier';
+  content.append(make('p',traditionalPattern
+    ? text('只比較完整相同數字、同字首級別的兩字母傳統形式車牌；每個其他車牌只取最近一次有價成交。這是結構比較，不代表官方分類、現時估價或放售證明。','Only two-letter traditional-pattern marks with the same full number and prefix tier are compared, using each other plate’s latest priced sale. This structural comparison is not an official classification, current valuation or listing.')
+    : text('按相同資料集、字母／數字結構及號碼片段選取，按日期排序。並非估價、可轉讓性判斷或放售證明。','Selected by source dataset, letter/digit structure and a shared fragment, ordered by date. Not a valuation, transferability judgment or evidence of a current listing.')));
+  if(traditionalPattern&&result.sample_size){
+   content.append(make('p',text(`${result.sample_size} 個獨立比較車牌 · ${result.date_from} 至 ${result.date_to} · ${result.window==='recent_three_years'?'近三年':'所有具確實日期的紀錄'}`,`${result.sample_size} distinct comparable plates · ${result.date_from} to ${result.date_to} · ${result.window==='recent_three_years'?'last three years':'all records with exact dates'}`)));
+   if(result.statistics){const stats=make('div',null,'decision-results');for(const [key,zh,en] of [['p25','第 25 百分位','25th percentile'],['median','中位數','Median'],['p75','第 75 百分位','75th percentile']]){const card=make('div',null,'decision-result');card.append(make('strong',text(zh,en)),make('p','HK$'+Number(result.statistics[key]).toLocaleString('en-HK')));stats.append(card);}content.append(stats);}
+   else content.append(make('p',text('樣本不足五個，只列出個別成交，不提供價格區間。','Fewer than five qualifying plates; individual sales are shown without a price range.')));
+  }
+  if(!result.rows.length)content.append(make('p',text('沒有足夠相似的有價成交紀錄；不提供價格區間。','No sufficiently similar priced records found; no price range is offered.')));
+  const list=make('div',null,'decision-results');
+  const appendRows=rows=>{for(const row of rows)list.append(rowCard(row,traditionalPattern
+   ? text('完整數字及字首級別相同；每個車牌只取最近一次有價成交。','Same complete number and prefix tier; latest priced sale per plate.')
+   : text(`相同資料集及字數結構；包含「${row.match_text}」。每個車牌取最近一筆有價紀錄。`,`Same dataset and letter/digit shape; contains “${row.match_text}”. Latest priced record per plate.`)));refreshSaveButtons();};
+  content.append(list);appendRows(result.rows);
+  if(traditionalPattern&&result.sample_size>result.rows.length){
+   let shown=result.rows.length,page=1;
+   const more=make('button');more.type='button';more.textContent=text(`顯示更多比較成交（${shown}/${result.sample_size}）`,`Show more comparable sales (${shown}/${result.sample_size})`);
+   more.addEventListener('click',async()=>{more.disabled=true;try{
+    const next=await getJson(`/api/comparables?q=${encodeURIComponent(plate)}&page=${page+1}&page_size=8`);
+    if(!Array.isArray(next.rows)||!next.rows.length)throw new Error('invalid_page');
+    page++;shown+=next.rows.length;appendRows(next.rows);
+    if(shown>=result.sample_size)more.remove();else more.textContent=text(`顯示更多比較成交（${shown}/${result.sample_size}）`,`Show more comparable sales (${shown}/${result.sample_size})`);
+   }catch{more.textContent=text('未能載入更多成交，請重試。','Could not load more sales. Try again.');}finally{more.disabled=false;}});
+   content.append(more);
+  }
  }catch{requestError(content,()=>loadComparables(plate,host));}
 }
 const staticDetail=document.querySelector('[data-plate-detail]');

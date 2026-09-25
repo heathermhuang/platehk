@@ -39,6 +39,7 @@ if [[ "$SMOKE" -eq 1 ]]; then
     camera.html \
     mcp.html \
     plates/index.html \
+    plates/directory/index.html \
     plates/88.html \
     sitemap.xml \
     robots.txt \

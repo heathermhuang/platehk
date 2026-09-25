@@ -31,7 +31,16 @@ def query_form(action='/plate.html'):
 
 def body_for(page):
  if page=='prices':
-  return bilingual('查找曾經公開拍賣的成交紀錄，再比較相同資料類型、字母及數字結構的其他車牌。','Look up past public-auction records, then compare other plates with the same source dataset and letter/digit structure.')+query_form()+bilingual('歷史成交價不是現時估價或放售價。每筆比較均顯示日期、來源與選取理由；資料不足時不會提供估價。','Historical results are not current valuations or asking prices. Comparisons show dates, sources and selection reasons; insufficient evidence never becomes an estimate.')+link('/discover.html','按預算及號碼篩選','Filter by budget and pattern')
+  return (
+   bilingual('先查完整車牌的歷史公開拍賣結果，再看有來源可核對的相近成交。','Look up the exact plate’s public auction history, then inspect comparable sales with verifiable sources.')
+   +query_form()
+   +bilingual('如何選取相近成交？','How are comparable sales selected?','h2')
+   +bilingual('兩字母加數字的傳統形式車牌，只比較完整相同數字和相同字首級別；HK／XX、自訂車牌及純數字車牌不會混入。這是結構比較，不代表官方普通或特殊類別。每個其他車牌只取最近一次有價、具確實日期的成交。近三年有至少五個獨立樣本時顯示第 25 百分位、中位數及第 75 百分位；不足時擴大歷史日期，仍不足五個便只列個別紀錄。','Two-letter, numeral-ending traditional-pattern marks are compared only with the same complete number and prefix tier. HK/XX, personalized and number-only marks stay separate. This structural group does not establish the official ordinary or special category. Each other plate contributes its latest priced sale with an exact date. We show the 25th percentile, median and 75th percentile when at least five distinct plates qualify within three years; otherwise we widen the historical window and show individual sales without a range if fewer than five qualify.')
+   +bilingual('這些數字能代表現時車牌價值嗎？','Do these numbers establish current value?','h2')
+   +bilingual('不能。這是已發生的公開拍賣成交分布，不是現時估價、放售價或未來成交預測。沒有拍賣紀錄亦不代表號碼可供申請。請逐筆核對日期、來源及選樣條件。','No. These are distributions of past public-auction sales, not a current valuation, asking price or future-price prediction. No auction record does not establish availability. Check each date, source and selection rule.')
+   +link('/availability.html','前往官方可用號碼及申請指引','Check official availability and applications')
+   +' · '+link('/discover.html','按預算及號碼篩選','Filter by budget and pattern')
+  )
  if page=='availability':
   return bilingual('沒有拍賣紀錄，不代表號碼未被分配。Plate.hk 不提供車主查冊或即時分配狀態；請使用運輸署官方服務。','No auction record does not mean a mark is unassigned. Plate.hk does not provide owner lookup or live allocation status; use the official Transport Department service.')+''.join([
   bilingual('1. 你想查過往價格？','1. Looking for historical prices?','h2'),link('/prices.html','搜尋歷史成交紀錄','Search historical results'),
@@ -77,7 +86,7 @@ def render(page):
  <body data-info-page="{page}" data-decision-page="{page}" data-title-zh="{zh} | Plate.hk" data-title-en="{en} | Plate.hk"><div data-info-shell-header></div><main id="main-content" class="decision-main">{bilingual(zh,en,'h1')}
  <nav class="decision-actions" aria-label="Decision tools">{link('/prices.html','價格資料說明','Price guide')} {link('/availability.html','官方可用號碼及申請','Official availability and applications')}</nav>
  {body_for(page)}<p id="decisionNotice" role="status"></p></main><div data-info-shell-footer></div>
- <script src="/assets/info-locale.js?v=20260825-01"></script><script src="/assets/info-shell.js?v=20260825-01"></script><script type="module" src="/assets/decision.js?v=20260915-01"></script></body></html>'''
+ <script src="/assets/info-locale.js?v=20260825-01"></script><script src="/assets/info-shell.js?v=20260825-01"></script><script type="module" src="/assets/decision.js?v=20260925-01"></script></body></html>'''
 
 def build(target=ROOT):
  for page in PAGES:(target/f'{page}.html').write_text(render(page),encoding='utf-8')

@@ -22,6 +22,7 @@ The current public UI uses a flat Ledger visual system: compact auction-record t
 - Data audit: [https://plate.hk/audit.html](https://plate.hk/audit.html)
 - Changelog: [https://plate.hk/changelog.html](https://plate.hk/changelog.html)
 - Popular plates: [https://plate.hk/plates/](https://plate.hk/plates/)
+- Featured plate directory: [https://plate.hk/plates/directory/index.html](https://plate.hk/plates/directory/index.html)
 
 ## Project docs
 
@@ -40,6 +41,7 @@ The current public UI uses a flat Ledger visual system: compact auction-record t
 
 - Public-facing search experience for Hong Kong plate auction history
 - Verifiable source links back to official Transport Department documents
+- Paginated, source-linked historical comparison cohorts for eligible two-letter plate patterns, including marks without an exact sale; displayed percentiles are past-sale distributions, never current valuations or official mark classifications
 - Static-first architecture with Cloudflare Worker APIs and prebuilt JSON shards
 - Built-in audit surface for source coverage, parse quality, and release confidence
 - Flat Ledger UI tuned for auction records, compact tables, generated plate pages, and share posters
@@ -132,7 +134,7 @@ The current production shape is:
 - The Worker performs exact-plate lookups against a non-browsable, minimal external-sale signal asset
 - Fresh exact sale signals can launch a short, client-side WhatsApp buyer-enquiry draft
 - Canonical bounded indexes power search, issue shards power date browsing, and sorted result chunks back paginated result views
-- SEO pages under `plates/` expose popular plate result pages to search engines
+- SEO pages under `plates/` expose source-linked popular plate results; the directory links every selected page in plain HTML
 
 Legacy runtime code has been removed; production and local runtime paths use the Cloudflare Worker plus static assets.
 
@@ -147,6 +149,7 @@ The production frontend is intentionally static-first and style-light:
 - Search result rows are tuned as dense auction ledger records on desktop and readable cards on mobile
 - `assets/index.share.js` generates branded share posters in-browser from the current row data
 - `scripts/build_popular_plate_pages.py` regenerates the `plates/` SEO pages with the same Ledger styling
+- The plate page generator retains a sitemap modification date when substantive HTML is unchanged; static URLs omit the optional date
 
 ```mermaid
 flowchart LR

@@ -29,6 +29,7 @@ Plate.hk is the independent, non-government search layer across PVRM, TVRM physi
 
 - API index: `/api/v1/index.json`
 - Search API: `/api/search?dataset=all&q=88&page=1&page_size=20&sort=amount_desc`
+- Historical comparisons: `/api/comparables?q=AH168` (other two-letter traditional-pattern marks with the same complete number and prefix tier; structural comparison, not an official category or valuation)
 - Issue list API: `/api/issues?dataset=pvrm`
 - Single issue API: `/api/issue?dataset=pvrm&auction_date=2026-01-17`
 - Results API: `/api/results?dataset=all&page=1&page_size=20&sort=amount_desc`
@@ -38,6 +39,7 @@ Plate.hk is the independent, non-government search layer across PVRM, TVRM physi
 - OpenAPI description: `/api/openapi.yaml`
 - API docs: `/api.html`
 - Data guide and methodology: `/about.html`
+- Featured plate pages directory: `/plates/directory/index.html`
 - Audit report: `/audit.html`
 - Agent skill summary: `/skill.md`
 
@@ -67,6 +69,7 @@ Plate.hk is the independent, non-government search layer across PVRM, TVRM physi
 4. Return `pdf_url` links whenever provenance matters.
 5. Mention whether a result came from `pvrm`, `tvrm_physical`, `tvrm_eauction`, or `tvrm_legacy`.
 6. Describe `amount_hkd` as a historical auction result, not a current valuation.
+7. If using `/api/comparables`, cite its individual source rows and sample dates. Use `page` and `page_size` (up to 50) to inspect the complete cohort. P25, median and P75 describe selected past sales, not the queried plate's current value; null `statistics` means fewer than five qualified plates.
 
 ## Search response contract
 

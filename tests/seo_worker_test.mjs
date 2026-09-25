@@ -9,8 +9,9 @@ const env = {
     async fetch(request) {
       const url = new URL(request.url);
       assetRequests.push(url.pathname);
-      if (url.pathname === "/about" || url.pathname === "/plates/WK" || url.pathname === "/plates/") {
-        return new Response("<!doctype html><title>Canonical page</title>", {
+      if (url.pathname === "/" || url.pathname === "/about" || url.pathname === "/plates/WK" || url.pathname === "/plates/") {
+        const canonical = url.pathname === "/about" ? "https://plate.hk/about.html" : "https://plate.hk/";
+        return new Response(`<!doctype html><html lang="zh-HK"><head><title>Canonical page</title><meta name="description" content="中文說明"><link rel="canonical" href="${canonical}"></head><body>Page</body></html>`, {
           headers: { "content-type": "text/html; charset=utf-8" },
         });
       }
@@ -32,6 +33,15 @@ const aboutHtml = await worker.fetch(new Request("https://plate.hk/about.html?la
 assert.equal(aboutHtml.status, 200);
 assert.deepEqual(assetRequests, ["/about"]);
 assert.equal(aboutHtml.headers.get("x-robots-tag"), null);
+const englishAbout = await aboutHtml.text();
+assert.match(englishAbout, /<html lang="en">/);
+assert.match(englishAbout, /<link rel="canonical" href="https:\/\/plate\.hk\/about\.html\?lang=en">/);
+assert.match(englishAbout, /<meta name="description" content="Sources, coverage/);
+assert.equal((englishAbout.match(/rel="canonical"/g) || []).length, 1);
+
+const englishHome = await worker.fetch(new Request("https://plate.hk/?lang=en"), env, ctx);
+assert.equal(englishHome.status, 200);
+assert.match(await englishHome.text(), /<link rel="canonical" href="https:\/\/plate\.hk\/\?lang=en">/);
 
 const plateRedirect = await worker.fetch(new Request("https://plate.hk/plates/WK"), env, ctx);
 assert.equal(plateRedirect.status, 301);

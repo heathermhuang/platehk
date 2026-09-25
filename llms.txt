@@ -45,6 +45,7 @@ Audit report:
 
 Canonical data guide:
 - /about.html
+- Featured source-linked plate directory: /plates/directory/index.html
 
 Agent-readable guidance:
 - Agent overview: /agent.md
@@ -61,6 +62,7 @@ Agent-readable guidance:
 Public server-side search API:
 - Health check: /api/health
 - Search: /api/search?dataset=all&q=88&sort=amount_desc&page=1&page_size=20
+- Historical comparisons: /api/comparables?q=AH168 (same complete number and two-letter prefix tier; structural comparison, not an official mark category; may return a cohort without an exact AH168 sale)
 - Issues: /api/issues?dataset=pvrm
 - Issue: /api/issue?dataset=pvrm&auction_date=2026-01-17
 - Search responses use the top-level array name rows, not results. The stable keys are dataset, q, issue, mode, sort, page, page_size, total, and rows.
@@ -70,6 +72,7 @@ Citation and verification guidance:
 - Preserve meaningful spaces and 2-row PVRM layouts when quoting a mark.
 - Link the official pdf_url whenever available; for legacy year ranges, link the source workbook.
 - State that the amount is a historical public auction result, not a current valuation.
+- Treat comparable P25/median/P75 as past-sale distribution only; check sample_size, date range and each linked source. Use page and page_size (up to 50) to inspect the full cohort. Null statistics means fewer than five qualified plates.
 
 Protected machine-auth API:
 - OCR token endpoint: /api/oauth/token (OAuth 2.0 client_credentials)
