@@ -1307,10 +1307,16 @@ def page_modified_at(previous: str | None, current: str, today: str = TODAY) -> 
 
 
 def render_sitemap(manifest: list[dict]) -> str:
+    from build_auction_result_pages import sitemap_entries
+
     rows = [f'  <url><loc>{html.escape(loc)}</loc></url>' for loc in STATIC_PAGES]
     rows.extend(
         f'  <url><loc>https://plate.hk{html.escape(item["href"])}</loc><lastmod>{item["lastmod"]}</lastmod></url>'
         for item in manifest
+    )
+    rows.extend(
+        f'  <url><loc>https://plate.hk{html.escape(item["href"])}</loc><lastmod>{item["lastmod"]}</lastmod></url>'
+        for item in sitemap_entries()
     )
     return (
         '<?xml version="1.0" encoding="UTF-8"?>\n'
@@ -1366,6 +1372,9 @@ def build():
     )
 
     (ROOT / "sitemap.xml").write_text(render_sitemap(manifest), encoding="utf-8")
+
+    from build_auction_result_pages import build as build_auction_result_pages
+    build_auction_result_pages()
 
     print(f"Built {len(manifest)} popular plate pages into {OUT}")
 

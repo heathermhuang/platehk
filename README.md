@@ -35,6 +35,7 @@ The current public UI uses a flat Ledger visual system: compact auction-record t
 - MCP implementation notes: [mcp/README.md](./mcp/README.md)
 - Agent guide and public skill: [agent.md](./agent.md), [skill.md](./skill.md)
 - SEO/AEO measurement baseline: [docs/SEO_AEO_BASELINE.md](./docs/SEO_AEO_BASELINE.md)
+- Complete source-verified auction rounds: [docs/AUCTION_RESULTS.md](./docs/AUCTION_RESULTS.md)
 - Historical handoffs and recovery notes: [docs/](./docs/)
 
 ## At a Glance

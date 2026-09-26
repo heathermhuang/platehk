@@ -8,6 +8,8 @@ PYTHON_BIN="${PYTHON_BIN:-python3}"
 export PYTHONPYCACHEPREFIX="${PYTHONPYCACHEPREFIX:-${TMPDIR:-/tmp}/pvrm-pycache}"
 
 "${PYTHON_BIN}" -m py_compile \
+  scripts/build_auction_result_pages.py \
+  scripts/verify_auction_result_sources.py \
   scripts/build_all_search_index.py \
   scripts/build_all_short_exact_index.py \
   scripts/build_hot_search_cache.py \
