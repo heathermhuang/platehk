@@ -14,6 +14,7 @@ import pdfplumber
 import pypdfium2 as pdfium
 from bs4 import BeautifulSoup
 from lny_mixed_parser import is_lny_url, parse_lny_mixed_pdf
+from parse_tvrm_pdfs import parse_physical_rows_by_words
 
 # TVRM (Traditional Vehicle Registration Marks) datasets:
 # 1) Physical auction result handouts (實體拍賣結果)
@@ -31,6 +32,8 @@ TOTAL_EN_RE = re.compile(
     re.IGNORECASE,
 )
 TOTAL_ZH_RE = re.compile(r"全日拍賣所得款項\s*[:：]?\s*(?:HK)?\s*\$?\s*([0-9,]+)", re.IGNORECASE)
+TOTAL_ZH_PROCEEDS_RE = re.compile(r"拍賣所得\s*\$?\s*([0-9,]+)")
+TOTAL_EN_PROCEEDS_RE = re.compile(r"The\s+total\s+proceeds\s+of\s*\$?\s*([0-9,]+)", re.IGNORECASE)
 
 DATE_ZH_RE = re.compile(r"(\d{4})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})\s*日")
 DATE_EN_RE_DMY = re.compile(r"\b(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})\b")
@@ -335,7 +338,12 @@ def extract_total_sale_proceeds(pdf_path: Path) -> Optional[int]:
     for page_index in reversed(range(len(doc))):
         raw = doc[page_index].get_textpage().get_text_range()
         text = normalize_space(raw)
-        m = TOTAL_EN_RE.search(text) or TOTAL_ZH_RE.search(text)
+        m = (
+            TOTAL_EN_RE.search(text)
+            or TOTAL_ZH_RE.search(text)
+            or TOTAL_EN_PROCEEDS_RE.search(text)
+            or TOTAL_ZH_PROCEEDS_RE.search(text)
+        )
         if not m:
             continue
         try:
@@ -418,14 +426,18 @@ def parse_physical_pdf_rows(pdf_path: Path, source: AuctionPdf) -> list[dict]:
                     if not row:
                         continue
                     cells = [normalize_space(c or "") for c in row]
-                    # Scan for repeating triples: PREFIX, NUMBER, AMOUNT/U/S
+                    # PREFIX or NUMBER can be empty for letters-only or numeric-only marks.
                     i = 0
                     while i + 2 < len(cells):
                         a, b, c = cells[i], cells[i + 1], cells[i + 2]
-                        if PLATE_PREFIX_RE.fullmatch(a) and PLATE_NUMBER_RE.fullmatch(b):
+                        prefix_mark = PLATE_PREFIX_RE.fullmatch(a) and (
+                            PLATE_NUMBER_RE.fullmatch(b) or not b
+                        )
+                        numeric_mark = not a and PLATE_NUMBER_RE.fullmatch(b)
+                        if prefix_mark or numeric_mark:
                             amt = parse_amount_hkd(c)
                             if amt is not None:
-                                single = f"{a} {b}"
+                                single = normalize_space(f"{a} {b}")
                                 rows.append(
                                     {
                                         "auction_date": source.date_iso,
@@ -440,6 +452,22 @@ def parse_physical_pdf_rows(pdf_path: Path, source: AuctionPdf) -> list[dict]:
                             i += 3
                             continue
                         i += 1
+    total = extract_total_sale_proceeds(pdf_path)
+    if total is not None and sum(row["amount_hkd"] for row in rows) != total:
+        # Table extraction can miss rows outside its detected grid. Use the
+        # existing positional parser only when it reconciles to the official total.
+        word_rows = parse_physical_rows_by_words(pdf_path)
+        table_records = {(row["single_line"], row["amount_hkd"]) for row in rows}
+        word_records = {(row["single_line"], row["amount_hkd"]) for row in word_rows}
+        if table_records <= word_records and sum(row["amount_hkd"] for row in word_rows) == total:
+            return [
+                {
+                    **row,
+                    "auction_date": source.date_iso,
+                    "pdf_url": source.pdf_url,
+                }
+                for row in word_rows
+            ]
     return rows
 
 
