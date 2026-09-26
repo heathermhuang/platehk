@@ -57,6 +57,9 @@ def body_for(page):
   events=json.loads((ROOT/'data/events.json').read_text()).get('events',[])
   titles={'pvrm_registration':('自訂車牌申請窗口','PVRM application window'),'tvrm_eauction':('拍牌易網上拍賣','Online ordinary-mark auction'),'tvrm_physical':('傳統車牌實體拍賣','Traditional-mark physical auction'),'pvrm_physical':('自訂車牌實體拍賣','Personalized-mark physical auction')}
   out=bilingual('官方申請、網上及實體拍賣日程。日曆檔案含提前一天的提醒；下載後不會自動更新，請再次核對官方公告。','Official application, online and physical auction dates. Calendar downloads include a one-day reminder; downloaded events do not update automatically. Recheck official notices.')
+  out+='<section class="decision-event">'+bilingual('已核對的完整拍賣結果','Verified complete auction results','h2')
+  out+=bilingual('查閱完整號碼表、拍賣售出、特別費用分配及未售出標示，並核對運輸署手冊。','Read complete mark tables with auction sales, special-fee allocations and unsold labels, checked against Transport Department handouts.')
+  out+='<p data-lang-only="zh"><a href="/auction-results/index.html">拍賣結果目錄</a></p><p data-lang-only="en" hidden><a href="/auction-results/en/index.html">Auction results archive</a></p></section>'
   for event in events:
    zh,en=titles.get(event['type'],('官方活動','Official event'))
    url=event.get('action_url_en') or event.get('source_url_en') or ''

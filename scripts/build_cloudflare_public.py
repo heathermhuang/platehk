@@ -549,6 +549,9 @@ def main(*, require_market_snapshot: bool = False) -> None:
         shutil.rmtree(TARGET)
     TARGET.mkdir(parents=True, exist_ok=True)
 
+    from build_auction_result_pages import build as build_auction_result_pages
+    build_auction_result_pages(TARGET)
+
     decision_spec = importlib.util.spec_from_file_location("build_decision_pages", ROOT / "scripts/build_decision_pages.py")
     decision_module = importlib.util.module_from_spec(decision_spec)
     decision_spec.loader.exec_module(decision_module)
