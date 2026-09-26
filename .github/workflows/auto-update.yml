@@ -114,6 +114,7 @@ jobs:
             assets \
             data \
             plates \
+            auction-results \
             index.html \
             landing.html \
             about.html \

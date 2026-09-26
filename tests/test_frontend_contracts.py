@@ -325,7 +325,15 @@ class FrontendContractsTests(unittest.TestCase):
         rows = {item.findtext("s:loc", namespaces=namespace): item.findtext("s:lastmod", namespaces=namespace)
                 for item in sitemap.findall("s:url", namespace)}
         manifest = json.loads((ROOT / "data" / "popular_plates_manifest.json").read_text(encoding="utf-8"))
-        self.assertEqual(len(rows), len(manifest) + 22)
+        import importlib.util
+
+        spec = importlib.util.spec_from_file_location('auction_result_sitemap', ROOT / 'scripts/build_auction_result_pages.py')
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        archive = module.sitemap_entries()
+        self.assertEqual(len(rows), len(manifest) + 22 + len(archive))
+        for item in archive:
+            self.assertEqual(rows[f'https://plate.hk{item["href"]}'], item['lastmod'])
         self.assertIsNone(rows["https://plate.hk/"])
         self.assertIsNone(rows["https://plate.hk/plates/directory/index.html"])
         for path in ("", "prices.html", "discover.html", "auctions.html", "availability.html", "about.html"):

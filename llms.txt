@@ -46,6 +46,9 @@ Audit report:
 Canonical data guide:
 - /about.html
 - Featured source-linked plate directory: /plates/directory/index.html
+- Complete source-verified auction rounds: /auction-results/index.html
+- Original English result archive: /auction-results/en/index.html
+- These curated round tables distinguish auction sales, special-fee allocations after no bidder, and U/S unsold marks. General search records may omit unsold marks and do not retain every disposition. For online rounds, the issue key is the opening date, not each mark's sale or payment date.
 
 Agent-readable guidance:
 - Agent overview: /agent.md
