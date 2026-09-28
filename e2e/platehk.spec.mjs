@@ -331,6 +331,7 @@ test.describe("Plate.hk browser journeys", () => {
     await page.route("**/data/events.json", (route) => route.fulfill({ json: { events: futureAuctionEvents(6) } }));
 
     await page.goto("/?lang=en");
+    await page.locator('.ux-secondary > summary').click();
     const slider = page.locator("[data-agenda-slider]");
     await expect(slider).toBeVisible();
     await expect(slider.locator(".agenda-item")).toHaveCount(6);
@@ -402,6 +403,7 @@ test.describe("Plate.hk browser journeys", () => {
     await page.route("**/data/events.json", (route) => route.fulfill({ json: { events: futureAuctionEvents(4) } }));
 
     await page.goto("/?lang=en");
+    await page.locator('.ux-secondary > summary').click();
     const agenda = page.locator(".auction-agenda");
     await expect(agenda.locator(".agenda-item")).toHaveCount(4);
     await expect(agenda.locator("[data-agenda-slider]")).toHaveCount(0);
@@ -414,6 +416,7 @@ test.describe("Plate.hk browser journeys", () => {
     const errors = collectBrowserErrors(page);
 
     await page.goto("/");
+    await page.locator('#matchMode').selectOption('contains');
     await expect(page.locator("#q")).toBeVisible();
     await expect(page.locator("#dataset")).toHaveValue("all");
     await waitForResultRows(page, 1);
@@ -607,6 +610,7 @@ test.describe("Plate.hk browser journeys", () => {
     });
 
     await page.goto("/?lang=en&q=HUANG");
+    await page.locator('#matchMode').selectOption('contains');
     await waitForResultRows(page, 2);
     const huangRow = page.locator("#rows tr[data-plate='HUANG']");
     const drHuangRow = page.locator("#rows tr[data-plate='DRHUANG']");
@@ -636,6 +640,7 @@ test.describe("Plate.hk browser journeys", () => {
     const errors = collectBrowserErrors(page);
 
     await page.goto("/?d=tvrm_physical&lang=en");
+    await page.locator('#matchMode').selectOption('contains');
     await expect(page.locator("#dataset")).toHaveValue("tvrm_physical");
     await expect(page.locator("#langEn")).toHaveAttribute("aria-pressed", "true");
     await waitForResultRows(page, 1);
@@ -705,7 +710,7 @@ test.describe("Plate.hk browser journeys", () => {
       ["/changelog.html", "changelog"],
       ["/audit.html", "audit"],
       ["/api.html", "api"],
-      ["/mcp.html", "api"],
+      ["/mcp.html", "mcp"],
       ["/plates/index.html", "plates"],
     ];
 
@@ -719,7 +724,7 @@ test.describe("Plate.hk browser journeys", () => {
       const internalShellLinks = await page.locator(".info-nav a, .info-site-footer a").evaluateAll((links) => links
         .map((link) => link.href)
         .filter((href) => new URL(href).origin === location.origin && !new URL(href).pathname.endsWith("llms.txt")));
-      expect(internalShellLinks.every((href) => new URL(href).searchParams.get("lang") === "en")).toBe(true);
+      expect(internalShellLinks.every((href) => new URL(href).searchParams.get("lang") === "en" || new URL(href).pathname.startsWith("/auction-results/en/"))).toBe(true);
       if (path === "/audit.html") await expect(page.locator("#auditSummary")).not.toBeEmpty();
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
     }
@@ -727,6 +732,7 @@ test.describe("Plate.hk browser journeys", () => {
     await page.goto("/audit.html");
     await page.locator("#infoLangEn").click();
     await expect(page).toHaveURL(/lang=en/);
+    await page.locator('.site-more > summary').click();
     await expect(page.locator('.info-nav a[href="/api.html?lang=en"]')).toBeVisible();
 
     await page.goto("/about.html?lang=en");
@@ -763,8 +769,11 @@ test.describe("Plate.hk browser journeys", () => {
     await page.locator("#popularQuery").clear();
     await expect(page.locator("[data-popular-card]:visible")).toHaveCount(initialLimit);
     await page.locator("#popularShowAll").click();
-    await expect(page.locator("[data-popular-card]:visible")).toHaveCount(420);
-    await expect(page.locator("#popularShowAll")).toBeHidden();
+    await expect(page.locator("[data-popular-card]:visible")).toHaveCount(initialLimit * 2);
+    await expect(page.locator("#popularShowAll")).toBeVisible();
+    for(let step=0;step<12 && await page.locator('#popularShowAll').isVisible();step++)await page.locator('#popularShowAll').click();
+    await expect(page.locator('[data-popular-card]:visible')).toHaveCount(420);
+    await expect(page.locator('#popularShowAll')).toBeHidden();
 
     await expectNoBrowserErrors(errors);
   });

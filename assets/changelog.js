@@ -3,13 +3,14 @@
           pageTitle: "更新日誌 | Plate.hk",
           title: "更新日誌",
           back: "← 返回首頁",
-          updated: "最後更新：2026年8月27日",
+          updated: "文件修訂：2026年9月28日",
           currentNote: "產品更新與每日資料同步分開顯示；下方狀態直接讀取最新審核輸出。",
           archiveLabel: (count) => `較早的更新（${count}）`,
           statusLoading: "正在讀取最新資料狀態…",
           statusError: "暫時未能讀取即時狀態；可前往資料審核頁核對。",
           statusLabels: ["資料快照", "來源列數", "可用 PDF"],
           items: [
+            {date:"2026-09-28",title:"更快到達車牌答案",points:["搜尋可選完全相同或包含片段；歷史成交與第三方放售訊號分開顯示。","找車牌可先輸入預算或號碼模式；手機導覽更精簡，長目錄及拍賣結果支援搜尋與分頁。","收藏比較顯示選取數量，移除可復原，清單可匯出；官方來源與完整歷史結果仍可核對。"]},
             {
               date: "2026-08-27",
               title: "強化 API、資料來源與車牌分類的引用指引",
@@ -513,13 +514,14 @@
           pageTitle: "Changelog | Plate.hk",
           title: "Changelog",
           back: "← Back to Home",
-          updated: "Last updated: 27 August 2026",
+          updated: "Product notes revised: 28 September 2026",
           currentNote: "Product releases and daily data refreshes are shown separately. The status below reads the latest audit output directly.",
           archiveLabel: (count) => `Earlier updates (${count})`,
           statusLoading: "Loading the latest data status…",
           statusError: "Live status is temporarily unavailable. Use the Data Audit page to verify the current snapshot.",
           statusLabels: ["Data snapshot", "Source rows", "Valid PDFs"],
           items: [
+            {date:"2026-09-28",title:"Reach the plate answer sooner",points:["Choose exact or contains matching, with historical results separated from third-party sale signals.","Start discovery with a budget or pattern; mobile navigation is shorter, and long directories and auction tables have search and paging.","Comparison shows the selection count, removals offer Undo, and shortlists can be exported. Official sources and complete historical results remain available."]},
             {
               date: "2026-08-27",
               title: "Strengthened citation guidance for the API, sources, and mark classification",

@@ -121,17 +121,17 @@ window.createPlateIndexPresenters = function createPlateIndexPresenters({
   }
 
   function formatDoubleLine(v) {
-    if (!v) return `<div class="plate na">(n/a)</div>`;
+    if (!v) return `<span class="plate-na">(n/a)</span>`;
     let lines = [];
     if (Array.isArray(v)) lines = v;
     else lines = String(v).split(/\n+/);
     lines = lines.map((x) => String(x || "").trim()).filter(Boolean);
-    if (!lines.length) return `<div class="plate na">(n/a)</div>`;
+    if (!lines.length) return `<span class="plate-na">(n/a)</span>`;
     return `<div class="plate double"><div class="double-plate">${lines.map((x) => `<span>${escapeHtml(x)}</span>`).join("")}</div></div>`;
   }
 
   function formatSingleLine(v) {
-    if (!v) return `<div class="plate na">(n/a)</div>`;
+    if (!v) return `<span class="plate-na">(n/a)</span>`;
     return `<div class="plate">${escapeHtml(v)}</div>`;
   }
 

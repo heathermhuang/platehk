@@ -32,7 +32,7 @@
           statPdfTotal: "PDF 總數",
           statPdfOk: "PDF 可用",
           statIssues: "期數",
-          statRows: "車牌總數",
+          statRows: "來源資料列（未去重）",
           statProblemFiles: "問題項目",
           qaNullAmount: "未解析金額",
           qaPlateViolations: "格式違規",
@@ -76,7 +76,7 @@
           statPdfTotal: "Total PDFs",
           statPdfOk: "Valid PDFs",
           statIssues: "Issues",
-          statRows: "Total plates",
+          statRows: "Raw source rows",
           statProblemFiles: "Problem rows",
           qaNullAmount: "Unparsed amounts",
           qaPlateViolations: "Format violations",
@@ -91,6 +91,7 @@
 
       let lang = "zh";
       let REPORT = null;
+      let auditPage = 1;
       function t(k) {
         return I18N[lang][k];
       }
@@ -220,6 +221,7 @@
         const selected = document.getElementById("datasetSel").value || "";
         const scopeRows = (report.files || []).filter((row) => !selected || row.dataset === selected);
         const rows = filterRows(report);
+        auditPage=Math.min(auditPage,Math.max(1,Math.ceil(rows.length/40)));
 
         const sumKeys = selected ? [selected] : Object.keys(report.summary || {});
         let pdfTotal = 0, pdfOk = 0, issues = 0, plates = 0;
@@ -233,6 +235,11 @@
         }
         const problems = rows.filter(rowHasProblem).length;
 
+        let health=document.querySelector('#auditHealth');
+        if(!health){health=document.createElement('p');health.id='auditHealth';health.className='ux-audit-health';document.querySelector('#stats').before(health);}
+        const allProblems=scopeRows.filter(rowHasProblem).length;
+        health.textContent=lang==='en'?`${pdfOk}/${pdfTotal} source files available · ${allProblems} reported QA issues · ${report.generated_at||'Date unavailable'}`:`${pdfOk}/${pdfTotal} 個來源檔案可用 · ${allProblems} 個已報告 QA 問題 · ${report.generated_at||'日期未提供'}`;
+        if(!document.querySelector('#auditDetails')){const details=document.createElement('details');details.id='auditDetails';const summary=document.createElement('summary');summary.textContent=lang==='en'?'Detailed audit counts':'詳細審核數字';details.append(summary);document.querySelector('#stats').before(details);details.append(document.querySelector('#stats'),document.querySelector('#validationStats'));}
         const stats = document.getElementById("stats");
         stats.innerHTML = [
           { k: t("statPdfTotal"), v: pdfTotal },
@@ -255,13 +262,14 @@
             if (ap !== bp) return ap - bp;
             return a.issue_date < b.issue_date ? 1 : a.issue_date > b.issue_date ? -1 : 0;
           })
+          .slice((auditPage-1)*40,auditPage*40)
           .map((r) => {
             const ok = r.pdf_ok ? `<span class="ok">${esc(t("ok"))}</span>` : `<span class="bad">${esc(t("missing"))}</span>`;
             const issue = esc(r.issue_label || r.issue_date || "");
             const pdf = r.pdf_url
               ? `<a href="${esc(r.pdf_url)}" target="_blank" rel="noopener">${esc(r.local_name || "PDF")}</a>
                  <div class="muted pdf-meta">${esc(r.pdf_title || "")}</div>
-                 <div class="muted pdf-meta"><code>${esc(r.local_path || "")}</code></div>`
+                 <details><summary>${lang==="en"?"File details":"檔案詳情"}</summary><div class="muted pdf-meta"><code>${esc(r.local_path || "")}</code></div><span>${esc(String(r.size || 0))} bytes</span></details>`
               : `<div class="muted"><code>${esc(r.local_path || "")}</code></div>`;
             const total = money(r.total_proceeds_hkd, r);
             const err = [r.error, Number(r.amount_missing || 0) > 0 ? `amount_missing=${r.amount_missing}` : "", rowHasProblem(r) && r.total_proceeds_hkd == null && Number(r.issue_rows || 0) > 0 ? "total_missing" : ""]
@@ -273,13 +281,17 @@
               <td>${esc(dsLabel(r.dataset))}</td>
               <td>${lny} ${issue}</td>
               <td class="pdf-cell">${pdf}</td>
-              <td>${ok}<div class="muted nowrap">${esc(String(r.size || 0))} bytes</div></td>
+              <td>${ok}</td>
               <td class="nowrap">${esc(String(r.issue_rows || 0))}</td>
               <td>${esc(total)}</td>
               <td class="muted">${err}</td>
             </tr>`;
           })
           .join("");
+        let pager=document.querySelector('#auditPager');if(!pager){pager=document.createElement('div');pager.id='auditPager';pager.className='ux-pager';document.querySelector('.table-wrap').after(pager);}pager.replaceChildren();
+        const pages=Math.max(1,Math.ceil(rows.length/40));auditPage=Math.min(auditPage,pages);
+        for(const [next,label] of [[auditPage-1,lang==='en'?'Previous':'上一頁'],[auditPage+1,lang==='en'?'Next':'下一頁']]){const button=document.createElement('button');button.type='button';button.textContent=label;button.disabled=next<1||next>pages;button.onclick=()=>{auditPage=next;render(report);};pager.append(button);}
+        const count=document.createElement('span');count.textContent=lang==='en'?`Page ${auditPage}/${pages} · ${rows.length} matching issues`:`第 ${auditPage}/${pages} 頁 · ${rows.length} 個期數`;pager.append(count);
         document.querySelector(".table-wrap")?.setAttribute("aria-busy", "false");
       }
 
@@ -298,7 +310,7 @@
         const issueQuery = document.getElementById("issueQuery");
         const problemsOnly = document.getElementById("problemsOnly");
         const rerender = () => {
-          if (REPORT) render(REPORT);
+          auditPage=1; if (REPORT) render(REPORT);
         };
         sel.addEventListener("change", rerender);
         statusSel.addEventListener("change", rerender);
@@ -315,5 +327,5 @@
         document.querySelector(".table-wrap")?.setAttribute("aria-busy", "false");
         document.getElementById("tbody").innerHTML = `<tr><td colspan="7" class="bad">${esc(t("loadError"))}</td></tr>`;
         document.getElementById("auditSummary").textContent = t("loadError");
+        const retry=document.createElement('button');retry.type='button';retry.textContent=lang==='en'?'Retry':'重試';retry.onclick=()=>location.reload();document.getElementById('auditSummary').after(retry);
       });
-    

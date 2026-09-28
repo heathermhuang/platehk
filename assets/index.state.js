@@ -43,7 +43,7 @@ window.createPlateIndexStateFlow = function createPlateIndexStateFlow({
     if (nextLang === "zh" || nextLang === "en") params.set("lang", nextLang);
     if (nextDataset && nextDataset !== "all") params.set("d", nextDataset);
     if (nextIssue) params.set("issue", nextIssue);
-    if (nextQuery) params.set("q", nextQuery);
+    if (nextQuery) { params.set("q", nextQuery); params.set("mode", document.querySelector("#matchMode")?.value === "exact" ? "exact" : "contains"); }
     if (nextSort && nextSort !== "amount_desc") params.set("sort", nextSort);
     return params.toString();
   }

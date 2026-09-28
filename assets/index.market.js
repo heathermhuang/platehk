@@ -164,8 +164,8 @@ window.createPlateMarketFlow = function createPlateMarketFlow({
   function candidatePlateEntries(query, rows) {
     const normalizedQuery = normalizePlate(query);
     if (!normalizedQuery || !Array.isArray(rows)) return [];
-    const entries = [];
-    const seen = new Set();
+    const entries = /^[A-HJ-NPR-Z0-9]{1,16}$/.test(normalizedQuery) ? [{plate:normalizedQuery,label:normalizedQuery}] : [];
+    const seen = new Set(entries.map(item=>item.plate));
     rows.forEach((row) => {
       const plate = plateForRow(row);
       if (!plate || seen.has(plate)) return;
@@ -223,7 +223,7 @@ window.createPlateMarketFlow = function createPlateMarketFlow({
     return `
       <article class="market-signal-item" data-market-plate="${escapeHtml(plate)}">
       <div class="market-signal-copy">
-        <div class="market-kicker">${escapeHtml(copy.kicker)}</div>
+        <div class="market-kicker">${escapeHtml(copy.kicker)}</div>${plate !== currentQuery ? `<p class="market-relation">${escapeHtml(getCurrentLang()==="en"?`Similar plate: ${plateLabel}`:`相似車牌：${plateLabel}`)}</p>` : ""}
         <h2 class="market-title"><span class="plate" aria-label="${escapeHtml(copy.plateLabelText(plateLabel))}">${escapeHtml(plateLabel)}</span><span> ${escapeHtml(copy.titleSuffix)}</span></h2>
         <p>${escapeHtml(copy.body)}</p>
         <div class="market-facts">
@@ -244,12 +244,14 @@ window.createPlateMarketFlow = function createPlateMarketFlow({
     `;
   }
 
+  let currentQuery = "";
   function renderSignals() {
     if (!currentSignals.size) {
       hideSignals();
       return;
     }
-    const visibleSignals = Array.from(currentSignals.values()).slice(0, MAX_VISIBLE_SIGNALS);
+    const query=currentQuery;
+    const visibleSignals = Array.from(currentSignals.values()).sort((a,b)=>Number(normalizePlate(b.plate)===query)-Number(normalizePlate(a.plate)===query)).slice(0, MAX_VISIBLE_SIGNALS);
     marketSignalEl.innerHTML = `<div class="market-signal-list">${visibleSignals.map(signalMarkup).join("")}</div>`;
     marketSignalEl.hidden = false;
     syncRowActions();
@@ -354,6 +356,7 @@ window.createPlateMarketFlow = function createPlateMarketFlow({
   }
 
   async function update({ query, rows }) {
+    currentQuery = normalizePlate(query);
     const entries = candidatePlateEntries(query, rows);
     if (!entries.length) {
       lastLookupKey = "";

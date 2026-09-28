@@ -305,6 +305,7 @@ window.createPlateIndexDataFlow = function createPlateIndexDataFlow({
     const params = new URLSearchParams();
     params.set("dataset", dataset);
     params.set("q", q);
+    if (document.querySelector("#matchMode")?.value === "exact") params.set("mode", "exact");
     if (issue) params.set("issue", issue);
     params.set("sort", sortMode);
     params.set("page", String(page));

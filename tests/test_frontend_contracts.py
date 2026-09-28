@@ -142,7 +142,7 @@ class FrontendContractsTests(unittest.TestCase):
             "scripts/build_popular_plate_pages.py",
         ):
             self.assertIn(favicon_ref, (ROOT / path).read_text(encoding="utf-8"), path)
-        self.assertIn("pvrm-static-v156", (ROOT / "sw.js").read_text(encoding="utf-8"))
+        self.assertIn("pvrm-static-v157", (ROOT / "sw.js").read_text(encoding="utf-8"))
 
     def test_camera_prototype_page_and_links_exist(self) -> None:
         camera = (ROOT / "camera.html").read_text(encoding="utf-8")
@@ -172,7 +172,7 @@ class FrontendContractsTests(unittest.TestCase):
                 "./assets/index.market.js",
                 "./assets/index.js",
             ],
-            "landing.html": ["./assets/landing.js"],
+
             "audit.html": ["./assets/audit.js"],
             "api.html": ["./assets/api-page.js", "./assets/info-shell.js"],
             "changelog.html": ["./assets/changelog.js", "./assets/info-shell.js"],
@@ -191,7 +191,7 @@ class FrontendContractsTests(unittest.TestCase):
             "changelog.html": "changelog",
             "audit.html": "audit",
             "api.html": "api",
-            "mcp.html": "api",
+            "mcp.html": "mcp",
         }
         for html_name, page_key in page_keys.items():
             html = (ROOT / html_name).read_text(encoding="utf-8")
@@ -200,7 +200,7 @@ class FrontendContractsTests(unittest.TestCase):
             self.assertIn('data-info-shell-header', html, html_name)
             self.assertIn('data-info-shell-footer', html, html_name)
             self.assertIn('id="main-content"', html, html_name)
-            self.assertIn('assets/info-shell.js?v=20260825-01', html, html_name)
+            self.assertIn('assets/info-shell.js?v=20260928-01', html, html_name)
             self.assertIn('assets/ledger.css?v=20260825-02', html, html_name)
             self.assertIn('name="theme-color" content="#f4f1e8"', html, html_name)
 
@@ -331,7 +331,7 @@ class FrontendContractsTests(unittest.TestCase):
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         archive = module.sitemap_entries()
-        self.assertEqual(len(rows), len(manifest) + 22 + len(archive))
+        self.assertEqual(len(rows), len(manifest) + 21 + len(archive))
         for item in archive:
             self.assertEqual(rows[f'https://plate.hk{item["href"]}'], item['lastmod'])
         self.assertIsNone(rows["https://plate.hk/"])
@@ -354,7 +354,7 @@ class FrontendContractsTests(unittest.TestCase):
             "./assets/api-page.js?v=20260827-02",
             "./assets/changelog.js?v=20260827-02",
             "./assets/info-locale.js?v=20260825-01",
-            "./assets/info-shell.js?v=20260825-01",
+            "./assets/info-shell.js?v=20260928-01",
             "./assets/popular-index.js?v=20260825-01",
             "./assets/plate.market.js?v=20260905-01",
             "./assets/ledger.css?v=20260825-02",

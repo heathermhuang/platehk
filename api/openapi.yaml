@@ -326,7 +326,9 @@ paths:
         Searches the independent Plate.hk index. This is not an official Hong Kong Government API.
         Verify material results against the original Transport Department source URL returned with the row.
         Full-width characters are normalized. I/O become 1/0; Q and other invalid characters are rejected.
-        Optional discovery filters apply before pagination and cannot be combined with issue. Always supply q.
+        Optional discovery filters apply before pagination and cannot be combined with issue.
+        Without q, supply at least one effective filter, use sort=date_desc and omit mode.
+        Budget-only discovery reads bounded date-ordered chunks and returns no partial results when an index chunk is unavailable.
       parameters:
         - in: query
           name: dataset
@@ -336,10 +338,10 @@ paths:
             enum: [all, pvrm, tvrm_physical, tvrm_eauction, tvrm_legacy]
         - in: query
           name: q
-          required: true
+          required: false
           schema:
             type: string
-            minLength: 1
+            minLength: 0
             maxLength: 16
           example: "88"
         - in: query
