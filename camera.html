@@ -959,7 +959,8 @@
     </style>
     <link rel="stylesheet" href="./assets/ledger.css?v=20260512-09" />
 
-  </head>
+  <link rel="stylesheet" href="/assets/ux.css?v=20260928-01"><script defer src="/assets/ux.js?v=20260928-01"></script>
+</head>
   <body>
     <div class="wrap">
       <div class="topbar">
@@ -1038,7 +1039,7 @@
             </div>
             <div class="candidate-list" id="candidateList"></div>
             <div class="manual">
-              <input id="manualInput" inputmode="latin" autocomplete="off" spellcheck="false" />
+              <label id="manualLabel" class="ux-manual-label" for="manualInput">修正或輸入車牌號碼</label><input id="manualInput" inputmode="latin" autocomplete="off" spellcheck="false" />
               <button class="primary" id="manualSearchBtn" type="button"></button>
             </div>
             <div class="note" id="ocrMeta"></div>
@@ -1064,6 +1065,6 @@
     </div>
 
     <canvas id="ocrCanvas" width="960" height="320"></canvas>
-    <script src="./assets/camera.js?v=20260826-02"></script>
+    <script src="./assets/camera.js?v=20260928-01"></script>
   </body>
 </html>

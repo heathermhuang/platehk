@@ -89,8 +89,8 @@ test('shortlist survives navigation and compares two exact histories', async ({ 
   await page.goto('/shortlist.html?lang=en');
   await page.getByRole('checkbox',{name:'Compare AA88',exact:true}).check();
   await page.getByRole('checkbox',{name:'Compare DB',exact:true}).check();
-  await page.getByRole('button',{name:'Compare selected',exact:true}).click();
-  await expect(page.locator('#shortlistComparison .decision-result')).toHaveCount(2);
+  await page.getByRole('button',{name:/Compare selected/}).click();
+  await expect(page.locator('#shortlistComparison tbody tr')).toHaveCount(2);
   await expect(page.locator('#shortlistComparison')).toContainText('HK$1,150,000');
   await expect(page.locator('#shortlistComparison')).toContainText('HK$115,000');
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);

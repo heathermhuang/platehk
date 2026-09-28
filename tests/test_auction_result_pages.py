@@ -104,12 +104,13 @@ class AuctionResultPageTests(unittest.TestCase):
                 doc = BeautifulSoup(pages.render_index(lang), 'html.parser')
                 self.assertEqual(len(doc.select('article h2 a')), 3)
 
-    def test_sitemap_preserves_existing_pilot_and_adds_only_eight(self):
+    def test_sitemap_preserves_canonical_pages_and_verified_rounds(self):
         manifest = json.loads((ROOT / 'data/popular_plates_manifest.json').read_text())
         tree = ET.fromstring(popular.render_sitemap(manifest))
         namespace = {'s': 'http://www.sitemaps.org/schemas/sitemap/0.9'}
         urls = [node.text for node in tree.findall('s:url/s:loc', namespace)]
-        self.assertEqual(len(urls), 830)
+        self.assertEqual(len(urls), 829)
+        self.assertNotIn("https://plate.hk/landing.html", urls)
         self.assertEqual(len(urls), len(set(urls)))
         self.assertEqual(sum('/auction-results/' in url for url in urls), 8)
         for page in popular.STATIC_PAGES:

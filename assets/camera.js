@@ -2,9 +2,9 @@
         zh: {
           title: "相機車牌辨識搜尋",
           subtitle: "打開手機相機，直接把香港車牌變成即時搜尋結果。",
-          kicker: "Camera Search Prototype",
+          kicker: "香港車牌相機搜尋",
           lede:
-            "這一版先做成 mobile web 原型：相機取景、OCR 辨識、香港車牌正規化，再直接查 {site} 的拍賣結果 API。適合先測使用場景與命中率。",
+            "開始相機，把香港車牌放進框內，再按辨識。亦可直接輸入車牌搜尋，不需要相機權限。",
           tips: [
             "把車牌放在中央框內，盡量保持水平、避免強反光與背景文字。",
             "系統會把 I→1、O→0，並自動忽略香港車牌不會使用的 Q。",
@@ -77,9 +77,9 @@
         en: {
           title: "Camera Plate Search",
           subtitle: "Open your phone camera and turn a Hong Kong plate into instant search results.",
-          kicker: "Camera Search Prototype",
+          kicker: "Hong Kong plate camera lookup",
           lede:
-            "This first version is a mobile web prototype: camera preview, OCR, Hong Kong plate normalization, then a direct lookup against the {site} auction API. It is designed to validate the workflow before building a native app.",
+            "Start the camera, align a Hong Kong plate, then scan. You can also enter a mark manually without camera access.",
           tips: [
             "Keep the plate inside the center frame, level, with limited glare and minimal background text.",
             "The recognizer maps I→1, O→0, and drops Q because Hong Kong plates do not use them.",
@@ -399,6 +399,8 @@
         statusTitleEl.textContent = t("statusTitle");
         resultsTitleEl.textContent = t("resultsTitle");
         manualInputEl.placeholder = t("manualPlaceholder");
+        const label=document.querySelector('#manualLabel');if(label)label.textContent=currentLang==='en'?'Correct or enter the plate number':'修正或輸入車牌號碼';
+        manualInputEl.setAttribute('aria-label',label?.textContent||t('manualPlaceholder'));
         manualSearchBtnEl.textContent = t("manualSearch");
         backHomeEl.textContent = t("backHome");
         apiDocEl.textContent = t("apiDoc");

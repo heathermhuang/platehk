@@ -87,7 +87,7 @@ function composeAuctionKey(datasetKey, auctionDate) {
                 `
               )
               .join("")}
-            <button type="button" class="search-history-clear" data-history-clear="1">${escapeHtml(t("searchHistoryClear"))}</button>
+            <button type="button" class="search-history-clear" data-history-more="1">${currentLang === "en" ? "More" : "更多"}</button><button type="button" class="search-history-clear" data-history-clear="1">${escapeHtml(t("searchHistoryClear"))}</button>
           </div>
         `;
         return true;

@@ -3,7 +3,7 @@
           pageTitle: "API 文檔 | Plate.hk",
           title: "API 文檔",
           back: "← 返回首頁",
-          updated: "最後更新：2026年8月27日",
+          updated: "文件修訂：2026年9月28日",
           statusLoading: "正在讀取最新資料狀態…",
           statusError: "暫時未能讀取即時狀態；API 端點仍可按下方方式使用。",
           statusLabels: ["API 索引", "審核執行", "搜尋筆數"],
@@ -34,6 +34,7 @@ const payload = await response.json();
 for (const row of payload.rows) console.log(row.single_line, row.amount_hkd, row.pdf_url);</code></pre>
             <p>如要在沒有搜尋字串時按日期、金額或車牌排序瀏覽，可用 <code>GET /api/results?dataset=all&amp;sort=date_desc&amp;page=1</code>。</p>
 
+            <h2>按預算瀏覽</h2><p>沒有車牌片段時，必須提供預算、模式或其他有效篩選，並用 <code>sort=date_desc</code>。篩選涵蓋完整資料集，然後才分頁。歷史價錢不代表現時可供購買。</p><pre class="box"><code>GET /api/search?dataset=all&amp;max_amount=20000&amp;sort=date_desc&amp;page_size=24</code></pre>
             <h2>限制與錯誤處理</h2>
             <ul>
               <li><code>page_size</code> 必須為 1 至 200；超出範圍會回應 <code>400 invalid_paging</code>。</li>
@@ -94,7 +95,7 @@ for (const row of payload.rows) console.log(row.single_line, row.amount_hkd, row
           pageTitle: "API Docs | Plate.hk",
           title: "API Docs",
           back: "← Back to Home",
-          updated: "Last updated: 27 Aug 2026",
+          updated: "Documentation revised: 28 Sep 2026",
           statusLoading: "Loading the latest data status…",
           statusError: "Live status is temporarily unavailable. The API remains available through the endpoints below.",
           statusLabels: ["API index", "Audit run", "Search rows"],
@@ -125,6 +126,7 @@ const payload = await response.json();
 for (const row of payload.rows) console.log(row.single_line, row.amount_hkd, row.pdf_url);</code></pre>
             <p>To browse without a query and sort by date, amount, or plate, use <code>GET /api/results?dataset=all&amp;sort=date_desc&amp;page=1</code>.</p>
 
+            <h2>Browse by budget</h2><p>Without a plate fragment, provide a budget, pattern or other valid constraint and use <code>sort=date_desc</code>. Filters cover the complete dataset before pagination. Historical prices are not available stock.</p><pre class="box"><code>GET /api/search?dataset=all&amp;max_amount=20000&amp;sort=date_desc&amp;page_size=24</code></pre>
             <h2>Limits and errors</h2>
             <ul>
               <li><code>page_size</code> must be between 1 and 200. Out-of-range values return <code>400 invalid_paging</code>.</li>

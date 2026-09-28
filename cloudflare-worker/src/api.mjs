@@ -209,6 +209,7 @@ async function loadCompleteSearchIndexRows(env, request, query) {
 }
 
 async function searchCompleteIndex(env, request, dataset, query, sort, mode, page, pageSize, filters = null) {
+  if (!query && filters) return browseFilteredIndex(env, request, dataset, filters, page, pageSize);
   const indexedRows = await loadCompleteSearchIndexRows(env, request, query);
   if (indexedRows == null) return null;
   const datasetRows = dataset === "all"
@@ -218,6 +219,30 @@ async function searchCompleteIndex(env, request, dataset, query, sort, mode, pag
   const matching = collectSearchMatches(candidates, query, mode);
   const matched = filters ? sortRowsForResults(matching, sort) : sortSearchMatches(matching, sort, query);
   return buildPagedSearchPayload(dataset, query, null, mode, sort, page, pageSize, matched);
+}
+
+async function browseFilteredIndex(env, request, dataset, filters, page, pageSize) {
+  const base = "./api/v1/all/search-index";
+  const meta = await getStaticJson(env, request.url, `${base}/meta.json`);
+  const chunks = meta?.browse_chunks;
+  if (meta?.schema_version !== 1 || !Array.isArray(chunks) || !chunks.length || chunks.length > 64
+      || chunks.some(path => !/^browse\/\d{4}\.json$/.test(path))) return null;
+  const offset = (page - 1) * pageSize;
+  let total = 0;
+  const rows = [];
+  for (const path of chunks) {
+    const payload = await getStaticJson(env, request.url, `${base}/${path}`, { cache: false });
+    if (!Array.isArray(payload?.rows) || payload.rows.length > 12000) return null;
+    let candidates = payload.rows.map(row => inflateCompleteSearchIndexRow(row, meta)).filter(Boolean);
+    candidates = dataset === "all" ? await dedupeAllIndexRows(env, request, candidates)
+      : candidates.filter(row => row.dataset_key === dataset);
+    for (const row of candidates) {
+      if (!matchesFilters(row, filters)) continue;
+      if (total >= offset && rows.length < pageSize) rows.push(row);
+      total++;
+    }
+  }
+  return buildSearchPayload(dataset, "", null, null, "date_desc", page, pageSize, total, rows);
 }
 
 async function loadAllPrefix2Rows(env, request, query, page, pageSize, sort) {
@@ -668,8 +693,7 @@ async function handleSearch(request, env, ctx) {
   const pageSize = Number(url.searchParams.get("page_size") || 200);
   if (!validDataset(dataset, true)) return badRequest("invalid dataset");
   const query = normalizeSearchQuery(rawQuery);
-  if (!query) return badRequest("q is required");
-  if (!/^[A-HJ-NPR-Z0-9]+$/.test(query)) return badRequest("invalid query characters");
+  if (query && !/^[A-HJ-NPR-Z0-9]+$/.test(query)) return badRequest("invalid query characters");
   if (query.length > 16) return badRequest("q too long");
   if (!Number.isInteger(page) || page < 1) return badRequest("invalid paging");
   enforcePageSize("search", pageSize, 200);
@@ -682,8 +706,11 @@ async function handleSearch(request, env, ctx) {
     try { filters = parseFilters(url.searchParams); } catch (error) { return badRequest(error.message); }
     if (issue) return badRequest("discovery filters do not support issue");
   }
+  if (!query && (!filters || !Object.values(filters).some(value => value !== null && value !== ""))) return badRequest("q is required");
+  if (!query && (mode || sort !== "date_desc")) return badRequest("budget browsing requires date_desc and no match mode");
   let minuteLimit = dataset === "all" ? 180 : 300;
   let hourLimit = dataset === "all" ? 1800 : 3600;
+  if (!query) { minuteLimit = 30; hourLimit = 300; }
   if (query.length <= 2) {
     minuteLimit = Math.min(minuteLimit, dataset === "all" ? 120 : 220);
     hourLimit = Math.min(hourLimit, dataset === "all" ? 1200 : 2600);

@@ -1,6 +1,6 @@
 (() => {
   const page = document.body?.dataset.infoPage || "";
-  const currentLanguage = () => new URLSearchParams(location.search).get("lang") === "en" ? "en" : "zh";
+  const currentLanguage = () => (location.pathname.startsWith("/auction-results/en/") || new URLSearchParams(location.search).get("lang") === "en") ? "en" : "zh";
   const COPY = {
     zh: {
       skip: "跳到內容",
@@ -32,15 +32,11 @@
     return `${url.pathname}${url.search}`;
   };
   const navItems = [
-    { key: "search", path: "/" },
-    { key: "discover", path: "/discover.html" },
-    { key: "auctions", path: "/auctions.html" },
-    { key: "shortlist", path: "/shortlist.html" },
-    { key: "plates", path: "/plates/index.html" },
-    { key: "about", path: "/about.html" },
-    { key: "audit", path: "/audit.html" },
-    { key: "api", path: "/api.html" },
+    {key:"prices",path:"/prices.html"}, {key:"discover",path:"/discover.html"},
+    {key:"auctions",path:"/auctions.html"}, {key:"shortlist",path:"/shortlist.html"},
   ];
+  const moreItems = [ {key:"search",path:"/"}, {key:"plates",path:"/plates/index.html"},
+    {key:"about",path:"/about.html"}, {key:"audit",path:"/audit.html"}, {key:"api",path:"/api.html"} ];
   const headerHost = document.querySelector("[data-info-shell-header]") || document.createElement("div");
   if (!headerHost.isConnected) document.body.prepend(headerHost);
   const footerHost = document.querySelector("[data-info-shell-footer]") || document.createElement("div");
@@ -48,7 +44,11 @@
 
   function setLanguage(next) {
     const url = new URL(location.href);
-    url.searchParams.set("lang", next);
+    if(url.pathname.startsWith("/auction-results/")) {
+      url.pathname=url.pathname.replace('/auction-results/en/','/auction-results/');
+      if(next==='en')url.pathname=url.pathname.replace('/auction-results/','/auction-results/en/');
+      url.searchParams.delete('lang');
+    } else url.searchParams.set("lang", next);
     location.assign(`${url.pathname}${url.search}${url.hash}`);
   }
 
@@ -56,7 +56,7 @@
     const lang = currentLanguage();
     const t = COPY[lang];
     document.documentElement.lang = lang === "en" ? "en" : "zh-HK";
-    const navHasCurrent = navItems.some((item) => item.key === page);
+    const navHasCurrent = [...navItems,...moreItems].some((item) => item.key === page);
     const footerCurrent = (key) => !navHasCurrent && key === page ? ' aria-current="page"' : "";
     headerHost.innerHTML = `
       <a class="info-skip-link" href="#main-content">${t.skip}</a>
@@ -67,11 +67,10 @@
         </a>
         <div class="info-header-actions">
           <nav class="info-nav" aria-label="${t.navLabel}">
-            ${navItems.map((item) => `<a href="${withLanguage(item.path, lang)}"${item.key === page ? ' aria-current="page"' : ""}>${t.nav[item.key]}</a>`).join("")}
+            ${navItems.map((item) => `<a href="${withLanguage(item.path, lang)}"${item.key === page ? ' aria-current="page"' : ""}>${t.nav[item.key]}</a>`).join("")}<details class="site-more"><summary>${lang==='en'?'More':'更多'}</summary><div>${moreItems.map(item=>`<a href="${withLanguage(item.path,lang)}"${item.key===page?' aria-current="page"':''}>${t.nav[item.key]}</a>`).join('')}<a href="${withLanguage('/camera.html',lang)}">${lang==='en'?'Camera':'相機'}</a><a href="/auction-results/${lang==='en'?'en/':''}index.html">${lang==='en'?'Results archive':'拍賣結果'}</a></div></details>
           </nav>
           <div class="lang-toggle info-lang-toggle" role="group" aria-label="${t.languageLabel}">
-            <button id="infoLangZh" type="button" aria-pressed="${lang === "zh"}">繁</button>
-            <button id="infoLangEn" type="button" aria-pressed="${lang === "en"}">EN</button>
+            ${page==='archive' ? `<a href="${location.pathname.replace('/auction-results/en/','/auction-results/').replace('/auction-results/',lang==='zh'?'/auction-results/en/':'/auction-results/')}" hreflang="${lang==='zh'?'en':'zh-HK'}">${lang==='zh'?'English':'繁體中文'}</a>` : `<button id="infoLangZh" type="button" aria-pressed="${lang === "zh"}">繁</button><button id="infoLangEn" type="button" aria-pressed="${lang === "en"}">EN</button>`}
           </div>
         </div>
       </header>`;

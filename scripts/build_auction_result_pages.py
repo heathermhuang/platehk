@@ -145,13 +145,12 @@ def shell(r: dict | None, lang: str, heading: str, description: str, body: str, 
 <link rel="stylesheet" href="/assets/ledger.css?v=20260915-01"><link rel="stylesheet" href="/assets/auction-results.css?v=20260926-01">
 <script type="application/ld+json">{structured}</script>
 <script defer src="/assets/analytics.js?v=20260915-01"></script>
-</head><body class="auction-page">
-<a class="auction-skip" href="#main-content">{choose('跳至內容', 'Skip to content', lang)}</a>
-<header class="auction-header"><a class="auction-brand" href="/{legacy}"><img src="/assets/logo.svg?v=20260828-01" width="44" height="44" alt="Plate.hk">Plate.hk</a>
-<nav aria-label="{choose('主選單與語言', 'Navigation and language', lang)}">{navigation}</nav></header>
+<link rel="stylesheet" href="/assets/ux.css?v=20260928-01"><script defer src="/assets/ux.js?v=20260928-01"></script>
+</head><body class="auction-page" data-info-page="archive" data-auction-start="{r['start_date'] if r else ''}" data-auction-end="{r['end_date'] if r else ''}">
+<div data-info-shell-header><noscript><header class="auction-header"><a class="auction-brand" href="/{legacy}">Plate.hk</a><nav>{navigation}</nav></header></noscript></div>
 <main id="main-content"><p class="auction-kicker">{choose('運輸署結果・Plate.hk 整理', 'Transport Department results · Compiled by Plate.hk', lang)}</p><h1>{html.escape(heading)}</h1>{body}</main>
-<footer class="auction-footer">{link('/about.html' + legacy, choose('資料來源與限制', 'Sources and limitations', lang))} · {link('/terms.html' + legacy, choose('使用條款', 'Terms', lang))} · {link('https://github.com/heathermhuang/platehk', 'GitHub')}</footer>
-</body></html>\n'''
+<div data-info-shell-footer><noscript><footer class="auction-footer">{link('/about.html' + legacy, choose('資料來源與限制', 'Sources and limitations', lang))} · {link('/terms.html' + legacy, choose('使用條款', 'Terms', lang))} · {link('https://github.com/heathermhuang/platehk', 'GitHub')}</footer></noscript></div>
+<script src="/assets/info-shell.js?v=20260928-01"></script></body></html>\n'''
 
 
 def render_round(r: dict, lang: str) -> str:

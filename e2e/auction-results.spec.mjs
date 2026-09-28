@@ -20,7 +20,7 @@ test('native language links preserve the round and complete online dispositions'
   await page.goto('/auction-results/tvrm_eauction-2026-09-17.html');
   await page.getByRole('link', { name: 'English', exact: true }).click();
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('17 September 2026 to 21 September 2026');
+  await expect(page.locator('main > p time').first()).toContainText('17 September 2026 to 21 September 2026');
   await expect(page.locator('tr[data-status="special_fee"]')).toHaveCount(4);
   await expect(page.locator('#mark-JN6224')).toContainText('Special-fee allocation (no bidder)');
   await page.getByRole('link', { name: '繁體中文', exact: true }).click();

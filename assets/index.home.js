@@ -234,7 +234,7 @@ window.createPlateIndexHomeViews = function createPlateIndexHomeViews(deps) {
 
   function agendaStatus(item, nowMs) {
     if (nowMs < item.startMs) return { label: t("auctionAgendaStatusUpcoming"), className: "upcoming" };
-    if (nowMs <= item.endMs) return { label: t("auctionAgendaStatusOpen"), className: "open" };
+    if (nowMs <= item.endMs) return { label: item.registrationWindow ? (getCurrentLang() === "en" ? "Typical application window" : "一般申請月份") : t("auctionAgendaStatusOpen"), className: "open" };
     return { label: t("auctionAgendaStatusClosed"), className: "closed" };
   }
 
@@ -280,6 +280,7 @@ window.createPlateIndexHomeViews = function createPlateIndexHomeViews(deps) {
     if (type === "pvrm_registration") {
       return {
         type: t("auctionAgendaTypeRegistration"),
+        registrationWindow: true,
         title: t("auctionAgendaPvrmWindowTitle"),
         body: t("auctionAgendaPvrmWindowBody"),
       };
@@ -349,6 +350,7 @@ window.createPlateIndexHomeViews = function createPlateIndexHomeViews(deps) {
     }
     return {
       ...copy,
+      registrationWindow: event.type === "pvrm_registration" && event.meta?.source === "computed_recurring_window_from_td_main_page",
       startMs,
       endMs,
       rangeText: event[`date_label_${langSuffix}`] || "",
@@ -361,6 +363,7 @@ window.createPlateIndexHomeViews = function createPlateIndexHomeViews(deps) {
     return [
       {
         type: t("auctionAgendaTypeRegistration"),
+        registrationWindow: true,
         title: t("auctionAgendaPvrmWindowTitle"),
         body: t("auctionAgendaPvrmWindowBody"),
         startMs: pvrmWindow.startMs,

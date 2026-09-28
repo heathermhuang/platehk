@@ -17,7 +17,7 @@ const plateOf = row => normalize(row.single_line || (row.double_line || []).join
 const priceOf = row => row.amount_hkd == null ? (row.result_text || text('沒有成交價','No sale price')) : 'HK$'+Number(row.amount_hkd).toLocaleString('en-HK');
 const datasetName = key => ({pvrm:'PVRM',tvrm_physical:text('TVRM 實體拍賣','TVRM physical'),tvrm_eauction:text('拍牌易','E-auction'),tvrm_legacy:'TVRM 1973–2006'})[key] || key;
 const storageKey='platehk.shortlist.v1';
-let saved=[];
+let saved=[];let comparisonVersion=0;
 function readSaved() { try { const value=JSON.parse(localStorage.getItem(storageKey)||'[]');saved=Array.isArray(value)?[...new Set(value.filter(v=>typeof v==='string'&&validQuery(v)).map(normalize))].slice(0,50):[]; }catch{} }
 readSaved();
 function refreshSaveButtons(){ for(const button of document.querySelectorAll('[data-save-plate]')){const has=saved.includes(button.dataset.savePlate);button.textContent=has?text('移除收藏','Remove saved'):text('收藏車牌','Save plate');button.setAttribute('aria-pressed',String(has));} }
@@ -29,6 +29,11 @@ function toggleSave(plate) {
   let persistent=true;try{localStorage.setItem(storageKey,JSON.stringify(saved));}catch{persistent=false;}
   notice(persistent?text('清單已更新，只儲存在這個瀏覽器。','Shortlist updated in this browser only.'):text('瀏覽器未能儲存；清單只保留至本頁關閉。','Browser storage unavailable; this list lasts only while this page is open.'));
   track(exists?'shortlist_remove':'shortlist_save',{plate});refreshSaveButtons();renderShortlist();comparisonVersion++;document.querySelector('#shortlistComparison')?.replaceChildren();
+  if (exists) {
+    const undo=make('button',text('復原移除','Undo removal'));undo.type='button';
+    undo.addEventListener('click',()=>{if(!saved.includes(plate))toggleSave(plate);});
+    document.querySelector('#decisionNotice')?.append(' ',undo);
+  }
 }
 function saveButton(plate){const b=make('button');b.type='button';b.dataset.savePlate=plate;b.addEventListener('click',()=>toggleSave(plate));return b;}
 function rowCard(row,reason='') {
@@ -63,16 +68,22 @@ let discoveryVersion=0, discoveryController;
 const filtersForm=document.querySelector('#discoveryFilters');
 if(filtersForm) {
  const params=new URLSearchParams(location.search);
+ document.querySelector('#decisionQuery').value=params.get('q')||'';
  for(const key of [...filterKeys,'dataset']){const control=filtersForm.elements.namedItem(key);if(control&&params.has(key))control.value=params.get(key);}
  filtersForm.addEventListener('submit',event=>{event.preventDefault();loadDiscovery(1);});
- if(params.get('q'))loadDiscovery(Math.max(1,Number(params.get('page'))||1));
+ filtersForm.addEventListener('reset',()=>{discoveryController?.abort();discoveryVersion++;document.querySelector('#decisionResults').replaceChildren();document.querySelector('#queryHelp').textContent='';document.querySelector('#decisionPrev').hidden=document.querySelector('#decisionNext').hidden=true;history.replaceState({},'',`?lang=${lang}`);});
+ for(const button of document.querySelectorAll('[data-budget]'))button.addEventListener('click',()=>{filtersForm.elements.namedItem('max_amount').value=button.dataset.budget;loadDiscovery(1);});
+ if(params.get('q')||filterKeys.some(key=>params.get(key)))loadDiscovery(Math.max(1,Number(params.get('page'))||1));
 }
 async function loadDiscovery(page=1) {
  const host=document.querySelector('#decisionResults');const q=normalize(document.querySelector('#decisionQuery').value);
- if(!validQuery(q)){document.querySelector('#queryHelp').textContent=text('先輸入至少一個有效車牌字元或號碼片段。','First enter at least one valid plate character or fragment.');return;}
+ const version=++discoveryVersion;discoveryController?.abort();host.replaceChildren();document.querySelector('#decisionPrev').hidden=document.querySelector('#decisionNext').hidden=true;
+ if(q&&!validQuery(q)){document.querySelector('#queryHelp').textContent=text('請核對車牌片段；不接受 Q。','Check the plate fragment; Q is not allowed.');return;}
  const params=new URLSearchParams(new FormData(filtersForm));params.set('q',q);params.set('dataset',params.get('dataset')||'all');params.set('page',String(page));params.set('page_size','24');params.set('sort','date_desc');
  try{parseFilters(params);}catch{host.replaceChildren(make('p',text('請核對價錢、日期、字首及尾數範圍。','Check the price, date, prefix and suffix filters.')));return;}
- const version=++discoveryVersion;discoveryController?.abort();discoveryController=new AbortController();const started=performance.now();
+ if(!q&&!filterKeys.some(key=>params.get(key))){document.querySelector('#queryHelp').textContent=text('輸入預算、選擇模式，或輸入車牌片段。','Set a budget, choose a pattern, or enter a plate fragment.');return;}
+ document.querySelector('#queryHelp').textContent='';
+ discoveryController=new AbortController();const started=performance.now();
  document.querySelector('#decisionPrev').hidden=document.querySelector('#decisionNext').hidden=true;
  host.replaceChildren(make('p',text('搜尋中…','Searching…')));
  const state=new URLSearchParams(params);for(const [key,value] of [...state])if(!value)state.delete(key);state.delete('page_size');state.delete('sort');state.set('lang',lang);history.replaceState({},'',`?${state}`);
@@ -80,9 +91,11 @@ async function loadDiscovery(page=1) {
   const result=await getJson(`/api/search?${params}`,discoveryController.signal);if(version!==discoveryVersion)return;
   if(!Array.isArray(result.rows)||!Number.isFinite(result.total))throw new Error('invalid_response');
   host.replaceChildren(make('h2',text(`${result.total.toLocaleString()} 筆歷史紀錄 · 第 ${page} 頁`,`${result.total.toLocaleString()} historical records · page ${page}`)));
-  if(!result.rows.length)noHistory(host);
+  const applied=[...params].filter(([key,value])=>value&&(filterKeys.includes(key)||key==='q')).map(([key,value])=>`${text(({q:'片段',max_amount:'最高價',min_amount:'最低價',prefix:'字首',suffix:'尾數',digits:'數字個數',pattern:'模式',from:'日期由',to:'日期至'})[key],({q:'Fragment',max_amount:'Maximum HKD',min_amount:'Minimum HKD',prefix:'Prefix',suffix:'Suffix',digits:'Digits',pattern:'Pattern',from:'From',to:'To'})[key])}: ${value}`);
+  host.append(make('p',applied.join(' · '),'decision-note'));
+  if(!result.rows.length)host.append(make('p',text('沒有歷史紀錄符合目前篩選。請擴大預算或清除篩選；結果不代表現時可用狀態。','No historical records match these filters. Widen the budget or reset filters; results do not establish current availability.')));
   const list=make('div',null,'decision-results');result.rows.forEach(row=>list.append(rowCard(row)));host.append(list);refreshSaveButtons();
-  const prev=document.querySelector('#decisionPrev'),next=document.querySelector('#decisionNext');prev.hidden=page<=1;next.hidden=page*24>=result.total;prev.onclick=()=>loadDiscovery(page-1);next.onclick=()=>loadDiscovery(page+1);
+  const prev=document.querySelector('#decisionPrev'),next=document.querySelector('#decisionNext');prev.textContent=text('上一頁','Previous');next.textContent=text('下一頁','Next');prev.hidden=page<=1;next.hidden=page*24>=result.total;prev.onclick=()=>loadDiscovery(page-1);next.onclick=()=>loadDiscovery(page+1);
   track('discovery_search',{plate:q,action:params.get('pattern')||'any_pattern',result_count:result.total,duration_ms:performance.now()-started,dataset:params.get('dataset'),page_number:page});
  }catch(error){if(error.name==='AbortError'||version!==discoveryVersion)return;requestError(host,()=>loadDiscovery(page));track('search_error',{error_kind:'discovery_failed'});}
 }
@@ -106,8 +119,8 @@ async function loadComparables(plate,host) {
     ? text('只比較完整相同數字、同字首級別的兩字母傳統形式車牌；每個其他車牌只取最近一次有價成交。這是結構比較，不代表官方分類、現時估價或放售證明。','Only two-letter traditional-pattern marks with the same full number and prefix tier are compared, using each other plate’s latest priced sale. This structural comparison is not an official classification, current valuation or listing.')
     : text('按相同資料集、字母／數字結構及號碼片段選取，按日期排序。並非估價、可轉讓性判斷或放售證明。','Selected by source dataset, letter/digit structure and a shared fragment, ordered by date. Not a valuation, transferability judgment or evidence of a current listing.')));
   if(traditionalPattern&&result.sample_size){
-   content.append(make('p',text(`${result.sample_size} 個獨立比較車牌 · ${result.date_from} 至 ${result.date_to} · ${result.window==='recent_three_years'?'近三年':'所有具確實日期的紀錄'}`,`${result.sample_size} distinct comparable plates · ${result.date_from} to ${result.date_to} · ${result.window==='recent_three_years'?'last three years':'all records with exact dates'}`)));
-   if(result.statistics){const stats=make('div',null,'decision-results');for(const [key,zh,en] of [['p25','第 25 百分位','25th percentile'],['median','中位數','Median'],['p75','第 75 百分位','75th percentile']]){const card=make('div',null,'decision-result');card.append(make('strong',text(zh,en)),make('p','HK$'+Number(result.statistics[key]).toLocaleString('en-HK')));stats.append(card);}content.append(stats);}
+   content.append(make('p',text(`${result.sample_size} 個獨立比較車牌 · ${result.date_from} 至 ${result.date_to} · ${result.window==='recent_three_years'?'近三年':'較早歷史樣本，並非現時估價'}`,`${result.sample_size} distinct comparable plates · ${result.date_from} to ${result.date_to} · ${result.window==='recent_three_years'?'last three years':'older historical sample, not a current valuation'}`),'comparison-window'));
+   if(result.statistics){const stats=make('div',null,'comparison-stats');for(const [key,zh,en] of [['p25','較低四分位','Lower quartile'],['median','中位數','Median'],['p75','較高四分位','Upper quartile']]){const card=make('div');card.append(make('strong',text(zh,en)),make('p','HK$'+Number(result.statistics[key]).toLocaleString('en-HK')));stats.append(card);}content.append(stats);content.append(make('p',text('四分位標示樣本中較低及較高的 25% 分界；中位數把成交價分成兩半。','Quartiles mark the lower and upper 25% boundaries; the median divides the sample into two halves.'),'decision-note'));}
    else content.append(make('p',text('樣本不足五個，只列出個別成交，不提供價格區間。','Fewer than five qualifying plates; individual sales are shown without a price range.')));
   }
   if(!result.rows.length)content.append(make('p',text('沒有足夠相似的有價成交紀錄；不提供價格區間。','No sufficiently similar priced records found; no price range is offered.')));
@@ -132,26 +145,33 @@ async function loadComparables(plate,host) {
 const staticDetail=document.querySelector('[data-plate-detail]');
 const query=normalize(staticDetail?.dataset.plateDetail || new URLSearchParams(location.search).get('q'));
 if((staticDetail||document.body.dataset.decisionPage==='plate')&&validQuery(query)) {
+ if(document.body.dataset.decisionPage==='plate'){const heading=document.querySelector(`main h1[data-lang-only=${lang}]`);if(heading)heading.textContent=`${query} · ${text('歷史拍賣紀錄','Auction history')}`;}
  const historyHost=document.querySelector('#plateHistory');if(historyHost)loadHistory(query,historyHost);
  const host=staticDetail || document.querySelector('#plateComparables');
- if(host){const controls=make('div',null,'decision-actions');if(!historyHost)controls.append(saveButton(query));controls.append(link(text('我的清單及比較','My shortlist and comparison'),`/shortlist.html?lang=${lang}`));host.before(controls);loadComparables(query,host);refreshSaveButtons();}
+ if(host){const controls=make('div',null,'decision-actions');if(!historyHost)controls.append(saveButton(query));controls.append(link(text('我的清單及比較','My shortlist and comparison'),`/shortlist.html?lang=${lang}`));const heroActions=staticDetail?document.querySelector("main .hero .actions"):null;if(heroActions)heroActions.append(controls);else host.before(controls);loadComparables(query,host);refreshSaveButtons();}
  track('plate_detail',{plate:query});
 }
 function renderShortlist(){
  const host=document.querySelector('#shortlistItems');if(!host)return;
  const selected=new Set([...host.querySelectorAll('input:checked')].map(el=>el.value));host.replaceChildren();
- if(!saved.length)host.append(make('p',text('尚未收藏車牌。搜尋後按「收藏車牌」。','No saved plates yet. Search and choose Save plate.')),link(text('開始找車牌','Find a plate'),`/discover.html?lang=${lang}`));
+ if(!saved.length){const action=link(text('開始找車牌','Find a plate'),`/discover.html?lang=${lang}`);action.className='btn primary';host.append(make('p',text('尚未收藏車牌。查看歷史成交後按「收藏車牌」，再選 1 至 4 個作比較。','No saved plates yet. Open a historical result, choose Save plate, then select one to four to compare.')),action);}
  for(const plate of saved){const item=make('div',null,'decision-actions');const label=make('label');const input=make('input');input.type='checkbox';input.value=plate;input.checked=selected.has(plate);input.setAttribute('aria-label',text(`比較 ${plate}`,`Compare ${plate}`));add(label,input,document.createTextNode(' '+plate));add(item,label,link(text('查看紀錄','View history'),detailHref(plate)),saveButton(plate));host.append(item);}
  refreshSaveButtons();
+ const compare=document.querySelector('#compareSelected');
+ const updateSelection=()=>{comparisonVersion++;document.querySelector('#shortlistComparison')?.replaceChildren();const count=host.querySelectorAll('input:checked').length;if(compare){compare.disabled=count===0||count>4;compare.textContent=text(`比較所選（${count}/4）`,`Compare selected (${count}/4)`);}};
+ for(const checkbox of host.querySelectorAll('input'))checkbox.addEventListener('change',()=>{if(host.querySelectorAll('input:checked').length>4){checkbox.checked=false;notice(text('最多選 4 個車牌。','Select up to four plates.'));}updateSelection();});
+ updateSelection();
+ if(saved.length){const exportButton=make('button',text('匯出清單','Export shortlist'));exportButton.type='button';exportButton.addEventListener('click',()=>{const url=URL.createObjectURL(new Blob([saved.join('\n')+'\n'],{type:'text/plain;charset=utf-8'}));const a=link('',url);a.download='platehk-shortlist.txt';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);});host.append(exportButton);}
 }
-renderShortlist();let comparisonVersion=0;
+renderShortlist();
 document.querySelector('#compareSelected')?.addEventListener('click',async()=>{
  const plates=[...document.querySelectorAll('#shortlistItems input:checked')].map(el=>el.value);const host=document.querySelector('#shortlistComparison');
  if(!plates.length||plates.length>4){host.replaceChildren(make('p',text('請選 1 至 4 個車牌。','Select one to four plates.')));return;}
  const version=++comparisonVersion;host.replaceChildren(make('p',text('讀取比較中…','Loading comparison…')));
  const records=await Promise.allSettled(plates.map(q=>getJson('/api/search?'+new URLSearchParams({dataset:'all',q,mode:'exact',sort:'date_desc',page_size:'1'}))));if(version!==comparisonVersion)return;
- host.replaceChildren(make('h2',text('最近一次歷史拍賣結果（不是現時估價）','Latest historical auction results (not current valuations)')));const list=make('div',null,'decision-results');
- records.forEach((record,i)=>{if(record.status==='fulfilled'&&record.value.rows?.length)list.append(rowCard(record.value.rows[0]));else list.append(make('p',plates[i]+' — '+(record.status==='rejected'?text('未能讀取，請重試比較。','Could not load; retry comparison.'):text('沒有收錄紀錄。','No indexed record.'))));});host.append(list);refreshSaveButtons();track('compare_view',{result_count:plates.length});
+ host.replaceChildren(make('h2',text('最近一次歷史拍賣結果（不是現時估價）','Latest historical auction results (not current valuations)')));
+ const wrap=make('div',null,'table-wrap');const table=make('table',null,'comparison-table');const head=make('tr');for(const value of [text('車牌','Plate'),text('歷史成交','Historical sale'),text('日期','Date'),text('資料集','Dataset'),text('來源','Source')]){const th=make('th',value);th.scope='col';head.append(th);}const thead=make('thead');thead.append(head);table.append(thead);const tbody=make('tbody');
+ records.forEach((record,i)=>{const tr=make('tr');tr.append(add(make('th'),link(plates[i],detailHref(plates[i]))));const row=record.status==='fulfilled'?record.value.rows?.[0]:null;if(row){for(const value of [priceOf(row),row.year_range||row.auction_date,datasetName(row.dataset_key)])tr.append(make('td',value));const cell=make('td');const source=sourceUrl(row);cell.append(source?link(text('核對來源','Check source'),source):make('span',text('未提供','Unavailable')));tr.append(cell);}else{const cell=make('td',record.status==='rejected'?text('未能讀取，請重試比較。','Could not load; retry comparison.'):text('沒有收錄紀錄，不代表未分配。','No indexed record; this does not establish availability.'));cell.colSpan=4;tr.append(cell);}tbody.append(tr);});table.append(tbody);wrap.append(table);host.append(wrap);refreshSaveButtons();track('compare_view',{result_count:plates.length});
 });
 addEventListener('storage',event=>{if(event.key===storageKey){readSaved();renderShortlist();refreshSaveButtons();}});
 for(const button of document.querySelectorAll('[data-calendar]'))button.addEventListener('click',async()=>{

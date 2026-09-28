@@ -286,6 +286,10 @@ async function serveAsset(request, env) {
       },
     });
   }
+  if ((url.pathname === "/landing.html" || url.pathname === "/landing") && (request.method === "GET" || request.method === "HEAD")) {
+    const destination=new URL("/",url);if(url.searchParams.get("lang")==="en")destination.searchParams.set("lang","en");
+    return Response.redirect(destination.toString(),301);
+  }
   const primaryHost = isPrimaryHost(url.hostname);
   const genericNoindex = !primaryHost;
   const isHome = url.pathname === "/" || url.pathname === "/index.html";

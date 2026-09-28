@@ -205,6 +205,7 @@ def build_complete_search_index(rows: list[dict], dataset_dir: Path) -> None:
     char_rows: dict[str, list[list]] = {}
     prefix_rows: dict[str, list[list]] = {}
     bigram_rows: dict[str, list[list]] = {}
+    browse_rows: list[list] = []
 
     for row in rows:
         plate = normalize_search_plate(row)
@@ -247,16 +248,27 @@ def build_complete_search_index(rows: list[dict], dataset_dir: Path) -> None:
             row.get("amount_hkd"),
             result_state_id,
         ]
+        browse_rows.append(compact_row)
         for token in set(plate):
             char_rows.setdefault(token, []).append(compact_row)
         prefix_rows.setdefault(plate[0], []).append(compact_row)
         for token in {plate[idx:idx + 2] for idx in range(len(plate) - 1)}:
             bigram_rows.setdefault(token, []).append(compact_row)
 
+    # A date-ordered, disjoint scan supports budget-only discovery without
+    # loading the complete decoded dataset into one Worker request.
+    browse_rows.sort(key=lambda row: str(row[1] or ""))
+    browse_rows.sort(key=lambda row: str(row_metadata[row[0]][2] or ""), reverse=True)
+    browse_chunks = []
+    for offset in range(0, len(browse_rows), RESULTS_CHUNK_ROWS):
+        filename = f"browse/{offset // RESULTS_CHUNK_ROWS:04d}.json"
+        write_json(search_dir / filename, {"rows": browse_rows[offset:offset + RESULTS_CHUNK_ROWS]})
+        browse_chunks.append(filename)
     write_json(search_dir / "meta.json", {
         "schema_version": SEARCH_INDEX_SCHEMA_VERSION,
         "row_metadata": row_metadata,
         "result_states": result_states,
+        "browse_chunks": browse_chunks,
         "char_counts": {token: len(bucket) for token, bucket in sorted(char_rows.items())},
         "prefix_counts": {token: len(bucket) for token, bucket in sorted(prefix_rows.items())},
         "bigram_counts": {token: len(bucket) for token, bucket in sorted(bigram_rows.items())},

@@ -67,8 +67,9 @@
     </style>
     <link rel="stylesheet" href="./assets/ledger.css?v=20260825-02" />
 
-  </head>
-  <body class="info-page info-page--developer" data-info-page="api">
+  <link rel="stylesheet" href="/assets/ux.css?v=20260928-01"><script defer src="/assets/ux.js?v=20260928-01"></script>
+</head>
+  <body class="info-page info-page--developer" data-info-page="mcp">
     <div data-info-shell-header></div>
     <main class="wrap" id="main-content">
       <div class="top">
@@ -88,7 +89,7 @@
           pageTitle: "MCP 文件 | Plate.hk",
           title: "MCP 文件",
           back: "← 返回首頁",
-          updated: "最後更新：2026年8月24日",
+          updated: "文件修訂：2026年9月28日",
           html: `
             <p>目標：讓 AI 與第三方開發者以「工具」方式存取車牌拍賣資料，不需要下載全量 JSON。</p>
 
@@ -101,7 +102,7 @@
               <li>支援 MCP protocol <code>2025-06-18</code> 及 <code>2025-03-26</code></li>
             </ul>
 
-            <h2>工具建議</h2>
+            <h2>現有唯讀工具</h2>
             <div class="box">
               <div><code>platehk_list_datasets</code> → 公開 dataset 與 API 入口</div>
               <div><code>platehk_search</code> → 跨 dataset 搜尋車牌歷史</div>
@@ -147,7 +148,7 @@
           pageTitle: "MCP Docs | Plate.hk",
           title: "MCP Docs",
           back: "← Back to Home",
-          updated: "Last updated: 24 Aug 2026",
+          updated: "Documentation revised: 28 Sep 2026",
           html: `
             <p>Goal: let AI and third-party developers access plate auction data as tools without downloading the full JSON.</p>
 
@@ -224,6 +225,6 @@
 
       render();
     </script>
-    <script src="./assets/info-shell.js?v=20260825-01"></script>
+    <script src="./assets/info-shell.js?v=20260928-01"></script>
   </body>
 </html>

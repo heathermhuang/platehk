@@ -28,6 +28,7 @@ const searchMeta = {
     null,
   ]],
   result_states: [["sold", "sold"]],
+  browse_chunks: ["browse/0000.json", "browse/0001.json"],
   char_counts: { 8: searchRows.length },
   prefix_counts: { 8: searchRows.length },
   bigram_counts: { 88: searchRows.length },
@@ -87,7 +88,11 @@ const env = {
       if (url.hostname === "malformed-index.test" && path === "/api/v1/all/search-index/bigram/88.json") {
         return Response.json({ not_rows: [] });
       }
+      if (url.hostname === "budget-missing-shard.test" && path.endsWith("browse/0001.json")) return new Response("Missing", {status:404});
+      if (url.hostname === "budget-oversized-shard.test" && path.endsWith("browse/0000.json")) return Response.json({rows:Array.from({length:12001},()=>searchRows[0])});
       if (path === "/api/v1/all/search-index/meta.json") return Response.json(searchMeta);
+      if (path === "/api/v1/all/search-index/browse/0000.json") return Response.json({ rows: searchRows.slice(0,60) });
+      if (path === "/api/v1/all/search-index/browse/0001.json") return Response.json({ rows: searchRows.slice(60) });
       if (path === "/api/v1/all/search-index/bigram/88.json") return Response.json({ rows: searchRows });
       if (path === "/api/v1/all/search-index/char1/8.json") return Response.json({ rows: searchRows });
       if (path === "/data/all.tvrm_legacy_overlap.json") return Response.json({ keys: [], exact_keys: [] });
@@ -445,3 +450,18 @@ assert.equal(noFreshnessResponse.status, 200);
 assert.equal((await noFreshnessResponse.json()).generated_at, null);
 
 console.log("Worker bounded data-access and API freshness regression tests passed.");
+
+// Budget-only queries filter the complete disjoint scan before paging, including
+// matches after the first chunk; the endpoint still rejects unconstrained reads.
+const budgetRequest=page=>worker.fetch(new Request(`https://budget.test/api/search?dataset=all&max_amount=99990&min_amount=99900&sort=date_desc&page=${page}&page_size=24`),env,{waitUntil(){}});
+const budgetFirst=await budgetRequest(1);assert.equal(budgetFirst.status,200);const budgetA=await budgetFirst.json();
+const budgetThird=await budgetRequest(3);assert.equal(budgetThird.status,200);const budgetB=await budgetThird.json();
+assert.equal(budgetA.total,91);assert.equal(budgetB.total,91);assert.equal(budgetA.rows.length,24);assert.equal(budgetB.rows.length,24);
+assert.ok(budgetB.rows.some(row=>Number(row.amount_hkd)<99940));
+for(const row of [...budgetA.rows,...budgetB.rows])assert.ok(row.amount_hkd>=99900&&row.amount_hkd<=99990);
+assert.equal(new Set([...budgetA.rows,...budgetB.rows].map(row=>row.single_line)).size,48);
+const noConstraint=await worker.fetch(new Request('https://budget.test/api/search?dataset=all&sort=date_desc'),env,{waitUntil(){}});assert.equal(noConstraint.status,400);
+console.log('Budget-only complete-set paging passed.');
+
+for(const origin of ['budget-missing-shard.test','budget-oversized-shard.test']){const response=await worker.fetch(new Request(`https://${origin}/api/search?dataset=all&max_amount=100000&sort=date_desc&page_size=24`),env,{waitUntil(){}});assert.equal(response.status,503);assert.equal((await response.json()).rows,undefined);}
+console.log('Incomplete budget scans fail closed without partial rows.');

@@ -18,9 +18,9 @@ INDEX_LINKS = 420
 TABLE_ROWS = 18
 LEDGER_CSS_VERSION = "20260812-11"
 INFO_CSS_VERSION = "20260825-02"
-INFO_SHELL_VERSION = "20260825-01"
+INFO_SHELL_VERSION = "20260928-01"
 INFO_LOCALE_VERSION = "20260825-01"
-POPULAR_INDEX_VERSION = "20260825-01"
+POPULAR_INDEX_VERSION = "20260928-01"
 MARKET_SIGNALS_PATH = DATA / "market" / "28car.active.json"
 _MARKET_SIGNALS: dict | None = None
 _DATASET_STATS: dict[str, dict] = {}
@@ -68,7 +68,6 @@ DATASETS = {
 STATIC_PAGES = [
     "https://plate.hk/",
     "https://plate.hk/?lang=en",
-    "https://plate.hk/landing.html",
     "https://plate.hk/prices.html",
     "https://plate.hk/prices.html?lang=en",
     "https://plate.hk/discover.html",
@@ -700,11 +699,12 @@ def render_page(entries_by_norm: dict[str, dict], entry: dict, related: list[dic
         .responsive-table td::before {{ content:attr(data-label); color:var(--muted); font-size:11px; font-weight:800; line-height:1.35; text-transform:uppercase; }}
       }}
     </style>
-  </head>
+  <link rel="stylesheet" href="/assets/ux.css?v=20260928-01"><script defer src="/assets/ux.js?v=20260928-01"></script>
+</head>
   <body class="info-page info-page--plate" data-info-page="plates" data-title-zh="{html.escape(og_title, quote=True)}" data-title-en="{html.escape(f'{plate} Plate Auction Results | Plate.hk', quote=True)}">
     <div data-info-shell-header></div>
     <main class="wrap" id="main-content">
-      <div class="hero">
+      <div class="hero" data-plate-summary data-record-count="{entry['count']}" data-top-amount="{html.escape(highest_price_en, quote=True)}" data-top-date-zh="{html.escape(highest_date, quote=True)}" data-top-date-en="{html.escape(highest_date_en, quote=True)}">
         <a data-preserve-lang href="../plates/index.html" {copy_attrs('← 熱門車牌索引', '← Popular Plates')}>← 熱門車牌索引</a>
         <h1 {copy_attrs(f'{plate} 車牌拍賣結果', f'{plate} Plate Auction Results')}>{html.escape(plate)} 車牌拍賣結果</h1>
         <div style="margin-top:12px;"><span class="plate">{html.escape(plate)}</span></div>
@@ -757,7 +757,7 @@ def render_page(entries_by_norm: dict[str, dict], entry: dict, related: list[dic
 {market_script}    </main>
     {decision_panel}
     <link rel="stylesheet" href="/assets/decision.css?v=20260915-01">
-    <script type="module" src="/assets/decision.js?v=20260925-01"></script>
+    <script type="module" src="/assets/decision.js?v=20260928-01"></script>
     <script defer src="/assets/analytics.js?v=20260915-01"></script>
     <div data-info-shell-footer></div>
     <script src="../assets/info-locale.js?v={INFO_LOCALE_VERSION}"></script>
@@ -862,7 +862,8 @@ def render_index(entries: list[dict]) -> str:
       @media (max-width: 760px) {{ .grid {{ grid-template-columns: repeat(2, minmax(0,1fr)); }} }}
       @media (max-width: 620px) {{ .popular-ready .popular-tools {{ grid-template-columns:1fr; align-items:stretch; }} .grid {{ grid-template-columns: 1fr; }} }}
     </style>
-  </head>
+  <link rel="stylesheet" href="/assets/ux.css?v=20260928-01"><script defer src="/assets/ux.js?v=20260928-01"></script>
+</head>
   <body class="info-page info-page--plates" data-info-page="plates" data-title-zh="熱門車牌拍賣結果索引 | Plate.hk" data-title-en="Popular Plate Auction Results | Plate.hk">
     <div data-info-shell-header></div>
     <main class="wrap" id="main-content">
@@ -941,7 +942,8 @@ def render_directory(entries: list[dict]) -> str:
     <script type="application/ld+json">{json.dumps(ld_json, ensure_ascii=False)}</script>
     <link rel="stylesheet" href="/assets/ledger.css?v={INFO_CSS_VERSION}">
     <style>.directory-wrap{{max-width:1120px;margin:auto;padding:28px 18px 60px}}.directory-wrap h1{{font-size:clamp(28px,4vw,44px)}}.directory-wrap section{{margin-top:30px}}.directory-wrap section p{{color:var(--muted)}}.directory-list{{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px 20px;list-style:none;padding:0}}.directory-list li{{padding:8px;border-bottom:1px solid var(--line)}}.directory-list a{{font-weight:800}}.directory-list span{{display:block;font-size:12px;color:var(--muted);margin-top:3px}}</style>
-    </head><body class="info-page" data-info-page="plates" data-title-zh="精選車牌拍賣結果目錄 | Plate.hk" data-title-en="Featured Plate Auction Records Directory | Plate.hk">
+    <link rel="stylesheet" href="/assets/ux.css?v=20260928-01"><script defer src="/assets/ux.js?v=20260928-01"></script>
+</head><body class="info-page" data-info-page="plates" data-title-zh="精選車牌拍賣結果目錄 | Plate.hk" data-title-en="Featured Plate Auction Records Directory | Plate.hk">
     <div data-info-shell-header></div><main class="directory-wrap" id="main-content">
     <a data-preserve-lang href="../index.html" {copy_attrs('← 熱門車牌', '← Popular plates')}>← 熱門車牌</a>
     <h1 {copy_attrs('精選車牌拍賣結果目錄', 'Featured Plate Auction Records Directory')}>精選車牌拍賣結果目錄</h1>
@@ -1169,7 +1171,8 @@ def render_about() -> str:
         .responsive-table td::before, .responsive-table th[scope="row"]::before {{ content:attr(data-label); color:var(--muted); font-size:11px; font-weight:800; line-height:1.35; text-transform:uppercase; }}
       }}
     </style>
-  </head>
+  <link rel="stylesheet" href="/assets/ux.css?v=20260928-01"><script defer src="/assets/ux.js?v=20260928-01"></script>
+</head>
   <body class="info-page info-page--about" data-info-page="about" data-title-zh="香港車牌拍賣資料說明與方法 | Plate.hk" data-title-en="Hong Kong Plate Auction Data Guide | Plate.hk">
     <div data-info-shell-header></div>
     <main class="wrap" id="main-content">

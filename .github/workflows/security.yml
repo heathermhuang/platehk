@@ -58,4 +58,4 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Verify plate decision and complete auction-result flows on desktop and mobile
-        run: npx playwright test e2e/decision.spec.mjs e2e/auction-results.spec.mjs
+        run: npx playwright test e2e/decision.spec.mjs e2e/auction-results.spec.mjs e2e/ux.spec.mjs
