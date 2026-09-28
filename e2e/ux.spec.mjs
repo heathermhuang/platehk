@@ -44,7 +44,9 @@ test('round filters retain complete source rows and find sold versus unsold mark
 test('directory lookup, audit paging, camera fallback and legacy redirect are usable',async({page,request})=>{
   await page.goto('/plates/directory/index.html?lang=en');await page.getByRole('searchbox',{name:'Find a plate',exact:true}).fill('88');
   expect(await page.locator('.directory-list li:visible').count()).toBeGreaterThan(0);await expect(page.getByRole('link',{name:'88',exact:true})).toBeVisible();
-  await page.goto('/audit.html?lang=en');await expect(page.locator('#tbody tr')).toHaveCount(40);await expect(page.locator('#auditPager')).toContainText('770 matching issues');
+  const inventoryResponse=await request.get('/data/audit.json');expect(inventoryResponse.ok()).toBe(true);
+  const inventory=await inventoryResponse.json();expect(inventory.files.length).toBeGreaterThan(40);
+  await page.goto('/audit.html?lang=en');await expect(page.locator('#tbody tr')).toHaveCount(40);await expect(page.locator('#auditPager')).toContainText(`${inventory.files.length} matching issues`);
   await page.goto('/camera.html?lang=en');await expect(page.locator('#manualInput')).toHaveAttribute('aria-label','Correct or enter the plate number');
   const redirected=await request.get('/landing.html?lang=en',{maxRedirects:0});expect(redirected.status()).toBe(301);expect(redirected.headers().location).toMatch(/\/?\?lang=en$/);
 });
