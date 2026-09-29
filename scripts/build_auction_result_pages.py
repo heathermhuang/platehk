@@ -5,6 +5,7 @@ from __future__ import annotations
 import html
 import json
 import re
+import xml.etree.ElementTree as ET
 from collections import Counter
 from datetime import date
 from pathlib import Path
@@ -13,6 +14,7 @@ from urllib.parse import urlencode, urlparse
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG = ROOT / 'config' / 'auction_result_pages.json'
 SITE = 'https://plate.hk'
+ATOM = 'http://www.w3.org/2005/Atom'
 LABELS = {
     'pvrm': ('自訂車牌', 'Personalized marks'),
     'tvrm_physical': ('傳統車牌實體拍賣', 'Traditional physical auction'),
@@ -112,6 +114,83 @@ def link(href: str, label: str, **attrs) -> str:
     return f'<a href="{html.escape(href, quote=True)}"{extra}>{html.escape(label)}</a>'
 
 
+def feed_path(lang: str = 'zh') -> str:
+    return f"/auction-results/{'en/' if lang == 'en' else ''}feed.xml"
+
+
+def render_feed(lang: str) -> str:
+    """Keep entry identities and verification dates stable across routine builds."""
+    ET.register_namespace('', ATOM)
+    rounds = load_rounds()
+    root = ET.Element(f'{{{ATOM}}}feed', {'{http://www.w3.org/XML/1998/namespace}lang': 'en' if lang == 'en' else 'zh-HK'})
+    def add(parent, name, value=None, **attrs):
+        node = ET.SubElement(parent, f'{{{ATOM}}}{name}', attrs)
+        if value is not None:
+            node.text = value
+        return node
+    add(root, 'id', SITE + feed_path(lang))
+    add(root, 'title', choose('Plate.hk 已核對拍賣結果', 'Plate.hk verified auction results', lang))
+    add(root, 'updated', max(r['verified_on'] for r in rounds) + 'T00:00:00Z')
+    add(root, 'link', href=SITE + feed_path(lang), rel='self', type='application/atom+xml')
+    add(root, 'link', href=SITE + public_path(lang=lang), rel='alternate', type='text/html')
+    author = add(root, 'author')
+    add(author, 'name', 'Plate.hk')
+    for r in rounds:
+        entry = add(root, 'entry')
+        add(entry, 'id', SITE + public_path(r, lang))
+        add(entry, 'title', title(r, lang))
+        add(entry, 'updated', r['verified_on'] + 'T00:00:00Z')
+        add(entry, 'link', href=SITE + public_path(r, lang), rel='alternate', type='text/html')
+        add(entry, 'link', href=r['source_url'], rel='related', type='application/pdf')
+        counts = Counter(row['status'] for row in r['rows'])
+        summary = choose(
+            f"{len(r['rows'])} 個號碼：{counts['sold']} 個拍賣售出、{counts['special_fee']} 個特別費用分配、{counts['unsold']} 個未售出。官方公布款項 {money(r['official_proceeds_hkd'])}。日期為拍賣場次日期；不是現時估值或可用狀態。",
+            f"{len(r['rows'])} marks: {counts['sold']} auction sales, {counts['special_fee']} special-fee allocations and {counts['unsold']} unsold. Official proceeds {money(r['official_proceeds_hkd'])}. Dates identify the auction round; results do not establish current value or availability.", lang)
+        add(entry, 'summary', summary, type='text')
+    ET.indent(root)
+    return '<?xml version="1.0" encoding="utf-8"?>\n' + ET.tostring(root, encoding='unicode') + '\n'
+
+
+def feed_controls(lang: str) -> str:
+    url = SITE + feed_path(lang)
+    return f'''<section id="updates" class="results-updates" aria-labelledby="updates-title">
+<h2 id="updates-title">{choose('訂閱已核對的新結果', 'Follow newly verified results', lang)}</h2>
+<p>{choose('把下列訂閱連結加入你的 RSS／Atom 閱讀器，收到本目錄新增的已核對場次。日曆提醒請到拍賣日程儲存。', 'Add this feed to your RSS or Atom reader for newly verified rounds added to this archive. Save upcoming-auction reminders from the calendar.', lang)}</p>
+<div class="results-feed-actions"><label for="resultsFeedUrl">{choose('結果訂閱連結', 'Results feed URL', lang)}</label><input id="resultsFeedUrl" readonly value="{url}">
+<button type="button" data-feed-copy="{url}">{choose('複製訂閱連結', 'Copy feed link', lang)}</button>
+{link(feed_path(lang), choose('開啟結果訂閱', 'Open results feed', lang), data_results_feed='')}
+{link('/auctions.html' + ('?lang=en' if lang == 'en' else ''), choose('儲存日曆提醒', 'Save calendar reminders', lang))}</div>
+<p id="resultsFeedStatus" role="status" aria-live="polite"></p>
+<p class="auction-source-note">{choose('訂閱由你的閱讀器管理；開啟或複製連結不代表已完成訂閱。此訂閱只涵蓋本目錄已核對的場次，更新日期為資料核對日。', 'Your reader manages the subscription; opening or copying the link does not complete it. The feed covers this curated archive, and entry update dates identify verification dates.', lang)}</p></section>'''
+
+
+def homepage_highlights() -> str:
+    rounds = load_rounds()
+    def localized(zh, en):
+        return f'<span data-growth-lang="zh">{zh}</span><span data-growth-lang="en">{en}</span>'
+    items = []
+    for dataset in ('pvrm', 'tvrm_physical', 'tvrm_eauction'):
+        r = next(r for r in rounds if r['dataset'] == dataset)
+        items.append('<li>' + localized(link(public_path(r), title(r, 'zh')), link(public_path(r, 'en'), title(r, 'en'))) + '</li>')
+    return f'''<section id="verifiedAuctionHighlights" class="verified-results" aria-labelledby="verifiedResultsTitle">
+<div class="verified-results-heading"><h2 id="verifiedResultsTitle">{localized('最新已核對拍賣結果', 'Latest verified auction results')}</h2>
+{localized(link(public_path(), '全部已核對場次'), link(public_path(lang='en'), 'All verified rounds'))}</div>
+<ul>{''.join(items)}</ul><p>{localized('完整號碼表、未售出及特別費用標示，附官方 PDF。', 'Complete mark tables, unsold and special-fee outcomes, with official PDFs.')}
+{localized(link(public_path() + '#updates', '訂閱新結果及儲存提醒'), link(public_path(lang='en') + '#updates', 'Follow new results and save reminders'))}</p></section>'''
+
+
+def update_homepage(path: Path) -> None:
+    if not path.exists():
+        return
+    content = path.read_text(encoding='utf-8')
+    begin, end = '<!-- VERIFIED_AUCTION_HIGHLIGHTS -->', '<!-- /VERIFIED_AUCTION_HIGHLIGHTS -->'
+    if begin not in content or end not in content:
+        raise ValueError('Missing homepage auction-result publication markers')
+    replacement = begin + '\n' + homepage_highlights() + '\n' + end
+    content = re.sub(re.escape(begin) + r'.*?' + re.escape(end), lambda _: replacement, content, count=1, flags=re.S)
+    path.write_text(content, encoding='utf-8')
+
+
 def shell(r: dict | None, lang: str, heading: str, description: str, body: str, schema: list[dict]) -> str:
     canonical = SITE + public_path(r, lang)
     alternates = ''.join(f'<link rel="alternate" hreflang="{code}" href="{SITE}{public_path(r, language)}">' for code, language in [('zh-HK', 'zh'), ('en', 'en')])
@@ -139,18 +218,20 @@ def shell(r: dict | None, lang: str, heading: str, description: str, body: str, 
 <meta name="description" content="{html.escape(description, quote=True)}">
 <meta name="robots" content="index,follow,max-image-preview:large">
 <link rel="canonical" href="{canonical}">{alternates}
+<link rel="alternate" type="application/atom+xml" title="{choose('已核對拍賣結果', 'Verified auction results', lang)}" href="{SITE + feed_path(lang)}">
 <meta property="og:type" content="website"><meta property="og:title" content="{html.escape(heading, quote=True)} | Plate.hk">
 <meta property="og:description" content="{html.escape(description, quote=True)}"><meta property="og:url" content="{canonical}">
 <meta property="og:locale" content="{'en_HK' if lang == 'en' else 'zh_HK'}">
 <link rel="stylesheet" href="/assets/ledger.css?v=20260915-01"><link rel="stylesheet" href="/assets/auction-results.css?v=20260926-01">
+<link rel="stylesheet" href="/assets/growth.css?v=20260929-01">
 <script type="application/ld+json">{structured}</script>
 <script defer src="/assets/analytics.js?v=20260915-01"></script>
 <link rel="stylesheet" href="/assets/ux.css?v=20260928-01"><script defer src="/assets/ux.js?v=20260928-01"></script>
-</head><body class="auction-page" data-info-page="archive" data-auction-start="{r['start_date'] if r else ''}" data-auction-end="{r['end_date'] if r else ''}">
+</head><body class="auction-page" data-info-page="archive" data-auction-dataset="{r['dataset'] if r else ''}" data-auction-start="{r['start_date'] if r else ''}" data-auction-end="{r['end_date'] if r else ''}">
 <div data-info-shell-header><noscript><header class="auction-header"><a class="auction-brand" href="/{legacy}">Plate.hk</a><nav>{navigation}</nav></header></noscript></div>
 <main id="main-content"><p class="auction-kicker">{choose('運輸署結果・Plate.hk 整理', 'Transport Department results · Compiled by Plate.hk', lang)}</p><h1>{html.escape(heading)}</h1>{body}</main>
 <div data-info-shell-footer><noscript><footer class="auction-footer">{link('/about.html' + legacy, choose('資料來源與限制', 'Sources and limitations', lang))} · {link('/terms.html' + legacy, choose('使用條款', 'Terms', lang))} · {link('https://github.com/heathermhuang/platehk', 'GitHub')}</footer></noscript></div>
-<script src="/assets/info-shell.js?v=20260928-01"></script></body></html>\n'''
+<script src="/assets/info-shell.js?v=20260928-01"></script><script defer src="/assets/growth.js?v=20260929-01"></script></body></html>\n'''
 
 
 def render_round(r: dict, lang: str) -> str:
@@ -189,7 +270,7 @@ def render_round(r: dict, lang: str) -> str:
         interpretation += choose(' 本表列單行號碼；可用的雙行排列及 n/a 標示請核對完整手冊。', ' This table lists the one-row mark; consult the complete handout for two-row arrangements and n/a labels.', lang)
     online = ''
     if r['dataset'] == 'tvrm_eauction':
-        online = '<p>' + choose('本場涵蓋 2026年9月17日至21日。搜尋索引以 9月17日（開始日）為期數鍵，不代表各號碼的成交日或付款日。', 'This round covers 17–21 September 2026. The search index uses 17 September, the opening date, as its issue key; it is not an individual mark’s sale or payment date.', lang) + '</p>'
+        online = '<p>' + choose(f'本場涵蓋 {date_label(r, lang)}。搜尋索引以 {r["start_date"]}（開始日）為期數鍵，不代表各號碼的成交日或付款日。', f'This round covers {date_label(r, lang)}. The search index uses {r["start_date"]}, the opening date, as its issue key; it is not an individual mark’s sale or payment date.', lang) + '</p>'
     limits = choose('這是歷史官方結果，不是現時估值、車主資料或可用／放售狀態。一般搜尋索引未保留所有結果標示，未售出號碼亦可能不在搜尋結果內；核對本表及完整手冊。如有差異，以運輸署原始文件為準。', 'These are historical official results, not current valuations, owner records or availability/listing status. The general search index does not retain every disposition and may omit unsold marks; check this table and the complete handout. The original Transport Department document prevails if anything differs.', lang)
     reconciliation = choose(f"拍賣售出金額合計 {money(sale_total)} ＋ 特別費用 {money(fee_total)} ＝ 官方公布款項 {money(r['official_proceeds_hkd'])}。", f"Auction-sale subtotal {money(sale_total)} + special fees {money(fee_total)} = official published proceeds {money(r['official_proceeds_hkd'])}.", lang)
     siblings = ' '.join(link(public_path(other, lang), title(other, lang)) for other in load_rounds() if other['id'] != r['id'])
@@ -216,9 +297,9 @@ def render_index(lang: str) -> str:
             f"{len(r['rows'])} 個號碼 · {count['sold']} 個拍賣售出 · {count['special_fee']} 個特別費用分配 · {count['unsold']} 個未售出",
             f"{len(r['rows'])} marks · {count['sold']} auction sales · {count['special_fee']} special-fee allocations · {count['unsold']} unsold", lang)
         cards.append(f'<article><h2>{link(public_path(r, lang), title(r, lang))}</h2><p>{summary}</p><p>{choose("官方公布款項", "Official proceeds", lang)}: <strong>{money(r["official_proceeds_hkd"])}</strong></p><p>{link(r["source_url"], choose("完整官方 PDF", "Complete official PDF", lang))}</p></article>')
-    scope = choose('本目錄先收錄三個已核對完整手冊的場次，並非所有歷年拍賣。其他歷史已收錄金額可回到搜尋工具查詢。', 'This archive starts with three rounds verified against their complete handouts; it is not the entire historical auction archive. Use the search tool for other indexed historical amounts.', lang)
+    scope = choose(f'本目錄收錄 {len(rounds)} 個已核對完整手冊的場次，並非所有歷年拍賣。其他歷史已收錄金額可回到搜尋工具查詢。', f'This archive contains {len(rounds)} rounds verified against their complete handouts; it is not the entire historical auction archive. Use the search tool for other indexed historical amounts.', lang)
     limits = choose('拍賣售出、無人競投後的特別費用分配、以及 U/S 未售出，是不同結果。款項不能當作現時估價或可用狀態；運輸署是最終來源。', 'Auction sales, allocations at special fees after no bidder, and U/S unsold marks are distinct outcomes. Amounts do not establish current value or availability; the Transport Department is the final source authority.', lang)
-    body = f'<p class="auction-summary">{description}</p><p>{scope}</p><div class="auction-rounds">{"".join(cards)}</div><section><h2>{choose("結果與價錢的限制", "Result and price limitations", lang)}</h2><p>{limits}</p>{link("/prices.html" + ("?lang=en" if lang == "en" else ""), choose("查詢車牌歷史價格", "Look up a plate’s price history", lang))}</section>'
+    body = f'<p class="auction-summary">{description}</p><p>{scope}</p><p>{link("#updates", choose("訂閱新結果", "Follow new results", lang))}</p><div class="auction-rounds">{"".join(cards)}</div>{feed_controls(lang)}<section><h2>{choose("結果與價錢的限制", "Result and price limitations", lang)}</h2><p>{limits}</p>{link("/prices.html" + ("?lang=en" if lang == "en" else ""), choose("查詢車牌歷史價格", "Look up a plate’s price history", lang))}</section>'
     schema = [{'@type': 'ItemList', 'numberOfItems': len(rounds), 'itemListElement': [
         {'@type': 'ListItem', 'position': i, 'name': title(r, lang), 'url': SITE + public_path(r, lang)} for i, r in enumerate(rounds, 1)]}]
     return shell(None, lang, heading, description, body, schema)
@@ -232,6 +313,8 @@ def build(target: Path = ROOT) -> None:
             path = target / public_path(r, lang).lstrip('/')
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(page, encoding='utf-8')
+        (target / feed_path(lang).lstrip('/')).write_text(render_feed(lang), encoding='utf-8')
+    update_homepage(target / 'index.html')
 
 
 if __name__ == '__main__':

@@ -18,6 +18,14 @@ const env = {
       if (url.pathname === "/data/hot_search/manifest.json") {
         return Response.json({ generated_at: "2026-08-17" });
       }
+      if (["/auction-results/feed.xml", "/auction-results/en/feed.xml"].includes(url.pathname)) {
+        if (request.headers.get('if-none-match') === '"stable-feed"') {
+          return new Response(null, {status:304, headers:{"content-type":"application/xml",etag:'"stable-feed"',"cache-control":"public, max-age=86400"}});
+        }
+        return new Response('<feed xmlns="http://www.w3.org/2005/Atom"/>', {
+          headers: { "content-type": "application/xml", etag: '"stable-feed"' },
+        });
+      }
       return new Response("Not found", { status: 404 });
     },
   },
@@ -78,5 +86,22 @@ const mcpApi = await worker.fetch(new Request("https://plate.hk/mcp"), env, ctx)
 assert.equal(mcpApi.status, 405);
 assert.equal(mcpApi.headers.get("location"), null);
 assert.deepEqual(assetRequests, []);
+
+for (const path of ["/auction-results/feed.xml", "/auction-results/en/feed.xml"]) {
+  const feed = await worker.fetch(new Request(`https://plate.hk${path}`), env, ctx);
+  assert.equal(feed.status, 200);
+  assert.equal(feed.headers.get("content-type"), "application/atom+xml; charset=utf-8");
+  assert.equal(feed.headers.get("cache-control"), "public, max-age=300, must-revalidate");
+  assert.equal(feed.headers.get("etag"), '"stable-feed"');
+  assert.match(await feed.text(), /<feed xmlns=/);
+  const unchanged = await worker.fetch(new Request(`https://plate.hk${path}`, {headers:{'if-none-match':'"stable-feed"'}}), env, ctx);
+  assert.equal(unchanged.status, 304);
+  assert.equal(unchanged.headers.get("cache-control"), "public, max-age=300, must-revalidate");
+  assert.equal(unchanged.headers.get("content-type"), "application/atom+xml; charset=utf-8");
+  assert.equal(await unchanged.text(), '');
+}
+const absentFeed = await worker.fetch(new Request("https://plate.hk/auction-results/absent.xml"), env, ctx);
+assert.equal(absentFeed.status, 404);
+assert.notEqual(absentFeed.headers.get("content-type"), "application/atom+xml; charset=utf-8");
 
 console.log("seo worker tests passed");

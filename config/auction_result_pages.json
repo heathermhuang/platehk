@@ -3819,6 +3819,7644 @@
           "special_mark": false
         }
       ]
+    },
+    {
+      "id": "pvrm-2026-09-05",
+      "dataset": "pvrm",
+      "start_date": "2026-09-05",
+      "end_date": "2026-09-05",
+      "verified_on": "2026-09-29",
+      "source_url": "https://www.td.gov.hk/filemanager/tc/content_4806/pvrm_result_20260905_chi.pdf",
+      "source_sha256": "31dbea00af852b069bd8342948a4bb6a2deed5345900423b1ac7d9d4577411e1",
+      "source_pages": 1,
+      "official_proceeds_hkd": 1767000,
+      "rows": [
+        {
+          "mark": "N1K1CHAN",
+          "amount_hkd": 5000,
+          "status": "special_fee",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "KHTLPC",
+          "amount_hkd": 5000,
+          "status": "special_fee",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "CCKKEE",
+          "amount_hkd": 10000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "TLMC",
+          "amount_hkd": 5000,
+          "status": "special_fee",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "1KTL1",
+          "amount_hkd": 5000,
+          "status": "special_fee",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "A0NGCWTW",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "ZSHELBYZ",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "Y0G333",
+          "amount_hkd": 19000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "WMF",
+          "amount_hkd": 50000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "LANM1NG",
+          "amount_hkd": 5000,
+          "status": "special_fee",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "YCKCY",
+          "amount_hkd": 5000,
+          "status": "special_fee",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "VALHALLA",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "MAHE1",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "SSRB",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "0LGA",
+          "amount_hkd": 5000,
+          "status": "special_fee",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "T1NB0X",
+          "amount_hkd": 5000,
+          "status": "special_fee",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "SK1128E",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "MYDREW",
+          "amount_hkd": 5000,
+          "status": "special_fee",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "CH1NL0NG",
+          "amount_hkd": 5000,
+          "status": "special_fee",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "NYL",
+          "amount_hkd": 22000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "BALL2",
+          "amount_hkd": 5000,
+          "status": "special_fee",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "SHB1NG",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "EM1M1",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "BALAN1",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "J0HNLUNG",
+          "amount_hkd": 5000,
+          "status": "special_fee",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "NV1D1A",
+          "amount_hkd": 32000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "KPS1",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "CHU333",
+          "amount_hkd": 55000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "T0NGT0NG",
+          "amount_hkd": 55000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "1CHC1",
+          "amount_hkd": 10000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "ANDYCHEN",
+          "amount_hkd": 5000,
+          "status": "special_fee",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "LACEY",
+          "amount_hkd": 6000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "YANN1",
+          "amount_hkd": 10000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "D0RBE1",
+          "amount_hkd": 5000,
+          "status": "special_fee",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "LAWS6N",
+          "amount_hkd": 5000,
+          "status": "special_fee",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "M1LES616",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "V4T",
+          "amount_hkd": 16000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "MAGU6",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "S1NGYU",
+          "amount_hkd": 5000,
+          "status": "special_fee",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "BABA9988",
+          "amount_hkd": 5000,
+          "status": "special_fee",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "XM0RR1SX",
+          "amount_hkd": 10000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "PTW8",
+          "amount_hkd": 19000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "RRL0VE",
+          "amount_hkd": 85000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "CCAR887",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "AURA",
+          "amount_hkd": 60000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "B0Z1",
+          "amount_hkd": 10000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "X818X",
+          "amount_hkd": 34000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "EMPER1AL",
+          "amount_hkd": 7000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "BALLPEN",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "JAN02",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "XXCXX",
+          "amount_hkd": 55000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "F00DB0Y",
+          "amount_hkd": 12000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "SUNNY168",
+          "amount_hkd": 8000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "BA0MA",
+          "amount_hkd": 10000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "0CEAN8",
+          "amount_hkd": 10000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "1ANNA1",
+          "amount_hkd": 22000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "SATAY",
+          "amount_hkd": 10000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "ALA1A",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "WH0Y0U",
+          "amount_hkd": 26000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "YAU28",
+          "amount_hkd": 19000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "MRKT",
+          "amount_hkd": 24000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "666YYDS",
+          "amount_hkd": 120000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "MAXK21G",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "S0PH1EH",
+          "amount_hkd": 5000,
+          "status": "special_fee",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "B0SSSTY",
+          "amount_hkd": 10000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "T1RAC1NG",
+          "amount_hkd": 5000,
+          "status": "special_fee",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "PCHUN",
+          "amount_hkd": 5000,
+          "status": "special_fee",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "BBMC8",
+          "amount_hkd": 10000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "CARMELA",
+          "amount_hkd": 10000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "A1AMPF",
+          "amount_hkd": 15000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "BA01212",
+          "amount_hkd": 5000,
+          "status": "special_fee",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "SMH",
+          "amount_hkd": 38000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "EL1X1R",
+          "amount_hkd": 5000,
+          "status": "special_fee",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "BGM",
+          "amount_hkd": 350000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "JAR0N",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "NGA1YS",
+          "amount_hkd": 5000,
+          "status": "special_fee",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "KMY158",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "SH1FTCAM",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "8U1A",
+          "amount_hkd": 8000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "1FKF1",
+          "amount_hkd": 10000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "ANS0NCWM",
+          "amount_hkd": 5000,
+          "status": "special_fee",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "LPS7",
+          "amount_hkd": 20000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "Y0Y0KW0K",
+          "amount_hkd": 5000,
+          "status": "special_fee",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "WFK",
+          "amount_hkd": 28000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "LBRZ7",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "YUKSUNG",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "V1L",
+          "amount_hkd": 30000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "M1NGH00",
+          "amount_hkd": 5000,
+          "status": "special_fee",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "S1N826",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "CNML",
+          "amount_hkd": 11000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "T0S1R",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "PA1SA",
+          "amount_hkd": 11000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "SJB",
+          "amount_hkd": 80000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "C1826F",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "NJU",
+          "amount_hkd": 22000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "RUNE",
+          "amount_hkd": 10000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "SPHYNX",
+          "amount_hkd": 8000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "EM1TU0F0",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "BATH11",
+          "amount_hkd": 5000,
+          "status": "special_fee",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "J0DY5",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        }
+      ]
+    },
+    {
+      "id": "pvrm-2026-08-22",
+      "dataset": "pvrm",
+      "start_date": "2026-08-22",
+      "end_date": "2026-08-22",
+      "verified_on": "2026-09-29",
+      "source_url": "https://www.td.gov.hk/filemanager/sc/content_4806/PVRMs%20Auction%20Result%20Handout%2022%20Aug%202026_CH.pdf",
+      "source_sha256": "6e2408e4f8578cc3bf68058d18b7df653b04b82f12ad0aa918db7593dae8351e",
+      "source_pages": 1,
+      "official_proceeds_hkd": 1669000,
+      "rows": [
+        {
+          "mark": "FL5TR",
+          "amount_hkd": 10000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "111JC",
+          "amount_hkd": 20000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "2KH1812",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "ASPENWD",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "KA1D1",
+          "amount_hkd": 6000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "S1MBAB00",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "GAAS",
+          "amount_hkd": 15000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "DUAN",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "M0SE",
+          "amount_hkd": 11000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "TCKEN",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "CL1V1A",
+          "amount_hkd": 5000,
+          "status": "special_fee",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "MAL1",
+          "amount_hkd": 10000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "NSWER",
+          "amount_hkd": 8000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "HUNGYEA",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "YUMEBB",
+          "amount_hkd": 7000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "XKZZZX",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "LHUAS",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "11668",
+          "amount_hkd": 130000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "X10AZGMF",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "YTW80",
+          "amount_hkd": 5000,
+          "status": "special_fee",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "152CM",
+          "amount_hkd": 6000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "JXXX",
+          "amount_hkd": 30000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "S0L1VE",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "PRUHK",
+          "amount_hkd": 7000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "WSSS",
+          "amount_hkd": 28000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "FA61N",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "1CENT",
+          "amount_hkd": 5000,
+          "status": "special_fee",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "2AST",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "ALFREDC",
+          "amount_hkd": 5000,
+          "status": "special_fee",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "KFCVW050",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "S1NGG0R",
+          "amount_hkd": 20000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "GUMB0",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "DREAMK01",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "M1N1YY",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "TEEM0BB",
+          "amount_hkd": 5000,
+          "status": "special_fee",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "CJ56BUL",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "M1KEYM",
+          "amount_hkd": 5000,
+          "status": "special_fee",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "NANN1NG",
+          "amount_hkd": 10000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "UPD",
+          "amount_hkd": 30000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "Y1NGL0NG",
+          "amount_hkd": 8000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "XYANNAX",
+          "amount_hkd": 5000,
+          "status": "special_fee",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "LUNGL1NG",
+          "amount_hkd": 5000,
+          "status": "special_fee",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "1GY1",
+          "amount_hkd": 40000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "XAXYX",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "YBWHK",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "1DD1V",
+          "amount_hkd": 15000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "JENC",
+          "amount_hkd": 10000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "SK654321",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "PYPYPY",
+          "amount_hkd": 32000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "WA11119",
+          "amount_hkd": 5000,
+          "status": "special_fee",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "FFDZ",
+          "amount_hkd": 13000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "11234",
+          "amount_hkd": 46000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "E39A",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "A1V1N",
+          "amount_hkd": 15000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "KAKAB",
+          "amount_hkd": 26000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "SM0KED",
+          "amount_hkd": 7000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "MAC22",
+          "amount_hkd": 5000,
+          "status": "special_fee",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "1LUKYAM1",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "MARCUSYU",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "T00MANY",
+          "amount_hkd": 10000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "B1F",
+          "amount_hkd": 24000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "M1N10N",
+          "amount_hkd": 12000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "NAM188",
+          "amount_hkd": 6000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "UB",
+          "amount_hkd": 305000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "YYY1314",
+          "amount_hkd": 9000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "XXBEARXX",
+          "amount_hkd": 20000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "LE1SURE",
+          "amount_hkd": 20000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "1WCY1",
+          "amount_hkd": 7000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "X1011X",
+          "amount_hkd": 8000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "0L0R0S0",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "1J1MMY1",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "JJAUG30",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "SZEK",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "ZXY",
+          "amount_hkd": 30000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "WAFA1",
+          "amount_hkd": 5000,
+          "status": "special_fee",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "FANSHUBB",
+          "amount_hkd": 8000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "136H0",
+          "amount_hkd": 5000,
+          "status": "special_fee",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "EAS0NB0Y",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "3SHAN",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "K1LLY",
+          "amount_hkd": 6000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "SELVAR1A",
+          "amount_hkd": 5000,
+          "status": "special_fee",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "MY9CATS",
+          "amount_hkd": 10000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "1MSL0TH",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "MCC3",
+          "amount_hkd": 10000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "THE0422",
+          "amount_hkd": 5000,
+          "status": "special_fee",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "CJH6",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "M3TG81",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "NGNGNG",
+          "amount_hkd": 40000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "HKD88",
+          "amount_hkd": 165000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "YEL1AB",
+          "amount_hkd": 5000,
+          "status": "special_fee",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "XXKLXX",
+          "amount_hkd": 12000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "VXXV",
+          "amount_hkd": 38000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "1AM888",
+          "amount_hkd": 60000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "XUAN",
+          "amount_hkd": 30000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "0WENN",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "1PANDA1",
+          "amount_hkd": 14000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "T0NYTA1",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "RYDER",
+          "amount_hkd": 10000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "ZAKU1",
+          "amount_hkd": 5000,
+          "status": "special_fee",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "HAYDREW",
+          "amount_hkd": 5000,
+          "status": "special_fee",
+          "page": 1,
+          "special_mark": false
+        }
+      ]
+    },
+    {
+      "id": "tvrm_physical-2026-09-05",
+      "dataset": "tvrm_physical",
+      "start_date": "2026-09-05",
+      "end_date": "2026-09-05",
+      "verified_on": "2026-09-29",
+      "source_url": "https://www.td.gov.hk/filemanager/tc/content_4804/tvrm_auction_result_20260905_chi.pdf",
+      "source_sha256": "ea1db4adfcf54a9d82c8e1846fc4ac25347ece69772e7329a06911711c2a15ea",
+      "source_pages": 1,
+      "official_proceeds_hkd": 1259000,
+      "rows": [
+        {
+          "mark": "RM 2020",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "VV 56",
+          "amount_hkd": 9000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "UU 12",
+          "amount_hkd": 24000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "XX 5046",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "WA 96",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "KF 707",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "TF 87",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "WN 68",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "AH 666",
+          "amount_hkd": 23000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "WW 3113",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "SN 131",
+          "amount_hkd": 3000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "RS 49",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "XX 8192",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "YA 4",
+          "amount_hkd": 23000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "YA 20",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "HN 2020",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "HW 2828",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "XN 777",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "WC 666",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "LG 80",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "KM 929",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "CE 20",
+          "amount_hkd": 9000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "WA 33",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "BV 98",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "DA 91",
+          "amount_hkd": 8000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "TL 212",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "AU 96",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "XX 3131",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "JM 89",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "KS 6688",
+          "amount_hkd": 13000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "RB 9090",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "LR 83",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "XX 269",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "EE 678",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "PW 37",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "WS 121",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "JL 1818",
+          "amount_hkd": 13000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "DR 9999",
+          "amount_hkd": 43000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "VA 98",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "SP 91",
+          "amount_hkd": 11000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "JL 1991",
+          "amount_hkd": 4000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "GM 3883",
+          "amount_hkd": 10000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "HK 8836",
+          "amount_hkd": 41000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "MB 89",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "BU 17",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "SB 9090",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "SS 909",
+          "amount_hkd": 10000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "YA 88",
+          "amount_hkd": 51000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "AW 15",
+          "amount_hkd": 20000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "DK 2000",
+          "amount_hkd": 7000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "HW 8866",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "AT 83",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "XX 9977",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "WA 66",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "KW 1188",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "ED 121",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "PP 2626",
+          "amount_hkd": 11000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "HZ 88",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "CZ 15",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "LE 78",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "AS 393",
+          "amount_hkd": 4000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "LD 2222",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "HK 1003",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "WU 1111",
+          "amount_hkd": 19000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "SW 8989",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "DP 525",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "GM 82",
+          "amount_hkd": 11000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "VH 9",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "YA 15",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "DU 828",
+          "amount_hkd": 7000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "AS 373",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "BB 3663",
+          "amount_hkd": 11000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "YA 8",
+          "amount_hkd": 110000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "CC 300",
+          "amount_hkd": 18000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "FC 62",
+          "amount_hkd": 8000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "SK 7799",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "GX 82",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "GV 9",
+          "amount_hkd": 110000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "AU 111",
+          "amount_hkd": 22000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "JH 60",
+          "amount_hkd": 6000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "TL 2332",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "TK 6868",
+          "amount_hkd": 12000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "1416",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "MP 12",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "KN 848",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "WE 8686",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "MM 6060",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "6779",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "TE 11",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "KS 9988",
+          "amount_hkd": 8000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "RJ 79",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "TH 3333",
+          "amount_hkd": 13000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "2560",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "HA 10",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "YA 95",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "AS 383",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "PN 77",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "8427",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "PE 11",
+          "amount_hkd": 16000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "BH 67",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "MK 484",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "DG 818",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "XT 1",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "XJ 10",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "GB 919",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "AS 343",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "LX 11",
+          "amount_hkd": 16000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "592",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "KX 11",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "DU 46",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "RS 35",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "HE 10",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "YA 1",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "DF 16",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "FL 838",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "RJ 9977",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "SE 11",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "8079",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "MN 11",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "JK 323",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "FK 484",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "DV 10",
+          "amount_hkd": 15000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "HK 334",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "GT 86",
+          "amount_hkd": 32000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "ME 65",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "AS 313",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "UX 11",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "1994",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "UU 900",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "JM 24",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "YA 51",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "WW 3131",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "9293",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "KW 6868",
+          "amount_hkd": 12000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "WU 61",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "MK 29",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "GX 11",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "MK 8",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "KS 3388",
+          "amount_hkd": 12000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "VM 6262",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "WB 51",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "TH 333",
+          "amount_hkd": 17000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "YA 9",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "AG 82",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "WC 79",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "GL 97",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "BW 111",
+          "amount_hkd": 17000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "8816",
+          "amount_hkd": 105000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "HD 27",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "XW 67",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "HW 9988",
+          "amount_hkd": 6000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "EE 2882",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "HK 3229",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "GA 82",
+          "amount_hkd": 11000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "JZ 626",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "LX 17",
+          "amount_hkd": 7000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "NW 15",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "NL 88",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "MC 2222",
+          "amount_hkd": 11000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "AT 404",
+          "amount_hkd": 4000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "HW 8989",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "FH 66",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "XX 8811",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "HF 27",
+          "amount_hkd": 11000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "DF 41",
+          "amount_hkd": 4000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "GM 63",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "JA 15",
+          "amount_hkd": 20000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "XM 3",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "XY 82",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "JC 9292",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "XS 800",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "VT 89",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "XX 4446",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "BY 19",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "HZ 76",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "FX 63",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "LH 15",
+          "amount_hkd": 20000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "WP 9999",
+          "amount_hkd": 39000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "GS 83",
+          "amount_hkd": 12000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "KY 929",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "PB 94",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "XX 3229",
+          "amount_hkd": 22000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "XX 870",
+          "amount_hkd": 36000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "KX 444",
+          "amount_hkd": 10000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "MW 3113",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "HW 8899",
+          "amount_hkd": 8000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "MJ 98",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "BY 7",
+          "amount_hkd": 32000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "RR 626",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "SY 181",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "GL 32",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "CA 89",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "MM 6600",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "SS 8181",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "TC 1122",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "GR 93",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "XW 666",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "XX 1946",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "GL 96",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "WD 525",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "GX 32",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "WK 4",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "TR 38",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "BB 1441",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "GS 131",
+          "amount_hkd": 8000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "CY 6688",
+          "amount_hkd": 8000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "XK 666",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "XX 6910",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "KG 71",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "RC 424",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "PP 37",
+          "amount_hkd": 9000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "XX 9506",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "AK 23",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "MD 20",
+          "amount_hkd": 9000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "SP 1001",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "TS 868",
+          "amount_hkd": 9000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "XX 3804",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "XX 1827",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "TT 313",
+          "amount_hkd": 9000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "TL 1331",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        }
+      ]
+    },
+    {
+      "id": "tvrm_physical-2026-08-22",
+      "dataset": "tvrm_physical",
+      "start_date": "2026-08-22",
+      "end_date": "2026-08-22",
+      "verified_on": "2026-09-29",
+      "source_url": "https://www.td.gov.hk/filemanager/sc/content_4804/TVRMs%20Auction%20Result%20Handout%2022%20Aug%202026_CH.pdf",
+      "source_sha256": "3e556a696a349e21037fe48bda7f8b791cb26396ca4aa27f52726ed2a88be3e3",
+      "source_pages": 1,
+      "official_proceeds_hkd": 1454000,
+      "rows": [
+        {
+          "mark": "JZ 151",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "PU 14",
+          "amount_hkd": 10000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "XX 2500",
+          "amount_hkd": 24000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "LW 4",
+          "amount_hkd": 23000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "TA 80",
+          "amount_hkd": 8000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "TW 9669",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "NG 56",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "XM 68",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "XZ 4",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "WE 93",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "PN 1001",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "LR 37",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "LJ 23",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "XM 89",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "DF 17",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "KL 234",
+          "amount_hkd": 3000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "DZ 69",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "WM 5",
+          "amount_hkd": 26000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "XX 1392",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "DF 3311",
+          "amount_hkd": 7000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "DN 505",
+          "amount_hkd": 3000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "DA 30",
+          "amount_hkd": 8000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "NH 38",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "YU 89",
+          "amount_hkd": 22000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "GR 44",
+          "amount_hkd": 8000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "XY 121",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "NE 48",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "XY 777",
+          "amount_hkd": 33000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "RG 66",
+          "amount_hkd": 20000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "KY 6699",
+          "amount_hkd": 11000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "WF 1991",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "KG 868",
+          "amount_hkd": 9000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "BK 777",
+          "amount_hkd": 27000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "VN 18",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "MN 828",
+          "amount_hkd": 7000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "SP 1000",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "HH 505",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "XZ 33",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "XV 15",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "PH 94",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "SA 181",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "SN 83",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "XT 33",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "XX 5003",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "RZ 828",
+          "amount_hkd": 7000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "MY 606",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "NH 83",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "NN 2288",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "XX 9129",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "SK 8118",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "FT 626",
+          "amount_hkd": 4000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "LP 26",
+          "amount_hkd": 10000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "XX 735",
+          "amount_hkd": 36000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "CR 7777",
+          "amount_hkd": 26000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "TJ 21",
+          "amount_hkd": 11000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "CA 515",
+          "amount_hkd": 4000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "HC 87",
+          "amount_hkd": 10000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "XX 236",
+          "amount_hkd": 40000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "RR 456",
+          "amount_hkd": 18000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "XD 7788",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "MF 1991",
+          "amount_hkd": 4000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "CP 26",
+          "amount_hkd": 10000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "XX 8892",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "VV 6161",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "WA 44",
+          "amount_hkd": 7000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "MB 212",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "WU 100",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "XX 6613",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "CN 22",
+          "amount_hkd": 16000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "CF 62",
+          "amount_hkd": 6000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "TW 6996",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "TA 2222",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "XX 1190",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "HR 11",
+          "amount_hkd": 17000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "MZ 101",
+          "amount_hkd": 6000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "BM 1212",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "GF 27",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "XZ 2",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "RC 22",
+          "amount_hkd": 16000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "VW 95",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "AW 8877",
+          "amount_hkd": 4000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "DD 2626",
+          "amount_hkd": 11000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "FG 2",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "WW 200",
+          "amount_hkd": 15000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "BD 79",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "AT 181",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "TT 3000",
+          "amount_hkd": 20000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "9984",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "KE 818",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "BG 200",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "AB 43",
+          "amount_hkd": 6000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "EU 222",
+          "amount_hkd": 12000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "XW 9",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "CF 818",
+          "amount_hkd": 14000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "DH 46",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "UU 515",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "CH 222",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "MC 9",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "LL 58",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "EL 686",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "SK 79",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "XY 16",
+          "amount_hkd": 14000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "9686",
+          "amount_hkd": 185000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "NL 818",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "HA 85",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "MZ 67",
+          "amount_hkd": 6000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "WY 818",
+          "amount_hkd": 14000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "1630",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "VF 77",
+          "amount_hkd": 14000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "JM 909",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "JL 5151",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "PE 123",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "FD 9",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "TE 818",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "LJ 79",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "DK 46",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "NK 55",
+          "amount_hkd": 14000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "NR 9",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "SS 5522",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "ME 747",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "GR 61",
+          "amount_hkd": 6000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "KH 4444",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "XY 9",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "DD 323",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "SC 838",
+          "amount_hkd": 8000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "JM 9696",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "DC 55",
+          "amount_hkd": 24000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "NN 30",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "JE 6868",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "SL 686",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "LM 24",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "CE 16",
+          "amount_hkd": 14000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "SZ 2",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "UU 49",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "SW 323",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "AY 74",
+          "amount_hkd": 15000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "BL 10",
+          "amount_hkd": 15000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "XB 2",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "GR 82",
+          "amount_hkd": 11000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "WW 515",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "BH 838",
+          "amount_hkd": 6000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "HZ 22",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "XX 6866",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "SS 2626",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "AB 525",
+          "amount_hkd": 4000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "DA 67",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "GL 22",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "XX 8863",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "TY 2222",
+          "amount_hkd": 15000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "AY 121",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "CN 1010",
+          "amount_hkd": 6000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "EE 3322",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "HK 2206",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "XY 2222",
+          "amount_hkd": 11000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "AH 181",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "TH 45",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "VV 456",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "XX 396",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "AU 1818",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "CF 212",
+          "amount_hkd": 6000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "HL 94",
+          "amount_hkd": 28000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "KL 7777",
+          "amount_hkd": 42000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "SS 3399",
+          "amount_hkd": 33000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "KH 444",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "MX 595",
+          "amount_hkd": 9000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "XY 2000",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "XY 66",
+          "amount_hkd": 20000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "XM 33",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "MP 19",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "MW 626",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "SY 828",
+          "amount_hkd": 9000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "XX 7226",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "XY 33",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "SG 900",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "PC 515",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "SJ 44",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "XX 2117",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "XL 28",
+          "amount_hkd": 28000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "CC 94",
+          "amount_hkd": 36000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "SK 181",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "RE 70",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "XL 66",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "CW 777",
+          "amount_hkd": 31000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "KG 20",
+          "amount_hkd": 9000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "VC 606",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "TH 94",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "SM 66",
+          "amount_hkd": 38000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "MZ 38",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "LK 868",
+          "amount_hkd": 9000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "WR 1122",
+          "amount_hkd": 4000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "NT 7979",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "DX 111",
+          "amount_hkd": 20000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "SF 5",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "CH 898",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "XY 1234",
+          "amount_hkd": 4000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "MC 2000",
+          "amount_hkd": 7000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "XZ 89",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "FJ 68",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "DC 898",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "JZ 131",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "GC 94",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "CG 89",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "MB 68",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "FJ 30",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "NG 939",
+          "amount_hkd": 3000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "AU 3838",
+          "amount_hkd": 7000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "XX 7883",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "XX 1788",
+          "amount_hkd": 24000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "LY 898",
+          "amount_hkd": 8000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "SL 400",
+          "amount_hkd": 3000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "VK 30",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "LJ 666",
+          "amount_hkd": 23000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "XX 6788",
+          "amount_hkd": 24000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "NK 69",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "MC 2002",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "SE 32",
+          "amount_hkd": 8000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "XZ 68",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "HK 2016",
+          "amount_hkd": null,
+          "status": "unsold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "RT 14",
+          "amount_hkd": 8000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        },
+        {
+          "mark": "MW 151",
+          "amount_hkd": 2000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": true
+        }
+      ]
+    },
+    {
+      "id": "tvrm_eauction-2026-09-03",
+      "dataset": "tvrm_eauction",
+      "start_date": "2026-09-03",
+      "end_date": "2026-09-07",
+      "verified_on": "2026-09-29",
+      "source_url": "https://www.td.gov.hk/filemanager/sc/content_4804/E-Auction%20Result%20Handout%203-7%20September%202026.Ch.pdf",
+      "source_sha256": "5aaabcec31e0902a25c78ddc0ec0eed262fd8fa8b18e226bdfbf3c4be0e07d07",
+      "source_pages": 2,
+      "official_proceeds_hkd": 1485000,
+      "rows": [
+        {
+          "mark": "AB 8451",
+          "amount_hkd": 2000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "AD 1311",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "AF 1228",
+          "amount_hkd": 18000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "AF 7379",
+          "amount_hkd": 7000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "AH 1681",
+          "amount_hkd": 7000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "AL 978",
+          "amount_hkd": 9000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "AN 1121",
+          "amount_hkd": 7000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "AS 1121",
+          "amount_hkd": 11000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "AS 1214",
+          "amount_hkd": 2000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "AW 1250",
+          "amount_hkd": 2000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "AW 273",
+          "amount_hkd": 6000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "AX 876",
+          "amount_hkd": 7000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "AY 780",
+          "amount_hkd": 8000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "AZ 9839",
+          "amount_hkd": 4000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "BE 481",
+          "amount_hkd": 8000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "BF 3339",
+          "amount_hkd": 10000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "BG 3827",
+          "amount_hkd": 7000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "BK 210",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "BS 7378",
+          "amount_hkd": 3000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "BZ 3308",
+          "amount_hkd": 3000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "CC 4134",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "CC 5201",
+          "amount_hkd": 10000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "CD 1128",
+          "amount_hkd": 10000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "CE 8698",
+          "amount_hkd": 4000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "CH 598",
+          "amount_hkd": 4000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "CH 6168",
+          "amount_hkd": 8000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "CJ 2022",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "CM 990",
+          "amount_hkd": 13000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "CP 250",
+          "amount_hkd": 6000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "CR 248",
+          "amount_hkd": 8000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "CR 621",
+          "amount_hkd": 6000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "CS 398",
+          "amount_hkd": 12000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "CS 4097",
+          "amount_hkd": 1000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "CV 9093",
+          "amount_hkd": 3000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "CW 1009",
+          "amount_hkd": 4000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "CW 3386",
+          "amount_hkd": 6000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "CX 147",
+          "amount_hkd": 15000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "CX 8828",
+          "amount_hkd": 16000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "CY 348",
+          "amount_hkd": 7000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "DC 716",
+          "amount_hkd": 7000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "DE 1321",
+          "amount_hkd": 3000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "DH 629",
+          "amount_hkd": 6000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "DJ 1411",
+          "amount_hkd": 2000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "DJ 398",
+          "amount_hkd": 10000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "DK 139",
+          "amount_hkd": 11000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "DS 147",
+          "amount_hkd": 9000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "DZ 483",
+          "amount_hkd": 4000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "EC 403",
+          "amount_hkd": 4000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "ED 319",
+          "amount_hkd": 7000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "EE 1357",
+          "amount_hkd": 4000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "EK 1982",
+          "amount_hkd": 2000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "EM 2928",
+          "amount_hkd": 4000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "ER 2990",
+          "amount_hkd": 2000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "ET 265",
+          "amount_hkd": 7000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "ET 4808",
+          "amount_hkd": 2000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "FA 1698",
+          "amount_hkd": 8000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "FH 410",
+          "amount_hkd": 4000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "FU 407",
+          "amount_hkd": 3000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "GC 884",
+          "amount_hkd": 8000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "GL 1101",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "GM 829",
+          "amount_hkd": 12000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "GT 179",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "GT 590",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "GY 2829",
+          "amount_hkd": 6000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "HC 912",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "HD 219",
+          "amount_hkd": 4000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "HH 617",
+          "amount_hkd": 8000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "HH 8216",
+          "amount_hkd": 7000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "HM 776",
+          "amount_hkd": 4000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "HN 8122",
+          "amount_hkd": 3000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "HY 1139",
+          "amount_hkd": 3000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "HY 8863",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "JB 2001",
+          "amount_hkd": 3000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "JB 3507",
+          "amount_hkd": 1000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "JF 9276",
+          "amount_hkd": 1000,
+          "status": "special_fee",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "JJ 850",
+          "amount_hkd": 10000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "JK 2019",
+          "amount_hkd": 10000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "JN 304",
+          "amount_hkd": 2000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "JP 2928",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "JS 329",
+          "amount_hkd": 8000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "JS 8211",
+          "amount_hkd": 3000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "JY 2022",
+          "amount_hkd": 15000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "KA 8789",
+          "amount_hkd": 3000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "KC 1126",
+          "amount_hkd": 8000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "KC 172",
+          "amount_hkd": 6000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "KC 5592",
+          "amount_hkd": 1000,
+          "status": "special_fee",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "KC 9013",
+          "amount_hkd": 1000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "KE 7226",
+          "amount_hkd": 2000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "KG 928",
+          "amount_hkd": 10000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "KJ 885",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "KK 1468",
+          "amount_hkd": 8000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "KK 8991",
+          "amount_hkd": 7000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "KL 2028",
+          "amount_hkd": 11000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "KL 8828",
+          "amount_hkd": 18000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "KM 1207",
+          "amount_hkd": 1000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "KM 1268",
+          "amount_hkd": 6000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "KN 125",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "KR 823",
+          "amount_hkd": 8000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "KS 1112",
+          "amount_hkd": 7000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "KT 1224",
+          "amount_hkd": 3000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "KU 833",
+          "amount_hkd": 20000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "KW 568",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "KY 2052",
+          "amount_hkd": 2000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "KY 514",
+          "amount_hkd": 3000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "KY 9188",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "KY 937",
+          "amount_hkd": 3000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "LB 5997",
+          "amount_hkd": 1000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "LL 2894",
+          "amount_hkd": 2000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "LU 5246",
+          "amount_hkd": 1000,
+          "status": "special_fee",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "LV 8110",
+          "amount_hkd": 3000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "MB 6866",
+          "amount_hkd": 6000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "MD 119",
+          "amount_hkd": 13000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "ME 1110",
+          "amount_hkd": 9000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "ME 1126",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "ME 9990",
+          "amount_hkd": 20000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "MH 6162",
+          "amount_hkd": 2000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "MJ 1025",
+          "amount_hkd": 1000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "MK 2009",
+          "amount_hkd": 2000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "MM 2221",
+          "amount_hkd": 13000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "MP 462",
+          "amount_hkd": 4000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "MR 8619",
+          "amount_hkd": 3000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "MS 1102",
+          "amount_hkd": 4000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "MS 3102",
+          "amount_hkd": 1000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "MT 1008",
+          "amount_hkd": 7000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "MT 2001",
+          "amount_hkd": 1000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "MX 6891",
+          "amount_hkd": 1000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "MY 1316",
+          "amount_hkd": 4000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "MY 7144",
+          "amount_hkd": 3000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "NE 150",
+          "amount_hkd": 4000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "NK 496",
+          "amount_hkd": 3000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "PA 1689",
+          "amount_hkd": 9000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "PK 615",
+          "amount_hkd": 1000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "PL 1682",
+          "amount_hkd": 4000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "PN 1420",
+          "amount_hkd": 2000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "PP 823",
+          "amount_hkd": 17000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "PT 823",
+          "amount_hkd": 8000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "RC 409",
+          "amount_hkd": 2000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "RK 118",
+          "amount_hkd": 20000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "RL 124",
+          "amount_hkd": 3000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "RP 518",
+          "amount_hkd": 9000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "RR 6616",
+          "amount_hkd": 10000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "RS 1678",
+          "amount_hkd": 4000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "RV 7736",
+          "amount_hkd": 1000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "RZ 318",
+          "amount_hkd": 10000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "SB 580",
+          "amount_hkd": 2000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "SB 9625",
+          "amount_hkd": 1000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "SE 807",
+          "amount_hkd": 4000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "SF 1688",
+          "amount_hkd": 39000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "SF 502",
+          "amount_hkd": 4000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "SF 663",
+          "amount_hkd": 23000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "SH 1022",
+          "amount_hkd": 3000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "SH 1388",
+          "amount_hkd": 15000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "SH 8186",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "SR 2001",
+          "amount_hkd": 3000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "SS 247",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ST 1189",
+          "amount_hkd": 4000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ST 991",
+          "amount_hkd": 10000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "SY 2074",
+          "amount_hkd": 1000,
+          "status": "special_fee",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "TC 1262",
+          "amount_hkd": 1000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "TC 9526",
+          "amount_hkd": 1000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "TD 1161",
+          "amount_hkd": 2000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "TF 6012",
+          "amount_hkd": 1000,
+          "status": "special_fee",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "TF 725",
+          "amount_hkd": 4000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "TL 1215",
+          "amount_hkd": 1000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "TW 6895",
+          "amount_hkd": 1000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "TY 8382",
+          "amount_hkd": 3000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "UC 991",
+          "amount_hkd": 15000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "VJ 2866",
+          "amount_hkd": 4000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "VV 183",
+          "amount_hkd": 25000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "VY 2859",
+          "amount_hkd": 1000,
+          "status": "special_fee",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "VY 9168",
+          "amount_hkd": 3000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "WB 1668",
+          "amount_hkd": 17000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "WH 1225",
+          "amount_hkd": 4000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "WS 8868",
+          "amount_hkd": 17000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "WS 9268",
+          "amount_hkd": 6000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "WW 1527",
+          "amount_hkd": 6000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "YB 388",
+          "amount_hkd": 19000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "YK 621",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "YK 913",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "YL 310",
+          "amount_hkd": 6000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "YL 9104",
+          "amount_hkd": 1000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "YM 7215",
+          "amount_hkd": 1000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "YN 423",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "YS 1031",
+          "amount_hkd": 2000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "YY 1636",
+          "amount_hkd": 3000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZA 8688",
+          "amount_hkd": 14000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZA 8881",
+          "amount_hkd": 9000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZA 8889",
+          "amount_hkd": 38000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZB 1689",
+          "amount_hkd": 7000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZB 5888",
+          "amount_hkd": 18000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZB 883",
+          "amount_hkd": 13000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZC 315",
+          "amount_hkd": 3000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZC 988",
+          "amount_hkd": 19000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZD 9580",
+          "amount_hkd": 1000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZL 1689",
+          "amount_hkd": 7000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZS 279",
+          "amount_hkd": 3000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZU 357",
+          "amount_hkd": 2000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZW 170",
+          "amount_hkd": 3000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZY 187",
+          "amount_hkd": 4000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZZ 3363",
+          "amount_hkd": 9000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZZ 3777",
+          "amount_hkd": 12000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZZ 3899",
+          "amount_hkd": 9000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZZ 4222",
+          "amount_hkd": 7000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZZ 4333",
+          "amount_hkd": 4000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZZ 6166",
+          "amount_hkd": 9000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZZ 6168",
+          "amount_hkd": 9000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZZ 6616",
+          "amount_hkd": 9000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZZ 6682",
+          "amount_hkd": 9000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZZ 6822",
+          "amount_hkd": 10000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZZ 6882",
+          "amount_hkd": 10000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZZ 6883",
+          "amount_hkd": 11000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZZ 7771",
+          "amount_hkd": 11000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZZ 7776",
+          "amount_hkd": 8000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZZ 8113",
+          "amount_hkd": 7000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZZ 8119",
+          "amount_hkd": 7000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZZ 8633",
+          "amount_hkd": 7000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZZ 8638",
+          "amount_hkd": 7000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZZ 873",
+          "amount_hkd": 8000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZZ 8887",
+          "amount_hkd": 18000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZZ 892",
+          "amount_hkd": 13000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        }
+      ]
+    },
+    {
+      "id": "tvrm_eauction-2026-08-20",
+      "dataset": "tvrm_eauction",
+      "start_date": "2026-08-20",
+      "end_date": "2026-08-24",
+      "verified_on": "2026-09-29",
+      "source_url": "https://www.td.gov.hk/filemanager/tc/content_4804/E-Auction%20Result%20Handout%2020-24%20August%202026.Chin.pdf",
+      "source_sha256": "aceed59c4c00653361a10bd29bea0e97eaf309a217e593123fd8f5295847ea36",
+      "source_pages": 2,
+      "official_proceeds_hkd": 1550000,
+      "rows": [
+        {
+          "mark": "AB 3282",
+          "amount_hkd": 10000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "AC 8028",
+          "amount_hkd": 8000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "AD 426",
+          "amount_hkd": 7000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "AG 513",
+          "amount_hkd": 4000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "AH 361",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "AJ 2866",
+          "amount_hkd": 12000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "AJ 288",
+          "amount_hkd": 42000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "AJ 822",
+          "amount_hkd": 62000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "AK 310",
+          "amount_hkd": 10000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "AS 1206",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "AS 8788",
+          "amount_hkd": 11000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "AU 9866",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "AV 876",
+          "amount_hkd": 8000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "AZ 489",
+          "amount_hkd": 8000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "BA 1023",
+          "amount_hkd": 4000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "BB 5525",
+          "amount_hkd": 7000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "BB 647",
+          "amount_hkd": 7000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "BC 4574",
+          "amount_hkd": 1000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "BC 627",
+          "amount_hkd": 6000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "BF 2018",
+          "amount_hkd": 4000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "BN 2025",
+          "amount_hkd": 3000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "BY 1811",
+          "amount_hkd": 7000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "CC 412",
+          "amount_hkd": 9000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "CC 7378",
+          "amount_hkd": 3000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "CE 421",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "CH 4388",
+          "amount_hkd": 4000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "CH 8611",
+          "amount_hkd": 3000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "CJ 905",
+          "amount_hkd": 4000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "CJ 9986",
+          "amount_hkd": 4000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "CK 4668",
+          "amount_hkd": 6000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "CL 286",
+          "amount_hkd": 18000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "CL 936",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "CL 9901",
+          "amount_hkd": 3000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "CM 2168",
+          "amount_hkd": 7000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "CR 8816",
+          "amount_hkd": 4000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "CT 1019",
+          "amount_hkd": 3000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "CT 318",
+          "amount_hkd": 30000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "CT 621",
+          "amount_hkd": 8000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "CV 7226",
+          "amount_hkd": 3000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "CW 2238",
+          "amount_hkd": 7000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "CW 314",
+          "amount_hkd": 16000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "CW 809",
+          "amount_hkd": 9000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "CX 1314",
+          "amount_hkd": 8000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "CY 1835",
+          "amount_hkd": 1000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "DC 301",
+          "amount_hkd": 8000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "DD 1184",
+          "amount_hkd": 3000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "DD 2646",
+          "amount_hkd": 3000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "DD 8891",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "DJ 508",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "DJ 996",
+          "amount_hkd": 8000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "EA 2658",
+          "amount_hkd": 1000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "ED 1078",
+          "amount_hkd": 2000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "EE 527",
+          "amount_hkd": 9000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "EP 1007",
+          "amount_hkd": 7000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "ES 6126",
+          "amount_hkd": 2000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "ET 9311",
+          "amount_hkd": 1000,
+          "status": "special_fee",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "EU 923",
+          "amount_hkd": 6000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "EV 401",
+          "amount_hkd": 3000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "EV 679",
+          "amount_hkd": 4000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "EX 8709",
+          "amount_hkd": 2000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "EY 6228",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "FA 149",
+          "amount_hkd": 11000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "FZ 3738",
+          "amount_hkd": 3000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "GB 309",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "GC 8082",
+          "amount_hkd": 3000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "GG 2862",
+          "amount_hkd": 4000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "GM 615",
+          "amount_hkd": 4000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "GR 179",
+          "amount_hkd": 3000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "GR 217",
+          "amount_hkd": 4000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "GR 8661",
+          "amount_hkd": 6000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "GR 9082",
+          "amount_hkd": 2000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "HB 7226",
+          "amount_hkd": 1000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "HC 531",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "HF 8768",
+          "amount_hkd": 3000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "HH 2022",
+          "amount_hkd": 6000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "HM 9996",
+          "amount_hkd": 6000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "HS 1031",
+          "amount_hkd": 1000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "HT 1335",
+          "amount_hkd": 3000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "HT 1689",
+          "amount_hkd": 11000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "HT 5683",
+          "amount_hkd": 1000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "HV 1575",
+          "amount_hkd": 1000,
+          "status": "special_fee",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "HW 774",
+          "amount_hkd": 4000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "HX 318",
+          "amount_hkd": 10000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "HY 1130",
+          "amount_hkd": 3000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "HZ 520",
+          "amount_hkd": 15000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "JC 416",
+          "amount_hkd": 4000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "JD 9311",
+          "amount_hkd": 1000,
+          "status": "special_fee",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "JH 912",
+          "amount_hkd": 6000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "JL 1016",
+          "amount_hkd": 4000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "JL 1105",
+          "amount_hkd": 3000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "JL 8776",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "JP 1012",
+          "amount_hkd": 2000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "JW 102",
+          "amount_hkd": 6000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "JW 6878",
+          "amount_hkd": 8000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "JY 104",
+          "amount_hkd": 3000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "KA 423",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "KC 225",
+          "amount_hkd": 23000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "KC 5449",
+          "amount_hkd": 1000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "KD 5668",
+          "amount_hkd": 3000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "KE 1223",
+          "amount_hkd": 6000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "KF 8288",
+          "amount_hkd": 23000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "KH 1982",
+          "amount_hkd": 3000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "KH 399",
+          "amount_hkd": 8000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "KJ 117",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "KK 247",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "KK 2895",
+          "amount_hkd": 2000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "KL 147",
+          "amount_hkd": 4000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "KP 518",
+          "amount_hkd": 4000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "KR 288",
+          "amount_hkd": 28000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "KS 1426",
+          "amount_hkd": 2000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "KT 1121",
+          "amount_hkd": 10000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "KV 2006",
+          "amount_hkd": 2000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "KW 1036",
+          "amount_hkd": 8000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "LH 1224",
+          "amount_hkd": 1000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "LL 1965",
+          "amount_hkd": 3000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "LT 990",
+          "amount_hkd": 7000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "LU 147",
+          "amount_hkd": 4000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "LU 8004",
+          "amount_hkd": 1000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "MB 2028",
+          "amount_hkd": 4000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "MF 5119",
+          "amount_hkd": 1000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "MG 1018",
+          "amount_hkd": 3000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "MJ 1227",
+          "amount_hkd": 2000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "MK 190",
+          "amount_hkd": 4000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "MM 2487",
+          "amount_hkd": 1000,
+          "status": "special_fee",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "MT 728",
+          "amount_hkd": 7000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "MY 2169",
+          "amount_hkd": 1000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "NG 8337",
+          "amount_hkd": 2000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "NJ 810",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 1,
+          "special_mark": false
+        },
+        {
+          "mark": "NN 1181",
+          "amount_hkd": 17000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "NN 1468",
+          "amount_hkd": 6000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "NY 3351",
+          "amount_hkd": 2000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "PG 7582",
+          "amount_hkd": 1000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "PK 285",
+          "amount_hkd": 3000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "PL 220",
+          "amount_hkd": 6000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "PS 1225",
+          "amount_hkd": 4000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "PS 690",
+          "amount_hkd": 4000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "PT 2311",
+          "amount_hkd": 15000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "PU 3826",
+          "amount_hkd": 2000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "PY 5337",
+          "amount_hkd": 1000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "PY 8381",
+          "amount_hkd": 2000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "PZ 1944",
+          "amount_hkd": 3000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "RB 8848",
+          "amount_hkd": 6000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "RH 1727",
+          "amount_hkd": 1000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "RR 1922",
+          "amount_hkd": 7000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "RW 1678",
+          "amount_hkd": 3000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "RX 168",
+          "amount_hkd": 43000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "RY 813",
+          "amount_hkd": 8000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "SA 2898",
+          "amount_hkd": 20000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "SC 9308",
+          "amount_hkd": 2000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "SE 1398",
+          "amount_hkd": 11000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "SF 629",
+          "amount_hkd": 6000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "SK 6878",
+          "amount_hkd": 7000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "SL 420",
+          "amount_hkd": 9000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "SM 8200",
+          "amount_hkd": 8000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "SS 147",
+          "amount_hkd": 9000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "SS 832",
+          "amount_hkd": 18000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "TE 115",
+          "amount_hkd": 9000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "TF 148",
+          "amount_hkd": 10000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "TJ 1117",
+          "amount_hkd": 3000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "TN 1105",
+          "amount_hkd": 2000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "TT 1124",
+          "amount_hkd": 4000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "TT 2116",
+          "amount_hkd": 4000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "TW 8820",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "TY 213",
+          "amount_hkd": 7000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "TZ 118",
+          "amount_hkd": 19000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "UG 5551",
+          "amount_hkd": 4000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "UZ 801",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "VG 9688",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "VV 1921",
+          "amount_hkd": 4000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "VW 416",
+          "amount_hkd": 3000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "WA 1501",
+          "amount_hkd": 1000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "WA 5270",
+          "amount_hkd": 1000,
+          "status": "special_fee",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "WC 520",
+          "amount_hkd": 16000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "WM 210",
+          "amount_hkd": 6000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "WV 4001",
+          "amount_hkd": 1000,
+          "status": "special_fee",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "XV 1187",
+          "amount_hkd": 1000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "XY 1118",
+          "amount_hkd": 11000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "YH 1103",
+          "amount_hkd": 1000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "YH 325",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "YK 1713",
+          "amount_hkd": 1000,
+          "status": "special_fee",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "YL 3222",
+          "amount_hkd": 6000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "YM 530",
+          "amount_hkd": 3000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "YM 776",
+          "amount_hkd": 3000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "YP 9328",
+          "amount_hkd": 3000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "YZ 1168",
+          "amount_hkd": 8000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "YZ 3688",
+          "amount_hkd": 6000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "YZ 5888",
+          "amount_hkd": 30000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "YZ 699",
+          "amount_hkd": 8000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZA 3308",
+          "amount_hkd": 3000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZB 689",
+          "amount_hkd": 6000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZC 1321",
+          "amount_hkd": 3000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZD 982",
+          "amount_hkd": 5000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZJ 882",
+          "amount_hkd": 14000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZK 1398",
+          "amount_hkd": 4000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZL 1168",
+          "amount_hkd": 6000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZY 113",
+          "amount_hkd": 8000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZY 2013",
+          "amount_hkd": 3000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZY 9876",
+          "amount_hkd": 2000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZZ 440",
+          "amount_hkd": 12000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZZ 732",
+          "amount_hkd": 7000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZZ 765",
+          "amount_hkd": 6000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZZ 7787",
+          "amount_hkd": 8000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZZ 779",
+          "amount_hkd": 15000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZZ 780",
+          "amount_hkd": 9000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZZ 781",
+          "amount_hkd": 8000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZZ 782",
+          "amount_hkd": 8000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZZ 783",
+          "amount_hkd": 7000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZZ 798",
+          "amount_hkd": 9000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZZ 807",
+          "amount_hkd": 12000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZZ 811",
+          "amount_hkd": 21000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZZ 824",
+          "amount_hkd": 8000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZZ 825",
+          "amount_hkd": 10000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZZ 840",
+          "amount_hkd": 7000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZZ 844",
+          "amount_hkd": 13000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZZ 850",
+          "amount_hkd": 13000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZZ 852",
+          "amount_hkd": 33000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZZ 865",
+          "amount_hkd": 7000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZZ 866",
+          "amount_hkd": 34000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZZ 867",
+          "amount_hkd": 8000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        },
+        {
+          "mark": "ZZ 871",
+          "amount_hkd": 7000,
+          "status": "sold",
+          "page": 2,
+          "special_mark": false
+        }
+      ]
     }
   ]
 }

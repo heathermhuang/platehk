@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en">
+  <id>https://plate.hk/auction-results/en/feed.xml</id>
+  <title>Plate.hk verified auction results</title>
+  <updated>2026-09-29T00:00:00Z</updated>
+  <link href="https://plate.hk/auction-results/en/feed.xml" rel="self" type="application/atom+xml" />
+  <link href="https://plate.hk/auction-results/en/index.html" rel="alternate" type="text/html" />
+  <author>
+    <name>Plate.hk</name>
+  </author>
+  <entry>
+    <id>https://plate.hk/auction-results/en/tvrm_eauction-2026-09-17.html</id>
+    <title>Online auction results: 17 September 2026 to 21 September 2026</title>
+    <updated>2026-09-26T00:00:00Z</updated>
+    <link href="https://plate.hk/auction-results/en/tvrm_eauction-2026-09-17.html" rel="alternate" type="text/html" />
+    <link href="https://www.td.gov.hk/filemanager/tc/content_4804/E-Auction%20Result%20Handout%2017-21%20September%202026.Chin.pdf" rel="related" type="application/pdf" />
+    <summary type="text">220 marks: 216 auction sales, 4 special-fee allocations and 0 unsold. Official proceeds HK$1,650,000. Dates identify the auction round; results do not establish current value or availability.</summary>
+  </entry>
+  <entry>
+    <id>https://plate.hk/auction-results/en/tvrm_physical-2026-09-12.html</id>
+    <title>Traditional physical auction results: 12 September 2026</title>
+    <updated>2026-09-26T00:00:00Z</updated>
+    <link href="https://plate.hk/auction-results/en/tvrm_physical-2026-09-12.html" rel="alternate" type="text/html" />
+    <link href="https://www.td.gov.hk/filemanager/tc/content_4804/TVRMs%20Auction%20Result%20Handout%2012%20Sept%202026_CH.pdf" rel="related" type="application/pdf" />
+    <summary type="text">220 marks: 57 auction sales, 0 special-fee allocations and 163 unsold. Official proceeds HK$1,295,000. Dates identify the auction round; results do not establish current value or availability.</summary>
+  </entry>
+  <entry>
+    <id>https://plate.hk/auction-results/en/pvrm-2026-09-12.html</id>
+    <title>Personalized marks results: 12 September 2026</title>
+    <updated>2026-09-26T00:00:00Z</updated>
+    <link href="https://plate.hk/auction-results/en/pvrm-2026-09-12.html" rel="alternate" type="text/html" />
+    <link href="https://www.td.gov.hk/filemanager/tc/content_4806/PVRMs%20Auction%20Result%20Handout%2012%20Sept%202026_CH.pdf" rel="related" type="application/pdf" />
+    <summary type="text">100 marks: 77 auction sales, 23 special-fee allocations and 0 unsold. Official proceeds HK$1,366,000. Dates identify the auction round; results do not establish current value or availability.</summary>
+  </entry>
+  <entry>
+    <id>https://plate.hk/auction-results/en/tvrm_physical-2026-09-05.html</id>
+    <title>Traditional physical auction results: 5 September 2026</title>
+    <updated>2026-09-29T00:00:00Z</updated>
+    <link href="https://plate.hk/auction-results/en/tvrm_physical-2026-09-05.html" rel="alternate" type="text/html" />
+    <link href="https://www.td.gov.hk/filemanager/tc/content_4804/tvrm_auction_result_20260905_chi.pdf" rel="related" type="application/pdf" />
+    <summary type="text">220 marks: 68 auction sales, 0 special-fee allocations and 152 unsold. Official proceeds HK$1,259,000. Dates identify the auction round; results do not establish current value or availability.</summary>
+  </entry>
+  <entry>
+    <id>https://plate.hk/auction-results/en/pvrm-2026-09-05.html</id>
+    <title>Personalized marks results: 5 September 2026</title>
+    <updated>2026-09-29T00:00:00Z</updated>
+    <link href="https://plate.hk/auction-results/en/pvrm-2026-09-05.html" rel="alternate" type="text/html" />
+    <link href="https://www.td.gov.hk/filemanager/tc/content_4806/pvrm_result_20260905_chi.pdf" rel="related" type="application/pdf" />
+    <summary type="text">100 marks: 73 auction sales, 27 special-fee allocations and 0 unsold. Official proceeds HK$1,767,000. Dates identify the auction round; results do not establish current value or availability.</summary>
+  </entry>
+  <entry>
+    <id>https://plate.hk/auction-results/en/tvrm_eauction-2026-09-03.html</id>
+    <title>Online auction results: 3 September 2026 to 7 September 2026</title>
+    <updated>2026-09-29T00:00:00Z</updated>
+    <link href="https://plate.hk/auction-results/en/tvrm_eauction-2026-09-03.html" rel="alternate" type="text/html" />
+    <link href="https://www.td.gov.hk/filemanager/sc/content_4804/E-Auction%20Result%20Handout%203-7%20September%202026.Ch.pdf" rel="related" type="application/pdf" />
+    <summary type="text">220 marks: 214 auction sales, 6 special-fee allocations and 0 unsold. Official proceeds HK$1,485,000. Dates identify the auction round; results do not establish current value or availability.</summary>
+  </entry>
+  <entry>
+    <id>https://plate.hk/auction-results/en/tvrm_physical-2026-08-22.html</id>
+    <title>Traditional physical auction results: 22 August 2026</title>
+    <updated>2026-09-29T00:00:00Z</updated>
+    <link href="https://plate.hk/auction-results/en/tvrm_physical-2026-08-22.html" rel="alternate" type="text/html" />
+    <link href="https://www.td.gov.hk/filemanager/sc/content_4804/TVRMs%20Auction%20Result%20Handout%2022%20Aug%202026_CH.pdf" rel="related" type="application/pdf" />
+    <summary type="text">220 marks: 97 auction sales, 0 special-fee allocations and 123 unsold. Official proceeds HK$1,454,000. Dates identify the auction round; results do not establish current value or availability.</summary>
+  </entry>
+  <entry>
+    <id>https://plate.hk/auction-results/en/pvrm-2026-08-22.html</id>
+    <title>Personalized marks results: 22 August 2026</title>
+    <updated>2026-09-29T00:00:00Z</updated>
+    <link href="https://plate.hk/auction-results/en/pvrm-2026-08-22.html" rel="alternate" type="text/html" />
+    <link href="https://www.td.gov.hk/filemanager/sc/content_4806/PVRMs%20Auction%20Result%20Handout%2022%20Aug%202026_CH.pdf" rel="related" type="application/pdf" />
+    <summary type="text">100 marks: 83 auction sales, 17 special-fee allocations and 0 unsold. Official proceeds HK$1,669,000. Dates identify the auction round; results do not establish current value or availability.</summary>
+  </entry>
+  <entry>
+    <id>https://plate.hk/auction-results/en/tvrm_eauction-2026-08-20.html</id>
+    <title>Online auction results: 20 August 2026 to 24 August 2026</title>
+    <updated>2026-09-29T00:00:00Z</updated>
+    <link href="https://plate.hk/auction-results/en/tvrm_eauction-2026-08-20.html" rel="alternate" type="text/html" />
+    <link href="https://www.td.gov.hk/filemanager/tc/content_4804/E-Auction%20Result%20Handout%2020-24%20August%202026.Chin.pdf" rel="related" type="application/pdf" />
+    <summary type="text">220 marks: 213 auction sales, 7 special-fee allocations and 0 unsold. Official proceeds HK$1,550,000. Dates identify the auction round; results do not establish current value or availability.</summary>
+  </entry>
+</feed>

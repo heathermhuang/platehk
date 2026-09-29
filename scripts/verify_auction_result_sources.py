@@ -10,6 +10,7 @@ import argparse
 import hashlib
 import json
 import re
+from datetime import date
 from pathlib import Path
 
 import pdfplumber
@@ -64,6 +65,13 @@ def verify(pdf_dir: Path) -> list[dict]:
             raise ValueError(f"Mark/amount/disposition/page mismatch: {r['id']}")
         with pdfplumber.open(path) as doc:
             text = '\n'.join(page.extract_text() or '' for page in doc.pages)
+            header = '\n'.join((doc.pages[0].extract_text() or '').splitlines()[:4])
+            for key in ('start_date', 'end_date'):
+                day = date.fromisoformat(r[key])
+                chinese = f'{day.year}年{day.month}月{day.day}日'
+                english = rf'\b0?{day.day}\s+{day:%B}\s+{day.year}\b'
+                if chinese not in header and not re.search(english, header, re.I):
+                    raise ValueError(f"Auction dates do not match the source header: {r['id']}")
             total = re.search(r'total (?:sale )?proceeds[^$]*\$([\d,]+)', text, re.I)
             if not total or int(total[1].replace(',', '')) != r['official_proceeds_hkd']:
                 raise ValueError(f"Official proceeds mismatch: {r['id']}")

@@ -338,7 +338,8 @@ async function serveAsset(request, env) {
     return new Response("Static assets binding not configured", { status: 500 });
   }
   const response = await env.ASSETS.fetch(requestForHtmlAsset(request, url));
-  if (!response.ok) return response;
+  const isResultFeed = ["/auction-results/feed.xml", "/auction-results/en/feed.xml"].includes(url.pathname);
+  if (!response.ok && !(isResultFeed && response.status === 304)) return response;
   const contentType = String(response.headers.get("content-type") || "").toLowerCase();
   let localizedHtml = null;
   if (request.method === "GET" && contentType.includes("text/html")
@@ -373,6 +374,10 @@ async function serveAsset(request, env) {
     });
   }
   const headers = securityHeadersForAsset(request, response, { noindex });
+  if (isResultFeed) {
+    headers.set("content-type", "application/atom+xml; charset=utf-8");
+    headers.set("cache-control", "public, max-age=300, must-revalidate");
+  }
   if (localizedHtml !== null) {
     headers.delete("content-length");
     headers.delete("content-encoding");

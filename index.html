@@ -15,6 +15,8 @@
     <link rel="alternate" hreflang="zh-HK" href="https://plate.hk/" />
     <link rel="alternate" hreflang="en" href="https://plate.hk/?lang=en" />
     <link rel="alternate" hreflang="x-default" href="https://plate.hk/" />
+    <link rel="alternate" type="application/atom+xml" title="Plate.hk 已核對拍賣結果" href="https://plate.hk/auction-results/feed.xml" />
+    <link rel="alternate" type="application/atom+xml" title="Plate.hk verified auction results (English)" href="https://plate.hk/auction-results/en/feed.xml" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Plate.hk" />
     <meta property="og:title" content="香港車牌拍賣資料庫 | Plate.hk" />
@@ -2174,6 +2176,7 @@
     <link rel="stylesheet" href="./assets/ledger.css?v=20260812-11" />
 
   <link rel="stylesheet" href="/assets/ux.css?v=20260928-01"><script defer src="/assets/ux.js?v=20260928-01"></script>
+  <link rel="stylesheet" href="/assets/growth.css?v=20260929-01"><script defer src="/assets/growth.js?v=20260929-01"></script>
 </head>
   <body>
     <div class="wrap">
@@ -2198,6 +2201,11 @@
         </div>
       </div>
 
+      <nav class="search-task-links" aria-label="Lookup options">
+        <a href="/prices.html" data-growth-lang="zh">查歷史成交價</a><a href="/prices.html?lang=en" data-growth-lang="en">Historical prices</a>
+        <a href="/auction-results/index.html" data-growth-lang="zh">查最新拍賣結果</a><a href="/auction-results/en/index.html" data-growth-lang="en">Latest auction results</a>
+        <a href="/availability.html" data-growth-lang="zh">官方可用號碼及申請</a><a href="/availability.html?lang=en" data-growth-lang="en">Official availability and applications</a>
+      </nav>
       <div class="panel">
         <div class="panel-head"><label class="ux-match-mode">比對 / Match <select id="matchMode"><option value="exact">完全相同 / Exact plate</option><option value="contains">包含片段 / Contains</option></select></label>
           <div class="panel-title" id="searchPanelTitle">搜尋</div>
@@ -2234,6 +2242,13 @@
           <div class="search-history" id="searchHistory" hidden></div>
         </div>
       </div>
+      <!-- VERIFIED_AUCTION_HIGHLIGHTS -->
+<section id="verifiedAuctionHighlights" class="verified-results" aria-labelledby="verifiedResultsTitle">
+<div class="verified-results-heading"><h2 id="verifiedResultsTitle"><span data-growth-lang="zh">最新已核對拍賣結果</span><span data-growth-lang="en">Latest verified auction results</span></h2>
+<span data-growth-lang="zh"><a href="/auction-results/index.html">全部已核對場次</a></span><span data-growth-lang="en"><a href="/auction-results/en/index.html">All verified rounds</a></span></div>
+<ul><li><span data-growth-lang="zh"><a href="/auction-results/pvrm-2026-09-12.html">2026年9月12日 自訂車牌拍賣結果</a></span><span data-growth-lang="en"><a href="/auction-results/en/pvrm-2026-09-12.html">Personalized marks results: 12 September 2026</a></span></li><li><span data-growth-lang="zh"><a href="/auction-results/tvrm_physical-2026-09-12.html">2026年9月12日 傳統車牌實體拍賣結果</a></span><span data-growth-lang="en"><a href="/auction-results/en/tvrm_physical-2026-09-12.html">Traditional physical auction results: 12 September 2026</a></span></li><li><span data-growth-lang="zh"><a href="/auction-results/tvrm_eauction-2026-09-17.html">2026年9月17日至2026年9月21日 拍牌易網上拍賣結果</a></span><span data-growth-lang="en"><a href="/auction-results/en/tvrm_eauction-2026-09-17.html">Online auction results: 17 September 2026 to 21 September 2026</a></span></li></ul><p><span data-growth-lang="zh">完整號碼表、未售出及特別費用標示，附官方 PDF。</span><span data-growth-lang="en">Complete mark tables, unsold and special-fee outcomes, with official PDFs.</span>
+<span data-growth-lang="zh"><a href="/auction-results/index.html#updates">訂閱新結果及儲存提醒</a></span><span data-growth-lang="en"><a href="/auction-results/en/index.html#updates">Follow new results and save reminders</a></span></p></section>
+<!-- /VERIFIED_AUCTION_HIGHLIGHTS -->
       <div class="home-shelf" id="homeShelf">
         <section class="home-card" id="datasetGuide"></section>
         <section class="home-card" id="issueGuide"></section>

@@ -59,7 +59,7 @@ test('main lookup normalizes full-width input and separates invalid, empty and f
   await expect(page.locator('#rows tr[data-plate="AA88"]')).toHaveCount(1);
   await q.fill('AB1234');
   await expect(page.locator('#rows')).toContainText('No auction record does not mean');
-  await expect(page.getByRole('link',{name:'Official availability and applications',exact:true})).toBeVisible();
+  await expect(page.locator('#rows').getByRole('link',{name:'Official availability and applications',exact:true})).toBeVisible();
   await page.route('**/api/search?**',route=>route.fulfill({status:503,contentType:'application/json',body:'{"error":"unavailable"}'}));
   await q.fill('AA88');
   await expect(page.getByRole('alert')).toContainText('This is not a zero-result search');
