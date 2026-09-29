@@ -10,6 +10,7 @@
           statusError: "暫時未能讀取即時狀態；可前往資料審核頁核對。",
           statusLabels: ["資料快照", "來源列數", "可用 PDF"],
           items: [
+            {date:"2026-09-29",title:"更容易找到完整拍賣結果",points:["首頁可直接選擇歷史成交價、最新拍賣結果及官方可用號碼服務，並顯示各類最新的已核對場次。","完整結果目錄擴充至九場、1,620 個號碼；保留未售出、特別費用分配及官方 PDF。","可用 RSS／Atom 閱讀器訂閱新增已核對結果，或到拍賣日程儲存日曆提醒。"]},
             {date:"2026-09-28",title:"更快到達車牌答案",points:["搜尋可選完全相同或包含片段；歷史成交與第三方放售訊號分開顯示。","找車牌可先輸入預算或號碼模式；手機導覽更精簡，長目錄及拍賣結果支援搜尋與分頁。","收藏比較顯示選取數量，移除可復原，清單可匯出；官方來源與完整歷史結果仍可核對。"]},
             {
               date: "2026-08-27",
@@ -521,6 +522,7 @@
           statusError: "Live status is temporarily unavailable. Use the Data Audit page to verify the current snapshot.",
           statusLabels: ["Data snapshot", "Source rows", "Valid PDFs"],
           items: [
+            {date:"2026-09-29",title:"Find complete auction results more easily",points:["Homepage links distinguish historical prices, latest results and official availability, with the latest verified round for each auction type.","The complete-results archive now covers nine rounds and 1,620 marks, preserving unsold outcomes, special-fee allocations and official PDFs.","Follow newly verified results in an RSS or Atom reader, or save upcoming-auction reminders from the calendar."]},
             {date:"2026-09-28",title:"Reach the plate answer sooner",points:["Choose exact or contains matching, with historical results separated from third-party sale signals.","Start discovery with a budget or pattern; mobile navigation is shorter, and long directories and auction tables have search and paging.","Comparison shows the selection count, removals offer Undo, and shortlists can be exported. Official sources and complete historical results remain available."]},
             {
               date: "2026-08-27",

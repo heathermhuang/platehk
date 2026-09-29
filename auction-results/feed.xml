@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xml:lang="zh-HK">
+  <id>https://plate.hk/auction-results/feed.xml</id>
+  <title>Plate.hk 已核對拍賣結果</title>
+  <updated>2026-09-29T00:00:00Z</updated>
+  <link href="https://plate.hk/auction-results/feed.xml" rel="self" type="application/atom+xml" />
+  <link href="https://plate.hk/auction-results/index.html" rel="alternate" type="text/html" />
+  <author>
+    <name>Plate.hk</name>
+  </author>
+  <entry>
+    <id>https://plate.hk/auction-results/tvrm_eauction-2026-09-17.html</id>
+    <title>2026年9月17日至2026年9月21日 拍牌易網上拍賣結果</title>
+    <updated>2026-09-26T00:00:00Z</updated>
+    <link href="https://plate.hk/auction-results/tvrm_eauction-2026-09-17.html" rel="alternate" type="text/html" />
+    <link href="https://www.td.gov.hk/filemanager/tc/content_4804/E-Auction%20Result%20Handout%2017-21%20September%202026.Chin.pdf" rel="related" type="application/pdf" />
+    <summary type="text">220 個號碼：216 個拍賣售出、4 個特別費用分配、0 個未售出。官方公布款項 HK$1,650,000。日期為拍賣場次日期；不是現時估值或可用狀態。</summary>
+  </entry>
+  <entry>
+    <id>https://plate.hk/auction-results/tvrm_physical-2026-09-12.html</id>
+    <title>2026年9月12日 傳統車牌實體拍賣結果</title>
+    <updated>2026-09-26T00:00:00Z</updated>
+    <link href="https://plate.hk/auction-results/tvrm_physical-2026-09-12.html" rel="alternate" type="text/html" />
+    <link href="https://www.td.gov.hk/filemanager/tc/content_4804/TVRMs%20Auction%20Result%20Handout%2012%20Sept%202026_CH.pdf" rel="related" type="application/pdf" />
+    <summary type="text">220 個號碼：57 個拍賣售出、0 個特別費用分配、163 個未售出。官方公布款項 HK$1,295,000。日期為拍賣場次日期；不是現時估值或可用狀態。</summary>
+  </entry>
+  <entry>
+    <id>https://plate.hk/auction-results/pvrm-2026-09-12.html</id>
+    <title>2026年9月12日 自訂車牌拍賣結果</title>
+    <updated>2026-09-26T00:00:00Z</updated>
+    <link href="https://plate.hk/auction-results/pvrm-2026-09-12.html" rel="alternate" type="text/html" />
+    <link href="https://www.td.gov.hk/filemanager/tc/content_4806/PVRMs%20Auction%20Result%20Handout%2012%20Sept%202026_CH.pdf" rel="related" type="application/pdf" />
+    <summary type="text">100 個號碼：77 個拍賣售出、23 個特別費用分配、0 個未售出。官方公布款項 HK$1,366,000。日期為拍賣場次日期；不是現時估值或可用狀態。</summary>
+  </entry>
+  <entry>
+    <id>https://plate.hk/auction-results/tvrm_physical-2026-09-05.html</id>
+    <title>2026年9月5日 傳統車牌實體拍賣結果</title>
+    <updated>2026-09-29T00:00:00Z</updated>
+    <link href="https://plate.hk/auction-results/tvrm_physical-2026-09-05.html" rel="alternate" type="text/html" />
+    <link href="https://www.td.gov.hk/filemanager/tc/content_4804/tvrm_auction_result_20260905_chi.pdf" rel="related" type="application/pdf" />
+    <summary type="text">220 個號碼：68 個拍賣售出、0 個特別費用分配、152 個未售出。官方公布款項 HK$1,259,000。日期為拍賣場次日期；不是現時估值或可用狀態。</summary>
+  </entry>
+  <entry>
+    <id>https://plate.hk/auction-results/pvrm-2026-09-05.html</id>
+    <title>2026年9月5日 自訂車牌拍賣結果</title>
+    <updated>2026-09-29T00:00:00Z</updated>
+    <link href="https://plate.hk/auction-results/pvrm-2026-09-05.html" rel="alternate" type="text/html" />
+    <link href="https://www.td.gov.hk/filemanager/tc/content_4806/pvrm_result_20260905_chi.pdf" rel="related" type="application/pdf" />
+    <summary type="text">100 個號碼：73 個拍賣售出、27 個特別費用分配、0 個未售出。官方公布款項 HK$1,767,000。日期為拍賣場次日期；不是現時估值或可用狀態。</summary>
+  </entry>
+  <entry>
+    <id>https://plate.hk/auction-results/tvrm_eauction-2026-09-03.html</id>
+    <title>2026年9月3日至2026年9月7日 拍牌易網上拍賣結果</title>
+    <updated>2026-09-29T00:00:00Z</updated>
+    <link href="https://plate.hk/auction-results/tvrm_eauction-2026-09-03.html" rel="alternate" type="text/html" />
+    <link href="https://www.td.gov.hk/filemanager/sc/content_4804/E-Auction%20Result%20Handout%203-7%20September%202026.Ch.pdf" rel="related" type="application/pdf" />
+    <summary type="text">220 個號碼：214 個拍賣售出、6 個特別費用分配、0 個未售出。官方公布款項 HK$1,485,000。日期為拍賣場次日期；不是現時估值或可用狀態。</summary>
+  </entry>
+  <entry>
+    <id>https://plate.hk/auction-results/tvrm_physical-2026-08-22.html</id>
+    <title>2026年8月22日 傳統車牌實體拍賣結果</title>
+    <updated>2026-09-29T00:00:00Z</updated>
+    <link href="https://plate.hk/auction-results/tvrm_physical-2026-08-22.html" rel="alternate" type="text/html" />
+    <link href="https://www.td.gov.hk/filemanager/sc/content_4804/TVRMs%20Auction%20Result%20Handout%2022%20Aug%202026_CH.pdf" rel="related" type="application/pdf" />
+    <summary type="text">220 個號碼：97 個拍賣售出、0 個特別費用分配、123 個未售出。官方公布款項 HK$1,454,000。日期為拍賣場次日期；不是現時估值或可用狀態。</summary>
+  </entry>
+  <entry>
+    <id>https://plate.hk/auction-results/pvrm-2026-08-22.html</id>
+    <title>2026年8月22日 自訂車牌拍賣結果</title>
+    <updated>2026-09-29T00:00:00Z</updated>
+    <link href="https://plate.hk/auction-results/pvrm-2026-08-22.html" rel="alternate" type="text/html" />
+    <link href="https://www.td.gov.hk/filemanager/sc/content_4806/PVRMs%20Auction%20Result%20Handout%2022%20Aug%202026_CH.pdf" rel="related" type="application/pdf" />
+    <summary type="text">100 個號碼：83 個拍賣售出、17 個特別費用分配、0 個未售出。官方公布款項 HK$1,669,000。日期為拍賣場次日期；不是現時估值或可用狀態。</summary>
+  </entry>
+  <entry>
+    <id>https://plate.hk/auction-results/tvrm_eauction-2026-08-20.html</id>
+    <title>2026年8月20日至2026年8月24日 拍牌易網上拍賣結果</title>
+    <updated>2026-09-29T00:00:00Z</updated>
+    <link href="https://plate.hk/auction-results/tvrm_eauction-2026-08-20.html" rel="alternate" type="text/html" />
+    <link href="https://www.td.gov.hk/filemanager/tc/content_4804/E-Auction%20Result%20Handout%2020-24%20August%202026.Chin.pdf" rel="related" type="application/pdf" />
+    <summary type="text">220 個號碼：213 個拍賣售出、7 個特別費用分配、0 個未售出。官方公布款項 HK$1,550,000。日期為拍賣場次日期；不是現時估值或可用狀態。</summary>
+  </entry>
+</feed>

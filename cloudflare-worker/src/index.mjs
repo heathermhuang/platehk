@@ -373,6 +373,10 @@ async function serveAsset(request, env) {
     });
   }
   const headers = securityHeadersForAsset(request, response, { noindex });
+  if (response.ok && ["/auction-results/feed.xml", "/auction-results/en/feed.xml"].includes(url.pathname)) {
+    headers.set("content-type", "application/atom+xml; charset=utf-8");
+    headers.set("cache-control", "public, max-age=300, must-revalidate");
+  }
   if (localizedHtml !== null) {
     headers.delete("content-length");
     headers.delete("content-encoding");

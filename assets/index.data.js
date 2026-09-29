@@ -482,6 +482,7 @@ window.createPlateIndexDataFlow = function createPlateIndexDataFlow({
       bottomNextEl.disabled = true;
       bottomInfoEl.textContent = t("bottomAll")(1, 1);
       updateIssueTotal(selectedIssue || "");
+      window.PlateAnalytics?.lookupError?.({plate:q, dataset:currentDataset, issue:selectedIssue, action:'main_lookup', page_number:currentPage, error_kind:'api_unavailable'});
       render([], 0, "", { state: "error", message: offlineMsg });
       return;
     }
@@ -528,6 +529,9 @@ window.createPlateIndexDataFlow = function createPlateIndexDataFlow({
         );
         window.PlateAnalytics?.track("search_complete", {plate: q, result_count: total, duration_ms: performance.now()-startedAt,
           exact_match: (res.rows || []).some(row => isExactPlateMatch(row, q)), dataset: currentDataset, page_number: currentPage});
+        window.PlateAnalytics?.lookup?.({plate:q, result_count:total, duration_ms:performance.now()-startedAt,
+          exact_match:(res.rows || []).some(row => isExactPlateMatch(row,q)), dataset:currentDataset,
+          issue:selectedIssue, action:'main_lookup', page_number:currentPage});
         rememberSearchQuery(q);
         if (activeFilterRequestController === requestController) activeFilterRequestController = null;
         return;
@@ -599,6 +603,7 @@ window.createPlateIndexDataFlow = function createPlateIndexDataFlow({
       bottomInfoEl.textContent = t("bottomAll")(1, 1);
       updateIssueTotal(selectedIssue || "");
       window.PlateAnalytics?.track("search_error", {dataset: currentDataset, error_kind: "request_failed"});
+      window.PlateAnalytics?.lookupError?.({plate:q, dataset:currentDataset, issue:selectedIssue, action:'main_lookup', page_number:currentPage, error_kind:'request_failed'});
       render([], 0, "", { state: "error", message: t("searchFailed") });
     }
   }

@@ -28,6 +28,12 @@ class AuctionResultPageTests(unittest.TestCase):
             'pvrm-2026-09-12': (77, 23, 0, 1366000),
             'tvrm_physical-2026-09-12': (57, 0, 163, 1295000),
             'tvrm_eauction-2026-09-17': (216, 4, 0, 1650000),
+            'pvrm-2026-09-05': (73, 27, 0, 1767000),
+            'pvrm-2026-08-22': (83, 17, 0, 1669000),
+            'tvrm_physical-2026-09-05': (68, 0, 152, 1259000),
+            'tvrm_physical-2026-08-22': (97, 0, 123, 1454000),
+            'tvrm_eauction-2026-09-03': (214, 6, 0, 1485000),
+            'tvrm_eauction-2026-08-20': (213, 7, 0, 1550000),
         }
         for key, (sold, fee, unsold, proceeds) in expected.items():
             r = self.rounds[key]
@@ -97,23 +103,56 @@ class AuctionResultPageTests(unittest.TestCase):
             root = Path(folder)
             pages.build(root)
             before = {p.relative_to(root): p.read_bytes() for p in root.rglob('*.html')}
-            self.assertEqual(len(before), 8)
+            self.assertEqual(len(before), 20)
             pages.build(root)
             self.assertEqual(before, {p.relative_to(root): p.read_bytes() for p in root.rglob('*.html')})
             for lang in ('zh', 'en'):
                 doc = BeautifulSoup(pages.render_index(lang), 'html.parser')
-                self.assertEqual(len(doc.select('article h2 a')), 3)
+                self.assertEqual(len(doc.select('article h2 a')), 9)
 
     def test_sitemap_preserves_canonical_pages_and_verified_rounds(self):
         manifest = json.loads((ROOT / 'data/popular_plates_manifest.json').read_text())
         tree = ET.fromstring(popular.render_sitemap(manifest))
         namespace = {'s': 'http://www.sitemaps.org/schemas/sitemap/0.9'}
         urls = [node.text for node in tree.findall('s:url/s:loc', namespace)]
-        self.assertEqual(len(urls), 829)
+        self.assertEqual(len(urls), 841)
         self.assertNotIn("https://plate.hk/landing.html", urls)
         self.assertEqual(len(urls), len(set(urls)))
-        self.assertEqual(sum('/auction-results/' in url for url in urls), 8)
+        self.assertEqual(sum('/auction-results/' in url for url in urls), 20)
         for page in popular.STATIC_PAGES:
             self.assertIn(page, urls)
         for item in manifest:
             self.assertIn(pages.SITE + item['href'], urls)
+
+    def test_feed_has_stable_complete_entries_and_language_correct_links(self):
+        for lang in ('zh', 'en'):
+            rendered = pages.render_feed(lang)
+            self.assertEqual(rendered, pages.render_feed(lang))
+            tree = ET.fromstring(rendered)
+            ns = {'a': pages.ATOM}
+            entries = tree.findall('a:entry', ns)
+            self.assertEqual(len(entries), 9)
+            identities = [entry.findtext('a:id', namespaces=ns) for entry in entries]
+            self.assertEqual(len(set(identities)), 9)
+            for entry, r in zip(entries, pages.load_rounds()):
+                self.assertEqual(entry.findtext('a:id', namespaces=ns), pages.SITE + pages.public_path(r, lang))
+                self.assertEqual(entry.findtext('a:updated', namespaces=ns), r['verified_on'] + 'T00:00:00Z')
+                self.assertEqual(entry.find("a:link[@rel='related']", ns).get('href'), r['source_url'])
+            with tempfile.TemporaryDirectory() as folder:
+                root = Path(folder)
+                pages.build(root)
+                self.assertEqual((root / pages.feed_path(lang).lstrip('/')).read_text(), rendered)
+
+    def test_older_online_rounds_use_their_own_source_date_ranges(self):
+        for key in ('tvrm_eauction-2026-09-03', 'tvrm_eauction-2026-08-20'):
+            r = self.rounds[key]
+            content = pages.render_round(r, 'en')
+            self.assertIn('This round covers ' + pages.date_label(r, 'en'), content)
+            self.assertNotIn('This round covers 17–21 September', content)
+
+    def test_homepage_highlights_are_bounded_to_latest_round_per_type(self):
+        doc = BeautifulSoup(pages.homepage_highlights(), 'html.parser')
+        self.assertEqual(len(doc.select('ul li')), 3)
+        self.assertIn('/auction-results/pvrm-2026-09-12.html', str(doc))
+        self.assertIn('/auction-results/en/tvrm_eauction-2026-09-17.html', str(doc))
+        self.assertNotIn('tvrm_eauction-2026-08-20.html', str(doc))

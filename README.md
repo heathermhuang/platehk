@@ -68,6 +68,13 @@ The current public UI uses a flat Ledger visual system: compact auction-record t
 
 ## Data Coverage
 
+The [complete auction-result archive](https://plate.hk/auction-results/index.html)
+contains nine independently source-verified rounds with all 1,620 marks,
+including unsold and special-fee outcomes. Chinese and English Atom feeds at
+`/auction-results/feed.xml` and `/auction-results/en/feed.xml` let readers follow
+newly verified rounds. See [growth measurement](docs/GROWTH_MEASUREMENT.md) for
+the event contract and private Search Console/GA4 export scorecard.
+
 - `PVRM`: personalized vehicle registration marks
 - `TVRM physical`: traditional plate live auctions
 - `TVRM E-Auction`: 拍牌易 records

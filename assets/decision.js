@@ -100,6 +100,7 @@ async function loadDiscovery(page=1) {
  }catch(error){if(error.name==='AbortError'||version!==discoveryVersion)return;requestError(host,()=>loadDiscovery(page));track('search_error',{error_kind:'discovery_failed'});}
 }
 async function loadHistory(plate,host,page=1){
+ const started=performance.now();
  host.replaceChildren(make('p',text('讀取紀錄中…','Loading history…')));
  try{
   const params=new URLSearchParams({dataset:'all',q:plate,mode:'exact',sort:'date_desc',page_size:'24',page:String(page)});
@@ -108,7 +109,8 @@ async function loadHistory(plate,host,page=1){
   if(!result.rows.length)noHistory(host);
   const list=make('div',null,'decision-results');result.rows.forEach(row=>list.append(rowCard(row)));host.append(list);
   const nav=make('div',null,'decision-actions');for(const [n,label] of [[page-1,text('上一頁','Previous')],[page+1,text('下一頁','Next')]]){if(n<1||(n-1)*24>=result.total)continue;const b=make('button',label);b.addEventListener('click',()=>loadHistory(plate,host,n));nav.append(b);}host.append(nav);refreshSaveButtons();
- }catch{requestError(host,()=>loadHistory(plate,host,page));}
+  window.PlateAnalytics?.lookup?.({plate, result_count:Number(result.total), exact_match:result.rows.length>0, dataset:'all', action:'plate_history', page_number:page, duration_ms:performance.now()-started});
+ }catch{window.PlateAnalytics?.lookupError?.({plate,dataset:'all',action:'plate_history',page_number:page,error_kind:'history_failed'});requestError(host,()=>loadHistory(plate,host,page));}
 }
 async function loadComparables(plate,host) {
  host.replaceChildren(make('h2',text('相似歷史成交','Comparable historical sales')));

@@ -1,0 +1,73 @@
+import {test, expect} from '@playwright/test';
+
+test('a cached analytics module without the new methods cannot interrupt lookup', async ({page}) => {
+  const errors=[];
+  page.on('pageerror',error=>errors.push(error.message));
+  await page.addInitScript(()=>{window.PlateAnalytics={track(){}};});
+  await page.goto('/?lang=en&q=AA88');
+  await expect(page.locator('#rows tr[data-plate="AA88"]')).toHaveCount(1);
+  await page.goto('/plate.html?q=AA88&lang=en');
+  await expect(page.locator('#plateHistory h2')).toContainText('AA88');
+  expect(errors).toEqual([]);
+});
+
+test('homepage exposes distinct lookup tasks and recent source-verified rounds', async ({page}) => {
+  await page.goto('/?lang=en');
+  await expect(page.getByRole('link', {name:'Historical prices', exact:true})).toBeVisible();
+  await expect(page.locator('.search-task-links').getByRole('link', {name:'Latest auction results', exact:true})).toBeVisible();
+  await expect(page.getByRole('link', {name:'Official availability and applications', exact:true})).toBeVisible();
+  await expect(page.locator('#verifiedAuctionHighlights li')).toHaveCount(3);
+  await page.locator('#q').fill('AA88');
+  await expect(page.locator('#rows tr[data-plate="AA88"]')).toHaveCount(1);
+  await expect(page.locator('#verifiedAuctionHighlights')).toBeHidden();
+  await page.locator('#reset').click();
+  await expect(page.locator('#verifiedAuctionHighlights')).toBeVisible();
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  await page.locator('.search-task-links').getByRole('link', {name:'Latest auction results', exact:true}).click();
+  await expect(page).toHaveURL(/\/auction-results\/en\/index\.html$/);
+  await expect(page.locator('.auction-rounds article')).toHaveCount(9);
+});
+
+test('the result feed contains nine stable source-linked entries and a usable copy fallback', async ({page,request}) => {
+  await page.goto('/auction-results/en/index.html#updates');
+  await expect(page.locator('#resultsFeedUrl')).toHaveValue(`${new URL(page.url()).origin}/auction-results/en/feed.xml`);
+  await expect(page.getByRole('link', {name:'Open results feed', exact:true})).toHaveAttribute('href','/auction-results/en/feed.xml');
+  const response=await request.get('/auction-results/en/feed.xml');
+  expect(response.ok()).toBe(true);
+  expect(response.headers()['content-type']).toContain('application/atom+xml');
+  expect(response.headers()['cache-control']).toBe('public, max-age=300, must-revalidate');
+  const body=await response.text();
+  expect((body.match(/<entry>/g)||[]).length).toBe(9);
+  expect(body).toContain('xmlns="http://www.w3.org/2005/Atom"');
+  expect(body).toContain('type="application/pdf"');
+  expect(body).toContain('special-fee allocations');
+  await page.getByRole('button', {name:'Copy feed link', exact:true}).click();
+  await expect(page.locator('#resultsFeedStatus')).toContainText(/Link copied|Copy the selected link/);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+});
+
+test('main, detail and round lookup wiring distinguishes found, empty and failed answers', async ({page}) => {
+  // Capture call-site wiring without enabling production-only GA4 on localhost.
+  await page.addInitScript(()=>{
+    window.lookupObservations=[];
+    window.PlateAnalytics={track(){},lookup(values){window.lookupObservations.push({kind:'complete',...values});},lookupError(values){if(values.plate)window.lookupObservations.push({kind:'error',...values});}};
+  });
+  await page.goto('/?lang=en');
+  await expect(page.locator('#status')).toContainText('matched');
+  expect(await page.evaluate(()=>window.lookupObservations.length)).toBe(0);
+  await page.locator('#q').fill('AA88');
+  await expect.poll(()=>page.evaluate(()=>window.lookupObservations.some(v=>v.action==='main_lookup'&&v.plate==='AA88'&&v.result_count>0))).toBe(true);
+  await page.locator('#q').fill('AB1234');
+  await expect.poll(()=>page.evaluate(()=>window.lookupObservations.some(v=>v.action==='main_lookup'&&v.plate==='AB1234'&&v.result_count===0))).toBe(true);
+  await page.route('**/api/search?**',route=>route.fulfill({status:503,contentType:'application/json',body:'{"error":"unavailable"}'}));
+  await page.locator('#q').fill('AA88');
+  await expect.poll(()=>page.evaluate(()=>window.lookupObservations.some(v=>v.kind==='error'&&v.plate==='AA88'))).toBe(true);
+  await page.unroute('**/api/search?**');
+  await page.goto('/plate.html?q=AA88&lang=en');
+  await expect.poll(()=>page.evaluate(()=>window.lookupObservations.some(v=>v.action==='plate_history'&&v.result_count>0))).toBe(true);
+  await page.goto('/auction-results/en/tvrm_physical-2026-09-05.html');
+  await page.getByRole('searchbox',{name:'Find a plate in this round',exact:true}).fill('YA8');
+  await expect.poll(()=>page.evaluate(()=>window.lookupObservations.some(v=>v.action==='round_lookup'&&v.plate==='YA8'&&v.result_count>=1&&v.exact_match))).toBe(true);
+  await expect(page.locator('#mark-YA8')).toBeVisible();
+  await expect(page.locator('#mark-YA8')).toContainText('HK$110,000');
+});
