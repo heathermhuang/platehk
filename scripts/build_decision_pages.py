@@ -94,7 +94,7 @@ def render(page):
  <link rel="canonical" href="https://plate.hk/{page}.html">
  <link rel="alternate" hreflang="zh-HK" href="https://plate.hk/{page}.html"><link rel="alternate" hreflang="en" href="https://plate.hk/{page}.html?lang=en">
  <link rel="stylesheet" href="/assets/ledger.css?v=20260915-01"><link rel="stylesheet" href="/assets/decision.css?v=20260915-01">
- <script defer src="/assets/analytics.js?v=20260915-01"></script><link rel="stylesheet" href="/assets/ux.css?v=20260928-01"><script defer src="/assets/ux.js?v=20260928-01"></script></head>
+ <script defer src="/assets/analytics.js?v=20260915-01"></script><link rel="stylesheet" href="/assets/ux.css?v=20260928-01"><script defer src="/assets/ux.js?v=20260928-01"></script><link rel="stylesheet" href="/assets/craft.css?v=20261001-01"></head>
  <body data-info-page="{page}" data-decision-page="{page}" data-title-zh="{zh} | Plate.hk" data-title-en="{en} | Plate.hk"><div data-info-shell-header></div><main id="main-content" class="decision-main">{bilingual(zh,en,'h1')}
  <nav class="decision-actions" aria-label="Decision tools">{link('/prices.html','價格資料說明','Price guide')} {link('/availability.html','官方可用號碼及申請','Official availability and applications')}</nav>
  {body_for(page)}<p id="decisionNotice" role="status"></p></main><div data-info-shell-footer></div>
