@@ -1,6 +1,6 @@
-const CACHE_NAME = 'pvrm-static-v158';
+const CACHE_NAME = 'pvrm-static-v159';
 const ASSETS = [
-  './assets/craft.css?v=20261001-01',
+  './assets/craft.css?v=20261001-02',
   './assets/audit.js?v=20260928-01',
   './assets/camera.js?v=20260928-01',
   './assets/api-page.js?v=20260928-01',
