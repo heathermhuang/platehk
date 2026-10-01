@@ -8,7 +8,7 @@
       name="description"
       content="搜尋香港車牌拍賣結果（自訂車牌 PVRM、傳統車牌 TVRM 實體拍賣、拍牌易 E-Auction），可按車牌、成交價及拍賣日期查詢，並連結官方 PDF 來源。"
     />
-    <meta name="theme-color" content="#eaf1fb" />
+    <meta name="theme-color" content="#f4f1e8" />
     <meta name="color-scheme" content="light" />
     <meta name="robots" content="index,follow,max-image-preview:large" />
     <link rel="canonical" href="https://plate.hk/" />
@@ -2177,10 +2177,13 @@
 
   <link rel="stylesheet" href="/assets/ux.css?v=20260928-01"><script defer src="/assets/ux.js?v=20260928-01"></script>
   <link rel="stylesheet" href="/assets/growth.css?v=20260929-01"><script defer src="/assets/growth.js?v=20260929-01"></script>
+<link rel="stylesheet" href="/assets/index.browser.css?v=20261001-03">
+<script defer src="/assets/index.browser.js?v=20261001-03"></script>
 </head>
-  <body>
+  <body class="data-browser">
+    <a class="data-skip" href="#record-search"><span data-growth-lang="zh">跳至車牌搜尋</span><span data-growth-lang="en">Skip to plate search</span></a>
     <div class="wrap">
-      <div class="topbar">
+      <header class="topbar">
         <div class="brand">
           <img class="brand-logo" id="brandLogo" src="./assets/logo.svg?v=20260827-05" alt="Plate.hk Hong Kong vehicle registration marks logo" />
           <div class="brand-titles">
@@ -2199,14 +2202,15 @@
             <button id="langEn" type="button" aria-pressed="false">EN</button>
           </div>
         </div>
-      </div>
+      </header>
 
+      <main id="main-content">
       <nav class="search-task-links" aria-label="Lookup options">
         <a href="/prices.html" data-growth-lang="zh">查歷史成交價</a><a href="/prices.html?lang=en" data-growth-lang="en">Historical prices</a>
         <a href="/auction-results/index.html" data-growth-lang="zh">查最新拍賣結果</a><a href="/auction-results/en/index.html" data-growth-lang="en">Latest auction results</a>
         <a href="/availability.html" data-growth-lang="zh">官方可用號碼及申請</a><a href="/availability.html?lang=en" data-growth-lang="en">Official availability and applications</a>
       </nav>
-      <div class="panel">
+      <section class="panel" id="record-search" aria-labelledby="queryLabel" tabindex="-1">
         <div class="panel-head"><label class="ux-match-mode">比對 / Match <select id="matchMode"><option value="exact">完全相同 / Exact plate</option><option value="contains">包含片段 / Contains</option></select></label>
           <div class="panel-title" id="searchPanelTitle">搜尋</div>
           <div class="panel-note" id="searchPanelNote">先選資料集，再輸入車牌或直接瀏覽期數。</div>
@@ -2221,6 +2225,7 @@
               <button id="reset">清除條件</button>
             </div>
           </div>
+          <details class="record-filters" open><summary><span data-growth-lang="zh">篩選</span><span data-growth-lang="en">Filters</span><span id="filterScope"></span><span class="filter-chevron" aria-hidden="true">⌄</span></summary>
           <div class="controls-secondary">
             <div class="control-group">
               <label class="control-label" id="datasetLabel" for="dataset">資料集</label>
@@ -2235,41 +2240,46 @@
               <select id="sort"></select>
             </div>
           </div>
+          </details>
         </div>
         <nav class="decision-entry-links" aria-label="Plate tools"><a href="/prices.html">查價 / Prices</a> · <a href="/discover.html">按預算找牌 / Discover</a> · <a href="/auctions.html">日程 / Auctions</a> · <a href="/shortlist.html">收藏 / Shortlist</a></nav>
         <div class="search-assist" id="searchAssist">
           <div class="search-note" id="searchNote"></div>
           <div class="search-history" id="searchHistory" hidden></div>
         </div>
-      </div>
-      <!-- VERIFIED_AUCTION_HIGHLIGHTS -->
-<section id="verifiedAuctionHighlights" class="verified-results" aria-labelledby="verifiedResultsTitle">
-<div class="verified-results-heading"><h2 id="verifiedResultsTitle"><span data-growth-lang="zh">最新已核對拍賣結果</span><span data-growth-lang="en">Latest verified auction results</span></h2>
-<span data-growth-lang="zh"><a href="/auction-results/index.html">全部已核對場次</a></span><span data-growth-lang="en"><a href="/auction-results/en/index.html">All verified rounds</a></span></div>
-<ul><li><span data-growth-lang="zh"><a href="/auction-results/pvrm-2026-09-12.html">2026年9月12日 自訂車牌拍賣結果</a></span><span data-growth-lang="en"><a href="/auction-results/en/pvrm-2026-09-12.html">Personalized marks results: 12 September 2026</a></span></li><li><span data-growth-lang="zh"><a href="/auction-results/tvrm_physical-2026-09-12.html">2026年9月12日 傳統車牌實體拍賣結果</a></span><span data-growth-lang="en"><a href="/auction-results/en/tvrm_physical-2026-09-12.html">Traditional physical auction results: 12 September 2026</a></span></li><li><span data-growth-lang="zh"><a href="/auction-results/tvrm_eauction-2026-09-17.html">2026年9月17日至2026年9月21日 拍牌易網上拍賣結果</a></span><span data-growth-lang="en"><a href="/auction-results/en/tvrm_eauction-2026-09-17.html">Online auction results: 17 September 2026 to 21 September 2026</a></span></li></ul><p><span data-growth-lang="zh">完整號碼表、未售出及特別費用標示，附官方 PDF。</span><span data-growth-lang="en">Complete mark tables, unsold and special-fee outcomes, with official PDFs.</span>
-<span data-growth-lang="zh"><a href="/auction-results/index.html#updates">訂閱新結果及儲存提醒</a></span><span data-growth-lang="en"><a href="/auction-results/en/index.html#updates">Follow new results and save reminders</a></span></p></section>
-<!-- /VERIFIED_AUCTION_HIGHLIGHTS -->
-      <div class="home-shelf" id="homeShelf">
-        <section class="home-card" id="datasetGuide"></section>
-        <section class="home-card" id="issueGuide"></section>
-      </div>
-      <details class="about-card about-collapsible" id="intro"></details>
+      </section>
       <section class="issue-panel" id="issuePanel" hidden></section>
       <div class="search-progress" id="searchProgress">
         <progress id="searchProgressBar" value="0" max="100"></progress>
         <span id="searchProgressText"></span>
       </div>
 
-      <section class="results-context" id="resultsContext" hidden></section>
+      <div class="record-workspace">
+      <section class="record-pane" aria-label="Auction records">
+      <div class="results-meta-wrap">
+        <div class="records-heading"><h2><span data-growth-lang="zh">拍賣紀錄</span><span data-growth-lang="en">Auction records</span></h2><section class="results-context" id="resultsContext" hidden></section><div class="meta-chip" id="updatedAt"></div></div>
+        <div class="record-status-row">
+        <div class="results-meta-strip">
+          <div class="meta-chip" id="status" role="status" aria-live="polite">讀取資料中...</div>
+          <div class="meta-chip" id="issueTotal"></div>
+        </div>
+      <div class="footer-nav">
+        <button id="bottomPrev">上一頁</button>
+        <div class="footer-info" id="bottomInfo"></div>
+        <button id="bottomNext">下一頁</button>
+      </div>
+        </div>
+      </div>
+
       <section class="market-signal" id="marketSignal" hidden aria-live="polite"></section>
       <div class="table-wrap" id="resultsTableWrap" role="region" aria-label="Search results table" tabindex="0">
         <table id="resultsTable">
           <thead>
             <tr>
-              <th class="col-date" id="thDate">拍賣日期</th>
-              <th id="thSingle">單行排列</th>
+              <th id="thSingle">車牌</th>
               <th id="thDouble">雙行排列</th>
               <th class="col-price" id="thPrice">成交價（HKD）</th>
+              <th class="col-date" id="thDate">拍賣日期</th>
               <th class="col-category" id="thCategory">分類</th>
               <th class="col-source" id="thPdf">原始 PDF</th>
             </tr>
@@ -2277,19 +2287,25 @@
           <tbody id="rows"></tbody>
         </table>
       </div>
-      <div class="footer-nav">
-        <button id="bottomPrev">上一頁</button>
-        <div class="footer-info" id="bottomInfo"></div>
-        <button id="bottomNext">下一頁</button>
+
+      </section>
+      <aside class="auction-context" aria-label="Verified auction rounds">
+      <!-- VERIFIED_AUCTION_HIGHLIGHTS -->
+<details id="verifiedAuctionHighlights" class="verified-results" aria-labelledby="verifiedResultsTitle" open>
+<summary class="verified-results-heading"><h2 id="verifiedResultsTitle"><span data-growth-lang="zh">最新已核對拍賣結果</span><span data-growth-lang="en">Latest verified auction results</span></h2><span class="round-toggle" aria-hidden="true">⌄</span></summary>
+<ul><li><span data-growth-lang="zh"><a class="round-link" href="/auction-results/pvrm-2026-09-12.html" aria-label="2026年9月12日 自訂車牌拍賣結果"><span class="round-label">自訂車牌</span><span class="round-date">2026年9月12日</span><span class="round-count">77 個拍賣售出 · 100 個號碼</span><span class="round-proceeds">HK$1,366,000</span><span class="round-proceeds-label">官方公布款項</span></a></span><span data-growth-lang="en"><a class="round-link" href="/auction-results/en/pvrm-2026-09-12.html" aria-label="Personalized marks results: 12 September 2026"><span class="round-label">Personalized marks</span><span class="round-date">12 September 2026</span><span class="round-count">77 auction sales · 100 marks</span><span class="round-proceeds">HK$1,366,000</span><span class="round-proceeds-label">Official proceeds</span></a></span></li><li><span data-growth-lang="zh"><a class="round-link" href="/auction-results/tvrm_physical-2026-09-12.html" aria-label="2026年9月12日 傳統車牌實體拍賣結果"><span class="round-label">傳統車牌實體拍賣</span><span class="round-date">2026年9月12日</span><span class="round-count">57 個拍賣售出 · 220 個號碼</span><span class="round-proceeds">HK$1,295,000</span><span class="round-proceeds-label">官方公布款項</span></a></span><span data-growth-lang="en"><a class="round-link" href="/auction-results/en/tvrm_physical-2026-09-12.html" aria-label="Traditional physical auction results: 12 September 2026"><span class="round-label">Traditional physical auction</span><span class="round-date">12 September 2026</span><span class="round-count">57 auction sales · 220 marks</span><span class="round-proceeds">HK$1,295,000</span><span class="round-proceeds-label">Official proceeds</span></a></span></li><li><span data-growth-lang="zh"><a class="round-link" href="/auction-results/tvrm_eauction-2026-09-17.html" aria-label="2026年9月17日至2026年9月21日 拍牌易網上拍賣結果"><span class="round-label">拍牌易網上拍賣</span><span class="round-date">2026年9月17–21日</span><span class="round-count">216 個拍賣售出 · 220 個號碼</span><span class="round-proceeds">HK$1,650,000</span><span class="round-proceeds-label">官方公布款項</span></a></span><span data-growth-lang="en"><a class="round-link" href="/auction-results/en/tvrm_eauction-2026-09-17.html" aria-label="Online auction results: 17 September 2026 to 21 September 2026"><span class="round-label">Online auction</span><span class="round-date">17–21 Sep 2026</span><span class="round-count">216 auction sales · 220 marks</span><span class="round-proceeds">HK$1,650,000</span><span class="round-proceeds-label">Official proceeds</span></a></span></li></ul><p class="verified-round-links"><span data-growth-lang="zh"><a href="/auction-results/index.html">全部已核對場次</a></span><span data-growth-lang="en"><a href="/auction-results/en/index.html">All verified rounds</a></span>
+<span data-growth-lang="zh"><a href="/auction-results/index.html#updates">訂閱新結果及儲存提醒</a></span><span data-growth-lang="en"><a href="/auction-results/en/index.html#updates">Follow new results and save reminders</a></span></p></details>
+<!-- /VERIFIED_AUCTION_HIGHLIGHTS -->
+      </aside>
       </div>
-      <div class="results-meta-wrap">
-        <div class="results-meta-strip">
-          <div class="meta-chip" id="updatedAt"></div>
-          <div class="meta-chip" id="status">讀取資料中...</div>
-          <div class="meta-chip" id="issueTotal"></div>
-        </div>
-        <div class="meta-footnote" id="disclaimer"></div>
+      <div class="home-shelf" id="homeShelf">
+        <section class="home-card" id="datasetGuide"></section>
+        <section class="home-card" id="issueGuide"></section>
       </div>
+      <details class="about-card about-collapsible" id="intro"></details>
+      </main>
+      <footer>
+      <div class="meta-footnote" id="disclaimer"></div>
       <div class="policy-links">
         <a id="popularLink" href="./plates/index.html">熱門車牌</a>
         <a id="aboutLink" href="./about.html?lang=zh">資料說明</a>
@@ -2304,6 +2320,7 @@
       <div class="footer-credit">
         Vide Coded by <a href="https://h.im/?ref=pvrm" target="_blank" rel="noopener">@heathermhuang</a>
       </div>
+      </footer>
     </div>
     <div class="share-modal" id="shareModal" aria-hidden="true">
       <div class="share-card" role="dialog" aria-modal="true" aria-labelledby="shareTitle">
@@ -2311,6 +2328,7 @@
           <div class="share-title" id="shareTitle"></div>
           <button id="shareClose" type="button">×</button>
         </div>
+        <p id="shareLoading" class="share-loading" role="status" hidden></p>
         <img id="sharePreview" class="share-preview" alt="Poster preview" />
         <div class="share-actions">
           <button id="shareDownload" type="button"></button>
@@ -2347,8 +2365,8 @@
         </form>
       </div>
     </div>
-    <script src="./assets/index.config.js?v=20260915-01"></script>
-    <script src="./assets/index.home.js?v=20260928-01"></script>
+    <script src="./assets/index.config.js?v=20261001-03"></script>
+    <script src="./assets/index.home.js?v=20261001-03"></script>
     <script src="./assets/index.offline-data.js?v=20260426-01"></script>
     <script src="./assets/index.data.js?v=20260928-01"></script>
     <script src="./assets/index.state.js?v=20260928-01"></script>
@@ -2356,8 +2374,8 @@
     <script src="./assets/index.present.js?v=20260928-01"></script>
     <script src="./assets/vendor/qrcode-generator.js?v=20260503-01"></script>
     <script src="./assets/index.webmcp.js?v=20260418-01"></script>
-    <script src="./assets/index.share.js?v=20260827-05"></script>
+    <script src="./assets/index.share.js?v=20261001-03"></script>
     <script src="./assets/index.market.js?v=20260928-01"></script>
-    <script src="./assets/index.js?v=20260928-01"></script>
+    <script src="./assets/index.js?v=20261001-03"></script>
   </body>
 </html>

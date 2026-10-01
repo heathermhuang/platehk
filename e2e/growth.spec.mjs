@@ -13,9 +13,11 @@ test('a cached analytics module without the new methods cannot interrupt lookup'
 
 test('homepage exposes distinct lookup tasks and recent source-verified rounds', async ({page}) => {
   await page.goto('/?lang=en');
+  await page.locator('.site-more > summary').click();
   await expect(page.getByRole('link', {name:'Historical prices', exact:true})).toBeVisible();
-  await expect(page.locator('.search-task-links').getByRole('link', {name:'Latest auction results', exact:true})).toBeVisible();
   await expect(page.getByRole('link', {name:'Official availability and applications', exact:true})).toBeVisible();
+  await page.locator('.site-more > summary').click();
+  await expect(page.getByRole('link', {name:'Latest auction results', exact:true})).toBeVisible();
   await expect(page.locator('#verifiedAuctionHighlights li')).toHaveCount(3);
   await page.locator('#q').fill('AA88');
   await expect(page.locator('#rows tr[data-plate="AA88"]')).toHaveCount(1);
@@ -23,7 +25,7 @@ test('homepage exposes distinct lookup tasks and recent source-verified rounds',
   await page.locator('#reset').click();
   await expect(page.locator('#verifiedAuctionHighlights')).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
-  await page.locator('.search-task-links').getByRole('link', {name:'Latest auction results', exact:true}).click();
+  await page.getByRole('link', {name:'Latest auction results', exact:true}).click();
   await expect(page).toHaveURL(/\/auction-results\/en\/index\.html$/);
   await expect(page.locator('.auction-rounds article')).toHaveCount(9);
 });
@@ -53,7 +55,7 @@ test('main, detail and round lookup wiring distinguishes found, empty and failed
     window.PlateAnalytics={track(){},lookup(values){window.lookupObservations.push({kind:'complete',...values});},lookupError(values){if(values.plate)window.lookupObservations.push({kind:'error',...values});}};
   });
   await page.goto('/?lang=en');
-  await expect(page.locator('#status')).toContainText('matched');
+  await expect(page.locator('#status')).toContainText('records');
   expect(await page.evaluate(()=>window.lookupObservations.length)).toBe(0);
   await page.locator('#q').fill('AA88');
   await expect.poll(()=>page.evaluate(()=>window.lookupObservations.some(v=>v.action==='main_lookup'&&v.plate==='AA88'&&v.result_count>0))).toBe(true);

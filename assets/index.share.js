@@ -13,6 +13,8 @@ window.createPlateIndexShareModal = function createPlateIndexShareModal({
   shareSiteUrl,
 }) {
   let currentPosterDataUrl = "";
+  let posterGeneration = 0;
+  let shareTrigger = null;
   const POSTER = Object.freeze({
     page: "#f4f1e8",
     surface: "#fffaf0",
@@ -539,18 +541,37 @@ window.createPlateIndexShareModal = function createPlateIndexShareModal({
   }
 
   async function openShareModal(row) {
+    const generation = ++posterGeneration;
+    shareTrigger = document.activeElement;
     shareTitleEl.textContent = t("sharePosterTitle");
     shareDownloadEl.textContent = t("downloadPoster");
     sharePreviewEl.removeAttribute("src");
+    sharePreviewEl.hidden = true;
+    currentPosterDataUrl = "";
+    shareDownloadEl.disabled = true;
+    const loading = shareModalEl.querySelector("#shareLoading");
+    if (loading) { loading.hidden = false; loading.textContent = t("shareLoading"); }
     shareModalEl.classList.add("open");
     shareModalEl.setAttribute("aria-hidden", "false");
-    currentPosterDataUrl = await buildPosterDataUrl(row);
-    sharePreviewEl.src = currentPosterDataUrl;
+    shareCloseEl.focus();
+    try {
+      const poster = await buildPosterDataUrl(row);
+      if (generation !== posterGeneration || !shareModalEl.classList.contains("open")) return;
+      currentPosterDataUrl = poster;
+      sharePreviewEl.src = currentPosterDataUrl;
+      sharePreviewEl.hidden = false;
+      shareDownloadEl.disabled = false;
+      if (loading) loading.hidden = true;
+    } catch {
+      if (generation === posterGeneration && loading) loading.textContent = t("shareUnavailable");
+    }
   }
 
   function closeShareModal() {
+    posterGeneration += 1;
     shareModalEl.classList.remove("open");
     shareModalEl.setAttribute("aria-hidden", "true");
+    if (shareTrigger?.isConnected) shareTrigger.focus({ preventScroll: true });
   }
 
   function downloadCurrentPoster() {
@@ -569,6 +590,14 @@ window.createPlateIndexShareModal = function createPlateIndexShareModal({
     shareDownloadEl.addEventListener("click", downloadCurrentPoster);
     document.addEventListener("keydown", (ev) => {
       if (ev.key === "Escape" && shareModalEl.classList.contains("open")) closeShareModal();
+      if (ev.key === "Tab" && shareModalEl.classList.contains("open")) {
+        const last = shareDownloadEl.disabled ? shareCloseEl : shareDownloadEl;
+        if (ev.shiftKey && document.activeElement === shareCloseEl) {
+          ev.preventDefault(); last.focus();
+        } else if (!ev.shiftKey && document.activeElement === last) {
+          ev.preventDefault(); shareCloseEl.focus();
+        }
+      }
     });
   }
 

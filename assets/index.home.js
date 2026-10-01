@@ -614,17 +614,18 @@ window.createPlateIndexHomeViews = function createPlateIndexHomeViews(deps) {
     } else {
       const datasetLabel = datasetLabelForKey(currentDataset);
       kicker = t("resultsKickerDataset");
-      title = t("resultsTitleDataset")(datasetLabel);
+      title = t("datasetRecordTitle")[currentDataset] || t("resultsTitleDataset")(datasetLabel);
       subtitle = t("resultsSubtitleDataset")(datasetLabel, countText);
       if (q) chips.push(`${t("resultsChipQuery")}: ${q}`);
       chips.push(`${t("resultsChipRows")}: ${countText}`);
     }
 
+    if (q && !selectedIssue) title = t("resultsTitleQuery")(q);
     resultsContextEl.hidden = false;
     resultsContextEl.innerHTML = `
       <div class="results-context-main">
         <div class="results-context-kicker">${escapeHtml(kicker)}</div>
-        <div class="results-context-title">${escapeHtml(title)}</div>
+        <h2 class="results-context-title">${escapeHtml(title)}</h2>
         <div class="results-context-subtitle">${escapeHtml(subtitle)}</div>
       </div>
       <div class="results-context-side">

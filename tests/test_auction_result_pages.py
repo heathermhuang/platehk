@@ -156,3 +156,8 @@ class AuctionResultPageTests(unittest.TestCase):
         self.assertIn('/auction-results/pvrm-2026-09-12.html', str(doc))
         self.assertIn('/auction-results/en/tvrm_eauction-2026-09-17.html', str(doc))
         self.assertNotIn('tvrm_eauction-2026-08-20.html', str(doc))
+        summaries = [li.select_one('[data-growth-lang="en"]').get_text(' ', strip=True) for li in doc.select('ul li')]
+        self.assertIn('77 auction sales · 100 marks', summaries[0])
+        self.assertIn('HK$1,366,000', summaries[0])
+        self.assertIn('57 auction sales · 220 marks', summaries[1])
+        self.assertIn('216 auction sales · 220 marks', summaries[2])

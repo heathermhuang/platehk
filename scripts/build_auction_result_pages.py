@@ -171,12 +171,22 @@ def homepage_highlights() -> str:
     items = []
     for dataset in ('pvrm', 'tvrm_physical', 'tvrm_eauction'):
         r = next(r for r in rounds if r['dataset'] == dataset)
-        items.append('<li>' + localized(link(public_path(r), title(r, 'zh')), link(public_path(r, 'en'), title(r, 'en'))) + '</li>')
-    return f'''<section id="verifiedAuctionHighlights" class="verified-results" aria-labelledby="verifiedResultsTitle">
-<div class="verified-results-heading"><h2 id="verifiedResultsTitle">{localized('最新已核對拍賣結果', 'Latest verified auction results')}</h2>
-{localized(link(public_path(), '全部已核對場次'), link(public_path(lang='en'), 'All verified rounds'))}</div>
-<ul>{''.join(items)}</ul><p>{localized('完整號碼表、未售出及特別費用標示，附官方 PDF。', 'Complete mark tables, unsold and special-fee outcomes, with official PDFs.')}
-{localized(link(public_path() + '#updates', '訂閱新結果及儲存提醒'), link(public_path(lang='en') + '#updates', 'Follow new results and save reminders'))}</p></section>'''
+        counts = Counter(row['status'] for row in r['rows'])
+        links = []
+        for lang in ('zh', 'en'):
+            label = choose(*LABELS[dataset], lang)
+            round_date = date_label(r, lang)
+            start, end = date.fromisoformat(r['start_date']), date.fromisoformat(r['end_date'])
+            if start != end and (start.year, start.month) == (end.year, end.month):
+                round_date = choose(f'{start.year}年{start.month}月{start.day}–{end.day}日', f'{start.day}–{end.day} {start:%b %Y}', lang)
+            count_label = choose(f"{counts['sold']} 個拍賣售出 · {len(r['rows'])} 個號碼", f"{counts['sold']} auction sales · {len(r['rows'])} marks", lang)
+            contents = f'<span class="round-label">{html.escape(label)}</span><span class="round-date">{html.escape(round_date)}</span><span class="round-count">{html.escape(count_label)}</span><span class="round-proceeds">{money(r["official_proceeds_hkd"])}</span><span class="round-proceeds-label">{choose("官方公布款項", "Official proceeds", lang)}</span>'
+            links.append(f'<a class="round-link" href="{public_path(r, lang)}" aria-label="{html.escape(title(r, lang), quote=True)}">{contents}</a>')
+        items.append('<li>' + localized(*links) + '</li>')
+    return f'''<details id="verifiedAuctionHighlights" class="verified-results" aria-labelledby="verifiedResultsTitle" open>
+<summary class="verified-results-heading"><h2 id="verifiedResultsTitle">{localized('最新已核對拍賣結果', 'Latest verified auction results')}</h2><span class="round-toggle" aria-hidden="true">⌄</span></summary>
+<ul>{''.join(items)}</ul><p class="verified-round-links">{localized(link(public_path(), '全部已核對場次'), link(public_path(lang='en'), 'All verified rounds'))}
+{localized(link(public_path() + '#updates', '訂閱新結果及儲存提醒'), link(public_path(lang='en') + '#updates', 'Follow new results and save reminders'))}</p></details>'''
 
 
 def update_homepage(path: Path) -> None:
