@@ -164,43 +164,6 @@ def feed_controls(lang: str) -> str:
 <p class="auction-source-note">{choose('訂閱由你的閱讀器管理；開啟或複製連結不代表已完成訂閱。此訂閱只涵蓋本目錄已核對的場次，更新日期為資料核對日。', 'Your reader manages the subscription; opening or copying the link does not complete it. The feed covers this curated archive, and entry update dates identify verification dates.', lang)}</p></section>'''
 
 
-def homepage_highlights() -> str:
-    rounds = load_rounds()
-    def localized(zh, en):
-        return f'<span data-growth-lang="zh">{zh}</span><span data-growth-lang="en">{en}</span>'
-    items = []
-    for dataset in ('pvrm', 'tvrm_physical', 'tvrm_eauction'):
-        r = next(r for r in rounds if r['dataset'] == dataset)
-        counts = Counter(row['status'] for row in r['rows'])
-        links = []
-        for lang in ('zh', 'en'):
-            label = choose(*LABELS[dataset], lang)
-            round_date = date_label(r, lang)
-            start, end = date.fromisoformat(r['start_date']), date.fromisoformat(r['end_date'])
-            if start != end and (start.year, start.month) == (end.year, end.month):
-                round_date = choose(f'{start.year}年{start.month}月{start.day}–{end.day}日', f'{start.day}–{end.day} {start:%b %Y}', lang)
-            count_label = choose(f"{counts['sold']} 個拍賣售出 · {len(r['rows'])} 個號碼", f"{counts['sold']} auction sales · {len(r['rows'])} marks", lang)
-            contents = f'<span class="round-label">{html.escape(label)}</span><span class="round-date">{html.escape(round_date)}</span><span class="round-count">{html.escape(count_label)}</span><span class="round-proceeds">{money(r["official_proceeds_hkd"])}</span><span class="round-proceeds-label">{choose("官方公布款項", "Official proceeds", lang)}</span>'
-            links.append(f'<a class="round-link" href="{public_path(r, lang)}" aria-label="{html.escape(title(r, lang), quote=True)}">{contents}</a>')
-        items.append('<li>' + localized(*links) + '</li>')
-    return f'''<details id="verifiedAuctionHighlights" class="verified-results" aria-labelledby="verifiedResultsTitle" open>
-<summary class="verified-results-heading"><h2 id="verifiedResultsTitle">{localized('最新已核對拍賣結果', 'Latest verified auction results')}</h2><span class="round-toggle" aria-hidden="true">⌄</span></summary>
-<ul>{''.join(items)}</ul><p class="verified-round-links">{localized(link(public_path(), '全部已核對場次'), link(public_path(lang='en'), 'All verified rounds'))}
-{localized(link(public_path() + '#updates', '訂閱新結果及儲存提醒'), link(public_path(lang='en') + '#updates', 'Follow new results and save reminders'))}</p></details>'''
-
-
-def update_homepage(path: Path) -> None:
-    if not path.exists():
-        return
-    content = path.read_text(encoding='utf-8')
-    begin, end = '<!-- VERIFIED_AUCTION_HIGHLIGHTS -->', '<!-- /VERIFIED_AUCTION_HIGHLIGHTS -->'
-    if begin not in content or end not in content:
-        raise ValueError('Missing homepage auction-result publication markers')
-    replacement = begin + '\n' + homepage_highlights() + '\n' + end
-    content = re.sub(re.escape(begin) + r'.*?' + re.escape(end), lambda _: replacement, content, count=1, flags=re.S)
-    path.write_text(content, encoding='utf-8')
-
-
 def shell(r: dict | None, lang: str, heading: str, description: str, body: str, schema: list[dict]) -> str:
     canonical = SITE + public_path(r, lang)
     alternates = ''.join(f'<link rel="alternate" hreflang="{code}" href="{SITE}{public_path(r, language)}">' for code, language in [('zh-HK', 'zh'), ('en', 'en')])
@@ -324,7 +287,6 @@ def build(target: Path = ROOT) -> None:
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(page, encoding='utf-8')
         (target / feed_path(lang).lstrip('/')).write_text(render_feed(lang), encoding='utf-8')
-    update_homepage(target / 'index.html')
 
 
 if __name__ == '__main__':

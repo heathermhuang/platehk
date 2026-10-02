@@ -25,20 +25,18 @@ test('narrow desktop widths keep every record inside its pane', async ({page}, i
   await page.screenshot({path:info.outputPath('records-desktop-en.png')});
 });
 
-test('records and their sources are visible on arrival while verified rounds remain accessible', async ({page}, info) => {
+test('records and their sources own the browsing view on arrival', async ({page}, info) => {
   await page.goto('/?lang=en');
   await ready(page);
   const first = page.locator('#rows tr[data-plate]').first();
   for (const field of ['.col-single', '.col-price', '.col-source']) await expect(first.locator(field)).toBeInViewport({ratio:1});
-  expect(await page.locator('#verifiedAuctionHighlights li').count()).toBe(3);
-  if (!await page.locator('#verifiedAuctionHighlights').evaluate(el=>el.open)) {
-    await page.locator('#verifiedAuctionHighlights > summary').click();
-  }
-  await expect(page.getByRole('link', {name:'Personalized marks results: 12 September 2026',exact:true})).toContainText('77 auction sales');
-  await expect(page.getByRole('link', {name:'Personalized marks results: 12 September 2026',exact:true})).toContainText('HK$1,366,000');
+  await expect(page.locator('#verifiedAuctionHighlights, .auction-context')).toHaveCount(0);
+  await expect(page.getByRole('link',{name:'Latest auction results',exact:true})).toHaveAttribute('href','/auction-results/en/index.html');
+  await page.screenshot({path:info.outputPath('records-home-en.png')});
   await accessibility(page);
   await page.goto('/?lang=zh');
   await ready(page);
+  await expect(page.getByRole('link',{name:'最新拍賣結果',exact:true})).toHaveAttribute('href','/auction-results/index.html');
   await page.screenshot({path:info.outputPath('records-home.png')});
 });
 

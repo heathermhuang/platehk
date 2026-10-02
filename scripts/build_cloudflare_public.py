@@ -561,7 +561,7 @@ def main(*, require_market_snapshot: bool = False) -> None:
         shutil.rmtree(TARGET)
     TARGET.mkdir(parents=True, exist_ok=True)
 
-    from build_auction_result_pages import build as build_auction_result_pages, update_homepage
+    from build_auction_result_pages import build as build_auction_result_pages
     build_auction_result_pages(TARGET)
 
     decision_spec = importlib.util.spec_from_file_location("build_decision_pages", ROOT / "scripts/build_decision_pages.py")
@@ -595,7 +595,6 @@ def main(*, require_market_snapshot: bool = False) -> None:
     update_results_export_catalog()
     build_complete_search_index(load_complete_search_index_rows(), api_v1_dir / "all")
     prune_oversized_assets()
-    update_homepage(TARGET / 'index.html')
     for page in TARGET.rglob("*.html"):
         content = page.read_text(encoding="utf-8")
         if '/assets/analytics.js?' not in content:

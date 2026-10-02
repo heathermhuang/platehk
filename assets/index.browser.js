@@ -51,7 +51,6 @@
     if (!nav || !more || !menu) return;
     nav.setAttribute('aria-label', english ? 'Primary navigation' : '主要導覽');
     document.querySelector('.record-pane')?.setAttribute('aria-label', english ? 'Auction records' : '拍賣紀錄');
-    document.querySelector('.auction-context')?.setAttribute('aria-label', english ? 'Verified auction rounds' : '已核對拍賣場次');
     document.querySelector('#resultsTableWrap')?.setAttribute('aria-label', english ? 'Plate auction records' : '車牌拍賣紀錄');
     const href = (path) => {
       const url = new URL(path, location.origin);
@@ -145,19 +144,4 @@
     new MutationObserver(labels).observe(pagination, { childList: true, subtree: true, characterData: true });
   }
 
-  const rounds = document.querySelector('#verifiedAuctionHighlights');
-  const wide = matchMedia('(min-width: 1201px)');
-  const workspace = document.querySelector('.record-workspace');
-  const context = document.querySelector('.auction-context');
-  if (rounds?.tagName === 'DETAILS') {
-    const composition = () => {
-      rounds.open = wide.matches;
-      if (workspace && context) {
-        if (wide.matches) workspace.append(context);
-        else workspace.prepend(context);
-      }
-    };
-    composition();
-    wide.addEventListener('change', composition);
-  }
 })();

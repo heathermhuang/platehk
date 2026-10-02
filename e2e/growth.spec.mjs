@@ -11,23 +11,25 @@ test('a cached analytics module without the new methods cannot interrupt lookup'
   expect(errors).toEqual([]);
 });
 
-test('homepage exposes distinct lookup tasks and recent source-verified rounds', async ({page}) => {
+test('homepage keeps lookup focused with verified rounds in their own archive', async ({page}) => {
   await page.goto('/?lang=en');
   await page.locator('.site-more > summary').click();
   await expect(page.getByRole('link', {name:'Historical prices', exact:true})).toBeVisible();
   await expect(page.getByRole('link', {name:'Official availability and applications', exact:true})).toBeVisible();
   await page.locator('.site-more > summary').click();
   await expect(page.getByRole('link', {name:'Latest auction results', exact:true})).toBeVisible();
-  await expect(page.locator('#verifiedAuctionHighlights li')).toHaveCount(3);
+  await expect(page.locator('#verifiedAuctionHighlights')).toHaveCount(0);
   await page.locator('#q').fill('AA88');
   await expect(page.locator('#rows tr[data-plate="AA88"]')).toHaveCount(1);
-  await expect(page.locator('#verifiedAuctionHighlights')).toBeHidden();
   await page.locator('#reset').click();
-  await expect(page.locator('#verifiedAuctionHighlights')).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   await page.getByRole('link', {name:'Latest auction results', exact:true}).click();
   await expect(page).toHaveURL(/\/auction-results\/en\/index\.html$/);
   await expect(page.locator('.auction-rounds article')).toHaveCount(9);
+  const personalized = page.locator('.auction-rounds article').filter({has:page.getByRole('link',{name:'Personalized marks results: 12 September 2026',exact:true})});
+  await expect(personalized).toContainText('77 auction sales');
+  await expect(personalized).toContainText('HK$1,366,000');
+  await expect(personalized.getByRole('link',{name:'Complete official PDF'})).toHaveAttribute('href',/^https:\/\/www\.td\.gov\.hk\//);
 });
 
 test('the result feed contains nine stable source-linked entries and a usable copy fallback', async ({page,request}) => {

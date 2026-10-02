@@ -6,7 +6,7 @@
 .data-browser [hidden] { display: none !important; }
 html:not([lang=en]) .data-browser [data-growth-lang=en],
 html[lang=en] .data-browser [data-growth-lang=zh] { display: none !important; }
-.data-browser .wrap { max-width: 1240px; padding: 24px 24px 40px; }
+.data-browser .wrap { max-width: 1140px; padding: 24px 24px 40px; }
 .data-browser .topbar { margin: 0 0 20px; padding-bottom: 16px; }
 .data-browser #titleMain { font-size: 24px !important; line-height: 1.2 !important; }
 .data-browser .dataset-subtitle { margin-top: 4px; font-weight: 500 !important; }
@@ -38,30 +38,7 @@ html[lang=en] .data-browser [data-growth-lang=zh] { display: none !important; }
 .data-browser .search-assist { margin-top: 8px; justify-content: flex-start; }
 .data-browser .search-history { justify-content: flex-start; }
 .data-browser .search-history-chip, .data-browser .search-history-clear { min-height: 36px; padding: 6px 10px; }
-.data-browser .record-workspace { display: grid; grid-template-columns: minmax(0, 1fr) 272px; gap: 24px; align-items: start; margin-top: 24px; }
-.data-browser .record-pane { min-width: 0; }
-.data-browser .auction-context { min-width: 0; padding-left: 20px; border-left: 1px solid var(--line); }
-.data-browser .record-workspace:has(#verifiedAuctionHighlights[hidden]) { grid-template-columns: minmax(0, 1fr); }
-.data-browser .auction-context:has(#verifiedAuctionHighlights[hidden]) { display: none; }
-.data-browser.search-focus-mode .record-workspace { grid-template-columns: minmax(0, 1fr); }
-.data-browser.search-focus-mode .auction-context { display: none; }
-.data-browser .verified-results { border: 0; margin: 0; padding: 0; }
-.data-browser .verified-results-heading { list-style: none; cursor: pointer; min-height: 44px; align-items: center; gap: 12px; padding-block: 8px; }
-.data-browser .verified-results-heading::-webkit-details-marker { display: none; }
-.data-browser .verified-results h2 { font-size: 14px; font-weight: 600 !important; margin: 0; }
-.data-browser .round-toggle { font-size: 20px; color: var(--muted); transition: transform 180ms ease; }
-.data-browser .verified-results[open] .round-toggle { transform: rotate(180deg); }
-.data-browser .verified-results ul { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; margin: 0; padding-block: 4px 16px; }
-.data-browser .verified-results li + li { border-top: 1px solid var(--line); padding-top: 16px; }
-.data-browser .round-link { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'label proceeds' 'date caption' 'count count'; gap: 4px 12px; text-decoration: none; color: var(--ink) !important; }
-.data-browser .round-link:hover .round-label { text-decoration: underline; text-underline-offset: 4px; }
-.data-browser .round-label { grid-area: label; font-size: 13px; font-weight: 700; line-height: 1.4; }
-.data-browser .round-date { grid-area: date; font-size: 12px; color: var(--muted); line-height: 1.5; }
-.data-browser .round-count { grid-area: count; font-size: 12px; color: var(--muted); }
-.data-browser .round-proceeds { grid-area: proceeds; font-size: 16px; line-height: 1.2; font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
-.data-browser .round-proceeds-label { grid-area: caption; font-size: 11px; color: var(--muted); text-align: right; }
-.data-browser .verified-round-links { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 20px; margin: 0 !important; border-top: 1px solid var(--line); }
-.data-browser .verified-round-links a { margin: 0; display: inline-flex; align-items: center; min-height: 36px; font-size: 12px; }
+.data-browser .record-pane { min-width: 0; margin-top: 24px; }
 .data-browser .ux-secondary { margin: 20px 0 12px; }
 .data-browser .ux-secondary > summary { padding-block: 6px; min-height: 36px; color: var(--muted); font-size: 12px; font-weight: 500; }
 .data-browser .results-meta-wrap { margin-top: 0; }
@@ -124,12 +101,6 @@ html[lang=en] .data-browser [data-growth-lang=zh] { display: none !important; }
   .data-browser .top-actions { grid-column: 3; grid-row: 1; }
   html[lang=en] .data-browser #titleMain { max-width: 28ch; font-size: 20px !important; }
 }
-@media (max-width: 1200px) {
-  .data-browser .record-workspace { display: flex; flex-direction: column; gap: 12px; }
-  .data-browser .record-pane, .data-browser .auction-context { width: 100%; }
-  .data-browser .auction-context { border: 0; padding: 0; }
-  .data-browser .verified-results { border-block: 1px solid var(--line); }
-}
 @media (max-width: 1100px) {
   .data-browser .controls { grid-template-columns: minmax(0, 1fr) 150px 100px; }
   .data-browser .control-group.query { grid-column: 1; }
@@ -139,9 +110,6 @@ html[lang=en] .data-browser [data-growth-lang=zh] { display: none !important; }
   .data-browser .controls-secondary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 @media (max-width: 900px) {
-  .data-browser .round-link { grid-template-columns: minmax(0, 1fr) auto; }
-  .data-browser .verified-results ul { grid-template-columns: 1fr; gap: 12px; }
-  .data-browser .round-date { min-height: 0; }
   .data-browser .table-wrap { background: transparent !important; overflow: visible; }
   .data-browser #resultsTable, .data-browser #resultsTable tbody { display: block; width: 100%; }
   .data-browser #resultsTable thead { display: none; }
@@ -188,12 +156,10 @@ html[lang=en] .data-browser [data-growth-lang=zh] { display: none !important; }
   .data-browser .controls-secondary .control-group:nth-child(1) { grid-column: 1; grid-row: 1; }
   .data-browser .controls-secondary .control-group:nth-child(2) { grid-column: 2; grid-row: 1; }
   .data-browser .controls-secondary .control-group:nth-child(3) { grid-column: 1 / -1; grid-row: 2; }
-  .data-browser .verified-results { margin: 16px 0 8px; }
   .data-browser .records-heading > h2, .data-browser .results-context-title { font-size: 18px; }
   .data-browser .results-meta-wrap { margin-top: 12px; }
   .data-browser .meta-chip { font-size: 12px; }
   .data-browser #updatedAt { font-size: 11px; }
-  .data-browser .verified-results h2 { font-size: 14px; }
   .data-browser .ux-secondary > summary { min-height: 36px; }
   .data-browser .record-status-row { align-items: center; }
   .data-browser .footer-nav { flex-direction: row; }
