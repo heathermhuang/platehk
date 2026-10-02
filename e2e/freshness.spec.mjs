@@ -30,6 +30,8 @@ test("dataset freshness is rendered from each API payload", async ({ page }) => 
   await expect.poll(() => pageErrors).toEqual([]);
   await expect(page.locator("#updatedAt")).toHaveText("Last updated: 12 Aug 2026");
 
+  const filters = page.locator('.record-filters');
+  if (!await filters.evaluate(el => el.open)) await filters.locator('summary').click();
   await page.locator("#dataset").selectOption("pvrm");
   await expect(page.locator("#updatedAt")).toHaveText("Last updated: 23 Jul 2026");
 });

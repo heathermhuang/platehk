@@ -36,6 +36,13 @@ async function waitForResultRows(page, minRows = 1) {
   );
 }
 
+async function openRecordFilters(page) {
+  const filters = page.locator('.record-filters');
+  if (await filters.count() && !await filters.evaluate(el => el.open)) {
+    await filters.locator('summary').click();
+  }
+}
+
 async function readResultTableLayout(page) {
   return page.locator("#resultsTable").evaluate((table) => {
     const rect = (element) => {
@@ -261,11 +268,12 @@ test.describe("Plate.hk browser journeys", () => {
       }
     } else {
       expectSingleDesktopRow(datasetLayout, {
-        headers: ["thDate", "thSingle", "thDouble", "thPrice", "thPdf"],
-        cells: ["col-date", "col-single", "col-double", "col-price", "col-source"],
+        headers: ["thSingle", "thPrice", "thDate", "thPdf"],
+        cells: ["col-single", "col-price", "col-date", "col-source"],
       });
     }
 
+    await openRecordFilters(page);
     await page.locator("#issue").selectOption({ index: 1 });
     await expect(page).toHaveURL(/issue=/);
     await waitForResultRows(page, 2);
@@ -285,8 +293,8 @@ test.describe("Plate.hk browser journeys", () => {
       }
     } else {
       expectSingleDesktopRow(issueLayout, {
-        headers: ["thSingle", "thDouble", "thPrice", "thPdf"],
-        cells: ["col-single", "col-double", "col-price", "col-source"],
+        headers: ["thSingle", "thPrice", "thPdf"],
+        cells: ["col-single", "col-price", "col-source"],
       });
     }
 
@@ -649,6 +657,7 @@ test.describe("Plate.hk browser journeys", () => {
     await waitForResultRows(page, 1);
     await expect(page.locator("#rows .category-pill").first()).toContainText(/TVRM|Traditional|traditional/i);
 
+    await openRecordFilters(page);
     await page.locator("#sort").selectOption("plate_asc");
     await expect(page).toHaveURL(/sort=plate_asc/);
     await waitForResultRows(page, 1);

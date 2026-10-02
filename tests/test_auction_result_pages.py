@@ -150,9 +150,19 @@ class AuctionResultPageTests(unittest.TestCase):
             self.assertIn('This round covers ' + pages.date_label(r, 'en'), content)
             self.assertNotIn('This round covers 17–21 September', content)
 
-    def test_homepage_highlights_are_bounded_to_latest_round_per_type(self):
-        doc = BeautifulSoup(pages.homepage_highlights(), 'html.parser')
-        self.assertEqual(len(doc.select('ul li')), 3)
-        self.assertIn('/auction-results/pvrm-2026-09-12.html', str(doc))
-        self.assertIn('/auction-results/en/tvrm_eauction-2026-09-17.html', str(doc))
-        self.assertNotIn('tvrm_eauction-2026-08-20.html', str(doc))
+    def test_round_publication_preserves_homepage_and_source_summaries(self):
+        with tempfile.TemporaryDirectory() as folder:
+            target = Path(folder)
+            homepage = target / 'index.html'
+            original = (ROOT / 'index.html').read_text(encoding='utf-8')
+            homepage.write_text(original, encoding='utf-8')
+            pages.build(target)
+            self.assertEqual(homepage.read_text(encoding='utf-8'), original)
+            for lang in ('zh', 'en'):
+                doc = BeautifulSoup((target / pages.public_path(lang=lang).lstrip('/')).read_text(encoding='utf-8'), 'html.parser')
+                cards = doc.select('.auction-rounds article')
+                self.assertEqual(len(cards), 9)
+                for card, r in zip(cards, pages.load_rounds()):
+                    self.assertEqual(card.select_one('h2 a')['href'], pages.public_path(r, lang))
+                    self.assertIn(pages.money(r['official_proceeds_hkd']), card.get_text(' ', strip=True))
+                    self.assertIsNotNone(card.select_one(f'a[href="{r["source_url"]}"]'))

@@ -887,21 +887,25 @@ function composeAuctionKey(datasetKey, auctionDate) {
           rowsEl.innerHTML = list
             .map((r, idx) => {
               const doublePlate = formatDoubleLine(r.double_line);
+              const hasDouble = Array.isArray(r.double_line)
+                ? r.double_line.some((line) => String(line || "").trim())
+                : Boolean(String(r.double_line || "").trim());
+              const plateLayouts = `<span class="plate-layouts">${r.single_line ? formatSingleLine(r.single_line) : ""}${hasDouble ? doublePlate : ""}${!r.single_line && !hasDouble ? formatSingleLine(null) : ""}</span>`;
               const href = rowLink(r);
               const detailPath = /^\/plates\/[A-Z0-9]+\.html$/.test(r.detail_path || "") ? r.detail_path : `/plate.html?q=${encodeURIComponent(normalizePlate(r.single_line || r.double_line))}`;
               const detailHref = `${detailPath}${detailPath.includes("?") ? "&" : "?"}lang=${currentLang}`;
               const linkText = linkTextForRow(r);
               return `
                 <tr data-plate="${escapeHtml(normalizePlate(r.single_line || r.double_line))}">
-                  <td class="col-date" data-label="${escapeHtml(t("thDate"))}">${renderDateCell(r, idx)}</td>
-                  <td class="col-single" data-label="${escapeHtml(t("thSingle"))}"><a href="${detailHref}" aria-label="${escapeHtml(t("plateDetails"))}">${formatSingleLine(r.single_line)}</a></td>
+                  <td class="col-single" data-label="${escapeHtml(t("thSingle"))}"><a href="${detailHref}" aria-label="${escapeHtml(t("plateDetails"))}: ${escapeHtml(plateDisplayText(r))}">${plateLayouts}</a></td>
                   <td class="col-double" data-label="${escapeHtml(t("thDouble"))}">${doublePlate}</td>
                   <td class="col-price" data-label="${escapeHtml(t("thPrice"))}">${formatPrice(r)}</td>
+                  <td class="col-date" data-label="${escapeHtml(t("thDate"))}">${renderDateCell(r, idx)}</td>
                   <td class="col-category" data-label="${escapeHtml(t("thCategory"))}">${renderCategoryCell(r)}</td>
                   <td class="col-source" data-label="${escapeHtml(t("thPdf"))}">
                     <div class="row-actions">
-                      <a class="icon-btn" href="${href}" target="_blank" rel="noopener" title="${escapeHtml(linkText)}" aria-label="${escapeHtml(linkText)}">${pdfIconSvg()}</a>
-                      <button class="icon-btn row-share-btn" type="button" data-row-index="${idx}" title="${escapeHtml(t("share"))}" aria-label="${escapeHtml(t("share"))}">${shareIconSvg()}</button>
+                      <a class="icon-btn" href="${href}" target="_blank" rel="noopener" title="${escapeHtml(linkText)}" aria-label="${currentLang === "zh" ? "來源" : "Source"} · ${escapeHtml(plateDisplayText(r))} · ${escapeHtml(linkText)}">${pdfIconSvg()}<span class="source-label">${currentLang === "zh" ? "來源" : "Source"}</span></a>
+                      <button class="icon-btn row-share-btn" type="button" data-row-index="${idx}" title="${escapeHtml(t("share"))} ${escapeHtml(plateDisplayText(r))}" aria-label="${escapeHtml(t("share"))} ${escapeHtml(plateDisplayText(r))}">${shareIconSvg()}</button>
                     </div>
                   </td>
                 </tr>

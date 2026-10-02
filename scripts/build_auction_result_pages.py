@@ -164,33 +164,6 @@ def feed_controls(lang: str) -> str:
 <p class="auction-source-note">{choose('訂閱由你的閱讀器管理；開啟或複製連結不代表已完成訂閱。此訂閱只涵蓋本目錄已核對的場次，更新日期為資料核對日。', 'Your reader manages the subscription; opening or copying the link does not complete it. The feed covers this curated archive, and entry update dates identify verification dates.', lang)}</p></section>'''
 
 
-def homepage_highlights() -> str:
-    rounds = load_rounds()
-    def localized(zh, en):
-        return f'<span data-growth-lang="zh">{zh}</span><span data-growth-lang="en">{en}</span>'
-    items = []
-    for dataset in ('pvrm', 'tvrm_physical', 'tvrm_eauction'):
-        r = next(r for r in rounds if r['dataset'] == dataset)
-        items.append('<li>' + localized(link(public_path(r), title(r, 'zh')), link(public_path(r, 'en'), title(r, 'en'))) + '</li>')
-    return f'''<section id="verifiedAuctionHighlights" class="verified-results" aria-labelledby="verifiedResultsTitle">
-<div class="verified-results-heading"><h2 id="verifiedResultsTitle">{localized('最新已核對拍賣結果', 'Latest verified auction results')}</h2>
-{localized(link(public_path(), '全部已核對場次'), link(public_path(lang='en'), 'All verified rounds'))}</div>
-<ul>{''.join(items)}</ul><p>{localized('完整號碼表、未售出及特別費用標示，附官方 PDF。', 'Complete mark tables, unsold and special-fee outcomes, with official PDFs.')}
-{localized(link(public_path() + '#updates', '訂閱新結果及儲存提醒'), link(public_path(lang='en') + '#updates', 'Follow new results and save reminders'))}</p></section>'''
-
-
-def update_homepage(path: Path) -> None:
-    if not path.exists():
-        return
-    content = path.read_text(encoding='utf-8')
-    begin, end = '<!-- VERIFIED_AUCTION_HIGHLIGHTS -->', '<!-- /VERIFIED_AUCTION_HIGHLIGHTS -->'
-    if begin not in content or end not in content:
-        raise ValueError('Missing homepage auction-result publication markers')
-    replacement = begin + '\n' + homepage_highlights() + '\n' + end
-    content = re.sub(re.escape(begin) + r'.*?' + re.escape(end), lambda _: replacement, content, count=1, flags=re.S)
-    path.write_text(content, encoding='utf-8')
-
-
 def shell(r: dict | None, lang: str, heading: str, description: str, body: str, schema: list[dict]) -> str:
     canonical = SITE + public_path(r, lang)
     alternates = ''.join(f'<link rel="alternate" hreflang="{code}" href="{SITE}{public_path(r, language)}">' for code, language in [('zh-HK', 'zh'), ('en', 'en')])
@@ -314,7 +287,6 @@ def build(target: Path = ROOT) -> None:
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(page, encoding='utf-8')
         (target / feed_path(lang).lstrip('/')).write_text(render_feed(lang), encoding='utf-8')
-    update_homepage(target / 'index.html')
 
 
 if __name__ == '__main__':
