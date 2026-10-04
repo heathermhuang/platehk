@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures.mjs";
 
 async function installDataApiRoutes(page, generatedAtByDataset) {
   await page.route("**/api/issues?**", async (route) => {

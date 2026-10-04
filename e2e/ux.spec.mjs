@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures.mjs';
 
 test('budget-only discovery applies the full-set constraint without a required fragment', async ({page,request}) => {
   const api=await request.get('/api/search?dataset=all&max_amount=20000&sort=date_desc&page_size=24');

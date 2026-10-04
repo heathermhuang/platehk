@@ -1,4 +1,4 @@
-import {test, expect} from '@playwright/test';
+import {test, expect} from './fixtures.mjs';
 import {readFileSync} from 'node:fs';
 
 test('a cached analytics module without the new methods cannot interrupt lookup', async ({page}) => {
