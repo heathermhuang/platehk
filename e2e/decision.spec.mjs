@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures.mjs';
 import { readFile } from 'node:fs/promises';
 
 test('featured directory serves crawlable links to the selected plate pages', async ({ page }) => {

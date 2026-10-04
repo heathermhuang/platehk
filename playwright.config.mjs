@@ -33,16 +33,12 @@ export default defineConfig({
       use: {
         ...devices["Desktop Chrome"],
         viewport: { width: 1366, height: 900 },
-        // The local shim forwards this header. Model separate visitors for
-        // each project so unrelated cases do not consume one shared allowance.
-        ...(!process.env.E2E_BASE_URL ? { extraHTTPHeaders: { "cf-connecting-ip": "192.0.2.1" } } : {}),
       },
     },
     {
       name: "chromium-mobile",
       use: {
         ...devices["Pixel 7"],
-        ...(!process.env.E2E_BASE_URL ? { extraHTTPHeaders: { "cf-connecting-ip": "192.0.2.2" } } : {}),
       },
     },
   ],

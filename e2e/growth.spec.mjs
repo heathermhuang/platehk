@@ -1,4 +1,5 @@
-import {test, expect} from '@playwright/test';
+import {test, expect} from './fixtures.mjs';
+import {readFileSync} from 'node:fs';
 
 test('a cached analytics module without the new methods cannot interrupt lookup', async ({page}) => {
   const errors=[];
@@ -61,6 +62,7 @@ test('main, detail and round lookup wiring distinguishes found, empty and failed
   expect(await page.evaluate(()=>window.lookupObservations.length)).toBe(0);
   await page.locator('#q').fill('AA88');
   await expect.poll(()=>page.evaluate(()=>window.lookupObservations.some(v=>v.action==='main_lookup'&&v.plate==='AA88'&&v.result_count>0))).toBe(true);
+  expect(await page.evaluate(()=>window.lookupObservations.find(v=>v.action==='main_lookup'&&v.plate==='AA88').match_mode)).toBe('exact');
   await page.locator('#q').fill('AB1234');
   await expect.poll(()=>page.evaluate(()=>window.lookupObservations.some(v=>v.action==='main_lookup'&&v.plate==='AB1234'&&v.result_count===0))).toBe(true);
   await page.route('**/api/search?**',route=>route.fulfill({status:503,contentType:'application/json',body:'{"error":"unavailable"}'}));
@@ -72,6 +74,37 @@ test('main, detail and round lookup wiring distinguishes found, empty and failed
   await page.goto('/auction-results/en/tvrm_physical-2026-09-05.html');
   await page.getByRole('searchbox',{name:'Find a plate in this round',exact:true}).fill('YA8');
   await expect.poll(()=>page.evaluate(()=>window.lookupObservations.some(v=>v.action==='round_lookup'&&v.plate==='YA8'&&v.result_count>=1&&v.exact_match))).toBe(true);
+  expect(await page.evaluate(()=>window.lookupObservations.find(v=>v.action==='round_lookup'&&v.plate==='YA8').outcome_filter)).toBe('all');
   await expect(page.locator('#mark-YA8')).toBeVisible();
   await expect(page.locator('#mark-YA8')).toContainText('HK$110,000');
+});
+
+for(const action of ['main_lookup','round_lookup'])test(`real analytics settles ${action} without losing the bubbling input result`, async({page})=>{
+  const analytics=readFileSync(new URL('../assets/analytics.js',import.meta.url),'utf8');
+  // Synthetic production-host fixture: every request is intercepted; GA receives nothing.
+  await page.route('**/*',route=>route.abort());
+  await page.route('https://plate.hk/measurement-fixture**',route=>route.fulfill({contentType:'text/html',body:`<!doctype html><html lang="en"><body>
+    <div class="ux-browser"><label>Synthetic query<input id="q"></label></div><button>Leave query</button>
+    <script>${analytics}</script><script>
+      document.querySelector('input').addEventListener('input',event=>{
+        const plate=event.target.value;
+        window.PlateAnalytics.lookup({plate,result_count:plate==='AA88'?1:0,exact_match:plate==='AA88',action:'${action}',dataset:'all',match_mode:'contains',page_number:1});
+      });
+    </script></body></html>`}));
+  await page.clock.install({time:new Date('2026-10-04T00:00:00Z')});
+  await page.goto('https://plate.hk/measurement-fixture?utm_source=threads&utm_medium=social&utm_campaign=auction-sep&q=private');
+  await page.clock.pauseAt(new Date('2026-10-04T00:00:01Z'));
+  const events=()=>page.evaluate(()=>Array.from(window.dataLayer).filter(value=>value[0]==='event').map(value=>[value[1],value[2]]));
+  const query=page.getByLabel('Synthetic query');
+  await query.fill('A');await page.clock.runFor(500);await query.fill('AA88');await page.clock.runFor(1400);
+  expect((await events()).filter(([name])=>name==='lookup_complete')).toHaveLength(0);
+  await page.clock.runFor(100);
+  const settled=(await events()).filter(([name])=>name==='lookup_complete');
+  expect(settled).toHaveLength(1);expect(settled[0][1].plate).toBe('AA88');
+  expect((await events()).filter(([name])=>name==='lookup_exact_match')).toHaveLength(1);
+  expect(await page.evaluate(()=>Array.from(window.dataLayer).find(value=>value[0]==='config')[2].campaign_source)).toBe('threads');
+  await query.fill('AB1234');await page.getByRole('button',{name:'Leave query'}).click();
+  expect((await events()).filter(([name])=>name==='lookup_no_result')).toHaveLength(1);
+  await page.clock.runFor(3000);
+  expect((await events()).filter(([name])=>name==='lookup_complete')).toHaveLength(2);
 });

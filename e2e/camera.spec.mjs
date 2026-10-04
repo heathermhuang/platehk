@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures.mjs";
 
 function installCameraMock(page) {
   return page.addInitScript(() => {

@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures.mjs';
 
 test('auction tool leads to complete result tables and exact historical search', async ({ page }) => {
   await page.goto('/auctions.html?lang=en');

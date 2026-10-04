@@ -119,13 +119,18 @@ def country_key(value: str) -> str:
     return 'hong kong' if key in {'hk', 'hkg', 'hong kong'} else key
 
 
-def read_ga4(path: Path, country: str, kind: str) -> dict:
+def read_ga4(path: Path, country: str, kind: str, measurement_version: str | None = None) -> dict:
     rows = csv_rows(path.read_text(encoding='utf-8-sig'))
     if not rows or 'Country' not in rows[0]:
         raise ValueError('GA4 exports must include the Country dimension')
     selected = [row for row in rows if country_key(row['Country']) == country_key(country)]
+    version_field = next((field for field in ('Measurement version', 'measurement_version') if field in rows[0]), None)
+    if kind == 'events' and measurement_version:
+        if not version_field:
+            raise ValueError('Version-filtered GA4 exports must include Measurement version')
+        selected = [row for row in selected if row[version_field] == measurement_version]
     if not selected:
-        return {'source': path.name, 'country': country, 'available': False, 'reason': 'No country row was returned; missing data is not zero.'}
+        return {'source': path.name, 'country': country, 'available': False, 'reason': 'No row matched the requested country/version; missing data is not zero.'}
     if kind == 'users':
         if len(selected) != 1:
             raise ValueError('User export must have one row per country; do not sum distinct users')
@@ -138,6 +143,10 @@ def read_ga4(path: Path, country: str, kind: str) -> dict:
                 'cohort_retention_7d': None, 'cohort_retention_30d': None,
                 'caveat': 'Returning-user share is not same-age cohort retention. New and returning users can overlap within a period.'}
     counts = {}
+    versions = {row[version_field] or '(not set)' for row in selected
+                if version_field and row['Event name'].startswith('lookup_')}
+    if len(versions) > 1:
+        raise ValueError('Lookup export mixes measurement versions; filter to one version')
     for row in selected:
         name = row['Event name']
         if name in counts:
@@ -149,9 +158,18 @@ def read_ga4(path: Path, country: str, kind: str) -> dict:
     empty = complete - success if complete is not None and success is not None else None
     if empty is not None and 'lookup_no_result' in counts and empty != counts['lookup_no_result']:
         raise ValueError('Lookup outcomes do not reconcile; inspect ingestion and source filters')
+    exact = counts.get('lookup_exact_match')
+    if exact is not None and complete is not None and exact > complete:
+        raise ValueError('Exact matches exceed completed lookups; inspect source filters')
+    if exact is not None and success is not None and exact > success:
+        raise ValueError('Exact matches exceed found-record outcomes; inspect source filters')
     return {'source': path.name, 'country': country, 'available': True, 'event_counts': counts,
             'lookup_success_rate': ratio(success, complete), 'lookup_no_result_rate': ratio(empty, complete),
+            'lookup_exact_match_rate': ratio(exact, complete),
+            'measurement_version': next(iter(versions)) if versions else None,
             'caveats': ['Counts describe observed lookup outcomes, not unique people or verified satisfaction.',
+                        'A found record is not necessarily an exact match; split lookup action, dataset and match mode.',
+                        'An unrecorded measurement version does not establish comparability with another period.',
                         'Feed-open and feed-copy events measure intent; completed reader subscriptions are unobserved.',
                         'Missing event rows remain unavailable; ingestion delays can prevent reconciliation.']}
 
@@ -174,7 +192,7 @@ def build(args) -> dict:
         result['ga4_period'] = {'start': args.ga4_start, 'end': args.ga4_end,
                               'caveat': 'Reporting dates are supplied from the export selection. GA4 and GSC use their respective reporting time zones.'}
     if args.ga4_events:
-        result['ga4_events'] = read_ga4(args.ga4_events, args.ga4_country, 'events')
+        result['ga4_events'] = read_ga4(args.ga4_events, args.ga4_country, 'events', getattr(args, 'ga4_measurement_version', None))
     if args.ga4_users:
         result['ga4_users'] = read_ga4(args.ga4_users, args.ga4_country, 'users')
     result['missing_sources'] = [key for key in ('gsc_current', 'gsc_comparison', 'ga4_events', 'ga4_users') if key not in result]
@@ -190,6 +208,7 @@ def main():
     parser.add_argument('--ga4-start')
     parser.add_argument('--ga4-end')
     parser.add_argument('--ga4-country', default='Hong Kong')
+    parser.add_argument('--ga4-measurement-version', choices=['settled_v2'])
     parser.add_argument('--output', type=Path)
     args = parser.parse_args()
     if not any((args.gsc_current, args.ga4_events, args.ga4_users)):

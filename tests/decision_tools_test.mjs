@@ -77,7 +77,7 @@ test('calendar downloads use UTC, stable UID, escaped text, UTF-8 folding and on
 });
 test('analytics honors non-production/DNT and only emits allowlisted parameters',()=>{
  const code=readFileSync(new URL('../assets/analytics.js',import.meta.url),'utf8');
- const run=(hostname,dnt)=>{const context={location:{hostname,origin:`https://${hostname}`,pathname:'/'},navigator:{doNotTrack:dnt},localStorage:{getItem:()=>null},document:{referrer:'https://example.test/?private=secret',head:{appendChild(){}},createElement:()=>({}),addEventListener(){}},URL,Date,Set};context.window=context;vm.runInNewContext(code,context);return context;};
+ const run=(hostname,dnt)=>{const context={location:{hostname,origin:`https://${hostname}`,pathname:'/'},navigator:{doNotTrack:dnt},localStorage:{getItem:()=>null},document:{referrer:'https://example.test/?private=secret',head:{appendChild(){}},createElement:()=>({}),addEventListener(){}},URL,URLSearchParams,Date,Set};context.window=context;vm.runInNewContext(code,context);return context;};
  for(const c of [run('localhost','0'),run('plate.hk','1')]){c.PlateAnalytics.track('search_complete',{result_count:2});assert.equal(c.dataLayer,undefined);}
  const c=run('plate.hk','0');c.PlateAnalytics.track('search_complete',{result_count:5,phone:'private',message:'private',plate:'AA88'});
  const event=c.dataLayer.at(-1);assert.equal(event[1],'search_complete');assert.equal(event[2].result_count,5);assert.equal(event[2].phone,undefined);assert.equal(event[2].message,undefined);assert.equal(c.dataLayer[2][2].page_location,'https://plate.hk/');
