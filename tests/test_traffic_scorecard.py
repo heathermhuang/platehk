@@ -69,6 +69,8 @@ class TrafficScorecardTests(unittest.TestCase):
         result = scorecard.read_ga4(path, 'Hong Kong', 'events')
         self.assertEqual(result['lookup_success_rate'], .8)
         self.assertEqual(result['lookup_no_result_rate'], .2)
+        self.assertIsNone(result['lookup_exact_match_rate'])
+        self.assertIsNone(result['measurement_version'])
         self.assertNotIn('lookup_error', result['event_counts'])
         self.assertFalse(scorecard.read_ga4(path, 'Singapore', 'events')['available'])
         rows = scorecard.csv_rows(path.read_text())
@@ -86,6 +88,34 @@ class TrafficScorecardTests(unittest.TestCase):
         self.write(path, row.keys(), [row, dict(row, Country='HK')])
         with self.assertRaises(ValueError):
             scorecard.read_ga4(path, 'Hong Kong', 'users')
+
+    def test_exact_outcomes_are_separate_and_versions_cannot_be_mixed(self):
+        fields = ['Country', 'Event name', 'Event count', 'Measurement version']
+        rows = [{'Country': 'Hong Kong', 'Event name': name, 'Event count': count,
+                 'Measurement version': 'settled_v2'} for name, count in
+                [('lookup_complete', 10), ('lookup_success', 8), ('lookup_no_result', 2), ('lookup_exact_match', 5)]]
+        path = self.write(self.root / 'versioned.csv', fields, rows)
+        result = scorecard.read_ga4(path, 'Hong Kong', 'events', 'settled_v2')
+        self.assertEqual(result['lookup_exact_match_rate'], .5)
+        self.assertEqual(result['measurement_version'], 'settled_v2')
+        mixed = rows + [dict(rows[0], **{'Measurement version': '(not set)'})]
+        self.write(path, fields, mixed)
+        with self.assertRaises(ValueError):
+            scorecard.read_ga4(path, 'Hong Kong', 'events')
+        self.assertEqual(scorecard.read_ga4(path, 'Hong Kong', 'events', 'settled_v2')['lookup_success_rate'], .8)
+        rows[-1]['Event count'] = 9
+        self.write(path, fields, rows)
+        with self.assertRaises(ValueError):
+            scorecard.read_ga4(path, 'Hong Kong', 'events')
+
+    def test_a_requested_measurement_version_requires_exported_evidence(self):
+        row = {'Country': 'Hong Kong', 'Event name': 'lookup_complete', 'Event count': 10}
+        path = self.write(self.root / 'unversioned.csv', row.keys(), [row])
+        with self.assertRaises(ValueError):
+            scorecard.read_ga4(path, 'Hong Kong', 'events', 'settled_v2')
+        self.write(path, row.keys(), [row, dict(row, **{'Event name': 'lookup_exact_match', 'Event count': 11})])
+        with self.assertRaises(ValueError):
+            scorecard.read_ga4(path, 'Hong Kong', 'events')
 
     def test_missing_sources_do_not_create_measurements_or_leadership_claims(self):
         args = argparse.Namespace(gsc_current=self.gsc('current', 3), gsc_previous=None,

@@ -531,7 +531,8 @@ window.createPlateIndexDataFlow = function createPlateIndexDataFlow({
           exact_match: (res.rows || []).some(row => isExactPlateMatch(row, q)), dataset: currentDataset, page_number: currentPage});
         window.PlateAnalytics?.lookup?.({plate:q, result_count:total, duration_ms:performance.now()-startedAt,
           exact_match:(res.rows || []).some(row => isExactPlateMatch(row,q)), dataset:currentDataset,
-          issue:selectedIssue, action:'main_lookup', page_number:currentPage});
+          issue:selectedIssue, action:'main_lookup', page_number:currentPage,
+          match_mode:document.querySelector('#matchMode')?.value === 'exact' ? 'exact' : 'contains'});
         rememberSearchQuery(q);
         if (activeFilterRequestController === requestController) activeFilterRequestController = null;
         return;

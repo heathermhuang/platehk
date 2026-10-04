@@ -599,8 +599,13 @@ def main(*, require_market_snapshot: bool = False) -> None:
         content = page.read_text(encoding="utf-8")
         if '/assets/analytics.js?' not in content:
             content = content.replace('</head>', '<script defer src="/assets/analytics.js?v=20260915-01"></script>\n</head>')
-        content = re.sub(r'(/assets/(?:analytics|decision|index\.data|ux)\.js\?v=)[^"\s>]+', r'\g<1>20260929-01', content)
+        content = re.sub(r'(/assets/(?:analytics|decision|index\.data|ux)\.js\?v=)[^"\s>]+', r'\g<1>20261004-01', content)
         page.write_text(content, encoding="utf-8")
+    sw_path = TARGET / "sw.js"
+    if sw_path.exists():
+        source = sw_path.read_text(encoding="utf-8")
+        source = re.sub(r'(/assets/(?:analytics|decision|index\.data|ux)\.js\?v=)[^\'"\s>]+', r'\g<1>20261004-01', source)
+        sw_path.write_text(source, encoding="utf-8")
     stamp_service_worker_cache_name()
 
     print(f"Built Cloudflare publish directory at {TARGET}")
