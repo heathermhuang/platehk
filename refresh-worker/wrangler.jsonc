@@ -1,0 +1,19 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "platehk-refresh",
+  "main": "src/index.mjs",
+  "account_id": "63a7fe52c985c63bb9e69ce47efdc569",
+  "compatibility_date": "2026-10-05",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "observability": {"enabled": true},
+  "triggers": {"crons": ["17 * * * *"]},
+  "vars": {
+    "OBSERVER_ENABLED": "true",
+    "DISPATCH_ENABLED": "false",
+    "GITHUB_REPOSITORY": "heathermhuang/platehk",
+    "PRODUCTION_URL": "https://plate.hk"
+  },
+  "d1_databases": [{"binding": "DB", "database_name": "platehk-refresh", "database_id": "f3242afe-4d87-49ac-b6e2-2c899245c64d", "migrations_dir": "migrations"}],
+  "r2_buckets": [{"binding": "STORE", "bucket_name": "platehk-refresh-private"}]
+}

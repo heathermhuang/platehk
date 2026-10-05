@@ -323,7 +323,7 @@ def copy_public_data_files() -> None:
         copy_optional_path(data_root / rel, target_data / rel)
 
 
-def copy_private_market_signals(*, required: bool = False) -> None:
+def copy_private_market_signals(*, required: bool = False, allow_stale: bool = False) -> None:
     source = ROOT / "data" / "market" / "28car.active.json"
     if not source.exists():
         if required:
@@ -359,7 +359,7 @@ def copy_private_market_signals(*, required: bool = False) -> None:
             raise RuntimeError("Invalid 28car market snapshot timestamp") from exc
         fresh_hours = max(1, min(168, int(payload.get("fresh_for_hours") or 72)))
         now = datetime.now(timezone.utc)
-        if scraped_at < now - timedelta(hours=fresh_hours) or scraped_at > now + timedelta(minutes=10):
+        if scraped_at > now + timedelta(minutes=10) or (not allow_stale and scraped_at < now - timedelta(hours=fresh_hours)):
             raise RuntimeError("The private 28car market snapshot is outside its freshness window")
     target = TARGET / "_market" / "28car"
     metadata = {key: value for key, value in payload.items() if key != "signals"}
@@ -556,7 +556,7 @@ def stamp_service_worker_cache_name() -> None:
     sw_path.write_text(stamped, encoding="utf-8")
 
 
-def main(*, require_market_snapshot: bool = False) -> None:
+def main(*, require_market_snapshot: bool = False, allow_stale_market_snapshot: bool = False) -> None:
     if TARGET.exists():
         shutil.rmtree(TARGET)
     TARGET.mkdir(parents=True, exist_ok=True)
@@ -578,7 +578,7 @@ def main(*, require_market_snapshot: bool = False) -> None:
     copy_plate_pages()
 
     copy_public_data_files()
-    copy_private_market_signals(required=require_market_snapshot)
+    copy_private_market_signals(required=require_market_snapshot, allow_stale=allow_stale_market_snapshot)
 
     for rel in SPECIAL_ROOT_DIRS:
         copy_path(ROOT / rel, TARGET / rel, allow_hidden=True)
@@ -624,5 +624,6 @@ def main(*, require_market_snapshot: bool = False) -> None:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--require-market-snapshot", action="store_true")
+    parser.add_argument("--allow-stale-market-snapshot", action="store_true", help="Reuse a complete previous snapshot for official-data releases; expired offers remain hidden by the API")
     args = parser.parse_args()
-    main(require_market_snapshot=args.require_market_snapshot)
+    main(require_market_snapshot=args.require_market_snapshot, allow_stale_market_snapshot=args.allow_stale_market_snapshot)

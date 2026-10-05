@@ -2,26 +2,42 @@ name: Auto Update Data
 
 on:
   schedule:
-    # 08:40 Hong Kong time.
-    - cron: "40 0 * * *"
+    # Collect the hourly Cloudflare observation every six hours; unchanged checks skip all build steps.
+    - cron: "47 0,6,12,18 * * *"
   workflow_dispatch:
     inputs:
+      scope:
+        description: "Refresh scope"
+        type: choice
+        default: official
+        options: [official, events, market, check]
       mode:
         description: "Update mode"
         type: choice
-        required: true
         default: incremental
-        options:
-          - incremental
-          - full
+        options: [incremental, full]
       deploy:
-        description: "Deploy refreshed signals and generated data to Cloudflare"
+        description: "Deploy validated outputs to Cloudflare"
         type: boolean
-        required: true
         default: true
+      force:
+        description: "Force a verified refresh or code release even when sources are unchanged"
+        type: boolean
+        default: false
+      probe_id:
+        description: "Source observer lease ID (leave empty for manual runs)"
+        type: string
+        default: ""
+  workflow_call:
+    inputs:
+      scope: {type: string, default: market}
+      mode: {type: string, default: incremental}
+      deploy: {type: boolean, default: true}
+      force: {type: boolean, default: false}
+      probe_id: {type: string, default: ""}
 
 concurrency:
-  group: platehk-auto-update
+  group: platehk-data-publish
   cancel-in-progress: false
 
 permissions:
@@ -31,18 +47,35 @@ jobs:
   update:
     name: Refresh generated data
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 110
     env:
       CI: "1"
       CHECK_SECURITY_SKIP_DEPS: "1"
       PYTHONPYCACHEPREFIX: /tmp/pvrm-pycache
       WRANGLER_SEND_METRICS: "false"
+      REFRESH_CONTROL_URL: ${{ vars.REFRESH_CONTROL_URL }}
+      DEPLOY_ENABLED: ${{ inputs.deploy || (github.event_name == 'schedule' && inputs.scope == '') }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          ref: main
+
+      - name: Plan refresh before installing dependencies
+        id: plan
+        env:
+          REFRESH_CONTROL_TOKEN: ${{ secrets.REFRESH_CONTROL_TOKEN }}
+          REFRESH_SCOPE: ${{ inputs.scope || 'check' }}
+          REFRESH_FORCE: ${{ inputs.force || false }}
+          REFRESH_MODE: ${{ inputs.mode || 'incremental' }}
+          REFRESH_PROBE_ID: ${{ inputs.probe_id || '' }}
+        run: |
+          test "$GITHUB_REF" = refs/heads/main
+          node scripts/refresh_control.mjs plan
 
       - name: Set up Python
+        if: steps.plan.outputs.run == 'true'
         uses: actions/setup-python@v6
         with:
           python-version: "3.12"
@@ -50,97 +83,87 @@ jobs:
           cache-dependency-path: requirements.txt
 
       - name: Set up Node
+        if: steps.plan.outputs.run == 'true'
         uses: actions/setup-node@v6
         with:
-          node-version: "20"
+          node-version: "22.22.2"
           cache: npm
 
       - name: Install Python dependencies
-        run: |
-          python --version
-          python -m pip install --upgrade pip
-          python -m pip install -r requirements.txt
+        if: steps.plan.outputs.run == 'true'
+        run: python -m pip install -r requirements.txt
 
       - name: Install Node dependencies
+        if: steps.plan.outputs.run == 'true'
         run: npm ci
 
+      - name: Restore content-addressed PDF parsing cache
+        if: steps.plan.outputs.run == 'true' && steps.plan.outputs.scope == 'official'
+        id: pdf_cache
+        uses: actions/cache/restore@v4
+        with:
+          path: .tmp/pdf-parse-cache
+          key: platehk-pdf-v1-${{ runner.os }}-${{ hashFiles('scripts/build_dataset.py', 'scripts/build_tvrm_dataset.py', 'scripts/lny_mixed_parser.py', 'scripts/parse_tvrm_pdfs.py', 'scripts/pdf_parse_cache.py', 'requirements.txt') }}-${{ github.run_id }}
+          restore-keys: |
+            platehk-pdf-v1-${{ runner.os }}-${{ hashFiles('scripts/build_dataset.py', 'scripts/build_tvrm_dataset.py', 'scripts/lny_mixed_parser.py', 'scripts/parse_tvrm_pdfs.py', 'scripts/pdf_parse_cache.py', 'requirements.txt') }}-
+
       - name: Snapshot database before update
-        run: >-
-          python scripts/build_update_telegram_report.py snapshot
-          --output "$RUNNER_TEMP/platehk-before-update.json"
+        if: steps.plan.outputs.run == 'true'
+        run: python scripts/build_update_telegram_report.py snapshot --output "$RUNNER_TEMP/platehk-before-update.json"
 
       - name: Refresh privacy-minimized 28car sale signals
+        if: steps.plan.outputs.run == 'true' && steps.plan.outputs.scope == 'market'
         run: >-
           python scripts/scrape_28car_market.py
-          --max-pages 0
-          --require-complete
-          --concurrency 4
-          --request-delay 0.75
+          --max-pages 0 --require-complete --concurrency 4 --request-delay 0.75
+
+      - name: Persist complete private market snapshot
+        if: steps.plan.outputs.run == 'true' && steps.plan.outputs.scope == 'market'
+        env:
+          REFRESH_CONTROL_TOKEN: ${{ secrets.REFRESH_CONTROL_TOKEN }}
+        run: node scripts/refresh_control.mjs store-market
+
+      - name: Restore previous complete private market snapshot
+        if: steps.plan.outputs.run == 'true' && steps.plan.outputs.scope != 'market'
+        env:
+          REFRESH_CONTROL_TOKEN: ${{ secrets.REFRESH_CONTROL_TOKEN }}
+        run: node scripts/refresh_control.mjs restore-market
+
+      - name: Refresh observer-verified changed PDF inputs
+        if: steps.plan.outputs.run == 'true' && steps.plan.outputs.scope == 'official'
+        run: python scripts/refresh_sources.py apply
 
       - name: Run updater
+        if: steps.plan.outputs.run == 'true' && steps.plan.outputs.scope != 'market'
         env:
-          MODE: ${{ github.event.inputs.mode || 'incremental' }}
+          MODE: ${{ inputs.mode || 'incremental' }}
+          REFRESH_BUILD_SCOPE: ${{ steps.plan.outputs.scope }}
         run: bash scripts/cron_update.sh
 
+      - name: Build actual parsed-input catalog
+        if: steps.plan.outputs.run == 'true' && steps.plan.outputs.scope == 'official'
+        run: python scripts/refresh_sources.py catalog
+
       - name: Run local verification
+        if: steps.plan.outputs.run == 'true'
         env:
           PYTHON_BIN: python
         run: ./scripts/check_site.sh
 
-      - name: Compare generated output with production
-        id: freshness
-        run: |
-          set +e
-          python scripts/check_production_freshness.py --base-url https://plate.hk --fail-on-drift
-          status=$?
-          set -e
-          case "$status" in
-            0)
-              echo "drift=false" >> "$GITHUB_OUTPUT"
-              ;;
-            2)
-              echo "drift=true" >> "$GITHUB_OUTPUT"
-              ;;
-            *)
-              exit "$status"
-              ;;
-          esac
-
       - name: Stage generated changes
+        if: steps.plan.outputs.run == 'true' && steps.plan.outputs.scope != 'market'
         id: changes
         run: |
-          git add \
-            api/v1 \
-            assets \
-            data \
-            plates \
-            auction-results \
-            index.html \
-            landing.html \
-            about.html \
-            audit.html \
-            api.html \
-            camera.html \
-            changelog.html \
-            terms.html \
-            privacy.html \
-            mcp.html \
-            robots.txt \
-            sitemap.xml \
-            llms.txt \
-            agent.md \
-            skill.md \
-            sw.js
+          git add api/v1 assets data plates auction-results index.html landing.html about.html audit.html api.html camera.html changelog.html terms.html privacy.html mcp.html robots.txt sitemap.xml llms.txt agent.md skill.md sw.js
           if git diff --cached --quiet; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
-            echo "No generated data changes."
-            exit 0
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
-          echo "changed=true" >> "$GITHUB_OUTPUT"
 
       - name: Commit generated changes
+        if: steps.changes.outputs.changed == 'true' && env.DEPLOY_ENABLED == 'true'
         id: commit
-        if: ${{ steps.changes.outputs.changed == 'true' }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -148,95 +171,83 @@ jobs:
           git push
           echo "committed=true" >> "$GITHUB_OUTPUT"
 
-      - name: Check Cloudflare deploy credentials
-        if: ${{ github.event.inputs.deploy != 'false' }}
+      - name: Deploy daily market snapshot to Cloudflare
+        if: steps.plan.outputs.run == 'true' && steps.plan.outputs.scope == 'market' && env.DEPLOY_ENABLED == 'true'
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: |
-          if [ -z "${CLOUDFLARE_API_TOKEN:-}" ]; then
-            echo "::error::Set the CLOUDFLARE_API_TOKEN GitHub Actions repository secret. Required for scheduled Cloudflare deploys."
-            exit 1
-          fi
-
-      - name: Deploy to Cloudflare
-        if: ${{ github.event.inputs.deploy != 'false' }}
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: npm run cf:deploy:ci
 
+      - name: Deploy official data using the previous complete market snapshot
+        if: steps.plan.outputs.run == 'true' && steps.plan.outputs.scope != 'market' && env.DEPLOY_ENABLED == 'true' && (steps.changes.outputs.changed == 'true' || inputs.force || inputs.mode == 'full')
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: npm run cf:deploy:official
+
       - name: Verify production after deploy
-        if: ${{ github.event.inputs.deploy != 'false' }}
+        if: steps.plan.outputs.run == 'true' && env.DEPLOY_ENABLED == 'true'
         run: |
           verified=false
           for attempt in 1 2 3 4 5; do
             if python scripts/check_production_freshness.py --base-url https://plate.hk --fail-on-drift \
-              && python scripts/check_market_production.py --base-url https://plate.hk; then
+              && python scripts/check_market_production.py --base-url https://plate.hk --allow-expired; then
               verified=true
               break
             fi
-            echo "Production is not fresh yet; retrying in 20 seconds (attempt ${attempt}/5)."
             sleep 20
           done
-          if [ "$verified" != "true" ]; then
-            python scripts/check_production_freshness.py --base-url https://plate.hk --fail-on-drift
-            python scripts/check_market_production.py --base-url https://plate.hk
-          fi
+          test "$verified" = true
+
+      - name: Acknowledge verified publication
+        if: steps.plan.outputs.run == 'true' && env.DEPLOY_ENABLED == 'true'
+        env:
+          REFRESH_CONTROL_TOKEN: ${{ secrets.REFRESH_CONTROL_TOKEN }}
+        run: node scripts/refresh_control.mjs ack
+
+      - name: Save validated PDF parsing results
+        continue-on-error: true
+        if: success() && steps.plan.outputs.run == 'true' && steps.plan.outputs.scope == 'official'
+        uses: actions/cache/save@v4
+        with:
+          path: .tmp/pdf-parse-cache
+          key: ${{ steps.pdf_cache.outputs.cache-primary-key }}
 
       - name: Build Telegram update report
+        if: steps.plan.outputs.run == 'true' && env.DEPLOY_ENABLED == 'true'
         id: telegram_report
-        if: ${{ success() }}
         continue-on-error: true
-        env:
-          GENERATED_CHANGED: ${{ steps.changes.outputs.changed || 'false' }}
-          GENERATED_COMMITTED: ${{ steps.commit.outputs.committed || 'false' }}
-          DEPLOY_ENABLED: ${{ github.event.inputs.deploy != 'false' }}
-          DRIFT_BEFORE: ${{ steps.freshness.outputs.drift || 'false' }}
-          UPDATE_MODE: ${{ github.event.inputs.mode || 'incremental' }}
         run: |
           python scripts/build_update_telegram_report.py report \
             --before "$RUNNER_TEMP/platehk-before-update.json" \
             --output "$RUNNER_TEMP/platehk-update-report.txt" \
-            --generated-changed "$GENERATED_CHANGED" \
-            --committed "$GENERATED_COMMITTED" \
-            --deploy-enabled "$DEPLOY_ENABLED" \
-            --drift-before "$DRIFT_BEFORE" \
-            --mode "$UPDATE_MODE" \
-            --commit-sha "$(git rev-parse HEAD)"
-          {
-            echo "### Telegram update report"
-            echo ""
-            echo '```text'
-            cat "$RUNNER_TEMP/platehk-update-report.txt"
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
+            --generated-changed "${{ steps.changes.outputs.changed || 'false' }}" \
+            --committed "${{ steps.commit.outputs.committed || 'false' }}" \
+            --deploy-enabled true --drift-before false \
+            --mode "${{ steps.plan.outputs.scope }}" --commit-sha "$(git rev-parse HEAD)"
 
       - name: Send Telegram update report
-        id: telegram_notify
-        if: ${{ steps.telegram_report.outcome == 'success' }}
+        if: steps.telegram_report.outcome == 'success'
         continue-on-error: true
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           TELEGRAM_MESSAGE_THREAD_ID: ${{ secrets.TELEGRAM_MESSAGE_THREAD_ID }}
           TELEGRAM_LINK: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        run: >-
-          python scripts/notify_telegram.py send
-          --text-file "$RUNNER_TEMP/platehk-update-report.txt"
-          --link-env TELEGRAM_LINK
-          --link-label "View update run"
+        run: python scripts/notify_telegram.py send --text-file "$RUNNER_TEMP/platehk-update-report.txt" --link-env TELEGRAM_LINK --link-label "View update run"
+
+      - name: Release failed or dry-run lease
+        if: always() && steps.plan.outputs.run == 'true' && (failure() || env.DEPLOY_ENABLED != 'true')
+        env:
+          REFRESH_CONTROL_TOKEN: ${{ secrets.REFRESH_CONTROL_TOKEN }}
+          REFRESH_PROBE_ID: ${{ steps.plan.outputs.probe_id }}
+        run: node scripts/refresh_control.mjs release
 
       - name: Write summary
         if: always()
         run: |
           {
-            echo "### PlateHK auto-update"
-            echo ""
-            echo "- Generated data changed: ${{ steps.changes.outputs.changed || 'unknown' }}"
+            echo "### PlateHK conditional refresh"
+            echo "- Outcome: ${{ steps.plan.outputs.outcome || 'failed' }}"
+            echo "- Scope: ${{ steps.plan.outputs.scope || 'unknown' }}"
+            echo "- Expensive refresh required: ${{ steps.plan.outputs.run || 'false' }}"
             echo "- Generated data committed: ${{ steps.commit.outputs.committed || 'false' }}"
-            echo "- Production drift before deploy: ${{ steps.freshness.outputs.drift || 'unknown' }}"
-            echo "- Deploy input enabled: ${{ github.event.inputs.deploy != 'false' }}"
-            echo "- Mode: ${{ github.event.inputs.mode || 'incremental' }}"
-            echo "- Telegram report: ${{ steps.telegram_notify.outcome || 'not-run' }}"
           } >> "$GITHUB_STEP_SUMMARY"

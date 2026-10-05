@@ -50,31 +50,66 @@ python3 scripts/build_audit_report.py
 - `sw.js` 的 `CACHE_NAME`
 - `index.html` 的 `./sw.js?v=...`
 
-## 雲端自動更新（GitHub Actions）
+## Conditional cloud refresh
 
-`.github/workflows/auto-update.yml` 會每日 `00:40 UTC`（香港時間 `08:40`）在 GitHub Actions 執行，不需要本機長開：
+The isolated `platehk-refresh` Worker checks official result indexes and auction-calendar links hourly at minute 17 UTC. It hashes a bounded rotating set of recent and historical PDFs, including same-URL replacements, and rotates through the existing physical/e-auction filename-discovery patterns. Network or source-shape failures are recorded as failures, never as an unchanged check.
 
-1. 安裝 Python / Node 依賴
-2. 執行 `scripts/cron_update.sh`
-3. 執行 `scripts/check_site.sh`
-4. 比對 `https://plate.hk/data/events.json` 及 `https://plate.hk/api/v1/index.json`
-5. 如有資料變更，提交並 push 生成檔案
-6. 如有資料變更或 production drift，部署 Cloudflare Worker + Static Assets
-7. 部署後再次執行 production freshness check
+Cloudflare stores each observation without a GitHub credential. `Auto Update Data` collects the latest observation every six hours; unchanged checks skip dependency installation, parsing, commits, and deployment. Scheduled publication therefore has up to six hours of collection latency (GitHub schedule delays can add more). Corrections found by rotating historical checks remain pending until publication; stale observations are refreshed before collection. A D1 lease coalesces overlapping requests. The published checkpoint advances only after data verification, commit/deployment where required, and production checks. A failed or dry run releases its lease without acknowledging publication.
 
-GitHub repository secrets:
-- `CLOUDFLARE_API_TOKEN`：必需；token 需要有部署 Worker / Static Assets 的權限
-- `CLOUDFLARE_ACCOUNT_ID`：可選；如 Wrangler 不能自動推斷帳戶才需要設定
+Three independent scopes share the publication lock:
 
-GitHub Actions repository setting 需要允許 workflow token 有 read/write contents 權限，否則自動提交資料更新時會被 GitHub 拒絕。
+- `official`: apply observer-verified PDF bytes, reuse the content/parser-version cache, rebuild derived auction data and calendar outputs.
+- `events`: update calendar and affected published pages without re-parsing auction history.
+- `market`: complete daily privacy-minimized 28car crawl and deployment, without rebuilding official auction datasets or creating daily generated-data commits.
 
-每日 `Auto Update Data` 和 deterministic `Auto Heal Data` 都不使用 LLM，也不需要 OpenAI key。網站 camera API 使用的 `OPENAI_API_KEY` 仍然只應設定為 Cloudflare Worker secret。手動部署可用 `npm run cf:secrets:check` 確認 Worker secret 存在；日常 GitHub Actions 更新只使用 `CLOUDFLARE_API_TOKEN` 執行 `npm run cf:deploy:ci`，避免每日自動更新被 `wrangler secret list` 的輸出格式或登入狀態阻塞。
+`Refresh Market Signals` runs daily at 08:40 HKT. `Auto Update Data` collects at 02:47, 08:47, 14:47, and 20:47 HKT, asking the observer for a plan before installing dependencies. `Auto Heal Data` retains its daily inexpensive production-parity audit and failure-triggered repair path.
 
-可在 GitHub Actions 手動執行 `Auto Update Data`，並選擇 `incremental` 或 `full` mode。
+### Storage and credentials
+
+`refresh-worker/wrangler.jsonc` declares the isolated D1 database and private R2 bucket. R2 holds the published source catalog, pending probes, and the last complete private market snapshot; it has no public bucket access. Every control/snapshot route requires `CONTROL_TOKEN`.
+
+Worker secrets:
+
+- `CONTROL_TOKEN`: shared with the repository's `REFRESH_CONTROL_TOKEN` secret.
+- Optional `GITHUB_DISPATCH_TOKEN`: only for an explicitly configured immediate-dispatch mode, using a fine-grained GitHub token restricted to `heathermhuang/platehk`, Actions write permission. Scheduled collection does not need it. Keep `DISPATCH_ENABLED=false` for the default credential-free collection mode.
+
+Repository variable: `REFRESH_CONTROL_URL`. Existing `CLOUDFLARE_API_TOKEN` still owns production deployment. No LLM is used by normal checking, refreshing, or deterministic repair.
+
+Configure credentials through stdin without displaying values:
+
+```bash
+python scripts/configure_refresh_control.py
+```
+
+The installer stores control credentials only under gitignored `.private/`, sends Worker secrets through Wrangler stdin, and configures the matching GitHub secret/variable. It deliberately does not reuse the machine's broad GitHub CLI token.
+
+### Bootstrap, verification, and cutover
+
+1. Deploy the observer with `OBSERVER_ENABLED=false` and `DISPATCH_ENABLED=false`, apply its D1 migration, and configure the control channel.
+2. Merge the verified workflows and run `Refresh Market Signals` once to seed private R2 storage.
+3. Run `Auto Update Data` with `scope=official`, `force=true`, `mode=incremental`, and deployment enabled. This validates the source catalog and warms the cache.
+4. Run a second forced official refresh to verify cache reuse, then run `scope=check` to verify the no-change path skips dependency installation, parsing, commits, and deployment.
+5. Deploy the tracked `OBSERVER_ENABLED=true`, `DISPATCH_ENABLED=false` configuration, and verify an actual hourly scheduled observation and its D1 outcome. GitHub collects its pending work without exporting a GitHub credential to Cloudflare.
+
+```bash
+npx wrangler d1 migrations apply platehk-refresh --remote --config refresh-worker/wrangler.jsonc
+npm run cf:refresh:deploy
+node scripts/refresh_control.mjs status
+```
+
+For a code release with unchanged data, manually use `force=true`; a normal unchanged check does not deploy code. `deploy=false` performs validation without committing, deploying, or advancing the published checkpoint. `mode=full` bypasses cached parsing and retains the explicit historical repair path.
+
+PDF cache identity includes source bytes, parser/context inputs, helper code, Python runtime, and installed PDF-library versions. Corrupt entries and failed parsing are not accepted. Validated entries are restored/saved by Actions; they contain only public official auction data.
+
+### Marketplace failure and expiry
+
+Official-data releases restore the previous complete private R2 snapshot instead of crawling 28car. They may reuse an expired complete snapshot through `cf:deploy:official`, while the existing API freshness rules continue to hide expired offers. Future timestamps, partial coverage, non-allowlisted fields, and direct access to internal shards remain rejected. Daily market releases still require a fresh complete snapshot through `cf:deploy:ci`.
+
+The source observer cannot acknowledge a PDF correction unless the actual parsed-input catalog contains its expected content hash. Missing observed result PDFs stop publication. Repeated checks update operational D1 timestamps, not the dataset's content timestamp.
 
 ## 自動修復（Auto Heal）
 
-`.github/workflows/auto-heal.yml` 是 `Auto Update Data` 的保護層，不是另一個每日更新器。正常情況仍然由 `Auto Update Data` 每日更新；`Auto Heal Data` 只在以下情況介入：
+`.github/workflows/auto-heal.yml` 是 `Auto Update Data` 的保護層，不是另一個每日更新器。正常情況由 Cloudflare source observer 按來源變更觸發 `Auto Update Data`；`Auto Heal Data` 只在以下情況介入：
 
 - `Auto Update Data` 失敗
 - 每日 10:15 HKT 的 production freshness audit 發現 live JSON 與 `main` 生成輸出不一致

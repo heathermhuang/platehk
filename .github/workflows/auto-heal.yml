@@ -33,7 +33,7 @@ on:
         default: false
 
 concurrency:
-  group: platehk-auto-heal
+  group: platehk-data-publish
   cancel-in-progress: false
 
 permissions:
@@ -52,10 +52,13 @@ jobs:
       CHECK_SECURITY_SKIP_DEPS: "1"
       PYTHONPYCACHEPREFIX: /tmp/pvrm-pycache
       WRANGLER_SEND_METRICS: "false"
+      REFRESH_CONTROL_URL: ${{ vars.REFRESH_CONTROL_URL }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          ref: main
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -214,17 +217,38 @@ jobs:
         if: ${{ steps.plan.outputs.status == 'repairable' || steps.override.outputs.status == 'repairable' }}
         run: npm ci
 
-      - name: Refresh privacy-minimized 28car sale signals
+      - name: Claim isolated official-data repair lease
+        id: repair_lease
         if: ${{ steps.plan.outputs.status == 'repairable' || steps.override.outputs.status == 'repairable' }}
-        run: >-
-          python scripts/scrape_28car_market.py
-          --max-pages 0
-          --require-complete
-          --concurrency 4
-          --request-delay 0.75
+        env:
+          REFRESH_CONTROL_TOKEN: ${{ secrets.REFRESH_CONTROL_TOKEN }}
+          REFRESH_FORCE: "true"
+          REFRESH_SCOPE: ${{ (steps.override.outputs.action || steps.plan.outputs.action) == 'run_events_repair' && 'events' || 'official' }}
+        run: |
+          test "$GITHUB_REF" = refs/heads/main
+          node scripts/refresh_control.mjs plan
+
+      - name: Restore previous complete private market snapshot
+        if: ${{ steps.repair_lease.outputs.run == 'true' }}
+        env:
+          REFRESH_CONTROL_TOKEN: ${{ secrets.REFRESH_CONTROL_TOKEN }}
+        run: node scripts/refresh_control.mjs restore-market
+
+      - name: Restore validated PDF parsing cache
+        if: ${{ steps.repair_lease.outputs.scope == 'official' }}
+        uses: actions/cache@v4
+        with:
+          path: .tmp/pdf-parse-cache
+          key: platehk-pdf-v1-${{ runner.os }}-${{ hashFiles('scripts/build_dataset.py', 'scripts/build_tvrm_dataset.py', 'scripts/lny_mixed_parser.py', 'scripts/parse_tvrm_pdfs.py', 'scripts/pdf_parse_cache.py', 'requirements.txt') }}-${{ github.run_id }}
+          restore-keys: |
+            platehk-pdf-v1-${{ runner.os }}-${{ hashFiles('scripts/build_dataset.py', 'scripts/build_tvrm_dataset.py', 'scripts/lny_mixed_parser.py', 'scripts/parse_tvrm_pdfs.py', 'scripts/pdf_parse_cache.py', 'requirements.txt') }}-
+
+      - name: Refresh observer-verified changed PDF inputs
+        if: ${{ steps.repair_lease.outputs.scope == 'official' }}
+        run: python scripts/refresh_sources.py apply
 
       - name: Execute deterministic repair
-        if: ${{ steps.plan.outputs.status == 'repairable' || steps.override.outputs.status == 'repairable' }}
+        if: ${{ steps.repair_lease.outputs.run == 'true' }}
         env:
           PLAN_ACTION: ${{ steps.override.outputs.action || steps.plan.outputs.action }}
         run: |
@@ -251,15 +275,19 @@ jobs:
               ;;
           esac
 
+      - name: Build repaired parsed-input catalog
+        if: ${{ success() && steps.repair_lease.outputs.scope == 'official' }}
+        run: python scripts/refresh_sources.py catalog
+
       - name: Run local verification
-        if: ${{ steps.plan.outputs.status == 'repairable' || steps.override.outputs.status == 'repairable' }}
+        if: ${{ steps.repair_lease.outputs.run == 'true' }}
         env:
           PYTHON_BIN: python
         run: ./scripts/check_site.sh
 
       - name: Stage generated changes
         id: changes
-        if: ${{ steps.plan.outputs.status == 'repairable' || steps.override.outputs.status == 'repairable' }}
+        if: ${{ steps.repair_lease.outputs.run == 'true' }}
         run: |
           git add \
             api/v1 \
@@ -299,7 +327,7 @@ jobs:
           echo "committed=true" >> "$GITHUB_OUTPUT"
 
       - name: Check Cloudflare deploy credentials
-        if: ${{ github.event.inputs.deploy != 'false' && (github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run != 'true') && (steps.changes.outputs.changed == 'true' || steps.plan.outputs.deploy_required == 'true' || steps.override.outputs.deploy_required == 'true') }}
+        if: ${{ steps.repair_lease.outputs.run == 'true' && github.event.inputs.deploy != 'false' && (github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run != 'true') && (steps.changes.outputs.changed == 'true' || steps.plan.outputs.deploy_required == 'true' || steps.override.outputs.deploy_required == 'true') }}
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -310,19 +338,19 @@ jobs:
           fi
 
       - name: Deploy to Cloudflare
-        if: ${{ github.event.inputs.deploy != 'false' && (github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run != 'true') && (steps.changes.outputs.changed == 'true' || steps.plan.outputs.deploy_required == 'true' || steps.override.outputs.deploy_required == 'true') }}
+        if: ${{ steps.repair_lease.outputs.run == 'true' && github.event.inputs.deploy != 'false' && (github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run != 'true') && (steps.changes.outputs.changed == 'true' || steps.plan.outputs.deploy_required == 'true' || steps.override.outputs.deploy_required == 'true') }}
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: npm run cf:deploy:ci
+        run: npm run cf:deploy:official
 
       - name: Verify production after deploy
-        if: ${{ github.event.inputs.deploy != 'false' && (github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run != 'true') && (steps.changes.outputs.changed == 'true' || steps.plan.outputs.deploy_required == 'true' || steps.override.outputs.deploy_required == 'true') }}
+        if: ${{ steps.repair_lease.outputs.run == 'true' && github.event.inputs.deploy != 'false' && (github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run != 'true') && (steps.changes.outputs.changed == 'true' || steps.plan.outputs.deploy_required == 'true' || steps.override.outputs.deploy_required == 'true') }}
         run: |
           verified=false
           for attempt in 1 2 3 4 5; do
             if python scripts/check_production_freshness.py --base-url https://plate.hk --fail-on-drift \
-              && python scripts/check_market_production.py --base-url https://plate.hk; then
+              && python scripts/check_market_production.py --base-url https://plate.hk --allow-expired; then
               verified=true
               break
             fi
@@ -331,8 +359,21 @@ jobs:
           done
           if [ "$verified" != "true" ]; then
             python scripts/check_production_freshness.py --base-url https://plate.hk --fail-on-drift
-            python scripts/check_market_production.py --base-url https://plate.hk
+            python scripts/check_market_production.py --base-url https://plate.hk --allow-expired
           fi
+
+      - name: Acknowledge verified repair
+        if: ${{ success() && steps.repair_lease.outputs.run == 'true' && github.event.inputs.deploy != 'false' && github.event.inputs.dry_run != 'true' }}
+        env:
+          REFRESH_CONTROL_TOKEN: ${{ secrets.REFRESH_CONTROL_TOKEN }}
+        run: node scripts/refresh_control.mjs ack
+
+      - name: Release failed or dry-run repair lease
+        if: ${{ always() && steps.repair_lease.outputs.run == 'true' && (failure() || github.event.inputs.deploy == 'false' || github.event.inputs.dry_run == 'true') }}
+        env:
+          REFRESH_CONTROL_TOKEN: ${{ secrets.REFRESH_CONTROL_TOKEN }}
+          REFRESH_PROBE_ID: ${{ steps.repair_lease.outputs.probe_id }}
+        run: node scripts/refresh_control.mjs release
 
       - name: Write summary
         if: always()

@@ -1,0 +1,16 @@
+name: Refresh Market Signals
+on:
+  schedule:
+    # 08:40 HKT. Official auctions are independently observed by Cloudflare Cron.
+    - cron: "40 0 * * *"
+  workflow_dispatch:
+jobs:
+  market:
+    uses: ./.github/workflows/auto-update.yml
+    permissions:
+      contents: write
+    with:
+      scope: market
+      deploy: true
+      force: true
+    secrets: inherit

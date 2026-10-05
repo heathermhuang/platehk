@@ -388,6 +388,10 @@ def build_events(now: Optional[datetime] = None) -> dict[str, Any]:
 
 def main() -> int:
     payload = build_events()
+    if DATA_PATH.exists():
+        previous = json.loads(DATA_PATH.read_text(encoding="utf-8"))
+        if {k:v for k,v in previous.items() if k != "generated_at"} == {k:v for k,v in payload.items() if k != "generated_at"}:
+            payload["generated_at"] = previous.get("generated_at", payload["generated_at"])
     DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
     DATA_PATH.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(f"Wrote {DATA_PATH} with {len(payload['events'])} events")

@@ -127,7 +127,9 @@ class AutoHealUpdateTests(unittest.TestCase):
         self.assertIn("actions/upload-artifact@v4", workflow)
         self.assertIn("dry_run", workflow)
         self.assertIn("github.event.inputs.dry_run != 'true'", workflow)
-        self.assertIn("npm run cf:deploy:ci", workflow)
+        self.assertIn("npm run cf:deploy:official", workflow)
+        self.assertIn("node scripts/refresh_control.mjs restore-market", workflow)
+        self.assertNotIn("python scripts/scrape_28car_market.py", workflow)
 
 
 if __name__ == "__main__":

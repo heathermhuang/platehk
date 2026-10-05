@@ -4,7 +4,7 @@ import json
 import re
 import subprocess
 import sys
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Optional
@@ -15,6 +15,7 @@ import pypdfium2 as pdfium
 from bs4 import BeautifulSoup
 from lny_mixed_parser import is_lny_url, parse_lny_mixed_pdf
 from parse_tvrm_pdfs import parse_physical_rows_by_words
+from pdf_parse_cache import PdfParseCache, parser_version
 
 # TVRM (Traditional Vehicle Registration Marks) datasets:
 # 1) Physical auction result handouts (實體拍賣結果)
@@ -639,6 +640,51 @@ def extract_start_date_from_zh_range(label: Optional[str]) -> Optional[str]:
         return None
 
 
+def parse_tvrm_document(kind: str, pdf_path: Path, pdf: AuctionPdf, lny_url_set: set[str] | None, pvrm_date_by_url: dict[str, str] | None) -> dict:
+    if kind == "physical":
+        date_iso = pdf.date_iso
+        date_label = pdf.date_label_zh
+        # Fill placeholder dates from PVRM metadata when filename has no date.
+        if date_iso == "1970-01-01" and pvrm_date_by_url and pdf.pdf_url in pvrm_date_by_url:
+            date_iso = pvrm_date_by_url[pdf.pdf_url]
+            date_label = format_zh_date(date_iso)
+        date_from_pdf = extract_first_date_from_pdf(pdf_path)
+        if date_from_pdf and date_from_pdf != date_iso:
+            print(
+                f"[physical] WARN: filename/index date mismatch; using PDF date {date_from_pdf}"
+                f" url={pdf.pdf_url}"
+            )
+            date_iso = date_from_pdf
+            date_label = format_zh_date(date_iso)
+        source = AuctionPdf(
+            kind=pdf.kind,
+            date_iso=date_iso,
+            date_label_zh=date_label,
+            pdf_url=pdf.pdf_url,
+        )
+        if (lny_url_set and pdf.pdf_url in lny_url_set) or is_lny_url(pdf.pdf_url):
+            rows = parse_lny_mixed_rows_for_tvrm(pdf_path, source)
+        else:
+            rows = parse_physical_pdf_rows(pdf_path, source)
+    else:
+        rows, date_label = parse_eauction_pdf_rows(pdf_path, pdf)
+        date_label = date_label or pdf.date_label_zh
+    total_proceeds = extract_total_sale_proceeds(pdf_path)
+    if kind == "physical":
+        # If we corrected the date from PDF content, reflect it in metadata.
+        auction_date = source.date_iso
+        auction_date_label = date_label
+    else:
+        auction_date_label = date_label
+        if pdf.date_iso == "1970-01-01":
+            auction_date = extract_start_date_from_zh_range(date_label) or pdf.date_iso
+        else:
+            auction_date = pdf.date_iso
+    return {"rows": rows, "auction_date": auction_date, "auction_date_label": auction_date_label,
+            "total_proceeds_hkd": total_proceeds,
+            "is_lny": bool((lny_url_set and pdf.pdf_url in lny_url_set) or is_lny_url(pdf.pdf_url))}
+
+
 def build_one(
     kind: str,
     pdfs: list[AuctionPdf],
@@ -646,6 +692,7 @@ def build_one(
     lny_url_set: Optional[set[str]] = None,
     pvrm_date_by_url: Optional[dict[str, str]] = None,
 ) -> int:
+    cache = PdfParseCache(parser_version(("scripts/build_tvrm_dataset.py", "scripts/build_dataset.py", "scripts/lny_mixed_parser.py", "scripts/parse_tvrm_pdfs.py")))
     # Layout matches the PVRM dataset (manifest + per-issue shards + amount-desc preset).
     base = out_dir
     pdf_dir = base / "pdfs"
@@ -705,35 +752,13 @@ def build_one(
                 continue
 
         try:
-            if kind == "physical":
-                date_iso = pdf.date_iso
-                date_label = pdf.date_label_zh
-                # Fill placeholder dates from PVRM metadata when filename has no date.
-                if date_iso == "1970-01-01" and pvrm_date_by_url and pdf.pdf_url in pvrm_date_by_url:
-                    date_iso = pvrm_date_by_url[pdf.pdf_url]
-                    date_label = format_zh_date(date_iso)
-                date_from_pdf = extract_first_date_from_pdf(pdf_path)
-                if date_from_pdf and date_from_pdf != date_iso:
-                    print(
-                        f"[physical] WARN: filename/index date mismatch; using PDF date {date_from_pdf}"
-                        f" url={pdf.pdf_url}"
-                    )
-                    date_iso = date_from_pdf
-                    date_label = format_zh_date(date_iso)
-                source = AuctionPdf(
-                    kind=pdf.kind,
-                    date_iso=date_iso,
-                    date_label_zh=date_label,
-                    pdf_url=pdf.pdf_url,
-                )
-                if (lny_url_set and pdf.pdf_url in lny_url_set) or is_lny_url(pdf.pdf_url):
-                    rows = parse_lny_mixed_rows_for_tvrm(pdf_path, source)
-                else:
-                    rows = parse_physical_pdf_rows(pdf_path, source)
-            else:
-                rows, date_label = parse_eauction_pdf_rows(pdf_path, pdf)
-                date_label = date_label or pdf.date_label_zh
-            total_proceeds = extract_total_sale_proceeds(pdf_path)
+            context = {**asdict(pdf), "lny": bool(lny_url_set and pdf.pdf_url in lny_url_set),
+                       "pvrm_date": (pvrm_date_by_url or {}).get(pdf.pdf_url)}
+            parsed = cache.parse(pdf_path, context, lambda: parse_tvrm_document(kind, pdf_path, pdf, lny_url_set, pvrm_date_by_url))
+            rows = parsed["rows"]
+            auction_date = parsed["auction_date"]
+            auction_date_label = parsed["auction_date_label"]
+            total_proceeds = parsed["total_proceeds_hkd"]
         except Exception as exc:  # noqa: BLE001
             meta.append(
                 {
@@ -747,16 +772,6 @@ def build_one(
             )
             continue
 
-        if kind == "physical":
-            # If we corrected the date from PDF content, reflect it in metadata.
-            auction_date = source.date_iso
-            auction_date_label = date_label
-        else:
-            auction_date_label = date_label
-            if pdf.date_iso == "1970-01-01":
-                auction_date = extract_start_date_from_zh_range(date_label) or pdf.date_iso
-            else:
-                auction_date = pdf.date_iso
 
         meta.append(
             {
@@ -765,7 +780,7 @@ def build_one(
                 "pdf_url": pdf.pdf_url,
                 "entry_count": len(rows),
                 "total_sale_proceeds_hkd": total_proceeds,
-                "is_lny": bool((lny_url_set and pdf.pdf_url in lny_url_set) or is_lny_url(pdf.pdf_url)),
+                "is_lny": parsed["is_lny"],
                 "error": None,
             }
         )
@@ -830,6 +845,7 @@ def build_one(
         json.dumps(amount_desc[:1000], ensure_ascii=False, separators=(",", ":")), encoding="utf-8"
     )
 
+    print(f"TVRM {kind} PDF cache: hits={cache.hits} parsed={cache.misses}")
     return 0
 
 
@@ -951,8 +967,7 @@ def build() -> int:
 
     print("建立 TVRM 1973-2006 歷史年份分段資料集...")
     subprocess.check_call([sys.executable, str(Path(__file__).with_name("build_tvrm_legacy_dataset.py"))])
-    print("建立跨資料集搜尋索引...")
-    subprocess.check_call([sys.executable, str(Path(__file__).with_name("build_all_search_index.py"))])
+    # The unified index is rebuilt by cron_update.sh after the all-dataset merge.
 
     print("完成 TVRM datasets")
     return 0

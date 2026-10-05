@@ -45,14 +45,14 @@ jobs:
           npm ci --prefix services/whatsapp-introductions
           npm audit --prefix services/whatsapp-introductions --omit=dev
 
+      - name: Install project test dependencies
+        run: npm ci
+
       - name: Run local verification suite
         env:
           CHECK_SECURITY_SKIP_DEPS: "1"
           PYTHON_BIN: python
         run: ./scripts/check_site.sh
-
-      - name: Install browser test dependencies
-        run: npm ci
 
       - name: Install Chromium and WebKit for browser regression checks
         run: npx playwright install --with-deps chromium webkit

@@ -4,7 +4,7 @@ import json
 import re
 import subprocess
 import sys
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from datetime import date
 from pathlib import Path
 from typing import Optional
@@ -16,6 +16,7 @@ from bs4 import BeautifulSoup
 
 sys.path.append(str(Path(__file__).resolve().parent))
 from lny_mixed_parser import is_lny_url, parse_lny_mixed_pdf  # noqa: E402
+from pdf_parse_cache import PdfParseCache, parser_version  # noqa: E402
 
 BASE_URL = "https://www.td.gov.hk"
 INDEX_URL = "https://www.td.gov.hk/tc/public_services/vehicle_registration_mark/pvrm_auction/index.html"
@@ -605,7 +606,31 @@ def parse_pdf_rows(pdf_path: Path, source: AuctionPdf) -> list[dict]:
     return rows
 
 
+def parse_pvrm_document(pdf_path: Path, pdf: AuctionPdf) -> dict:
+    rows = parse_pdf_rows(pdf_path, pdf)
+    total_proceeds_hkd, total_proceeds_raw = extract_total_sale_proceeds(pdf_path)
+    is_lny = bool(is_lny_url(pdf.pdf_url))
+    if not is_lny:
+        try:
+            first = pdfium.PdfDocument(str(pdf_path))[0].get_textpage().get_text_range() or ""
+        except Exception:
+            first = ""
+        first_up = (first or "").upper()
+        has_traditional_marks = "TRADITIONAL VEHICLE REGISTRATION MARKS" in first_up
+        has_personalized_marks = "PERSONALIZED VEHICLE REGISTRATION MARKS" in first_up
+        has_zh_traditional = "傳統車輛登記號碼" in (first or "")
+        has_zh_personalized = "自訂車輛登記號碼" in (first or "")
+        is_lny = bool(
+            ("LUNAR NEW YEAR" in first_up)
+            or (has_traditional_marks and has_personalized_marks)
+            or (has_zh_traditional and has_zh_personalized)
+        )
+    return {"rows": rows, "total_proceeds_hkd": total_proceeds_hkd,
+            "total_proceeds_raw": total_proceeds_raw, "is_lny": is_lny}
+
+
 def build() -> int:
+    cache = PdfParseCache(parser_version(("scripts/build_dataset.py", "scripts/lny_mixed_parser.py")))
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     PDF_DIR.mkdir(parents=True, exist_ok=True)
     ISSUES_DIR.mkdir(parents=True, exist_ok=True)
@@ -679,8 +704,11 @@ def build() -> int:
                 continue
 
         try:
-            rows = parse_pdf_rows(pdf_path, pdf)
-            total_proceeds_hkd, total_proceeds_raw = extract_total_sale_proceeds(pdf_path)
+            parsed = cache.parse(pdf_path, asdict(pdf), lambda: parse_pvrm_document(pdf_path, pdf))
+            rows = parsed["rows"]
+            total_proceeds_hkd = parsed["total_proceeds_hkd"]
+            total_proceeds_raw = parsed["total_proceeds_raw"]
+            is_lny = parsed["is_lny"]
         except Exception as exc:  # noqa: BLE001
             print(f"  [{idx}/{len(pdfs)}] 解析失敗: {pdf_path.name} ({exc})")
             meta.append(
@@ -699,22 +727,6 @@ def build() -> int:
                 )
             continue
 
-        is_lny = bool(is_lny_url(pdf.pdf_url))
-        if not is_lny:
-            try:
-                first = pdfium.PdfDocument(str(pdf_path))[0].get_textpage().get_text_range() or ""
-            except Exception:
-                first = ""
-            first_up = (first or "").upper()
-            has_traditional_marks = "TRADITIONAL VEHICLE REGISTRATION MARKS" in first_up
-            has_personalized_marks = "PERSONALIZED VEHICLE REGISTRATION MARKS" in first_up
-            has_zh_traditional = "傳統車輛登記號碼" in (first or "")
-            has_zh_personalized = "自訂車輛登記號碼" in (first or "")
-            is_lny = bool(
-                ("LUNAR NEW YEAR" in first_up)
-                or (has_traditional_marks and has_personalized_marks)
-                or (has_zh_traditional and has_zh_personalized)
-            )
 
         amount_missing = sum(1 for r in rows if r["amount_hkd"] is None)
         meta.append(
@@ -806,6 +818,7 @@ def build() -> int:
 
     total_missing = sum(1 for r in all_rows if r["amount_hkd"] is None)
     print(f"完成: {len(all_rows)} 筆結果, 未解析金額 {total_missing} 筆")
+    print(f"PVRM PDF cache: hits={cache.hits} parsed={cache.misses}")
     return 0
 
 

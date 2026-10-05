@@ -5,6 +5,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="${ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 LOG_DIR="$ROOT/logs"
 MODE="${MODE:-incremental}" # incremental | full
+SCOPE="${REFRESH_BUILD_SCOPE:-official}" # official | events
+if [[ "$MODE" == "full" ]]; then export PDF_PARSE_FORCE=1; fi
+case "$SCOPE" in official|events) ;; *) echo "Invalid refresh build scope" >&2; exit 1 ;; esac
 mkdir -p "$LOG_DIR"
 
 cd "$ROOT"
@@ -12,6 +15,8 @@ cd "$ROOT"
 # If you use a virtual environment, enable it here.
 # source "$ROOT/.venv/bin/activate"
 
+# Update source datasets only when the source observer found changes.
+if [[ "$SCOPE" == "official" ]]; then
 # Update source datasets.
 # PVRM dataset builder currently runs full normalization; keep it for data correctness.
 python3 scripts/build_dataset.py
@@ -49,13 +54,16 @@ if [[ "$need_repair" -eq 1 ]]; then
   python3 scripts/parse_tvrm_pdfs.py
 fi
 
+# TVRM already rebuilds the legacy dataset during its inventory merge.
 # Rebuild derived datasets and downstream artifacts.
 python3 scripts/build_events.py
-python3 scripts/build_tvrm_legacy_dataset.py
 python3 scripts/build_all_dataset.py
 python3 scripts/build_all_results_preset.py
 python3 scripts/build_all_search_index.py
 python3 scripts/build_hot_search_cache.py
+else
+  python3 scripts/build_events.py
+fi
 python3 scripts/build_popular_plate_pages.py
 
 # Rebuild public API + audit report

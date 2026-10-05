@@ -18,6 +18,8 @@ export PYTHONPYCACHEPREFIX="${PYTHONPYCACHEPREFIX:-${TMPDIR:-/tmp}/pvrm-pycache}
   scripts/scrape_28car_market.py \
   scripts/build_events.py \
   scripts/build_dataset.py \
+  scripts/pdf_parse_cache.py \
+  scripts/refresh_sources.py \
   scripts/merge_tvrm_exact_workbook.py \
   scripts/build_public_api.py \
   scripts/build_tvrm_dataset.py \
@@ -41,6 +43,10 @@ bash -n scripts/check_security.sh
 "${PYTHON_BIN}" scripts/scan_repo_secrets.py
 "${PYTHON_BIN}" scripts/check_duplicate_generated_artifacts.py
 "${PYTHON_BIN}" scripts/build_cloudflare_public.py >/dev/null
+node --check refresh-worker/src/index.mjs
+node --check refresh-worker/src/probe.mjs
+node --check scripts/refresh_control.mjs
+node --test tests/refresh_worker_test.mjs
 node --check cloudflare-worker/src/lib.mjs
 node --check cloudflare-worker/src/api.mjs
 node --check cloudflare-worker/src/index.mjs
