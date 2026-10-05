@@ -62,7 +62,7 @@ test('main, detail and round lookup wiring distinguishes found, empty and failed
   expect(await page.evaluate(()=>window.lookupObservations.length)).toBe(0);
   await page.locator('#q').fill('AA88');
   await expect.poll(()=>page.evaluate(()=>window.lookupObservations.some(v=>v.action==='main_lookup'&&v.plate==='AA88'&&v.result_count>0))).toBe(true);
-  expect(await page.evaluate(()=>window.lookupObservations.find(v=>v.action==='main_lookup'&&v.plate==='AA88').match_mode)).toBe('exact');
+  expect(await page.evaluate(()=>window.lookupObservations.find(v=>v.action==='main_lookup'&&v.plate==='AA88').match_mode)).toBe('contains');
   await page.locator('#q').fill('AB1234');
   await expect.poll(()=>page.evaluate(()=>window.lookupObservations.some(v=>v.action==='main_lookup'&&v.plate==='AB1234'&&v.result_count===0))).toBe(true);
   await page.route('**/api/search?**',route=>route.fulfill({status:503,contentType:'application/json',body:'{"error":"unavailable"}'}));

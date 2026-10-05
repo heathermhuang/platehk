@@ -22,12 +22,12 @@
 
   const rootQuery=document.querySelector('#q');
   if(rootQuery){
-    const match=document.querySelector('#matchMode');if(match){rootQuery.after(match.closest('label'));match.value=new URLSearchParams(location.search).get('mode')==='contains'?'contains':'exact';match.addEventListener('change',()=>rootQuery.dispatchEvent(new Event('input',{bubbles:true})));}
+    const match=document.querySelector('#matchMode');if(match){rootQuery.after(match.closest('label'));match.value=new URLSearchParams(location.search).get('mode')==='exact'?'exact':'contains';match.addEventListener('change',()=>rootQuery.dispatchEvent(new Event('input',{bubbles:true})));}
     const shelf=document.querySelector('#homeShelf');const intro=document.querySelector('#intro');const first=shelf||intro;
     if(first){const details=make('details',null,'ux-secondary');details.append(make('summary',text('日程與資料集說明','Calendar and dataset guide')));first.before(details);for(const el of [shelf,intro])if(el)details.append(el);}
-    const signals=document.querySelector('#marketSignal');const results=document.querySelector('#resultsTableWrap');if(signals&&results)results.after(signals);
+    const signals=document.querySelector('#marketSignal');const pane=document.querySelector('.record-pane');if(signals&&pane)pane.prepend(signals);
     const history=document.querySelector('#searchHistory');if(history)history.addEventListener('click',event=>{if(event.target.closest('[data-history-more]'))history.classList.toggle('ux-history-expanded');});
-    const copyMatch=()=>{const summary=document.querySelector('.ux-secondary > summary');if(summary)summary.textContent=text('日程與資料集說明','Calendar and dataset guide');const label=document.querySelector('.ux-match-mode');if(!label)return;label.firstChild.textContent=text('比對 ','Match ');const options=label.querySelectorAll('option');options[0].textContent=text('完全相同','Exact plate');options[1].textContent=text('包含片段','Contains');};copyMatch();for(const button of document.querySelectorAll('#langZh,#langEn'))button.addEventListener('click',()=>setTimeout(copyMatch,0));
+    const copyMatch=()=>{const summary=document.querySelector('.ux-secondary > summary');if(summary)summary.textContent=text('日程與資料集說明','Calendar and dataset guide');const label=document.querySelector('.ux-match-mode');if(!label)return;label.firstChild.textContent=text('比對 ','Match ');label.querySelector('[value=exact]').textContent=text('完全相同','Exact match');label.querySelector('[value=contains]').textContent=text('部分符合','Partial match');};copyMatch();for(const button of document.querySelectorAll('#langZh,#langEn'))button.addEventListener('click',()=>setTimeout(copyMatch,0));
   }
 
   function tableBrowser(table) {
