@@ -8,6 +8,7 @@ import json
 import urllib.error
 import urllib.parse
 import urllib.request
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Callable
 
@@ -49,15 +50,25 @@ def open_json(url: str, *, opener: Opener = urllib.request.urlopen) -> dict[str,
     return payload
 
 
-def verify(snapshot: dict[str, Any], base_url: str, *, opener: Opener = urllib.request.urlopen) -> str:
+def verify(snapshot: dict[str, Any], base_url: str, *, opener: Opener = urllib.request.urlopen, allow_expired: bool = False) -> str:
     plate, source_urls = sample_signal(snapshot)
     base = base_url.rstrip("/")
     query_url = f"{base}/api/market_signal?{urllib.parse.urlencode({'plate': plate})}"
     payload = open_json(query_url, opener=opener)
-    if payload.get("availability_detected") is not True or payload.get("plate") != plate:
-        raise RuntimeError(f"Deployed market API did not expose the expected exact signal for {plate}")
-    if payload.get("source") != "28car" or str(payload.get("source_url") or "") not in source_urls:
-        raise RuntimeError(f"Deployed market API signal for {plate} does not match the refreshed snapshot")
+    expired = False
+    if allow_expired:
+        hours = max(1, min(168, int(snapshot.get("fresh_for_hours") or 72)))
+        cutoff = datetime.now(timezone.utc) - timedelta(hours=hours)
+        offers = snapshot["signals"][plate]
+        expired = all(datetime.fromisoformat(str(offer.get("last_seen_at") or "").replace("Z", "+00:00")) < cutoff for offer in offers)
+    if expired:
+        if payload.get("availability_detected") is not False or payload.get("source_url"):
+            raise RuntimeError(f"Expired market offers were exposed for {plate}")
+    else:
+        if payload.get("availability_detected") is not True or payload.get("plate") != plate:
+            raise RuntimeError(f"Deployed market API did not expose the expected exact signal for {plate}")
+        if payload.get("source") != "28car" or str(payload.get("source_url") or "") not in source_urls:
+            raise RuntimeError(f"Deployed market API signal for {plate} does not match the refreshed snapshot")
 
     hidden_urls = [
         f"{base}/_market/28car/{plate[0]}.json",
@@ -80,9 +91,10 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--snapshot", type=Path, default=DEFAULT_SNAPSHOT)
     parser.add_argument("--base-url", default="https://plate.hk")
+    parser.add_argument("--allow-expired", action="store_true")
     args = parser.parse_args()
     snapshot = json.loads(args.snapshot.read_text(encoding="utf-8"))
-    plate = verify(snapshot, args.base_url)
+    plate = verify(snapshot, args.base_url, allow_expired=args.allow_expired)
     print(f"Production exact-match market signal verified for {plate}; internal shard remains hidden.")
     return 0
 

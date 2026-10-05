@@ -24,24 +24,27 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn("--require-market-snapshot", package["scripts"]["cf:deploy:ci"])
         for workflow_name in ["auto-update.yml", "auto-heal.yml"]:
             workflow = (ROOT / ".github" / "workflows" / workflow_name).read_text(encoding="utf-8")
-            self.assertIn("run: npm run cf:deploy:ci", workflow)
+            self.assertIn("run: npm run cf:deploy:official", workflow)
             self.assertNotIn("run: npm run cf:deploy\n", workflow)
 
     def test_market_refresh_workflows_are_wired(self) -> None:
         auto_update = (ROOT / ".github" / "workflows" / "auto-update.yml").read_text(encoding="utf-8")
         scrape_marker = "python scripts/scrape_28car_market.py"
         updater_marker = "run: bash scripts/cron_update.sh"
-        self.assertIn('cron: "40 0 * * *"', auto_update)
+        self.assertIn('cron: "47 0 * * 1"', auto_update)
+        self.assertIn("steps.plan.outputs.scope == 'market'", auto_update)
         self.assertIn("--max-pages 0", auto_update)
         self.assertIn("--require-complete", auto_update)
-        self.assertLess(auto_update.index(scrape_marker), auto_update.index(updater_marker))
-
-        self.assertFalse((ROOT / ".github" / "workflows" / "broker-notifications.yml").exists())
-
-        auto_heal = (ROOT / ".github" / "workflows" / "auto-heal.yml").read_text(encoding="utf-8")
-        self.assertIn("python scripts/scrape_28car_market.py", auto_heal)
-        self.assertIn("--require-complete", auto_heal)
-        self.assertLess(auto_heal.index("python scripts/scrape_28car_market.py"), auto_heal.index("Execute deterministic repair"))
+        self.assertIn("Plan refresh before installing dependencies", auto_update)
+        self.assertLess(auto_update.index("node scripts/refresh_control.mjs plan"), auto_update.index("Install Python dependencies"))
+        self.assertIn("Restore content-addressed PDF parsing cache", auto_update)
+        market = (ROOT / ".github/workflows/market-refresh.yml").read_text()
+        self.assertIn('cron: "40 0 * * *"', market)
+        self.assertIn("scope: market", market)
+        self.assertFalse((ROOT / ".github/workflows/broker-notifications.yml").exists())
+        auto_heal = (ROOT / ".github/workflows/auto-heal.yml").read_text()
+        self.assertNotIn(scrape_marker, auto_heal)
+        self.assertIn("node scripts/refresh_control.mjs restore-market", auto_heal)
         for workflow in (auto_update, auto_heal):
             self.assertIn("python scripts/check_market_production.py --base-url https://plate.hk", workflow)
 

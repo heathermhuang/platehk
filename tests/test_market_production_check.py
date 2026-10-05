@@ -5,6 +5,7 @@ import json
 import sys
 import unittest
 import urllib.error
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 
@@ -71,3 +72,16 @@ class MarketProductionCheckTests(unittest.TestCase):
 
         with self.assertRaisesRegex(RuntimeError, "did not expose"):
             self.module.verify(snapshot, "https://plate.hk", opener=opener)
+
+    def test_official_release_verifies_expired_offers_remain_hidden(self):
+        observed=(datetime.now(timezone.utc)-timedelta(hours=80)).isoformat()
+        snapshot={"fresh_for_hours":72,"signals":{"JZ":[{"source_url":"https://m.28car.com/num_dsp.php?h_vid=12","last_seen_at":observed}]}}
+        def opener(request,timeout):
+            if '/api/market_signal' in request.full_url:
+                return Response({'plate':'JZ','availability_detected':False})
+            raise urllib.error.HTTPError(request.full_url,404,'Not found',{},None)
+        self.assertEqual(self.module.verify(snapshot,'https://plate.hk',opener=opener,allow_expired=True),'JZ')
+        def leaked(request,timeout):
+            return Response({'plate':'JZ','availability_detected':True,'source_url':'https://m.28car.com/num_dsp.php?h_vid=12'})
+        with self.assertRaisesRegex(RuntimeError,'Expired market offers'):
+            self.module.verify(snapshot,'https://plate.hk',opener=leaked,allow_expired=True)

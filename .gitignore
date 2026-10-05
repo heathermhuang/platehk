@@ -3,6 +3,7 @@
 .venv/
 .wrangler/
 node_modules/
+__pycache__/
 test-results/
 playwright-report/
 plates/* [0-9].html
@@ -13,6 +14,8 @@ data/market/
 cloudflare-worker/.dev.vars
 cloudflare-worker/.env
 cloudflare-worker/.env.*
+refresh-worker/.dev.vars
+refresh-worker/.env
 
 logs/
 logs/security-events.log
