@@ -41,5 +41,18 @@ export default defineConfig({
         ...devices["Pixel 7"],
       },
     },
+    {
+      name: "webkit-desktop",
+      testMatch: ["**/design-consistency.spec.mjs", "**/browser-compatibility.spec.mjs"],
+      use: {
+        ...devices["Desktop Safari"],
+        viewport: { width: 1366, height: 900 },
+      },
+    },
+    {
+      name: "webkit-mobile",
+      testMatch: ["**/design-consistency.spec.mjs", "**/browser-compatibility.spec.mjs"],
+      use: { ...devices["iPhone 13"] },
+    },
   ],
 });

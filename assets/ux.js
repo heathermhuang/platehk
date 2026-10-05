@@ -81,7 +81,17 @@
   }
   documentContents();
   // Overflowing code examples must be reachable for keyboard scrolling.
-  for (const pre of document.querySelectorAll('main pre')) pre.tabIndex = 0;
+  for (const pre of document.querySelectorAll('main pre')) {
+    pre.tabIndex = 0;
+    // WebKit focuses these regions but does not natively scroll them on arrows.
+    pre.addEventListener('keydown', event => {
+      if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey ||
+          !['ArrowLeft', 'ArrowRight'].includes(event.key) || pre.scrollWidth <= pre.clientWidth) return;
+      const previous = pre.scrollLeft;
+      pre.scrollLeft += event.key === 'ArrowRight' ? 40 : -40;
+      if (pre.scrollLeft !== previous) event.preventDefault();
+    });
+  }
 
   const priceForm=document.querySelector('body[data-decision-page="prices"] [data-query-form]');
   if(priceForm){const examples=make('nav',null,'decision-actions');examples.setAttribute('aria-label',text('車牌例子','Plate examples'));for(const plate of ['AA88','1314','88'])examples.append(link(plate,href(`/plate.html?q=${plate}`)));priceForm.after(examples);const main=priceForm.closest('main');const method=make('details',null,'ux-method');method.append(make('summary',text('如何選取相近成交？','How are comparable sales selected?')));const headings=[...main.querySelectorAll('h2')].filter(el=>el.getClientRects().length);const first=headings[0];if(first){let node=first;while(node&&node!==headings[1]){const next=node.nextSibling;method.append(node);node=next;}examples.after(method);}}

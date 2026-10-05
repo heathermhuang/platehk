@@ -118,6 +118,9 @@ Open [http://127.0.0.1:8080](http://127.0.0.1:8080), then stop the server with:
 | --- | --- |
 | Rebuild all site assets and generated data | `./scripts/build_site.sh` |
 | Run syntax checks and tests | `./scripts/check_site.sh` |
+| Install Chromium and Safari/WebKit test browsers | `npx playwright install chromium webkit` |
+| Run browser journeys and shared design checks | `npm run test:e2e -- --workers=1` |
+| Run targeted Safari/WebKit compatibility checks | `npm run test:e2e -- --project=webkit-desktop --project=webkit-mobile --workers=1` |
 | Run secrets and dependency security checks | `./scripts/check_security.sh` |
 | Check generated duplicate artifacts | `python3 scripts/check_duplicate_generated_artifacts.py` |
 | Initialize private SEO/AEO measurement templates | `python3 scripts/build_seo_aeo_baseline.py --init` |
