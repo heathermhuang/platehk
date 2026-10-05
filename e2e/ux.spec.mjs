@@ -13,12 +13,14 @@ test('budget-only discovery applies the full-set constraint without a required f
   await page.getByRole('button',{name:'Reset filters',exact:true}).click();await expect(page.locator('#decisionResults')).toBeEmpty();
 });
 
-test('exact and contains are explicit and related sale signals follow historical results',async({page})=>{
-  await page.goto('/?lang=en&q=AA88');await expect(page.locator('#rows tr[data-plate]')).toHaveCount(1);
-  await expect(page.locator('#matchMode')).toHaveValue('exact');
-  await page.locator('#matchMode').selectOption('contains');
-  await expect(page).toHaveURL(/mode=contains/);await expect.poll(()=>page.locator('#rows tr[data-plate]').count()).toBeGreaterThan(1);
-  expect(await page.evaluate(()=>{const results=document.querySelector('#resultsTableWrap');const signal=document.querySelector('#marketSignal');return Boolean(results.compareDocumentPosition(signal)&Node.DOCUMENT_POSITION_FOLLOWING);})).toBe(true);
+test('partial matching is the default, exact matching is explicit and sale signals lead the results',async({page})=>{
+  await page.goto('/?lang=en&q=AA88');
+  await expect(page.locator('#matchMode')).toHaveValue('contains');
+  await expect.poll(()=>page.locator('#rows tr[data-plate]').count()).toBeGreaterThan(1);
+  await expect(page.locator('.results-context-title')).toContainText('Matching auction records');
+  await page.locator('#matchMode').selectOption('exact');
+  await expect(page).toHaveURL(/mode=exact/);await expect(page.locator('#rows tr[data-plate]')).toHaveCount(1);
+  expect(await page.evaluate(()=>{const results=document.querySelector('#resultsTableWrap');const signal=document.querySelector('#marketSignal');return Boolean(signal.compareDocumentPosition(results)&Node.DOCUMENT_POSITION_FOLLOWING);})).toBe(true);
 });
 
 test('zero-selection comparison is disabled and removal can be undone',async({page})=>{

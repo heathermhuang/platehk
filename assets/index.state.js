@@ -159,6 +159,8 @@ window.createPlateIndexStateFlow = function createPlateIndexStateFlow({
       clearSearchDebounce();
       cancelActiveFilterRequest();
       qEl.value = "";
+      const match = document.querySelector("#matchMode");
+      if (match) match.value = "contains";
       issueEl.value = "";
       sortEl.value = "amount_desc";
       setCurrentPage(1);

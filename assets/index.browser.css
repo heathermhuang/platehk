@@ -73,7 +73,9 @@ html[lang=en] .data-browser [data-growth-lang=zh] { display: none !important; }
 .data-browser #resultsTable .col-single > a { display: inline-flex; align-items: center; min-height: 44px; text-decoration: none; }
 .data-browser #resultsTable .col-single > a:hover .plate { background: var(--accent-soft) !important; }
 .data-browser #resultsTable .plate { font-size: 18px; min-width: 88px; min-height: 36px; padding: 5px 10px; }
-.data-browser #resultsTable .plate.double { font-size: 15px; min-width: 56px; min-height: 48px; }
+.data-browser #resultsTable .plate.double { font-size: 18px; min-width: 80px; min-height: 56px; line-height: 1.1; }
+.data-browser #resultsTable .double-plate { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.data-browser .record-pane > .market-signal { margin: 0 0 24px; }
 .data-browser #resultsTable .col-price { font-family: inherit !important; }
 .data-browser #resultsTable .price-value { color: var(--ink) !important; font-family: inherit !important; font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.2; }
 .data-browser #resultsTable .price.na { font-size: 14px; }
@@ -123,7 +125,7 @@ html[lang=en] .data-browser [data-growth-lang=zh] { display: none !important; }
   .data-browser #resultsTable .col-category { grid-area: category; align-self: start; }
   .data-browser #resultsTable .col-source { grid-area: source; align-self: center; }
   .data-browser #resultsTable .plate { width: auto !important; min-width: 76px; max-width: 100%; font-size: 17px; }
-  .data-browser #resultsTable .plate.double { font-size: 14px; min-width: 48px; }
+  .data-browser #resultsTable .plate.double { font-size: 16px; min-width: 72px; min-height: 52px; }
   .data-browser #resultsTable .price-value { font-size: 20px; }
   .data-browser #resultsTable .col-date .cell-main { font-size: 13px; min-height: 28px; padding-block: 4px; }
   .data-browser #resultsTable .category-pill { font-size: 11px; }

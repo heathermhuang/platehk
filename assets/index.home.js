@@ -620,7 +620,7 @@ window.createPlateIndexHomeViews = function createPlateIndexHomeViews(deps) {
       chips.push(`${t("resultsChipRows")}: ${countText}`);
     }
 
-    if (q && !selectedIssue) title = t("resultsTitleQuery")(q);
+    if (q && !selectedIssue) title = t(document.querySelector("#matchMode")?.value === "exact" ? "resultsTitleQuery" : "resultsTitlePartialQuery")(q);
     resultsContextEl.hidden = false;
     resultsContextEl.innerHTML = `
       <div class="results-context-main">
