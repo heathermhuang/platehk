@@ -887,10 +887,11 @@ function composeAuctionKey(datasetKey, auctionDate) {
           rowsEl.innerHTML = list
             .map((r, idx) => {
               const doublePlate = formatDoubleLine(r.double_line);
-              const hasDouble = Array.isArray(r.double_line)
-                ? r.double_line.some((line) => String(line || "").trim())
-                : Boolean(String(r.double_line || "").trim());
-              const plateLayouts = `<span class="plate-layouts">${r.single_line ? formatSingleLine(r.single_line) : ""}${hasDouble ? doublePlate : ""}${!r.single_line && !hasDouble ? formatSingleLine(null) : ""}</span>`;
+              const doubleLines = (Array.isArray(r.double_line) ? r.double_line : String(r.double_line || "").split(/\n+/))
+                .map(line => String(line || "").trim()).filter(Boolean);
+              const plateLayouts = doubleLines.length > 1
+                ? doublePlate
+                : formatSingleLine(r.single_line || doubleLines[0] || null);
               const href = rowLink(r);
               const detailPath = /^\/plates\/[A-Z0-9]+\.html$/.test(r.detail_path || "") ? r.detail_path : `/plate.html?q=${encodeURIComponent(normalizePlate(r.single_line || r.double_line))}`;
               const detailHref = `${detailPath}${detailPath.includes("?") ? "&" : "?"}lang=${currentLang}`;

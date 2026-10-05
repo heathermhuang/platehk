@@ -56,10 +56,12 @@ test('narrow phones keep search, filter scope and a complete record readable', a
   }
 });
 
-test('single and double plate layouts share one linked field and exact history keeps its context', async ({page}) => {
-  await page.goto('/?lang=en&q=JL'); await ready(page);
+test('one plate badge preserves the two-line arrangement and exact history keeps its context', async ({page}) => {
+  await page.goto('/?lang=en&q=JL&mode=exact'); await ready(page);
   const first=page.locator('#rows tr[data-plate="JL"]').first();
-  await expect(first.locator('.col-single .plate')).toHaveCount(2);
+  await expect(first.locator('.col-single .plate')).toHaveCount(1);
+  await expect(first.locator('.double-plate span').first()).toHaveText('J');
+  await expect(first.locator('.double-plate span').nth(1)).toHaveText('L');
   await expect(first.locator('.col-single .plate.double')).toBeVisible();
   await expect(first.locator('.col-double')).toBeHidden();
   await expect(page.locator('.results-context-title')).toContainText('JL');
