@@ -18,4 +18,5 @@
 .decision-comparables { margin-top:24px; }
 .decision-comparables th,.decision-comparables td { padding:10px; border-top:1px solid var(--line); text-align:left; }
 .decision-comparables .table-wrap { overflow:auto; }
+.decision-main .table-wrap { max-width:100%; overflow-x:auto; }
 @media(max-width:640px){.decision-main{padding:20px 16px 48px}.decision-filters,.decision-results{grid-template-columns:1fr}.decision-form input{width:100%;box-sizing:border-box}}

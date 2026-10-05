@@ -68,7 +68,7 @@
       anchor('按預算找車牌', 'Discover by budget', '/discover.html'),
       anchor('官方可用號碼及申請', 'Official availability and applications', '/availability.html'),
       anchor('熱門車牌', 'Popular plates', '/plates/index.html'),
-      anchor('相機搜尋', 'Camera search', '/camera.html'),
+      anchor('相機搜尋', 'Search by camera', '/camera.html'),
       anchor('資料說明', 'Data guide', '/about.html'),
       anchor('資料審核', 'Data audit', '/audit.html'),
       anchor('開發者', 'Developers', '/api.html'),

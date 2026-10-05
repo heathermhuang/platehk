@@ -595,16 +595,26 @@ def main(*, require_market_snapshot: bool = False) -> None:
     update_results_export_catalog()
     build_complete_search_index(load_complete_search_index_rows(), api_v1_dir / "all")
     prune_oversized_assets()
+    # Shared design assets change independently of the 800 plate templates.
+    # Fingerprint their actual bytes so every published page receives the same version.
+    design_versions = {
+        asset: hashlib.sha256((TARGET / "assets" / asset).read_bytes()).hexdigest()[:12]
+        for asset in ("ledger.css", "ux.css", "ux.js", "info-shell.js", "index.browser.css", "index.browser.js", "decision.css")
+    }
     for page in TARGET.rglob("*.html"):
         content = page.read_text(encoding="utf-8")
         if '/assets/analytics.js?' not in content:
             content = content.replace('</head>', '<script defer src="/assets/analytics.js?v=20260915-01"></script>\n</head>')
         content = re.sub(r'(/assets/(?:analytics|decision|index\.data|ux)\.js\?v=)[^"\s>]+', r'\g<1>20261004-01', content)
+        for asset, version in design_versions.items():
+            content = re.sub(r'(/assets/' + re.escape(asset) + r'\?v=)[^"\s>]+', lambda match: match[1] + version, content)
         page.write_text(content, encoding="utf-8")
     sw_path = TARGET / "sw.js"
     if sw_path.exists():
         source = sw_path.read_text(encoding="utf-8")
         source = re.sub(r'(/assets/(?:analytics|decision|index\.data|ux)\.js\?v=)[^\'"\s>]+', r'\g<1>20261004-01', source)
+        for asset, version in design_versions.items():
+            source = re.sub(r'(/assets/' + re.escape(asset) + r'\?v=)[^\'"\s>]+', lambda match: match[1] + version, source)
         sw_path.write_text(source, encoding="utf-8")
     stamp_service_worker_cache_name()
 

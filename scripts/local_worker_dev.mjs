@@ -115,6 +115,13 @@ async function bodyForRequest(req) {
 async function writeNodeResponse(res, response) {
   const headers = {};
   for (const [key, value] of response.headers) headers[key] = value;
+  // This adapter serves HTTP. WebKit otherwise upgrades localhost assets to
+  // HTTPS, which has no TLS listener. Preserve every other CSP directive.
+  if (headers["content-security-policy"]) {
+    headers["content-security-policy"] = headers["content-security-policy"]
+      .split(";").map((directive) => directive.trim())
+      .filter((directive) => directive !== "upgrade-insecure-requests").join("; ");
+  }
   res.writeHead(response.status, response.statusText, headers);
   if (response.body && response.status !== 204 && response.status !== 304) {
     const body = Buffer.from(await response.arrayBuffer());
