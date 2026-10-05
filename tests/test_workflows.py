@@ -31,7 +31,7 @@ class WorkflowTests(unittest.TestCase):
         auto_update = (ROOT / ".github" / "workflows" / "auto-update.yml").read_text(encoding="utf-8")
         scrape_marker = "python scripts/scrape_28car_market.py"
         updater_marker = "run: bash scripts/cron_update.sh"
-        self.assertIn('cron: "47 0 * * 1"', auto_update)
+        self.assertIn('cron: "47 0,6,12,18 * * *"', auto_update)
         self.assertIn("steps.plan.outputs.scope == 'market'", auto_update)
         self.assertIn("--max-pages 0", auto_update)
         self.assertIn("--require-complete", auto_update)

@@ -14,14 +14,14 @@ CONTROL_URL = 'https://platehk-refresh.measurable.workers.dev'
 
 def main() -> None:
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--control-only',action='store_true',help='Configure the private control channel without enabling GitHub dispatch')
-    parser.add_argument('--dispatch-token-file',type=Path,default=ROOT/'.private/refresh-dispatch-token')
+    parser.add_argument('--control-only',action='store_true',help='Configure only the private control channel (the default)')
+    parser.add_argument('--dispatch-token-file',type=Path,help='Optional fine-grained token file for immediate GitHub dispatch; not needed for scheduled collection')
     args=parser.parse_args()
     private=ROOT/'.private';private.mkdir(mode=0o700,exist_ok=True)
     path=private/'refresh-control.json'
     if path.exists(): payload=json.loads(path.read_text())
     else: payload={'CONTROL_TOKEN':secrets.token_hex(32)}
-    if not args.control_only:
+    if args.dispatch_token_file and not args.control_only:
         if not args.dispatch_token_file.exists():
             raise SystemExit('Provide a repository-scoped GitHub Actions dispatch token in .private/refresh-dispatch-token (never paste it into chat).')
         dispatch=args.dispatch_token_file.read_text().strip()

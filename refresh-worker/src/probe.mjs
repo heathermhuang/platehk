@@ -139,7 +139,7 @@ export async function observe(published = {}, {fetcher = fetch, now = new Date()
   // New links outside a recent window are still observed in bounded subsequent polls.
   const newLinks = [...results.values()].filter(item => !known[item.url]);
   for (const item of rotated(newLinks,4,cursor)) if (!selected.some(x => x.url === item.url)) selected.push(item);
-  const updates = [];
+  const updates = [], observedHashes={};
   for (const item of selected) {
     try {
       const response = await sourceFetch(item.url,fetcher);
@@ -147,11 +147,12 @@ export async function observe(published = {}, {fetcher = fetch, now = new Date()
       const bytes = await boundedRead(response,8*1024*1024);
       if (new TextDecoder().decode(bytes.slice(0,5)) !== '%PDF-') throw new Error('source_not_pdf');
       const sha256 = await digest(bytes);
+      observedHashes[item.url]=sha256;
       if (sha256 !== known[item.url]?.sha256) updates.push({...item,sha256});
     } catch (error) { errors.push({url:item.url,error:error.message}); }
   }
   const indexesChanged = JSON.stringify(indexUrls) !== JSON.stringify(published.index_urls || []) || JSON.stringify(indexEntries) !== JSON.stringify(published.index_entries || []);
   const calendarDigest = await digest(JSON.stringify({links:calendar.sort((a,b)=>JSON.stringify(a).localeCompare(JSON.stringify(b))),month:new Date(now.getTime()+8*3600000).toISOString().slice(0,7)}));
   const auctionChanged = !published.sources || indexesChanged || updates.length > 0;
-  return {index_urls:indexUrls,index_entries:indexEntries,updates,source_errors:errors,calendar_digest:calendarDigest,auction_changed:auctionChanged,calendar_changed:calendarDigest !== published.calendar_digest,digest:await digest(JSON.stringify({indexEntries,updates,calendarDigest})),checked_at:now.toISOString(),sources_observed:selected.length};
+  return {index_urls:indexUrls,index_entries:indexEntries,updates,observed_hashes:observedHashes,source_errors:errors,calendar_digest:calendarDigest,auction_changed:auctionChanged,calendar_changed:calendarDigest !== published.calendar_digest,digest:await digest(JSON.stringify({indexEntries,updates,calendarDigest})),checked_at:now.toISOString(),sources_observed:selected.length};
 }

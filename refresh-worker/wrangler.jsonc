@@ -9,7 +9,8 @@
   "observability": {"enabled": true},
   "triggers": {"crons": ["17 * * * *"]},
   "vars": {
-    "DISPATCH_ENABLED": "true",
+    "OBSERVER_ENABLED": "true",
+    "DISPATCH_ENABLED": "false",
     "GITHUB_REPOSITORY": "heathermhuang/platehk",
     "PRODUCTION_URL": "https://plate.hk"
   },

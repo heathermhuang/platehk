@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {Miniflare} from 'miniflare';
-import worker from '../refresh-worker/src/index.mjs';
+import worker,{recordObservation,claim,combineObservation} from '../refresh-worker/src/index.mjs';
 import {observe,digest,officialUrl,boundedRead,sourceFetch,discoveryCandidates,INDEXES,resultKind} from '../refresh-worker/src/probe.mjs';
 
 const pvrm='https://www.td.gov.hk/filemanager/tc/content_4806/pvrm_result_20261003_chi.pdf';
@@ -75,7 +75,45 @@ test('private control and snapshot routes require authentication',async()=>{
     assert.equal(response.status,404);
   }
   const health=await worker.fetch(new Request('https://test.invalid/health'),{DISPATCH_ENABLED:'false'});
-  assert.deepEqual(await health.json(),{ok:true,service:'platehk-refresh',dispatch_enabled:false});
+  assert.deepEqual(await health.json(),{ok:true,service:'platehk-refresh',observer_enabled:false,dispatch_enabled:false});
+});
+
+test('hourly rotations retain unconsumed corrections, clear reversions and invalidate published observations',()=>{
+  const published={sources:{[pvrm]:{sha256:'original'}}};
+  const previous={published_revision:'one',updates:[{url:pvrm,sha256:'corrected'}]};
+  const probe={updates:[],observed_hashes:{},auction_changed:false};
+  assert.equal(combineObservation(probe,previous,published,'one').updates.length,1);
+  assert.equal(combineObservation({...probe,observed_hashes:{[pvrm]:'original'}},previous,published,'one').updates.length,0);
+  assert.equal(combineObservation(probe,previous,published,'two').updates.length,0);
+});
+
+test('credential-free observation stores a fresh plan that collection reuses without another TD scan',async()=>{
+  const mf=new Miniflare({modules:true,scriptPath:new URL('../refresh-worker/src/index.mjs',import.meta.url).pathname,compatibilityDate:'2026-10-05',compatibilityFlags:['nodejs_compat'],d1Databases:{DB:'observe-test'},r2Buckets:{STORE:'observe-test'}});
+  const originalFetch=globalThis.fetch;
+  try {
+    const DB=await mf.getD1Database('DB'),STORE=await mf.getR2Bucket('STORE');
+    const schema=await readFile(new URL('../refresh-worker/migrations/0001_refresh_control.sql',import.meta.url),'utf8');
+    for (const statement of schema.split(';').map(s=>s.trim()).filter(Boolean)) await DB.prepare(statement).run();
+    const {published}=await baseline();
+    await STORE.put('published.json',JSON.stringify(published));
+    const env={DB,STORE,PRODUCTION_URL:'https://production.test',CONTROL_TOKEN:'fixture-control'};
+    const result=await recordObservation(env,{fetcher:upstream()});
+    assert.equal(result.outcome,'unchanged');
+    globalThis.fetch=async(url)=>{
+      assert.equal(url,'https://production.test/data/events.json');
+      return Response.json({events:[]});
+    };
+    assert.equal((await claim(env)).outcome,'unchanged');
+    await recordObservation(env,{fetcher:upstream({changed:true})});
+    const market=await claim(env,{scope:'market',force:true});
+    const receipt=await worker.fetch(new Request('https://refresh.test/v1/ack',{method:'POST',headers:{Authorization:'Bearer fixture-control'},body:JSON.stringify({probe_id:market.probe_id,run_id:'123',commit_sha:'a'.repeat(40)})}),env);
+    assert.equal(receipt.status,200);
+    const decision=await claim(env);
+    assert.equal(decision.run,true);assert.equal(decision.scope,'official');
+    const probe=await (await STORE.get(`probes/${decision.probe_id}.json`)).json();
+    assert.equal(probe.updates[0].sha256,await digest('%PDF-correction'));
+    assert.equal((await DB.prepare('SELECT dispatch_count FROM refresh_control WHERE id=1').first()).dispatch_count,0);
+  } finally {globalThis.fetch=originalFetch;await mf.dispose();}
 });
 
 test('D1 leases coalesce jobs, reject stale receipts, and release after acknowledgement',async()=>{

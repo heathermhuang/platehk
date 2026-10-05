@@ -54,7 +54,7 @@ python3 scripts/build_audit_report.py
 
 The isolated `platehk-refresh` Worker checks official result indexes and auction-calendar links hourly at minute 17 UTC. It hashes a bounded rotating set of recent and historical PDFs, including same-URL replacements, and rotates through the existing physical/e-auction filename-discovery patterns. Network or source-shape failures are recorded as failures, never as an unchanged check.
 
-A changed source starts `Auto Update Data`; an unchanged source starts no Actions job. A D1 lease coalesces overlapping requests. The published checkpoint advances only after data verification, commit/deployment where required, and production checks. A failed or dry run releases its lease without acknowledging publication.
+Cloudflare stores each observation without a GitHub credential. `Auto Update Data` collects the latest observation every six hours; unchanged checks skip dependency installation, parsing, commits, and deployment. Scheduled publication therefore has up to six hours of collection latency (GitHub schedule delays can add more). Corrections found by rotating historical checks remain pending until publication; stale observations are refreshed before collection. A D1 lease coalesces overlapping requests. The published checkpoint advances only after data verification, commit/deployment where required, and production checks. A failed or dry run releases its lease without acknowledging publication.
 
 Three independent scopes share the publication lock:
 
@@ -62,7 +62,7 @@ Three independent scopes share the publication lock:
 - `events`: update calendar and affected published pages without re-parsing auction history.
 - `market`: complete daily privacy-minimized 28car crawl and deployment, without rebuilding official auction datasets or creating daily generated-data commits.
 
-`Refresh Market Signals` runs daily at 08:40 HKT. `Auto Update Data` retains a weekly Monday 08:47 HKT fallback that asks the observer for a plan before installing dependencies. `Auto Heal Data` retains its daily inexpensive production-parity audit and failure-triggered repair path.
+`Refresh Market Signals` runs daily at 08:40 HKT. `Auto Update Data` collects at 02:47, 08:47, 14:47, and 20:47 HKT, asking the observer for a plan before installing dependencies. `Auto Heal Data` retains its daily inexpensive production-parity audit and failure-triggered repair path.
 
 ### Storage and credentials
 
@@ -71,15 +71,13 @@ Three independent scopes share the publication lock:
 Worker secrets:
 
 - `CONTROL_TOKEN`: shared with the repository's `REFRESH_CONTROL_TOKEN` secret.
-- `GITHUB_DISPATCH_TOKEN`: a fine-grained GitHub token restricted to `heathermhuang/platehk`, Actions write permission. Its expiry must be renewed before the scheduler loses dispatch access.
+- Optional `GITHUB_DISPATCH_TOKEN`: only for an explicitly configured immediate-dispatch mode, using a fine-grained GitHub token restricted to `heathermhuang/platehk`, Actions write permission. Scheduled collection does not need it. Keep `DISPATCH_ENABLED=false` for the default credential-free collection mode.
 
 Repository variable: `REFRESH_CONTROL_URL`. Existing `CLOUDFLARE_API_TOKEN` still owns production deployment. No LLM is used by normal checking, refreshing, or deterministic repair.
 
 Configure credentials through stdin without displaying values:
 
 ```bash
-python scripts/configure_refresh_control.py --control-only
-# Put the repository-scoped dispatch token in .private/refresh-dispatch-token with mode 600.
 python scripts/configure_refresh_control.py
 ```
 
@@ -87,11 +85,11 @@ The installer stores control credentials only under gitignored `.private/`, send
 
 ### Bootstrap, verification, and cutover
 
-1. Deploy the observer with `DISPATCH_ENABLED=false`, apply its D1 migration, and configure the control channel.
+1. Deploy the observer with `OBSERVER_ENABLED=false` and `DISPATCH_ENABLED=false`, apply its D1 migration, and configure the control channel.
 2. Merge the verified workflows and run `Refresh Market Signals` once to seed private R2 storage.
 3. Run `Auto Update Data` with `scope=official`, `force=true`, `mode=incremental`, and deployment enabled. This validates the source catalog and warms the cache.
 4. Run a second forced official refresh to verify cache reuse, then run `scope=check` to verify the no-change path skips dependency installation, parsing, commits, and deployment.
-5. Set the tracked `DISPATCH_ENABLED` variable to `true`, deploy the observer, and verify an actual scheduled check and its D1 outcome.
+5. Deploy the tracked `OBSERVER_ENABLED=true`, `DISPATCH_ENABLED=false` configuration, and verify an actual hourly scheduled observation and its D1 outcome. GitHub collects its pending work without exporting a GitHub credential to Cloudflare.
 
 ```bash
 npx wrangler d1 migrations apply platehk-refresh --remote --config refresh-worker/wrangler.jsonc

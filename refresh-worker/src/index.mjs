@@ -1,5 +1,5 @@
 import {timingSafeEqual} from 'node:crypto';
-import {observe,boundedRead,officialUrl} from './probe.mjs';
+import {observe,boundedRead,officialUrl,digest} from './probe.mjs';
 
 const LEASE_SECONDS = 7200;
 const json = (value,status=200) => Response.json(value,{status,headers:{'Cache-Control':'no-store'}});
@@ -12,12 +12,35 @@ async function state(env) { return env.DB.prepare('SELECT * FROM refresh_control
 async function stored(env,key) { const object = await env.STORE.get(key); return object ? object.json() : null; }
 async function body(request,limit=2*1024*1024) { return JSON.parse(new TextDecoder().decode(await boundedRead(request,limit))); }
 function scopeFor(probe) { return probe.auction_changed ? 'official' : probe.calendar_changed || probe.events_expired ? 'events' : 'check'; }
+const observationFresh = (record,revision) => record?.published_revision === revision && Date.parse(record.checked_at) >= Date.now()-90*60*1000 && Date.parse(record.checked_at) <= Date.now()+600000;
+const sourceRevision = published => digest(JSON.stringify({sources:published.sources,index_urls:published.index_urls,index_entries:published.index_entries}));
+export function combineObservation(probe,previous,published,revision) {
+  const updates=new Map(previous?.published_revision === revision ? previous.updates.map(item=>[item.url,item]) : []);
+  for (const [url,hash] of Object.entries(probe.observed_hashes || {})) if (hash===published.sources?.[url]?.sha256) updates.delete(url);
+  for (const item of probe.updates) if (item.sha256 !== published.sources?.[item.url]?.sha256) updates.set(item.url,item);
+  const indexesChanged=probe.index_urls ? JSON.stringify(probe.index_urls)!==JSON.stringify(published.index_urls || []) || JSON.stringify(probe.index_entries)!==JSON.stringify(published.index_entries || []) : probe.auction_changed;
+  return {...probe,updates:[...updates.values()],auction_changed:!published.sources || indexesChanged || updates.size>0,calendar_changed:probe.calendar_digest!==published.calendar_digest,published_revision:revision};
+}
+export async function recordObservation(env,options={}) {
+  const control=await state(env), published=await stored(env,'published.json') || {};
+  const revision=await sourceRevision(published);
+  const previous=await stored(env,'observed.json');
+  const probe=await observe(published,{cursor:control.cursor,...options});
+  // Retain corrections found by earlier archive rotations until a real publication acknowledges them.
+  const record=combineObservation(probe,previous,published,revision);
+  await env.STORE.put('observed.json',JSON.stringify(record));
+  const outcome=scopeFor(record)!=='check' ? 'observed_changed' : record.source_errors.length ? 'source_unavailable' : 'unchanged';
+  await env.DB.prepare('UPDATE refresh_control SET cursor=cursor+1,last_checked_at=?,last_outcome=CASE WHEN lease_until<=? THEN ? ELSE last_outcome END,last_error=?,no_change_count=no_change_count+? WHERE id=1').bind(record.checked_at,Math.floor(Date.now()/1000),outcome,record.source_errors.length ? JSON.stringify(record.source_errors) : null,outcome==='unchanged' ? 1 : 0).run();
+  return {outcome,scope:scopeFor(record),source_error_count:record.source_errors.length,updates:record.updates.length};
+}
 export async function claim(env,{scope='check',force=false}={}) {
   if (!['check','official','events','market'].includes(scope)) throw new Error('invalid_scope');
   const control = await state(env), now = Math.floor(Date.now()/1000);
   if (control.lease_until > now) return {run:false,outcome:'pending',probe_id:control.pending_id};
   const published = await stored(env,'published.json') || {};
-  const probe = scope === 'market' ? {updates:[],index_urls:published.index_urls || [],calendar_digest:published.calendar_digest,checked_at:new Date().toISOString(),source_errors:[]} : await observe(published,{cursor:control.cursor});
+  const cached=scope!=='market' ? await stored(env,'observed.json') : null;
+  const revision=await sourceRevision(published);
+  const probe = scope === 'market' ? {updates:[],index_urls:published.index_urls || [],calendar_digest:published.calendar_digest,checked_at:new Date().toISOString(),source_errors:[]} : combineObservation(scope==='check' && !force && observationFresh(cached,revision) ? cached : await observe(published,{cursor:control.cursor}),cached,published,revision);
   if (scope !== 'market') {
     const response = await fetch(`${env.PRODUCTION_URL}/data/events.json`,{signal:AbortSignal.timeout(15000)});
     if (!response.ok) throw new Error('production_events_unavailable');
@@ -81,7 +104,7 @@ function validMarket(payload) {
 export default {
   async fetch(request,env) {
     const url = new URL(request.url);
-    if (url.pathname === '/health' && request.method === 'GET') return json({ok:true,service:'platehk-refresh',dispatch_enabled:env.DISPATCH_ENABLED === 'true'});
+    if (url.pathname === '/health' && request.method === 'GET') return json({ok:true,service:'platehk-refresh',observer_enabled:env.OBSERVER_ENABLED === 'true',dispatch_enabled:env.DISPATCH_ENABLED === 'true'});
     if (!await authorized(request,env)) return json({error:'not_found'},404);
     try {
       if (url.pathname === '/v1/status' && request.method === 'GET') return json(await state(env));
@@ -120,9 +143,11 @@ export default {
   },
   async scheduled(controller,env,ctx) {
     ctx.waitUntil((async () => {
-      if (env.DISPATCH_ENABLED !== 'true') { console.log(JSON.stringify({event:'refresh_shadow',dispatch_enabled:false})); return; }
+      if (env.OBSERVER_ENABLED !== 'true') { console.log(JSON.stringify({event:'refresh_shadow',observer_enabled:false})); return; }
       let decision;
       try {
+        const observation=await recordObservation(env);
+        if (env.DISPATCH_ENABLED !== 'true') { console.log(JSON.stringify({event:'refresh_observed',...observation,scheduled_time:controller.scheduledTime})); return; }
         decision = await claim(env);
         if (decision.run) await dispatch(env,decision);
         console.log(JSON.stringify({event:'refresh_check',...decision,scheduled_time:controller.scheduledTime}));
