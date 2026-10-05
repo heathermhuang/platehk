@@ -10,13 +10,14 @@
     if(!host || document.querySelector('[data-info-shell-header]'))return;
     const legacy=document.querySelector('[aria-label="Plate tools"]');if(legacy&&legacy!==host)legacy.hidden=true;
     let nav=host.querySelector('.ux-task-nav');if(!nav){nav=make('nav',null,'info-nav ux-task-nav');nav.setAttribute('aria-label',text('主要工具','Primary tools'));host.append(nav);}nav.replaceChildren();
-    for(const [path,zh,en] of [['/prices.html','查價','Prices'],['/discover.html','找車牌','Discover'],['/auctions.html','日程','Auctions'],['/shortlist.html','收藏','Shortlist']])nav.append(link(text(zh,en),href(path)));
+    for(const [path,zh,en] of [['/','拍賣紀錄','Records'],[`/auction-results/${language()==='en'?'en/':''}index.html`,'最新拍賣結果','Latest auction results'],['/auctions.html','日程','Auctions'],['/shortlist.html','收藏','Shortlist']])nav.append(link(text(zh,en),path.startsWith('/auction-results/')?path:href(path)));
     const more=make('details',null,'site-more');more.append(make('summary',text('更多','More')));const menu=make('div');
-    for(const [path,zh,en] of [['/','搜尋','Search'],['/plates/index.html','熱門車牌','Popular plates'],['/camera.html','相機','Camera'],['/about.html','資料說明','Data guide'],['/audit.html','資料審核','Data audit'],['/api.html','開發者','Developers']])menu.append(link(text(zh,en),href(path)));
-    menu.append(link(text('拍賣結果','Results archive'),`/auction-results/${language()==='en'?'en/':''}index.html`));more.append(menu);nav.append(more);
+    for(const [path,zh,en] of [['/prices.html','查歷史成交價','Historical prices'],['/discover.html','按預算找車牌','Discover by budget'],['/availability.html','官方可用號碼及申請','Official availability and applications'],['/plates/index.html','熱門車牌','Popular plates'],['/camera.html','相機搜尋','Search by camera'],['/about.html','資料說明','Data guide'],['/audit.html','資料審核','Data audit'],['/api.html','開發者','Developers']]){const anchor=link(text(zh,en),href(path));if(location.pathname===path)anchor.setAttribute('aria-current','page');menu.append(anchor);}
+    more.append(menu);nav.append(more);
   }
   primaryNavigation();
   document.addEventListener('keydown',event=>{if(event.key==='Escape')for(const menu of document.querySelectorAll('.site-more[open]')){menu.open=false;menu.querySelector('summary').focus();}});
+  document.addEventListener('pointerdown',event=>{for(const menu of document.querySelectorAll('.site-more[open]'))if(!menu.contains(event.target))menu.open=false;});
   for(const button of document.querySelectorAll('#langZh,#langEn,#langZhBtn,#langEnBtn'))button.addEventListener('click',()=>setTimeout(primaryNavigation,0));
 
   const rootQuery=document.querySelector('#q');
@@ -69,7 +70,7 @@
     const page=document.body.dataset.infoPage; if(!['about','api','mcp','terms','privacy','availability'].includes(page))return;
     const main=document.querySelector('main');const headings=[...main.querySelectorAll('h2')].filter(el=>el.getClientRects().length);if(headings.length<2)return;
     const details=make('details',null,'ux-contents');details.append(make('summary',text('本頁內容','On this page')));const nav=make('nav');nav.setAttribute('aria-label',text('章節導覽','Section navigation'));
-    headings.forEach((heading,index)=>{heading.id||=`section-${index+1}`;if(page==='privacy'&&/相機|camera/i.test(heading.textContent))heading.id='camera-uploads';nav.append(link(heading.textContent,'#'+heading.id));});details.append(nav);main.querySelector('h1')?.after(details);
+    headings.forEach((heading,index)=>{heading.id||=`section-${index+1}`;if(page==='privacy'&&/相機|camera/i.test(heading.textContent))heading.id='camera-uploads';nav.append(link(heading.textContent,'#'+heading.id));});details.append(nav);main.querySelector('h1:not([hidden])')?.after(details);
     if(page==='privacy'){const note=make('p',text('快速查閱：相機影像處理、本機清單與分析資料。完整政策及資料處理詳情見以下章節。','Find camera processing, browser-local shortlist storage and analytics details below. The complete policy and processing terms remain in the following sections.'),'ux-policy-summary');details.after(note);}
     if(page==='terms'){details.after(make('p',text('快速查閱：官方資料來源、服務範圍、實驗功能及聯絡方式。以下保留完整使用條款。','Find official sources, service scope, experimental features and contact information. The complete terms remain below.'),'ux-policy-summary'));}
     if(page==='about')details.after(make('p',text('來源資料列包括重複的工作簿紀錄；「全部車牌」搜尋會移除已識別的跨資料集重疊。兩個筆數代表不同範圍，並非更新時間差異。','Raw source rows include overlapping workbook records. All Plates search removes identified cross-dataset duplicates. The two counts describe different scopes, not different refresh times.'),'ux-count-explanation'));
@@ -79,6 +80,8 @@
     if(page==='availability')for(const anchor of main.querySelectorAll('a[href]')){const url=new URL(anchor.href);if(url.protocol==='https:'&&/^(?:www\.)?(?:td\.gov\.hk|gov\.hk|1823\.gov\.hk)$/.test(url.hostname)){anchor.classList.add('ux-official-service');anchor.append(' ↗');}}
   }
   documentContents();
+  // Overflowing code examples must be reachable for keyboard scrolling.
+  for (const pre of document.querySelectorAll('main pre')) pre.tabIndex = 0;
 
   const priceForm=document.querySelector('body[data-decision-page="prices"] [data-query-form]');
   if(priceForm){const examples=make('nav',null,'decision-actions');examples.setAttribute('aria-label',text('車牌例子','Plate examples'));for(const plate of ['AA88','1314','88'])examples.append(link(plate,href(`/plate.html?q=${plate}`)));priceForm.after(examples);const main=priceForm.closest('main');const method=make('details',null,'ux-method');method.append(make('summary',text('如何選取相近成交？','How are comparable sales selected?')));const headings=[...main.querySelectorAll('h2')].filter(el=>el.getClientRects().length);const first=headings[0];if(first){let node=first;while(node&&node!==headings[1]){const next=node.nextSibling;method.append(node);node=next;}examples.after(method);}}
