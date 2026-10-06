@@ -38,6 +38,26 @@ def load_page_builder():
 
 
 class MarketSignalTests(unittest.TestCase):
+    def test_only_explicit_listing_whatsapp_is_captured(self) -> None:
+        cell = lambda text: '<font size="2" color="#B0B0B0"><b>' + text + '</b></font>'
+        self.assertEqual(market.parse_advertised_whatsapp(cell('Whatsapp 6111 2222')), '85261112222')
+        self.assertEqual(market.parse_advertised_whatsapp(cell('WhatsApp: +852 6111-2222')), '85261112222')
+        self.assertIsNone(market.parse_advertised_whatsapp(cell('Seller 61112222')))
+        self.assertIsNone(market.parse_advertised_whatsapp(cell('電話:61112222')))
+        self.assertIsNone(market.parse_advertised_whatsapp('<aside>Whatsapp 61112222</aside>'))
+        self.assertIsNone(market.parse_advertised_whatsapp(cell('Whatsapp 61112222 / Whatsapp 62223333')))
+        self.assertIsNone(market.parse_advertised_whatsapp(cell('Whatsapp 611122223')))
+
+    def test_contacts_never_enter_signal_payload(self) -> None:
+        now = dt.datetime.now(dt.timezone.utc).replace(microsecond=0)
+        signal = market.ListingSignal('TEST8', 'n100001', market.DETAIL_URL.format(vid='1'), 'fixed', 88000, '85261112222')
+        payload = market.build_payload([signal], {}, scraped_at=now, requested_pages=[1], successful_pages=[1], failed_pages=[], total_pages=1, stale_hours=72)
+        self.assertNotIn('61112222', json.dumps(payload))
+        self.assertNotIn('whatsapp', json.dumps(payload))
+        companion = market.build_contact_payload([signal], payload)
+        self.assertEqual(companion['contacts']['n100001']['whatsapp_number'], '85261112222')
+        self.assertEqual(companion['scraped_at'], payload['scraped_at'])
+
     def test_parser_extracts_only_allowlisted_market_signals(self) -> None:
         source = (ROOT / "tests" / "fixtures" / "28car_listing_page.html").read_text(encoding="utf-8")
         total_pages, signals = market.parse_page(source)

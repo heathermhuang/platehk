@@ -35,6 +35,7 @@ ROOT_FILES = [
     "changelog.html",
     "terms.html",
     "privacy.html",
+    "contact.html",
     "mcp.html",
     "robots.txt",
     "sitemap.xml",
@@ -382,6 +383,32 @@ def copy_private_market_signals(*, required: bool = False, allow_stale: bool = F
             "coverage": payload.get("coverage"),
             "signals": shard_signals,
         })
+
+    contact_source = source.with_name(source.stem + '.contacts.json')
+    if contact_source.exists():
+        contacts = json.loads(contact_source.read_text(encoding='utf-8'))
+        if (contacts.get('schema_version') != 1 or contacts.get('source') != '28car'
+                or contacts.get('scraped_at') != payload.get('scraped_at')
+                or contacts.get('coverage') != payload.get('coverage')):
+            raise RuntimeError('Contact snapshot does not match market snapshot')
+        contact_shards: dict[str, dict] = {}
+        for plate_norm, offers in signals.items():
+            for offer in offers:
+                item = contacts.get('contacts', {}).get(offer['listing_id'])
+                if item is None:
+                    continue
+                if (set(item) != {'plate', 'whatsapp_number', 'observed_at'}
+                        or item['plate'] != plate_norm
+                        or item['observed_at'] != offer['last_seen_at']
+                        or not re.fullmatch(r'852[456789]\d{7}', str(item['whatsapp_number']))):
+                    raise RuntimeError('Invalid private WhatsApp contact')
+                contact_shards.setdefault(plate_norm[0], {})[offer['listing_id']] = item
+        for shard, items in contact_shards.items():
+            write_json(target / 'contacts' / f'{shard}.json', {
+                'schema_version': 1, 'source': '28car', 'scraped_at': payload['scraped_at'],
+                'fresh_for_hours': payload['fresh_for_hours'], 'coverage': payload['coverage'],
+                'contacts': items,
+            })
 
 
 def copy_plate_pages() -> None:

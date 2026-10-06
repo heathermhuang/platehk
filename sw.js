@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pvrm-static-v161';
+const CACHE_NAME = 'pvrm-static-v162';
 const ASSETS = [
   './assets/index.browser.css?v=20261002-01',
   './assets/index.browser.js?v=20261002-01',
@@ -7,7 +7,7 @@ const ASSETS = [
   './assets/api-page.js?v=20260928-01',
   './assets/changelog.js?v=20260928-01',
   './assets/index.js?v=20261001-03',
-  './assets/index.market.js?v=20260928-01',
+  './assets/index.market.js?v=20261006-01',
   './assets/index.share.js?v=20261001-03',
   './assets/index.webmcp.js?v=20260418-01',
   './assets/vendor/qrcode-generator.js?v=20260503-01',
@@ -60,7 +60,7 @@ const ASSETS = [
   './assets/info-locale.js?v=20260825-01',
   './assets/info-shell.js?v=20260928-01',
   './assets/popular-index.js?v=20260825-01',
-  './assets/plate.market.js?v=20260905-01',
+  './assets/plate.market.js?v=20261006-01',
   './assets/ledger.css?v=20260825-02',
   './terms.html',
   './privacy.html',
@@ -112,6 +112,7 @@ self.addEventListener('fetch', (event) => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
+  if (url.pathname.startsWith("/api/contact/") || url.pathname === "/contact.html") return;
 
   const isData =
     url.pathname.endsWith('/data/all.search.meta.json') ||

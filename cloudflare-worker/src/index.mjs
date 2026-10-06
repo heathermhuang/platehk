@@ -1,3 +1,4 @@
+import { handleContactUnlock } from "./contact-unlock.mjs";
 import { handleApiRequest } from "./api.mjs";
 import {
   buildOAuthProtectedResourceMetadata,
@@ -356,6 +357,7 @@ async function serveAsset(request, env) {
     && url.pathname.startsWith("/data/")
     && contentType.includes("application/json");
   const privateDecisionView = ["/plate.html", "/shortlist.html"].includes(url.pathname)
+    || url.pathname === "/contact.html"
     || (url.pathname === "/discover.html" && url.searchParams.has("q"));
   const noindex = ((genericNoindex || privateDecisionView) && contentType.includes("text/html")) || isPublicDataJson;
   if (!primaryHost && contentType.includes("text/html")) {
@@ -383,6 +385,10 @@ async function serveAsset(request, env) {
     headers.delete("content-encoding");
     headers.delete("etag");
   }
+  if (url.pathname === "/contact.html") {
+    headers.set("cache-control", "private, no-store");
+    headers.set("referrer-policy", "no-referrer");
+  }
   if (primaryHost && privateDecisionView) headers.set("x-robots-tag", "noindex, follow");
   if (url.pathname.endsWith(".md")) headers.set("content-type", "text/markdown; charset=utf-8");
   if (primaryHost) appendDiscoveryLinkHeaders(headers, url);
@@ -404,6 +410,7 @@ export default {
     }
     const canonicalHtmlRedirect = redirectToCanonicalHtml(request, url);
     if (canonicalHtmlRedirect) return canonicalHtmlRedirect;
+    if (url.pathname.startsWith("/api/contact/")) return handleContactUnlock(request, env);
     if (url.pathname.startsWith("/api/")) {
       const response = await handleApiRequest(request, env, ctx);
       return isPrimaryHost(url.hostname) ? withDiscoveryLinkHeaders(response, url) : response;

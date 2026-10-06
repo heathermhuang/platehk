@@ -77,7 +77,7 @@ test('discovery keeps cross-month filename variants and rotates a bounded batch'
   assert(candidates.some(item=>decodeURIComponent(item.url).includes('E-Auction Result Handout 1-5 October 2026')));
 });
 test('private control and snapshot routes require authentication',async()=>{
-  for(const path of ['/v1/status','/v1/market','/v1/ack']) {
+  for(const path of ['/v1/status','/v1/market','/v1/market-contacts','/v1/ack']) {
     const response=await worker.fetch(new Request(`https://test.invalid${path}`),{CONTROL_TOKEN:'test-token'});
     assert.equal(response.status,404);
   }
@@ -142,6 +142,17 @@ test('D1 leases coalesce jobs, reject stale receipts, and release after acknowle
     assert.equal((await call('/v1/ack','POST',{probe_id:first.probe_id,run_id:'123',commit_sha:'a'.repeat(40)})).status,409);
     assert.equal((await call('/v1/market','PUT',{schema_version:1,source:'28car',coverage:{complete:false},signals:{}})).status,400);
     assert.equal((await call('/v1/market')).status,404);
+    assert.equal((await call('/v1/market-contacts')).status,404);
+    const observed=new Date().toISOString();
+    const contacts={schema_version:1,source:'28car',scraped_at:observed,coverage:{complete:true},contacts:{n100001:{plate:'TEST8',whatsapp_number:'85261112222',observed_at:observed}}};
+    assert.equal((await call('/v1/market-contacts','PUT',contacts)).status,200);
+    const restored=await call('/v1/market-contacts');
+    assert.equal(restored.headers.get('cache-control'),'no-store');
+    assert.deepEqual(await restored.json(),contacts);
+    contacts.contacts.n100001.whatsapp_number='not-a-number';
+    assert.equal((await call('/v1/market-contacts','PUT',contacts)).status,400);
+    contacts.contacts={}; contacts.coverage.complete=false;
+    assert.equal((await call('/v1/market-contacts','PUT',contacts)).status,400);
   } finally { await mf.dispose(); }
 });
 

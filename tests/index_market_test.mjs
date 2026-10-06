@@ -172,3 +172,15 @@ assert.equal(brokerModalEl.hidden, false);
 assert.equal(brokerPlateEl.value, "DR HUANG");
 
 console.log("Single-listing market signal frontend test passed.");
+
+signals.HUANG.contact_unlock_available = true;
+signals.HUANG.listing_id = 'n100001';
+await flow.update({query:'HUANG',rows:candidateRows});
+assert.match(marketSignalEl.innerHTML,/Unlock seller WhatsApp — HK\$99/);
+assert.match(marketSignalEl.innerHTML,/contact.html\?plate=HUANG&listing_id=n100001/);
+assert.doesNotMatch(marketSignalEl.innerHTML,/data-market-sell=/);
+let navigated;
+location.assign = url => { navigated = url; };
+rowsEl.listeners.get('click')({target:rowActions.get('HUANG').children[0]});
+assert.equal(navigated,'/contact.html?plate=HUANG&listing_id=n100001&lang=en');
+console.log('Eligible contact routes to HK$99 checkout instead of the introduction modal.');

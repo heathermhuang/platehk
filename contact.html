@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="zh-HK">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="referrer" content="no-referrer">
+  <title>聯絡賣家 | Plate.hk</title>
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+  <link rel="stylesheet" href="/assets/ledger.css?v=20260825-02">
+  <link rel="stylesheet" href="/assets/contact-unlock.css?v=20261006-02">
+  <script src="/assets/contact-unlock.js?v=20261006-02" defer></script>
+</head>
+<body>
+  <main class="contact-wrap">
+    <nav class="contact-nav" aria-label="導覽">
+      <a class="contact-brand" href="/">Plate.hk</a>
+      <a id="back" href="/">返回搜尋</a>
+    </nav>
+    <section class="contact-card" aria-labelledby="title" data-state="checking">
+      <div class="contact-heading">
+        <p class="contact-eyebrow" id="eyebrow">聯絡賣家</p>
+        <h1 id="title">取得賣家的 WhatsApp</h1>
+        <p id="description">一次付款，取得這則刊登的 WhatsApp 號碼，直接與賣家傾談。</p>
+      </div>
+      <div class="contact-listing">
+        <div id="plate" class="plate" hidden></div>
+        <div class="contact-listing-details">
+          <p id="asking" hidden></p>
+          <p id="observed" class="contact-caption" hidden></p>
+        </div>
+      </div>
+      <div class="contact-purchase" id="purchase">
+        <div class="contact-price-row"><span id="price-label">WhatsApp 聯絡資料</span><strong>HK$99</strong></div>
+        <p class="contact-caption" id="one-time">一次付款 · 不用登記 · 並非車牌售價</p>
+      </div>
+      <div class="contact-status" id="status" role="status" aria-live="polite">正在檢查刊登的聯絡資料…</div>
+      <div class="contact-number" id="number-panel" hidden>
+        <label for="phone" id="phone-label">賣家 WhatsApp 號碼</label>
+        <input id="phone" readonly inputmode="tel" aria-describedby="copy-status">
+        <p class="contact-caption" id="copy-status" role="status" aria-live="polite"></p>
+      </div>
+      <div class="contact-actions">
+        <button id="pay" class="contact-primary" type="button" hidden>繼續付款 — HK$99</button>
+        <button id="retry" class="contact-primary" type="button" hidden>重新檢查</button>
+        <a id="whatsapp" class="contact-primary" target="_blank" rel="noopener noreferrer" hidden>在 WhatsApp 聯絡賣家</a>
+        <button id="copy" class="contact-secondary" type="button" hidden>複製號碼</button>
+      </div>
+      <p id="payment-note" class="contact-caption" hidden>由 Stripe 安全處理付款。支援信用卡，以及適用裝置上的 Apple Pay 或 Google Pay。</p>
+      <p id="reopen-note" class="contact-caption" hidden>你可在這個瀏覽器再次查看，也可複製號碼自行保存。</p>
+      <p class="contact-source" id="source-row" hidden><span id="source-intro">你亦可直接到來源網站：</span> <a id="source" target="_blank" rel="nofollow noopener noreferrer">免費查看 28car 原刊登</a></p>
+      <details class="contact-details" id="details">
+        <summary id="details-label">付款前須知</summary>
+        <p id="disclosure">HK$99 是取得一則刊登聯絡資料的便利服務費，並非訂閱或車牌訂金。原刊登可免費查看；賣家是否回覆、車牌擁有權及能否轉名，均須另行確認。</p>
+        <p id="recovery">你可在付款時使用的瀏覽器再次查看聯絡資料。換裝置或清除瀏覽器資料後，請保留 Stripe 收據以便我們協助核對。</p>
+      </details>
+      <div class="contact-help">
+        <a id="help" href="https://forms.gle/1YFfSmraLp27YneU9" target="_blank" rel="noopener noreferrer">付款或聯絡資料有問題？聯絡我們</a>
+        <p class="contact-caption" id="help-note">如號碼有誤或付款後未能取得資料，請保留 Stripe 收據，聯絡我們核對及安排退款。</p>
+      </div>
+    </section>
+    <footer class="contact-footer"><span id="footer-note">由 Plate.hk 提供聯絡資料服務</span><div><a id="terms" href="/terms.html">使用條款</a><a id="privacy" href="/privacy.html">私隱政策</a></div></footer>
+  </main>
+</body>
+</html>
