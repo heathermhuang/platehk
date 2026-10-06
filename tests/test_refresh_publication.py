@@ -82,5 +82,18 @@ class RefreshPublicationTests(unittest.TestCase):
             run_cached_builder.run_builder('pvrm',reset=True)
         self.assertFalse(json.loads(self.receipts.read_text())['schema_valid'])
         with self.assertRaisesRegex(ValueError,'stale or malformed'):self.verify()
+    def test_merged_workbook_counts_do_not_create_a_false_pdf_baseline(self):
+        tmp=self.root/'.tmp';tmp.mkdir();(tmp/'source-probe.json').write_text(json.dumps({'probe_id':'fixture-probe'}))
+        data=self.root/'data/tvrm_physical';data.mkdir(parents=True)
+        (data/'auctions.json').write_text(json.dumps([{'pdf_url':URL,'entry_count':220}]))
+        (data/'results.slim.json').write_text(json.dumps([{'pdf_url':URL,'source_type':'xlsx_exact_dates'}]))
+        context={'pdf_url':URL,'kind':'physical'};value=bundle('physical');value['rows']=[]
+        def execute(_path,run_name):self.tvrm.parse(self.pdf,context,lambda:value)
+        with patch.object(run_cached_builder,'ROOT',self.root),patch.object(run_cached_builder,'RECEIPTS',self.receipts),patch.object(run_cached_builder.runpy,'run_path',side_effect=execute):
+            run_cached_builder.run_builder('tvrm',reset=True)
+        self.assertFalse(json.loads(self.receipts.read_text())['expected_nonempty'])
+        self.probe['updates']=[];self.verify()
+        self.probe['updates']=[{'url':URL,'sha256':self.sha,'kind':'physical'}]
+        with self.assertRaisesRegex(ValueError,'zero extracted rows'):self.verify()
 
 if __name__=='__main__':unittest.main()
