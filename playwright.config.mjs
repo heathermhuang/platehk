@@ -43,7 +43,7 @@ export default defineConfig({
     },
     {
       name: "webkit-desktop",
-      testMatch: ["**/design-consistency.spec.mjs", "**/browser-compatibility.spec.mjs", "**/search-layout.spec.mjs"],
+      testMatch: ["**/contact-unlock.spec.mjs", "**/design-consistency.spec.mjs", "**/browser-compatibility.spec.mjs", "**/search-layout.spec.mjs"],
       use: {
         ...devices["Desktop Safari"],
         viewport: { width: 1366, height: 900 },
@@ -51,7 +51,7 @@ export default defineConfig({
     },
     {
       name: "webkit-mobile",
-      testMatch: ["**/design-consistency.spec.mjs", "**/browser-compatibility.spec.mjs", "**/search-layout.spec.mjs"],
+      testMatch: ["**/contact-unlock.spec.mjs", "**/design-consistency.spec.mjs", "**/browser-compatibility.spec.mjs", "**/search-layout.spec.mjs"],
       use: { ...devices["iPhone 13"] },
     },
   ],

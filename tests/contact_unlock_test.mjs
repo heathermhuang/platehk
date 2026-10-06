@@ -51,7 +51,12 @@ try {
   assert.equal(response.headers.get("cache-control"), "private, no-store");
   const cookie = response.headers.get("set-cookie").split(";")[0];
   assert.match(response.headers.get("set-cookie"), /Secure; HttpOnly; SameSite=Lax/);
-  assert.equal(JSON.stringify(await response.json()).includes("61112222"), false);
+  const preview = await response.json();
+  assert.equal(JSON.stringify(preview).includes("61112222"), false);
+  assert.equal(Object.hasOwn(preview, "whatsapp_number"), false);
+  assert.equal(preview.asking_price_hkd, 88000);
+  assert.equal(preview.source_url, listing.source_url);
+  assert.equal(preview.observed_at, now);
   response = await call("checkout", { body: { plate: "TEST8", listing_id: "n100001" }, cookie });
   assert.equal(response.status, 200);
   assert.equal(checkoutForm.get("line_items[0][price_data][unit_amount]"), "9900");
@@ -60,7 +65,18 @@ try {
   const session = sessions.get("cs_test_fixture");
   response = await call("reveal", { body: { session_id: session.id }, cookie });
   assert.equal(response.status, 200);
-  assert.equal((await response.json()).whatsapp_url, "https://wa.me/85261112222");
+  const unlocked = await response.json();
+  assert.equal(unlocked.whatsapp_url, "https://wa.me/85261112222");
+  assert.equal(unlocked.asking_price_hkd, 88000);
+  assert.equal(unlocked.source_url, listing.source_url);
+  assert.equal(unlocked.observed_at, now);
+  // Existing purchases with no preview metadata still reveal their purchased number.
+  const savedPreview = { source_url: session.metadata.source_url, observed_at: session.metadata.observed_at, asking_price_hkd: session.metadata.asking_price_hkd };
+  for (const key of Object.keys(savedPreview)) delete session.metadata[key];
+  const oldPurchase = await call("reveal", { body: { session_id: session.id }, cookie });
+  assert.equal(oldPurchase.status, 200);
+  assert.equal(Object.hasOwn(await oldPurchase.json(), "asking_price_hkd"), false);
+  Object.assign(session.metadata, savedPreview);
   // A refresh after the listing disappears still delivers the exact purchased snapshot.
   delete contacts.contacts.n100001;
   assert.equal((await call("reveal", { body: { session_id: session.id }, cookie })).status, 200);

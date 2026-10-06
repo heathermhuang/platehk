@@ -80,7 +80,12 @@ export async function advertisedContact(request, env, plate, listingId, supplied
   const offer = market?.signals?.[plate]?.find((candidate) => candidate.listing_id === listingId);
   if (market?.schema_version !== 1 || market.source !== "28car" || market.coverage?.complete !== true
       || market.scraped_at !== payload.scraped_at || !offer || offer.last_seen_at !== item.observed_at) return null;
-  return { plate, listing_id: listingId, whatsapp_number: item.whatsapp_number };
+  if (!/^https:\/\/m\.28car\.com\/num_dsp\.php\?/.test(offer.source_url || "")) return null;
+  return {
+    plate, listing_id: listingId, whatsapp_number: item.whatsapp_number,
+    source_url: offer.source_url, observed_at: item.observed_at,
+    asking_price_hkd: Number.isSafeInteger(offer.asking_price_hkd) && offer.asking_price_hkd > 0 ? offer.asking_price_hkd : null,
+  };
 }
 
 async function stripeRequest(env, path, body) {
@@ -141,13 +146,21 @@ export async function handleContactUnlock(request, env) {
       const contact = await decryptContact(env, session.metadata.contact, owner);
       if (!phonePattern.test(contact.whatsapp_number) || contact.plate !== session.metadata.plate
           || contact.listing_id !== session.metadata.listing_id) return reply({ error: "invalid_purchase" }, 403);
-      return reply({ ...contact, whatsapp_url: `https://wa.me/${contact.whatsapp_number}` });
+      const sourceUrl = /^https:\/\/m\.28car\.com\/num_dsp\.php\?/.test(session.metadata.source_url || "") ? session.metadata.source_url : null;
+      const asking = Number(session.metadata.asking_price_hkd);
+      return reply({ ...contact, whatsapp_url: `https://wa.me/${contact.whatsapp_number}`,
+        source_url: sourceUrl, observed_at: session.metadata.observed_at || null,
+        ...(Object.hasOwn(session.metadata, "asking_price_hkd") ? { asking_price_hkd: Number.isSafeInteger(asking) && asking > 0 ? asking : null } : {}),
+      });
     }
     const plate = normalizeQuery(String(body.plate || ""));
     const listingId = String(body.listing_id || "");
     const contact = await advertisedContact(request, env, plate, listingId);
     if (!contact) return reply({ error: "contact_unavailable" }, 404);
-    if (route === "availability") return reply({ available: true, price_hkd: 99, plate, listing_id: listingId }, 200, buyerCookie(request) || randomBuyer());
+    if (route === "availability") {
+      const { whatsapp_number, ...preview } = contact;
+      return reply({ available: true, price_hkd: 99, ...preview }, 200, buyerCookie(request) || randomBuyer());
+    }
     const buyer = buyerCookie(request);
     if (!buyer) return reply({ error: "cookies_required" }, 403);
     const owner = await buyerHash(buyer);
@@ -160,7 +173,10 @@ export async function handleContactUnlock(request, env) {
       "line_items[0][quantity]": "1",
       "metadata[purpose]": "seller_whatsapp_unlock", "metadata[owner]": owner,
       "metadata[plate]": plate, "metadata[listing_id]": listingId,
-      "metadata[contact]": await encryptContact(env, contact, owner),
+      "metadata[contact]": await encryptContact(env, { plate, listing_id: listingId, whatsapp_number: contact.whatsapp_number }, owner),
+      "metadata[source_url]": contact.source_url,
+      "metadata[observed_at]": contact.observed_at,
+      "metadata[asking_price_hkd]": contact.asking_price_hkd == null ? "" : String(contact.asking_price_hkd),
       "expires_at": String(Math.floor(Date.now() / 1000) + 1800),
       "custom_text[submit][message]": "HK$99 unlocks one advertised contact. The source listing is freely available on 28car. Seller reply, ownership and sale are not guaranteed.",
       success_url: `${url.origin}/contact.html?session_id={CHECKOUT_SESSION_ID}&lang=${body.lang === "en" ? "en" : "zh"}`,

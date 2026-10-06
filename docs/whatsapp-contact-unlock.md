@@ -50,3 +50,24 @@ check or refund on seller non-response.
 
 The old introduction service remains available as a separate disabled pilot;
 its seller-funded HK$199 contract is not the new buyer-funded unlock.
+
+## Buyer experience and payment methods
+
+The contact screen separates the seller's asking price from the HK$99 fee and
+shows the source observation time. No account signup or contact form is needed.
+The free source listing remains visible. After payment, buyers get a prepared
+WhatsApp draft, copy-number action, and receipt-based support link. Pending
+payments receive at most three automatic checks; no repeat purchase is offered
+while verifying an existing payment. Cancelling checkout retains plate context.
+
+Hosted Stripe Checkout supports card payments and eligible Apple Pay/Google Pay
+wallets without a custom wallet UI. Available methods depend on the device and
+Stripe account settings. PayMe is not listed among Stripe's native supported
+methods. An automatic PayMe unlock would require a separate PayMe for Business
+API integration and server-side payment confirmation; a static PayCode/manual
+receipt workflow would not give immediate verified delivery.
+
+References: [Stripe payment methods](https://docs.stripe.com/payments/payment-methods/payment-method-support),
+[Apple Pay](https://docs.stripe.com/apple-pay?platform=web),
+[Google Pay](https://docs.stripe.com/google-pay?platform=web),
+[HSBC PayMe for Business](https://payme.hsbc.com.hk/en/business/).
