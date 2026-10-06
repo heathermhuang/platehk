@@ -1,3 +1,4 @@
+import { advertisedContact, contactUnlockEnabled, loadContactShard } from "./contact-unlock.mjs";
 import { parseFilters, matchesFilters, filterKeys, comparableRows, traditionalPatternComparableCohort } from "../../assets/decision-core.mjs";
 import {
   ApiError,
@@ -827,7 +828,7 @@ function introductionWhatsAppNumber(env) {
   return /^\d{8,15}$/.test(value) ? value : "";
 }
 
-function publicMarketSignal(plate, payload, offers, env) {
+async function publicMarketSignal(plate, payload, offers, env, request, contactShard) {
   const introductionNumber = introductionWhatsAppNumber(env);
   const introductionEnabled = Boolean(introductionServiceBaseUrl(env) && introductionNumber);
   if (!payload || !offers.length) {
@@ -858,6 +859,8 @@ function publicMarketSignal(plate, payload, offers, env) {
     fresh_until: Number.isFinite(observedMs)
       ? new Date(observedMs + freshHours * 60 * 60 * 1000).toISOString()
       : null,
+    contact_unlock_available: contactUnlockEnabled(env) && Boolean(await advertisedContact(request, env, plate, String(primary.listing_id), { market: payload, contacts: contactShard })),
+    contact_unlock_price_hkd: 99,
     listing_id: String(primary.listing_id),
     source_url: String(primary.source_url),
     source_attribution: "28car",
@@ -894,12 +897,15 @@ async function handleMarketSignal(request, env) {
       await loadMarketSignalShard(request, env, shard),
     ]));
     const payloads = new Map(shardEntries);
-    const signals = plates
+    const contactShards = contactUnlockEnabled(env)
+      ? new Map(await Promise.all(shards.map(async (shard) => [shard, await loadContactShard(request, env, shard)])))
+      : new Map();
+    const signalResults = await Promise.all(plates
       .map((plate) => {
         const payload = payloads.get(plate[0]) || null;
-        return publicMarketSignal(plate, payload, activeMarketOffers(payload, plate), env);
-      })
-      .filter((signal) => signal.availability_detected);
+        return publicMarketSignal(plate, payload, activeMarketOffers(payload, plate), env, request, contactShards.get(plate[0]));
+      }));
+    const signals = signalResults.filter((signal) => signal.availability_detected);
     return jsonResponse({ plates_requested: plates.length, signals });
   }
   const plate = normalizeQuery(url.searchParams.get("plate") || "");
@@ -907,7 +913,8 @@ async function handleMarketSignal(request, env) {
   if (plate.length > 16) return badRequest("plate too long");
   enforcePublicReadRateLimit(request, "market-signal", 90, 600);
   const { payload, offers } = await loadActiveMarketOffers(request, env, plate);
-  return jsonResponse(publicMarketSignal(plate, payload, offers, env));
+  const contactShard = contactUnlockEnabled(env) ? await loadContactShard(request, env, plate[0]) : null;
+  return jsonResponse(await publicMarketSignal(plate, payload, offers, env, request, contactShard));
 }
 
 async function handleVisionSession(request, env) {

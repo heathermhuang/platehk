@@ -28,6 +28,7 @@
     "OPENAI_BASE_URL": "https://api.openai.com/v1",
     "OPENAI_VISION_MODEL": "gpt-4.1-mini",
     "OPENAI_TIMEOUT_SECONDS": "20",
+    "CONTACT_UNLOCK_ENABLED": "false",
     "INTRODUCTION_SERVICE_URL": "",
     "INTRODUCTION_WHATSAPP_NUMBER": ""
   },

@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Build a privacy-minimised exact-match signal index from public 28car listings.
 
-The output deliberately excludes seller names, phone numbers, comments, photos,
+The signal output deliberately excludes seller names, phone numbers, comments, photos,
 descriptions, view counts, and other free-form listing content. It is intended for
 server-side exact-plate lookups, not for publishing a browsable copy of 28car.
+Explicitly advertised WhatsApp numbers are saved separately in a private companion file.
 """
 
 from __future__ import annotations
@@ -57,6 +58,7 @@ class ListingSignal:
     source_url: str
     price_type: str
     asking_price_hkd: int | None
+    whatsapp_number: str | None = None
 
 
 class PoliteRateLimiter:
@@ -112,6 +114,42 @@ def parse_price(value: str) -> tuple[str, int | None]:
     return "fixed", amount
 
 
+def parse_advertised_whatsapp(block: str) -> str | None:
+    """Read only the listing contact cell, never adverts or arbitrary phone text."""
+    contact_cells = re.findall(
+        r'<font\b[^>]*color=[\'"]#B0B0B0[\'"][^>]*>(.*?)</font>',
+        block, re.IGNORECASE | re.DOTALL,
+    )
+    numbers: set[str] = set()
+    for cell in contact_cells:
+        text = clean_text(cell)
+        for match in re.finditer(
+            r'whats\s*app\s*[:：]?\s*((?:\+?852[ -]?)?[456789]\d{3}[ -]?\d{4})(?!\d)',
+            text, re.IGNORECASE,
+        ):
+            digits = re.sub(r'\D', '', match.group(1))
+            numbers.add(digits if len(digits) == 11 else '852' + digits)
+        for match in re.finditer(r'https://(?:wa\.me/|api\.whatsapp\.com/send\?phone=)([0-9+]+)', html.unescape(cell), re.IGNORECASE):
+            digits = match.group(1).lstrip('+')
+            if re.fullmatch(r'852[456789]\d{7}', digits):
+                numbers.add(digits)
+    return next(iter(numbers)) if len(numbers) == 1 else None
+
+
+def build_contact_payload(fetched: list[ListingSignal], payload: dict[str, Any]) -> dict[str, Any]:
+    """A separate private file; do not mix contacts into public market signals."""
+    return {
+        'schema_version': 1, 'source': '28car',
+        'scraped_at': payload['scraped_at'],
+        'fresh_for_hours': payload['fresh_for_hours'], 'coverage': payload['coverage'],
+        'contacts': {
+            item.listing_id: {'plate': item.plate_norm, 'whatsapp_number': item.whatsapp_number,
+                              'observed_at': payload['scraped_at']}
+            for item in fetched if item.whatsapp_number
+        },
+    }
+
+
 def parse_page(source: str) -> tuple[int | None, list[ListingSignal]]:
     total_match = TOTAL_PAGES_RE.search(source)
     total_pages = int(total_match.group(1)) if total_match else None
@@ -135,6 +173,7 @@ def parse_page(source: str) -> tuple[int | None, list[ListingSignal]]:
                 source_url=DETAIL_URL.format(vid=vid_match.group(1)),
                 price_type=price_type,
                 asking_price_hkd=asking_price_hkd,
+                whatsapp_number=parse_advertised_whatsapp(block),
             )
         )
     return total_pages, signals
@@ -497,6 +536,9 @@ def main() -> None:
         stale_hours=args.stale_hours,
     )
     output.parent.mkdir(parents=True, exist_ok=True)
+    contact_output = output.with_name(output.stem + '.contacts.json')
+    contact_payload = build_contact_payload(list(deduped.values()), payload)
+    contact_output.write_text(json.dumps(contact_payload, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
     output.write_text(json.dumps(payload, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
     print(
         f"Wrote {payload['signal_count']} minimal signals for {payload['plate_count']} plates "
