@@ -15,7 +15,7 @@
     "test:market-frontend": "node tests/index_market_test.mjs",
     "test:python": "python3 -m unittest discover -s tests",
     "cf:deploy:official": "python3 scripts/build_cloudflare_public.py --require-market-snapshot --allow-stale-market-snapshot && wrangler deploy",
-    "test:refresh": "node --test tests/refresh_worker_test.mjs",
+    "test:refresh": "node --test tests/refresh_worker_test.mjs tests/refresh_control_test.mjs",
     "cf:refresh:deploy": "wrangler deploy --config refresh-worker/wrangler.jsonc"
   },
   "devDependencies": {

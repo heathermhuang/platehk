@@ -20,6 +20,7 @@ export PYTHONPYCACHEPREFIX="${PYTHONPYCACHEPREFIX:-${TMPDIR:-/tmp}/pvrm-pycache}
   scripts/build_dataset.py \
   scripts/pdf_parse_cache.py \
   scripts/refresh_sources.py \
+  scripts/run_cached_builder.py \
   scripts/merge_tvrm_exact_workbook.py \
   scripts/build_public_api.py \
   scripts/build_tvrm_dataset.py \
@@ -47,6 +48,7 @@ node --check refresh-worker/src/index.mjs
 node --check refresh-worker/src/probe.mjs
 node --check scripts/refresh_control.mjs
 node --test tests/refresh_worker_test.mjs
+node --test tests/refresh_control_test.mjs
 node --check cloudflare-worker/src/lib.mjs
 node --check cloudflare-worker/src/api.mjs
 node --check cloudflare-worker/src/index.mjs

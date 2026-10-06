@@ -54,7 +54,7 @@ python3 scripts/build_audit_report.py
 
 The isolated `platehk-refresh` Worker checks official result indexes and auction-calendar links hourly at minute 17 UTC. It hashes a bounded rotating set of recent and historical PDFs, including same-URL replacements, and rotates through the existing physical/e-auction filename-discovery patterns. Network or source-shape failures are recorded as failures, never as an unchanged check.
 
-Cloudflare stores each observation without a GitHub credential. `Auto Update Data` collects the latest observation every six hours; unchanged checks skip dependency installation, parsing, commits, and deployment. Scheduled publication therefore has up to six hours of collection latency (GitHub schedule delays can add more). Corrections found by rotating historical checks remain pending until publication; stale observations are refreshed before collection. A D1 lease coalesces overlapping requests. The published checkpoint advances only after data verification, commit/deployment where required, and production checks. A failed or dry run releases its lease without acknowledging publication.
+Cloudflare stores each observation without a GitHub credential. `Auto Update Data` collects the latest observation every six hours; unchanged checks skip dependency installation, parsing, commits, and deployment. Hourly observation and six-hour collection can add up to seven hours before publication, plus build time and GitHub scheduling delays. Corrections found by rotating historical checks are retained per URL in D1 until their exact hash is acknowledged; publishing a different PDF cannot clear them. Pending and failed source URLs receive bounded priority in subsequent checks. A D1 lease coalesces overlapping publication requests. The published checkpoint advances only after data verification, commit/deployment where required, and production checks. A failed or dry run releases its lease without acknowledging publication.
 
 Three independent scopes share the publication lock:
 
@@ -100,6 +100,10 @@ node scripts/refresh_control.mjs status
 For a code release with unchanged data, manually use `force=true`; a normal unchanged check does not deploy code. `deploy=false` performs validation without committing, deploying, or advancing the published checkpoint. `mode=full` bypasses cached parsing and retains the explicit historical repair path.
 
 PDF cache identity includes source bytes, parser/context inputs, helper code, Python runtime, and installed PDF-library versions. Corrupt entries and failed parsing are not accepted. Validated entries are restored/saved by Actions; they contain only public official auction data.
+
+`run_cached_builder.py` writes probe/run-bound receipts for the results actually consumed by the current build, including cache hits. Publication requires a qualified result from every consuming dataset for each changed URL; shared Lunar New Year handouts need both PVRM and physical receipts. Zero-row changed sources are held for source review, and a previously nonempty source cannot disappear through an empty cache result. Receipt instrumentation leaves the existing parsing-cache identity unchanged.
+
+An incomplete source check gets one fresh bounded retry before dependencies are installed. Persistent failures produce `SOURCE_OBSERVATION_UNAVAILABLE`; unqualified extraction produces `SOURCE_PARSE_UNVERIFIED`. Auto Heal routes both to its existing human-attention path, without reparsing history or starting LLM repair.
 
 ### Marketplace failure and expiry
 

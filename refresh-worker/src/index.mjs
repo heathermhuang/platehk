@@ -13,34 +13,57 @@ async function stored(env,key) { const object = await env.STORE.get(key); return
 async function body(request,limit=2*1024*1024) { return JSON.parse(new TextDecoder().decode(await boundedRead(request,limit))); }
 function scopeFor(probe) { return probe.auction_changed ? 'official' : probe.calendar_changed || probe.events_expired ? 'events' : 'check'; }
 const observationFresh = (record,revision) => record?.published_revision === revision && Date.parse(record.checked_at) >= Date.now()-90*60*1000 && Date.parse(record.checked_at) <= Date.now()+600000;
-const sourceRevision = published => digest(JSON.stringify({sources:published.sources,index_urls:published.index_urls,index_entries:published.index_entries}));
+const sourceRevision = published => digest(JSON.stringify({sources:published.sources && Object.fromEntries(Object.entries(published.sources).map(([url,item])=>[url,{kind:item.kind,date:item.date,sha256:item.sha256,consumers:item.consumers}])),index_urls:published.index_urls,index_entries:published.index_entries}));
 export function combineObservation(probe,previous,published,revision) {
-  const updates=new Map(previous?.published_revision === revision ? previous.updates.map(item=>[item.url,item]) : []);
+  const updates=new Map((previous?.updates || []).filter(item=>item.sha256!==published.sources?.[item.url]?.sha256 && (!Object.hasOwn(item,'baseline_sha256') || item.baseline_sha256===(published.sources?.[item.url]?.sha256 || null))).map(item=>[item.url,item]));
   for (const [url,hash] of Object.entries(probe.observed_hashes || {})) if (hash===published.sources?.[url]?.sha256) updates.delete(url);
   for (const item of probe.updates) if (item.sha256 !== published.sources?.[item.url]?.sha256) updates.set(item.url,item);
   const indexesChanged=probe.index_urls ? JSON.stringify(probe.index_urls)!==JSON.stringify(published.index_urls || []) || JSON.stringify(probe.index_entries)!==JSON.stringify(published.index_entries || []) : probe.auction_changed;
   return {...probe,updates:[...updates.values()],auction_changed:!published.sources || indexesChanged || updates.size>0,calendar_changed:probe.calendar_digest!==published.calendar_digest,published_revision:revision};
 }
+async function pendingSources(env,legacy,published) {
+  // Upgrade old R2-only observations without discarding unacknowledged work.
+  const imports=(legacy?.updates || []).filter(item=>!item.observed_at && officialUrl(item.url)).map(item=>env.DB.prepare('INSERT OR IGNORE INTO refresh_pending_sources(url,kind,date,sha256,baseline_sha256,observed_at) VALUES(?,?,?,?,?,?)').bind(item.url,item.kind,item.date || '',item.sha256,published.sources?.[item.url]?.sha256 || null,legacy.checked_at || new Date().toISOString()));
+  if (imports.length) await env.DB.batch(imports);
+  return (await env.DB.prepare('SELECT * FROM refresh_pending_sources ORDER BY url').all()).results;
+}
+async function persistObservations(env,probe,published) {
+  const statements=[];
+  for (const item of probe.observations || []) {
+    const baseline=published.sources?.[item.url]?.sha256 || null;
+    if (item.sha256===baseline) statements.push(env.DB.prepare('DELETE FROM refresh_pending_sources WHERE url=? AND observed_at<=?').bind(item.url,item.observed_at));
+    else statements.push(env.DB.prepare('INSERT INTO refresh_pending_sources(url,kind,date,sha256,baseline_sha256,observed_at) VALUES(?,?,?,?,?,?) ON CONFLICT(url) DO UPDATE SET kind=excluded.kind,date=excluded.date,sha256=excluded.sha256,baseline_sha256=excluded.baseline_sha256,observed_at=excluded.observed_at WHERE excluded.observed_at>=refresh_pending_sources.observed_at').bind(item.url,item.kind,item.date || '',item.sha256,baseline,item.observed_at));
+  }
+  if (statements.length) await env.DB.batch(statements);
+}
 export async function recordObservation(env,options={}) {
   const control=await state(env), published=await stored(env,'published.json') || {};
   const revision=await sourceRevision(published);
   const previous=await stored(env,'observed.json');
-  const probe=await observe(published,{cursor:control.cursor,...options});
+  const pending=await pendingSources(env,previous,published);
+  const probe=await observe(published,{cursor:control.cursor,priority:[...pending,...(previous?.source_errors || [])],...options});
+  const current=await stored(env,'published.json') || {};
+  await persistObservations(env,probe,current);
   // Retain corrections found by earlier archive rotations until a real publication acknowledges them.
-  const record=combineObservation(probe,previous,published,revision);
+  const record=combineObservation({...probe,updates:[],observed_hashes:{}},{updates:await pendingSources(env)},current,revision);
   await env.STORE.put('observed.json',JSON.stringify(record));
   const outcome=scopeFor(record)!=='check' ? 'observed_changed' : record.source_errors.length ? 'source_unavailable' : 'unchanged';
   await env.DB.prepare('UPDATE refresh_control SET cursor=cursor+1,last_checked_at=?,last_outcome=CASE WHEN lease_until<=? THEN ? ELSE last_outcome END,last_error=?,no_change_count=no_change_count+? WHERE id=1').bind(record.checked_at,Math.floor(Date.now()/1000),outcome,record.source_errors.length ? JSON.stringify(record.source_errors) : null,outcome==='unchanged' ? 1 : 0).run();
   return {outcome,scope:scopeFor(record),source_error_count:record.source_errors.length,updates:record.updates.length};
 }
-export async function claim(env,{scope='check',force=false}={}) {
+export async function claim(env,{scope='check',force=false,refresh=false}={}) {
   if (!['check','official','events','market'].includes(scope)) throw new Error('invalid_scope');
   const control = await state(env), now = Math.floor(Date.now()/1000);
   if (control.lease_until > now) return {run:false,outcome:'pending',probe_id:control.pending_id};
   const published = await stored(env,'published.json') || {};
   const cached=scope!=='market' ? await stored(env,'observed.json') : null;
+  const pending=scope==='market' ? [] : await pendingSources(env,cached,published);
   const revision=await sourceRevision(published);
-  const probe = scope === 'market' ? {updates:[],index_urls:published.index_urls || [],calendar_digest:published.calendar_digest,checked_at:new Date().toISOString(),source_errors:[]} : combineObservation(scope==='check' && !force && observationFresh(cached,revision) ? cached : await observe(published,{cursor:control.cursor}),cached,published,revision);
+  const fresh=scope!=='market' && !(scope==='check' && !force && !refresh && observationFresh(cached,revision));
+  const observed=scope==='market' ? {updates:[],index_urls:published.index_urls || [],calendar_digest:published.calendar_digest,checked_at:new Date().toISOString(),source_errors:[]} : fresh ? await observe(published,{cursor:control.cursor,priority:[...pending,...(cached?.source_errors || [])]}) : cached;
+  if (fresh) await persistObservations(env,observed,published);
+  const probe=scope==='market' ? observed : combineObservation({...observed,updates:[],observed_hashes:{}},{updates:await pendingSources(env)},published,revision);
+  if (fresh) await env.STORE.put('observed.json',JSON.stringify(probe));
   if (scope !== 'market') {
     const response = await fetch(`${env.PRODUCTION_URL}/data/events.json`,{signal:AbortSignal.timeout(15000)});
     if (!response.ok) throw new Error('production_events_unavailable');
@@ -48,6 +71,7 @@ export async function claim(env,{scope='check',force=false}={}) {
     probe.events_expired = (events.events || []).some(event => event.end_at && Date.parse(event.end_at) < Date.now());
   }
   let selected = scope === 'check' ? scopeFor(probe) : scope;
+  if (probe.source_errors.length) selected='check';
   if (!force && selected !== 'market' && selected !== 'check' && !probe.auction_changed && !probe.calendar_changed && !probe.events_expired) selected = 'check';
   if (selected === 'check') {
     const outcome = probe.source_errors.length ? 'source_unavailable' : 'unchanged';
@@ -81,8 +105,12 @@ async function acknowledge(env,payload) {
   const published = await stored(env,'published.json') || {};
   if (probe.scope === 'official') {
     if (!payload.sources || !Object.keys(payload.sources).length) return json({error:'source_catalog_required'},400);
-    for (const [url,item] of Object.entries(payload.sources)) if (!officialUrl(url) || !/^[a-f0-9]{64}$/.test(item.sha256 || '') || !['pvrm','physical','eauction'].includes(item.kind)) return json({error:'invalid_source_catalog'},400);
+    for (const [url,item] of Object.entries(payload.sources)) if (!officialUrl(url) || !/^[a-f0-9]{64}$/.test(item.sha256 || '') || !['pvrm','physical','eauction'].includes(item.kind) || (item.consumers && (!Array.isArray(item.consumers) || item.consumers.some(kind=>!['pvrm','physical','eauction'].includes(kind))))) return json({error:'invalid_source_catalog'},400);
     for (const update of probe.updates) if (payload.sources[update.url]?.sha256 !== update.sha256) return json({error:'source_hash_mismatch'},409);
+    for (const update of probe.updates) {
+      const item=payload.sources[update.url],kinds=new Set([update.kind,...(item.consumers || [])]);
+      if ([...kinds].some(kind=>!Number.isSafeInteger(item.parsed?.[kind]) || item.parsed[kind]<=0)) return json({error:'source_parse_unverified'},409);
+    }
     published.sources = payload.sources;
     published.index_urls = probe.index_urls;
     published.index_entries = probe.index_entries;
@@ -90,6 +118,7 @@ async function acknowledge(env,payload) {
   if (['official','events'].includes(probe.scope)) published.calendar_digest = probe.calendar_digest;
   published.published_at = new Date().toISOString(); published.run_id = String(payload.run_id); published.commit_sha = payload.commit_sha;
   await env.STORE.put('published.json',JSON.stringify(published));
+  if (probe.scope==='official') await env.DB.prepare("DELETE FROM refresh_pending_sources WHERE (url,sha256) IN (SELECT key,json_extract(value,'$.sha256') FROM json_each(?))").bind(JSON.stringify(payload.sources)).run();
   await env.DB.prepare('UPDATE refresh_control SET last_published_at=?,last_run_id=? WHERE id=1 AND pending_id=?').bind(published.published_at,published.run_id,payload.probe_id).run();
   await release(env,payload.probe_id,'published');
   return json({published:true});
@@ -107,7 +136,7 @@ export default {
     if (url.pathname === '/health' && request.method === 'GET') return json({ok:true,service:'platehk-refresh',observer_enabled:env.OBSERVER_ENABLED === 'true',dispatch_enabled:env.DISPATCH_ENABLED === 'true'});
     if (!await authorized(request,env)) return json({error:'not_found'},404);
     try {
-      if (url.pathname === '/v1/status' && request.method === 'GET') return json(await state(env));
+      if (url.pathname === '/v1/status' && request.method === 'GET') return json({...await state(env),pending_source_count:(await env.DB.prepare('SELECT COUNT(*) AS count FROM refresh_pending_sources').first()).count});
       if (url.pathname === '/v1/claim' && request.method === 'POST') return json(await claim(env,await body(request,8192)));
       if (url.pathname === '/v1/probe' && request.method === 'GET') {
         const id = url.searchParams.get('id');

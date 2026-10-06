@@ -72,6 +72,14 @@ class AutoHealUpdateTests(unittest.TestCase):
         self.assertEqual(plan["action"], "alert_human")
         self.assertFalse(plan["deploy_required"])
 
+    def test_source_failure_and_unqualified_parse_alert_without_rebuilding_or_using_a_model(self):
+        for marker in ['SOURCE_OBSERVATION_UNAVAILABLE', 'SOURCE_PARSE_UNVERIFIED']:
+            plan = self.classify(marker + '\nValueError: source failed', freshness={'status':'current','results':[]})
+            self.assertEqual(plan['status'], 'blocked')
+            self.assertEqual(plan['action'], 'alert_human')
+            self.assertEqual(plan['commands'], [])
+            self.assertFalse(plan['llm_escalation_required'])
+
     def test_shell_syntax_failure_escalates_to_llm_repair_lane(self) -> None:
         plan = self.classify("scripts/cron_update.sh: line 21: syntax error near unexpected token `('")
 

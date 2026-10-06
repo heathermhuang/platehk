@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import subprocess
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -45,10 +46,11 @@ def pdf_inventory(root: Path = ROOT) -> dict[str, dict]:
             if path.exists():
                 existing = inventory.get(url)
                 if existing:
+                    existing['consumers'].add(kind)
                     if path not in existing['paths']:
                         existing['paths'].append(path)
                 else:
-                    inventory[url] = {'kind':kind, 'date':item.get('auction_date') or build_tvrm_dataset.extract_date_from_href(url) or '', 'paths':[path]}
+                    inventory[url] = {'kind':kind, 'date':item.get('auction_date') or build_tvrm_dataset.extract_date_from_href(url) or '', 'paths':[path], 'consumers':{kind}}
     return inventory
 
 
@@ -89,33 +91,50 @@ def catalog(root: Path = ROOT) -> dict:
         hashes = {hashlib.sha256(path.read_bytes()).hexdigest() for path in item['paths']}
         if len(hashes) != 1:
             raise ValueError(f'Conflicting parsed PDF copies for {url}')
-        output[url] = {'kind':item['kind'],'date':item['date'],'sha256':hashes.pop()}
+        output[url] = {'kind':item['kind'],'date':item['date'],'sha256':hashes.pop(),'consumers':sorted(item['consumers'])}
     return output
 
 
-def validate_catalog(value: dict, probe: dict) -> None:
+def validate_catalog(value: dict, probe: dict, *, receipts: Path | None = None) -> None:
     for item in probe.get('updates', []):
         if value.get(item['url'], {}).get('sha256') != item['sha256']:
             raise ValueError('Changed PDF did not reach the parsed-input catalog')
     missing = set(probe.get('index_urls', [])) - set(value)
     if missing:
         raise ValueError(f'{len(missing)} observed result PDFs are missing from the input catalog; publication stopped')
-    expected = {(item['url'],item['sha256']) for item in probe.get('updates', [])}
-    if expected:
-        versions = {
-            parser_version(('scripts/build_dataset.py','scripts/lny_mixed_parser.py')),
-            parser_version(('scripts/build_tvrm_dataset.py','scripts/build_dataset.py','scripts/lny_mixed_parser.py','scripts/parse_tvrm_pdfs.py')),
-        }
-        for path in (ROOT / '.tmp/pdf-parse-cache').glob('*.json'):
-            try:
-                entry=json.loads(path.read_text())
-                identity=entry['identity']
-                if identity['version'] in versions and isinstance(entry['value'].get('rows'),list):
-                    expected.discard((identity['context'].get('pdf_url'),identity['pdf_sha256']))
-            except (OSError,ValueError,KeyError,TypeError):
-                continue
-        if expected:
-            raise ValueError('Changed PDF has no successful result from the current parser; publication stopped')
+    versions = {
+        'pvrm': parser_version(('scripts/build_dataset.py','scripts/lny_mixed_parser.py')),
+        'tvrm': parser_version(('scripts/build_tvrm_dataset.py','scripts/build_dataset.py','scripts/lny_mixed_parser.py','scripts/parse_tvrm_pdfs.py')),
+    }
+    expected = {(item['url'], item['sha256'], kind) for item in probe.get('updates', [])
+                for kind in set(value[item['url']].get('consumers', [value[item['url']]['kind']])) | {item['kind']}}
+    path = receipts or ROOT / '.tmp/parse-receipts.jsonl'
+    if not path.exists():
+        raise ValueError('SOURCE_PARSE_UNVERIFIED: current-run parser receipts are missing')
+    try:
+        records = [json.loads(line) for line in path.read_text().splitlines() if line]
+    except (OSError, ValueError) as error:
+        raise ValueError('SOURCE_PARSE_UNVERIFIED: invalid parser receipts') from error
+    if not records:
+        raise ValueError('SOURCE_PARSE_UNVERIFIED: no current-run parsing results')
+    parsed = {}
+    for record in records:
+        kind = record.get('kind')
+        version = versions['pvrm' if kind == 'pvrm' else 'tvrm']
+        if kind not in ('pvrm','physical','eauction') or record.get('probe_id') != probe.get('probe_id') or record.get('run_id') != os.environ.get('GITHUB_RUN_ID', 'local') or record.get('parser_version') != version or record.get('schema_valid') is not True:
+            raise ValueError('SOURCE_PARSE_UNVERIFIED: stale or malformed parsing result')
+        if record.get('expected_nonempty') and not record.get('row_count'):
+            raise ValueError('SOURCE_PARSE_UNVERIFIED: previously nonempty source has zero extracted rows')
+        key = (record.get('url'), record.get('sha256'), kind)
+        if key in expected:
+            if type(record.get('row_count')) is not int or record['row_count'] <= 0:
+                raise ValueError('SOURCE_PARSE_UNVERIFIED: changed result PDF has zero extracted rows; source review required')
+            parsed.setdefault(key[0], {})[kind] = parsed.get(key[0], {}).get(kind, 0) + record['row_count']
+    for url, sha, kind in expected:
+        if not parsed.get(url, {}).get(kind):
+            raise ValueError('SOURCE_PARSE_UNVERIFIED: a consuming dataset has no current-run parsing result')
+    for url, counts in parsed.items():
+        value[url]['parsed'] = counts
 
 
 def main() -> None:

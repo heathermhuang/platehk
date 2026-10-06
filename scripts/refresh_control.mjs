@@ -13,13 +13,33 @@ async function request(path,method='GET',payload) {
 }
 if (command === 'plan') {
   const scope = process.env.REFRESH_SCOPE || 'official', probeId = process.env.REFRESH_PROBE_ID || '';
-  let decision;
-  if (probeId) {
-    if (!/^[a-f0-9-]{36}$/.test(probeId)) throw new Error('Invalid probe ID');
-    const probe = await request(`/v1/probe?id=${probeId}`);
-    if (probe.scope !== scope) throw new Error('Probe scope does not match workflow input');
-    decision = {run:true,scope:probe.scope,probe_id:probeId};
-  } else decision = await request('/v1/claim','POST',{scope,force:process.env.REFRESH_FORCE === 'true' || process.env.REFRESH_MODE === 'full'});
+  if (probeId && !/^[a-f0-9-]{36}$/.test(probeId)) throw new Error('Invalid probe ID');
+  const force=process.env.REFRESH_FORCE==='true' || process.env.REFRESH_MODE==='full';
+  let decision,selectedProbe=probeId;
+  for (let attempt=0;attempt<2;attempt++) {
+    try {
+      if (selectedProbe) {
+        const probe=await request(`/v1/probe?id=${selectedProbe}`);
+        if (probe.scope!==scope) throw new Error('Probe scope does not match workflow input');
+        decision={run:true,scope:probe.scope,probe_id:selectedProbe,source_error_count:probe.source_errors?.length || 0};
+      } else decision=await request('/v1/claim','POST',{scope,force,refresh:attempt>0});
+    } catch (error) {
+      if (error.message==='Probe scope does not match workflow input') throw error;
+      decision={run:false,outcome:'source_unavailable',source_error_count:1,control_error:error.message};
+    }
+    if (decision.outcome!=='source_unavailable' && !(decision.source_error_count>0)) break;
+    if (decision.run && decision.probe_id) {
+      try {await request('/v1/release','POST',{probe_id:decision.probe_id});}
+      catch {decision={run:false,outcome:'source_unavailable',source_error_count:1};break;}
+    }
+    decision={...decision,run:false,outcome:'source_unavailable'};
+    selectedProbe='';
+    if (attempt===0) {
+      console.warn('Source observation incomplete; retrying one fresh bounded check before installing dependencies.');
+      const configured=Number(process.env.REFRESH_RETRY_DELAY_MS ?? 10000);
+      await new Promise(resolve=>setTimeout(resolve,Number.isFinite(configured) ? Math.max(0,Math.min(10000,configured)) : 10000));
+    }
+  }
   if (decision.run) {
     const probe = await request(`/v1/probe?id=${decision.probe_id}`);
     await fs.mkdir('.tmp',{recursive:true});
@@ -27,6 +47,10 @@ if (command === 'plan') {
   }
   if (process.env.GITHUB_OUTPUT) await fs.appendFile(process.env.GITHUB_OUTPUT,`run=${decision.run ? 'true':'false'}\nscope=${decision.scope || 'check'}\nprobe_id=${decision.probe_id || ''}\noutcome=${decision.outcome || 'changed'}\n`);
   console.log(JSON.stringify(decision));
+  if (decision.outcome==='source_unavailable' || decision.source_error_count>0) {
+    console.error('::error::SOURCE_OBSERVATION_UNAVAILABLE: incomplete official-source check after bounded retry; publication held for operator attention.');
+    process.exitCode=1;
+  }
 } else if (command === 'restore-market') {
   const snapshot = await request('/v1/market');
   if (snapshot.source !== '28car' || snapshot.schema_version !== 1 || snapshot.coverage?.complete !== true) throw new Error('Invalid stored market snapshot');
