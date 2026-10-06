@@ -58,11 +58,13 @@ def run_builder(name: str, *, reset: bool = False) -> None:
     probe = json.loads((ROOT / '.tmp/source-probe.json').read_text())
     prior = {}
     for kind, folder in [('pvrm', 'data'), ('physical', 'data/tvrm_physical'), ('eauction', 'data/tvrm_eauction')]:
-        metadata = ROOT / folder / 'auctions.json'
-        if metadata.exists():
-            for item in json.loads(metadata.read_text()):
-                if type(item.get('entry_count')) is int and item['entry_count'] > 0:
-                    prior[(kind, item.get('pdf_url'))] = True
+        # Auction metadata may combine workbook and alternate-language rows.
+        # Only rows actually attributed to this PDF establish its baseline.
+        rows = ROOT / folder / 'results.slim.json'
+        if rows.exists():
+            for row in json.loads(rows.read_text()):
+                if row.get('source_type') != 'xlsx_exact_dates':
+                    prior[(kind, row.get('pdf_url'))] = True
     if reset:
         RECEIPTS.parent.mkdir(parents=True, exist_ok=True)
         RECEIPTS.write_text('')
