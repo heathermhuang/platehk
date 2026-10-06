@@ -19,7 +19,11 @@ cd "$ROOT"
 if [[ "$SCOPE" == "official" ]]; then
 # Update source datasets.
 # PVRM dataset builder currently runs full normalization; keep it for data correctness.
-python3 scripts/build_dataset.py
+if [[ -f .tmp/source-probe.json ]]; then
+  python3 scripts/run_cached_builder.py pvrm --reset
+else
+  python3 scripts/build_dataset.py
+fi
 python3 scripts/sync_lny_urls_to_tvrm_physical.py
 
 # TVRM default path is incremental-safe inventory merge; keep full legacy re-parse for manual repair only.
@@ -37,7 +41,11 @@ PY
 before_phy_issues="$(issue_count data/tvrm_physical/issues.manifest.json)"
 before_ea_issues="$(issue_count data/tvrm_eauction/issues.manifest.json)"
 
-python3 scripts/build_tvrm_dataset.py
+if [[ -f .tmp/source-probe.json ]]; then
+  python3 scripts/run_cached_builder.py tvrm
+else
+  python3 scripts/build_tvrm_dataset.py
+fi
 
 after_phy_issues="$(issue_count data/tvrm_physical/issues.manifest.json)"
 after_ea_issues="$(issue_count data/tvrm_eauction/issues.manifest.json)"

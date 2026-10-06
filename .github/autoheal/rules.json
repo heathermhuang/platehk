@@ -2,6 +2,26 @@
   "version": 1,
   "rules": [
     {
+      "id": "source_observation_unavailable",
+      "priority": 110,
+      "status": "blocked",
+      "action": "alert_human",
+      "confidence": "high",
+      "deploy_required": false,
+      "summary": "The bounded official-source check failed after its retry; retain publication and notify the operator without reparsing history or invoking a model.",
+      "patterns": ["SOURCE_OBSERVATION_UNAVAILABLE"]
+    },
+    {
+      "id": "source_parse_unverified",
+      "priority": 105,
+      "status": "blocked",
+      "action": "alert_human",
+      "confidence": "high",
+      "deploy_required": false,
+      "summary": "A changed PDF lacks a qualified current-run result for every consuming dataset; review the source and parser before publication.",
+      "patterns": ["SOURCE_PARSE_UNVERIFIED", "source_parse_unverified"]
+    },
+    {
       "id": "missing_cloudflare_credentials",
       "priority": 100,
       "status": "blocked",
