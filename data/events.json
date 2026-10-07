@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-10-05T13:43:23+00:00",
+  "generated_at": "2026-10-07T13:04:35+00:00",
   "timezone": "Asia/Hong_Kong",
   "source_urls": [
     "https://www.td.gov.hk/en/public_services/vehicle_registration_mark/index.html",
@@ -61,6 +61,24 @@
       "meta": {
         "source": "td_coming_auction",
         "session": "afternoon"
+      }
+    },
+    {
+      "id": "tvrm_eauction-2026-10-22",
+      "type": "tvrm_eauction",
+      "start_at": "2026-10-22T12:00:00+08:00",
+      "end_at": "2026-10-26T12:00:00+08:00",
+      "date_label_en": "22 October noon to 26 October noon 2026",
+      "date_label_zh": "2026年10月22日中午至10月26日中午",
+      "source_page_url_en": "https://www.td.gov.hk/en/public_services/vehicle_registration_mark/index.html",
+      "source_page_url_zh": "https://www.td.gov.hk/tc/public_services/vehicle_registration_mark/index.html",
+      "source_url_en": "https://www.td.gov.hk/filemanager/en/content_4802/E-Auction%20Handout%20for%20%2022-26.10.2026.Chin.pdf",
+      "source_url_zh": "https://www.td.gov.hk/filemanager/tc/content_4802/E-Auction%20Handout%20for%20%2022-26.10.2026.Chin.pdf",
+      "action_url_en": "https://e-auction.td.gov.hk/en",
+      "action_url_zh": "https://e-auction.td.gov.hk/tc",
+      "source_text_en": "22 October noon to 26 October noon 2026",
+      "meta": {
+        "source": "td_coming_auction"
       }
     },
     {
