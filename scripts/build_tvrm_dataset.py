@@ -22,7 +22,7 @@ from pdf_parse_cache import PdfParseCache, parser_version
 # 2) Online "E-Auction" result handouts (拍牌易網上拍賣結果) -- PDFs hosted on td.gov.hk filemanager
 
 BASE_URL = "https://www.td.gov.hk"
-INDEX_URL_TVRM = "https://www.td.gov.hk/tc/public_services/vehicle_registration_mark/tvrm_auction/index.html"
+INDEX_URL_TVRM = "https://www.td.gov.hk/tc/public_services/vehicle_registration_mark_n/ar/index.html"
 
 DATA_DIR = Path("data")
 
@@ -120,6 +120,8 @@ def extract_date_from_href(href: str) -> Optional[str]:
             "november": 11,
             "december": 12,
         }
+        month_map.update({name[:3]: value for name, value in list(month_map.items())})
+        month_map['sept'] = 9
         same_month = re.search(r"\b(\d{1,2})\s*-\s*(\d{1,2})\s+([A-Za-z]+)\s+(20\d{2})\b", normalized)
         if same_month:
             d1, _d2, mon, y = same_month.groups()

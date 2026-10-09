@@ -13,7 +13,7 @@ function upstream({extra='',changed=null,physicalChanged=false,indexStatus=200,p
     if (options.method==='HEAD') return new Response(null,{status:404});
     if (INDEXES.includes(url)) {
       if (indexStatus!==200) return new Response('unavailable',{status:indexStatus});
-      const link=url===INDEXES[0]?pvrm:url===INDEXES[1]?physical:'https://www.td.gov.hk/filemanager/tc/content_4802/auction.pdf';
+      const link=url.includes('/ar/index.html')?physical:INDEXES.indexOf(url)<INDEXES.length-2?pvrm:'https://www.td.gov.hk/filemanager/tc/content_4802/auction.pdf';
       return new Response(`<html><a href="${link}">3 October 2026</a>${url===INDEXES[0]?extra:''}</html>`);
     }
     return new Response(changed && url===pvrm ? '%PDF-correction' : physicalChanged && url===physical ? '%PDF-physical-correction' : bytes,{status:pdfStatus});
@@ -66,7 +66,7 @@ test('source URLs, redirects and oversized responses are bounded',async()=>{
 test('calendar date changes in surrounding list text are detected even with unchanged links',async()=>{
   const {now,published}=await baseline();
   const fetcher=async(url,options)=>{
-    if ([INDEXES[2],INDEXES[3]].includes(url)) return new Response('<html><li>12 October 2026 <a href="https://www.td.gov.hk/filemanager/tc/content_4802/auction.pdf">Handout</a></li></html>');
+    if (INDEXES.slice(-2).includes(url)) return new Response('<html><li>12 October 2026 <a href="https://www.td.gov.hk/filemanager/tc/content_4802/auction.pdf">Handout</a></li></html>');
     return upstream()(url,options);
   };
   const result=await observe(published,{fetcher,now});assert.equal(result.calendar_changed,true);assert.equal(result.auction_changed,false);
@@ -198,4 +198,24 @@ test('pending archive corrections receive bounded priority even outside the norm
   const ordinary=await observe(published,{fetcher,cursor:3});assert(!ordinary.updates.some(x=>x.url===target));
   const prioritized=await observe(published,{fetcher,cursor:3,priority:[{url:target}]});
   assert(prioritized.updates.some(x=>x.url===target));assert(prioritized.sources_observed<=16);
+});
+
+test('revamped TD indexes distinguish datasets and observe dates in adjacent table cells',async()=>{
+  assert(INDEXES.every(url=>url.includes('/vehicle_registration_mark_n/')));
+  const personal='https://www.td.gov.hk/filemanager/tc/content_5436/pvrm_result_20261003_chi.pdf';
+  const traditional='https://www.td.gov.hk/filemanager/tc/content_5416/TVRMs%20Auction%20Result%20Handout%203%20Oct%202026.pdf';
+  assert.equal(resultKind(traditional,INDEXES[0]),'physical');
+  assert.equal(resultKind(personal,INDEXES[0]),'pvrm');
+  assert.equal(resultKind('https://www.td.gov.hk/filemanager/tc/content_5438/20080223ret.pdf',`${INDEXES[0].split('/ar/')[0]}/ar/lnyar/index.html`),'pvrm');
+  const makeFetcher=date=>async(url,options={})=>{
+    if(options.method==='HEAD') return new Response(null,{status:404});
+    if(!INDEXES.includes(url)) return new Response(bytes);
+    if(url.includes('/ca/')) return new Response(`<html><!-- CONTENT START --><table><tr><td>${date}</td><td><a href="https://www.td.gov.hk/filemanager/tc/content_5419/PVRM%20Auction%20Handout%20for%2010.10.2026.Chi.pdf">Auction List (morning)</a></td></tr><tr><td>22 October noon to 26 October noon 2026</td></tr></table><!-- CONTENT END --></html>`);
+    return new Response(`<html><a href="${url.includes('/ar/index')?traditional:personal}">3 October 2026</a></html>`);
+  };
+  const first=await observe({}, {fetcher:makeFetcher('10 October 2026'),now:new Date('2026-10-09T07:00:00Z')});
+  assert(first.updates.some(x=>x.kind==='pvrm'));
+  assert(first.updates.some(x=>x.kind==='physical' && x.date==='2026-10-03'));
+  const second=await observe({sources:Object.fromEntries(first.updates.map(x=>[x.url,x])),index_urls:first.index_urls,index_entries:first.index_entries,calendar_digest:first.calendar_digest},{fetcher:makeFetcher('11 October 2026'),now:new Date('2026-10-09T07:00:00Z')});
+  assert.equal(second.calendar_changed,true);
 });
