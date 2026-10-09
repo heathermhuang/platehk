@@ -144,6 +144,16 @@ jobs:
         if: steps.plan.outputs.run == 'true' && steps.plan.outputs.scope == 'official'
         run: python scripts/refresh_sources.py catalog
 
+      # Only qualified parser results are cached. A later test or deployment
+      # failure must not discard them and force another full historical parse.
+      - name: Save validated PDF parsing results
+        continue-on-error: true
+        if: success() && steps.plan.outputs.run == 'true' && steps.plan.outputs.scope == 'official'
+        uses: actions/cache/save@v4
+        with:
+          path: .tmp/pdf-parse-cache
+          key: ${{ steps.pdf_cache.outputs.cache-primary-key }}
+
       - name: Run local verification
         if: steps.plan.outputs.run == 'true'
         env:
@@ -202,14 +212,6 @@ jobs:
         env:
           REFRESH_CONTROL_TOKEN: ${{ secrets.REFRESH_CONTROL_TOKEN }}
         run: node scripts/refresh_control.mjs ack
-
-      - name: Save validated PDF parsing results
-        continue-on-error: true
-        if: success() && steps.plan.outputs.run == 'true' && steps.plan.outputs.scope == 'official'
-        uses: actions/cache/save@v4
-        with:
-          path: .tmp/pdf-parse-cache
-          key: ${{ steps.pdf_cache.outputs.cache-primary-key }}
 
       - name: Build Telegram update report
         if: steps.plan.outputs.run == 'true' && env.DEPLOY_ENABLED == 'true'
