@@ -124,7 +124,7 @@ def validate_catalog(value: dict, probe: dict, *, receipts: Path | None = None) 
         if kind not in ('pvrm','physical','eauction') or record.get('probe_id') != probe.get('probe_id') or record.get('run_id') != os.environ.get('GITHUB_RUN_ID', 'local') or record.get('parser_version') != version or record.get('schema_valid') is not True:
             raise ValueError('SOURCE_PARSE_UNVERIFIED: stale or malformed parsing result')
         if record.get('expected_nonempty') and not record.get('row_count'):
-            raise ValueError('SOURCE_PARSE_UNVERIFIED: previously nonempty source has zero extracted rows')
+            raise ValueError(f"SOURCE_PARSE_UNVERIFIED: previously nonempty source has zero extracted rows ({kind}: {record.get('url')})")
         key = (record.get('url'), record.get('sha256'), kind)
         if key in expected:
             if type(record.get('row_count')) is not int or record['row_count'] <= 0:

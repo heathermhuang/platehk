@@ -862,11 +862,19 @@ def build() -> int:
 
     pvrm_date_by_url: dict[str, str] = {}
     lny_url_set: set[str] = set()
+    physical_auctions_path = DATA_DIR / "tvrm_physical" / "auctions.json"
     pvrm_auctions_path = DATA_DIR / "auctions.json"
-    if pvrm_auctions_path.exists():
+    # PVRM discovery can replace PDF URLs after a TD site migration. Retained
+    # TVRM inputs still need the mixed-document classification already established
+    # for their original URLs, including generic filenames without an LNY hint.
+    for metadata_path in (physical_auctions_path, pvrm_auctions_path):
+        if not metadata_path.exists():
+            continue
         try:
-            pvrm_auctions = json.loads(pvrm_auctions_path.read_text(encoding="utf-8"))
+            pvrm_auctions = json.loads(metadata_path.read_text(encoding="utf-8"))
             for x in pvrm_auctions:
+                if metadata_path == physical_auctions_path and not x.get("is_lny"):
+                    continue
                 u = normalize_url(str(x.get("pdf_url") or ""))
                 d = str(x.get("auction_date") or "").strip()
                 if u and d:
