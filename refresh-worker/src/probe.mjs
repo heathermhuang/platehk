@@ -1,10 +1,12 @@
 // The same bounded source observer is exercised by Node tests and the Cron Worker.
 const TD = 'https://www.td.gov.hk';
 export const INDEXES = [
-  `${TD}/tc/public_services/vehicle_registration_mark/pvrm_auction/index.html`,
-  `${TD}/tc/public_services/vehicle_registration_mark/tvrm_auction/index.html`,
-  `${TD}/en/public_services/vehicle_registration_mark/index.html`,
-  `${TD}/tc/public_services/vehicle_registration_mark/index.html`,
+  `${TD}/tc/public_services/vehicle_registration_mark_n/ar/cy/index.html`,
+  `${TD}/tc/public_services/vehicle_registration_mark_n/ar/pyar/index.html`,
+  `${TD}/tc/public_services/vehicle_registration_mark_n/ar/lnyar/index.html`,
+  `${TD}/tc/public_services/vehicle_registration_mark_n/ar/index.html`,
+  `${TD}/en/public_services/vehicle_registration_mark_n/ca/index.html`,
+  `${TD}/tc/public_services/vehicle_registration_mark_n/ca/index.html`,
 ];
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 export async function digest(value) {
@@ -24,7 +26,7 @@ export function anchors(html) {
   return [...html.matchAll(/<a\b[^>]*\bhref\s*=\s*["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi)]
     .map(match => {
       let context=text(match[2]);
-      for (const tag of ['li','td','p']) {
+      for (const tag of ['li','tr','td','p']) {
         const start=html.lastIndexOf(`<${tag}`,match.index), closed=html.lastIndexOf(`</${tag}>`,match.index);
         const end=html.indexOf(`</${tag}>`,match.index+match[0].length);
         if (start>closed && end>=0 && end-start<8000) {context=text(html.slice(start,end));break;}
@@ -37,15 +39,18 @@ export function resultKind(url, index = '') {
   if (!/\.pdf$/i.test(decoded) || /Notes|重要事項|須知|\bmaps?\b|路線|指示圖/i.test(decoded)) return null;
   if (/E-Auction.*Result|Online_Auction_Result_NSRM/i.test(decoded)) return 'eauction';
   if (/tvrm_auction_result_|TVRMs?\s+Auction\s+Result/i.test(decoded)) return 'physical';
-  if (/pvrm_auction/.test(index) || /pvrm.*result|LNY.*Auction/i.test(decoded)) return 'pvrm';
+  if (/pvrm_auction|\/ar\/(?:cy|pyar|lnyar)\//.test(index) || /pvrm.*result|LNY.*Auction/i.test(decoded)) return 'pvrm';
   return null;
 }
 export function dateFromUrl(url) {
   const value = decodeURIComponent(url);
   const numeric = /(20\d{2})(\d{2})(\d{2})/.exec(value);
   if (numeric) return `${numeric[1]}-${numeric[2]}-${numeric[3]}`;
-  const named = new RegExp(`(?:^|\\D)(\\d{1,2})(?:-\\d{1,2})?\\s+(${MONTHS.join('|')})\\s+(20\\d{2})`, 'i').exec(value);
-  if (named) return `${named[3]}-${String(MONTHS.findIndex(m => m.toLowerCase() === named[2].toLowerCase()) + 1).padStart(2,'0')}-${named[1].padStart(2,'0')}`;
+  const chinese = /(20\d{2})年\s*(\d{1,2})月\s*(\d{1,2})日/.exec(value);
+  if (chinese) return `${chinese[1]}-${chinese[2].padStart(2,'0')}-${chinese[3].padStart(2,'0')}`;
+  const monthNames=[...MONTHS,...MONTHS.map(m=>m.slice(0,3)),'Sept'];
+  const named = new RegExp(`(?:^|\\D)(\\d{1,2})(?:-\\d{1,2})?\\s+(${monthNames.join('|')})\\s+(20\\d{2})`, 'i').exec(value);
+  if (named) return `${named[3]}-${String(MONTHS.findIndex(m => m.toLowerCase().startsWith(named[2].slice(0,3).toLowerCase())) + 1).padStart(2,'0')}-${named[1].padStart(2,'0')}`;
   const range = new RegExp(`(\\d{1,2})\\s+(${MONTHS.join('|')})-\\d{1,2}\\s+(${MONTHS.join('|')})\\s+(20\\d{2})`, 'i').exec(value);
   if (range) return `${range[4]}-${String(MONTHS.findIndex(m => m.toLowerCase() === range[2].toLowerCase()) + 1).padStart(2,'0')}-${range[1].padStart(2,'0')}`;
   return '';
@@ -107,15 +112,18 @@ export async function observe(published = {}, {fetcher = fetch, now = new Date()
     const html = new TextDecoder().decode(await boundedRead(response, 4 * 1024 * 1024));
     if (!/<html\b/i.test(html)) throw new Error('index_not_html');
     const links = anchors(html);
-    if (i < 2) {
-      const before = results.size;
-      for (const item of links) { const href=item[0],kind = resultKind(href,url); if (kind) {results.set(href,{url:href,kind,date:dateFromUrl(href)});indexEntries.push(item);} }
-      if (results.size === before) throw new Error('result_index_empty');
+    if (i < INDEXES.length-2) {
+      const resultLinks=links.filter(item=>resultKind(item[0],url));
+      for (const item of resultLinks) { const href=item[0],kind = resultKind(href,url); results.set(href,{url:href,kind,date:dateFromUrl(href) || dateFromUrl(item[1])});indexEntries.push(item); }
+      if (!resultLinks.length) throw new Error('result_index_empty');
     } else {
       // The official auction/application links carry the calendar semantics; navigation and page timestamps do not.
       const relevant = links.filter(([href]) => /content_4802|pvrm|tvrm|E-Auction|auction|application/i.test(decodeURIComponent(href)));
       if (!relevant.length) throw new Error('calendar_index_empty');
       calendar.push(...relevant.map(item => [url,...item]));
+      // Calendar tables also list online windows without a per-window PDF link.
+      const content=/<!-- CONTENT START -->([\s\S]*?)<!-- CONTENT END -->/.exec(html);
+      if (content) calendar.push([url,text(content[1])]);
     }
   }
   const indexUrls = [...results.keys()].sort();

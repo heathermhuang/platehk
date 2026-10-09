@@ -261,12 +261,15 @@ class GeneratedDataTests(unittest.TestCase):
         payload = _load(DATA / "events.json")
         self.assertEqual(payload["schema_version"], 1)
         self.assertEqual(payload["timezone"], "Asia/Hong_Kong")
-        self.assertEqual(
+        self.assertIn(
             payload["source_urls"],
-            [
+            [[
                 "https://www.td.gov.hk/en/public_services/vehicle_registration_mark/index.html",
                 "https://www.td.gov.hk/tc/public_services/vehicle_registration_mark/index.html",
-            ],
+            ], [
+                "https://www.td.gov.hk/en/public_services/vehicle_registration_mark_n/ca/index.html",
+                "https://www.td.gov.hk/tc/public_services/vehicle_registration_mark_n/ca/index.html",
+            ]],
         )
         self.assertIsInstance(payload["events"], list)
         self.assertGreaterEqual(len(payload["events"]), 1)
