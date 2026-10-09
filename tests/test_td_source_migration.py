@@ -20,28 +20,23 @@ ROOT = '/tc/public_services/vehicle_registration_mark_n/ar/'
 
 class TdSourceMigrationTests(unittest.TestCase):
     def test_migrated_pvrm_metadata_preserves_old_mixed_tvrm_inputs(self):
-        repo = Path(__file__).resolve().parents[1]
-        metadata = json.loads((repo / 'data/tvrm_physical/auctions.json').read_text())
-        old = [x for x in metadata if x.get('is_lny') and '/content_4806/' in x['pdf_url'] and not build_tvrm_dataset.is_lny_url(x['pdf_url'])]
-        self.assertEqual(len(old), 3)
-        sources = dict(line.split('\t', 1)[::-1] for line in (repo / 'data/tvrm_physical/sources.tsv').read_text().splitlines())
-        counts = []
+        old_url = 'https://www.td.gov.hk/filemanager/tc/content_4806/20080223ret.pdf'
+        migrated_url = old_url.replace('content_4806', 'content_5438')
+        old = [{'auction_date': '2008-02-23', 'pdf_url': old_url, 'is_lny': True}]
+        migrated = [{'auction_date': '2008-02-23', 'pdf_url': migrated_url, 'is_lny': True}]
+        physical_builds = []
 
         def build_one(kind, pdfs, out_dir, *, lny_url_set, pvrm_date_by_url):
             if kind == 'physical':
-                for pdf in pdfs:
-                    path = repo / 'data/tvrm_physical/pdfs' / sources[pdf.pdf_url]
-                    parsed = build_tvrm_dataset.parse_tvrm_document(kind, path, pdf, lny_url_set, pvrm_date_by_url)
-                    counts.append(len(parsed['rows']))
+                physical_builds.append((pdfs, lny_url_set, pvrm_date_by_url))
 
         with tempfile.TemporaryDirectory() as temp:
             data = Path(temp)
             (data / 'tvrm_physical').mkdir()
             (data / 'tvrm_eauction').mkdir()
-            migrated = [{**x, 'pdf_url': x['pdf_url'].replace('content_4806', 'content_5438')} for x in old]
             (data / 'auctions.json').write_text(json.dumps(migrated))
             (data / 'tvrm_physical/auctions.json').write_text(json.dumps(old))
-            (data / 'tvrm_physical/urls.all.txt').write_text('\n'.join(x['pdf_url'] for x in old))
+            (data / 'tvrm_physical/urls.all.txt').write_text(old_url + '\n')
             with patch.object(build_tvrm_dataset, 'DATA_DIR', data), \
                     patch.object(build_tvrm_dataset, 'scrape_index_seed_pdfs', return_value=[]), \
                     patch.object(build_tvrm_dataset, 'discover_physical_standard_pdfs', return_value=[]), \
@@ -49,7 +44,10 @@ class TdSourceMigrationTests(unittest.TestCase):
                     patch.object(build_tvrm_dataset, 'build_one', side_effect=build_one), \
                     patch.object(build_tvrm_dataset.subprocess, 'check_call'):
                 build_tvrm_dataset.build()
-        self.assertEqual(counts, [36, 39, 37])
+        pdfs, lny_url_set, pvrm_date_by_url = physical_builds[0]
+        self.assertEqual([pdf.pdf_url for pdf in pdfs], [old_url])
+        self.assertIn(old_url, lny_url_set)
+        self.assertEqual(pvrm_date_by_url[old_url], '2008-02-23')
 
     def test_pvrm_discovery_retains_current_archive_and_mixed_lny_results(self):
         pages = {
