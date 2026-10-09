@@ -13,6 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
 import build_dataset
 import build_events
 import build_tvrm_dataset
+import merge_tvrm_exact_workbook
 
 BASE = 'https://www.td.gov.hk'
 ROOT = '/tc/public_services/vehicle_registration_mark_n/ar/'
@@ -21,9 +22,11 @@ ROOT = '/tc/public_services/vehicle_registration_mark_n/ar/'
 class TdSourceMigrationTests(unittest.TestCase):
     def test_migrated_pvrm_metadata_preserves_old_mixed_tvrm_inputs(self):
         repo = Path(__file__).resolve().parents[1]
-        metadata = json.loads((repo / 'data/tvrm_physical/auctions.json').read_text())
-        old = [x for x in metadata if x.get('is_lny') and '/content_4806/' in x['pdf_url'] and not build_tvrm_dataset.is_lny_url(x['pdf_url'])]
-        self.assertEqual(len(old), 3)
+        old = [
+            {'auction_date': date, 'auction_date_label': date, 'is_lny': True,
+             'pdf_url': BASE + '/filemanager/tc/content_4806/' + name}
+            for date, name in [('2008-02-23', '20080223ret.pdf'), ('2009-02-07', '20090207ret.pdf'), ('2010-02-28', 'auctionresultshandout_20100228.pdf')]
+        ]
         sources = dict(line.split('\t', 1)[::-1] for line in (repo / 'data/tvrm_physical/sources.tsv').read_text().splitlines())
         counts = []
 
@@ -50,6 +53,45 @@ class TdSourceMigrationTests(unittest.TestCase):
                     patch.object(build_tvrm_dataset.subprocess, 'check_call'):
                 build_tvrm_dataset.build()
         self.assertEqual(counts, [36, 39, 37])
+
+    def test_grouped_metadata_retains_each_mixed_pdf_without_labeling_other_pdfs(self):
+        url = BASE + '/filemanager/tc/content_4806/20080223ret.pdf'
+        alias = url.replace('content_4806', 'content_5438')
+        ordinary = BASE + '/filemanager/tc/content_4804/tvrm_auction_result_20080223_chi.pdf'
+        day = '2008-02-23'
+        with tempfile.TemporaryDirectory() as temp:
+            data = Path(temp)
+            base = data / 'tvrm_physical'
+            (base / 'issues').mkdir(parents=True)
+            records = [{'auction_date': day, 'pdf_url': u, 'is_lny': mixed} for u, mixed in [(url, True), (alias, True), (ordinary, False)]]
+            (base / 'auctions.json').write_text(json.dumps(records))
+            (base / 'issues.manifest.json').write_text(json.dumps({'issues': [{'auction_date': day}]}))
+            (base / 'issues' / (day + '.json')).write_text(json.dumps([{'auction_date': day, 'single_line': '18', 'double_line': None, 'amount_hkd': 16500000, 'pdf_url': url}]))
+            with patch.object(merge_tvrm_exact_workbook, 'DATA', data):
+                state = merge_tvrm_exact_workbook.load_dataset_state('tvrm_physical')
+                self.assertEqual(set(state['auctions_by_date'][day].get('lny_pdf_urls', [])), {url, alias})
+                merge_tvrm_exact_workbook.rebuild_dataset('tvrm_physical', state)
+                rebuilt = merge_tvrm_exact_workbook.load_dataset_state('tvrm_physical')
+            meta = rebuilt['auctions_by_date'][day]
+            self.assertEqual(set(meta['lny_pdf_urls']), {url, alias})
+            self.assertEqual(set(meta['pdf_urls']), {url, alias, ordinary})
+
+            # The grouped representative can be an ordinary PDF; classification is per source.
+            (data / 'auctions.json').write_text('[]')
+            (base / 'urls.all.txt').write_text(url)
+            (data / 'tvrm_eauction').mkdir()
+            contexts = []
+            def capture(kind, pdfs, out_dir, *, lny_url_set, pvrm_date_by_url):
+                if kind == 'physical':
+                    contexts.append(lny_url_set)
+            with patch.object(build_tvrm_dataset, 'DATA_DIR', data), \
+                    patch.object(build_tvrm_dataset, 'scrape_index_seed_pdfs', return_value=[]), \
+                    patch.object(build_tvrm_dataset, 'discover_physical_standard_pdfs', return_value=[]), \
+                    patch.object(build_tvrm_dataset, 'discover_eauction_by_thursdays', return_value=[]), \
+                    patch.object(build_tvrm_dataset, 'build_one', side_effect=capture), \
+                    patch.object(build_tvrm_dataset.subprocess, 'check_call'):
+                build_tvrm_dataset.build()
+            self.assertEqual(contexts, [{url, alias}])
 
     def test_pvrm_discovery_retains_current_archive_and_mixed_lny_results(self):
         pages = {

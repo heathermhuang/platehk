@@ -873,14 +873,19 @@ def build() -> int:
         try:
             pvrm_auctions = json.loads(metadata_path.read_text(encoding="utf-8"))
             for x in pvrm_auctions:
-                if metadata_path == physical_auctions_path and not x.get("is_lny"):
-                    continue
-                u = normalize_url(str(x.get("pdf_url") or ""))
+                if metadata_path == physical_auctions_path:
+                    urls = x.get("lny_pdf_urls")
+                    if not isinstance(urls, list):
+                        urls = [x.get("pdf_url")] if x.get("is_lny") else []
+                else:
+                    urls = [x.get("pdf_url")]
                 d = str(x.get("auction_date") or "").strip()
-                if u and d:
-                    pvrm_date_by_url[u] = d
-                if u and (x.get("is_lny") or re.fullmatch(r"https?://.*?/content_4806/\d{8}ret\.pdf", u, re.IGNORECASE)):
-                    lny_url_set.add(u)
+                for raw_url in urls:
+                    u = normalize_url(str(raw_url or ""))
+                    if u and d:
+                        pvrm_date_by_url[u] = d
+                    if u and (metadata_path == physical_auctions_path or x.get("is_lny") or re.fullmatch(r"https?://.*?/content_4806/\d{8}ret\.pdf", u, re.IGNORECASE)):
+                        lny_url_set.add(u)
         except Exception:
             pass
 
