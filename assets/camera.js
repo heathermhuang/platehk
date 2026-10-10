@@ -287,6 +287,11 @@
         return "";
       }
 
+      function manualPlateQuery(value) {
+        const input = String(value || "").normalize("NFKC").toUpperCase().replace(/\s+/g, "");
+        return /^[A-Z0-9]{1,8}$/.test(input) && !input.includes("Q") ? normalizePlate(input) : "";
+      }
+
       function ignoredPlateTypeFromPayload(payload) {
         const ignored = normalizeVisionPlateType(payload?.ignored_plate_type || "");
         if (ignored) return ignored;
@@ -395,7 +400,7 @@
       }
 
       function updateNavLinks() {
-        const activeQuery = normalizePlate(manualInputEl.value) || lastSearchedQuery;
+        const activeQuery = manualPlateQuery(manualInputEl.value) || lastSearchedQuery;
         const searchParams = new URLSearchParams({ lang: currentLang });
         if (activeQuery) searchParams.set("q", activeQuery);
         openSearchLinkEl.href = `./index.html?${searchParams.toString()}`;
@@ -754,14 +759,13 @@
 
       async function searchPlate(query) {
         searchAbort?.abort();
-        const input = String(query || "").normalize("NFKC").toUpperCase().replace(/\s+/g, "");
-        if (!/^[A-Z0-9]{1,8}$/.test(input) || input.includes("Q")) {
+        const q = manualPlateQuery(query);
+        if (!q) {
           manualInputEl.setAttribute("aria-invalid", "true");
           manualErrorEl.textContent = t("manualInvalid");
           manualInputEl.focus();
           return;
         }
-        const q = normalizePlate(query);
         manualInputEl.removeAttribute("aria-invalid");
         manualErrorEl.textContent = "";
         if (searchAbort) searchAbort.abort();

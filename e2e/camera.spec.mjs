@@ -249,6 +249,7 @@ test('fullwidth manual input is preserved, normalized on submit and announced ac
   await page.locator('#manualSearchBtn').click();
   await expect(page.getByRole('alert')).toContainText('Q is not allowed');
   await expect(page.locator('#manualInput')).toHaveValue('Q88');
+  await expect(page.locator('#openSearchLink')).toHaveAttribute('href', /q=AA88$/);
 });
 
 test('choosing a photo needs no camera permission or upload before explicit scan', async ({ page }) => {

@@ -88,6 +88,8 @@ test('invalid manual input is preserved and produces validation without a reques
     assert.equal(app.element('manualInput').value, query);
     assert.equal(app.element('manualInput').getAttribute('aria-invalid'), 'true');
     assert.match(app.element('manualError').textContent, /1–8/);
+    app.element('manualInput').events.get('input')();
+    assert.equal(app.element('openSearchLink').href, './index.html?lang=en');
   }
   assert.equal(app.requests.length, 0);
 });
