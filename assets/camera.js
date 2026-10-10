@@ -1,28 +1,42 @@
       const I18N = {
         zh: {
           title: "相機車牌辨識搜尋",
-          subtitle: "打開手機相機，直接把香港車牌變成即時搜尋結果。",
+          subtitle: "用相機、照片或手動輸入，查詢香港車牌拍賣紀錄。",
           kicker: "香港車牌相機搜尋",
           lede:
-            "開始相機，把香港車牌放進框內，再按辨識。亦可直接輸入車牌搜尋，不需要相機權限。",
+            "開始相機或選擇香港車牌照片，再按辨識。亦可直接輸入車牌搜尋，不需要相機權限。",
           tips: [
             "把車牌放在中央框內，盡量保持水平、避免強反光與背景文字。",
             "系統會把 I→1、O→0，並自動忽略香港車牌不會使用的 Q。",
-            "點一下 AI 辨識會把框內車牌圖像送到伺服器端 vision 模型判讀；如同時看到澳門或內地車牌，系統只會搜尋香港車牌。"
+            "按 AI 辨識才會傳送相機框內裁切圖像，或已選照片縮小後的圖像；只會搜尋香港車牌。"
           ],
           m1k: "輸入方式",
-          m1v: "手機相機",
+          m1v: "相機或照片",
           m2k: "辨識方式",
           m2v: "伺服器端 Vision OCR",
           m3k: "搜尋資料源",
           m3v: "本站 API",
           m4k: "最佳情境",
           m4v: "白天 / 正面 / 單一香港牌",
-          privacyNote: "點擊 AI 辨識時，本站只會上傳白框內裁切後的車牌圖像供伺服器端 vision 模型判讀，不會上傳整個相機畫面。",
+          privacyNote: "選擇照片只會在本機預覽。按 AI 辨識才會傳送相機框內裁切圖像，或已選照片縮小後的圖像。",
           guideLeft: "把車牌放進框內",
           guideRight: "點 AI 辨識才會上傳框內裁切圖像",
           start: "開始相機",
           aiScan: "AI 辨識 · 上傳框內",
+          choosePhoto: "選擇照片",
+          removePhoto: "移除照片",
+          scanPhoto: "AI 辨識 · 上傳照片",
+          photoPreview: "已選擇的車牌照片",
+          photoLoading: "正在讀取照片…",
+          photoReady: "照片已準備好",
+          photoHint: "照片只在這個瀏覽器預覽。按「AI 辨識 · 上傳照片」才會傳送這張照片；請選擇只包含車牌的照片。",
+          photoInvalid: "未能讀取這張照片。請選擇 JPEG、PNG 或 WebP 圖片，再試一次。",
+          photoTooLarge: "請選擇不超過 20 MB、4,000 萬像素的照片。",
+          manualHelp: "支援全形字元；I / O 會轉為 1 / 0。車牌須有 1–8 個英文字母或數字，不接受 Q。",
+          manualInvalid: "請輸入 1–8 個英文字母或數字，不接受 Q。",
+          searchFailed: "未能載入搜尋結果。請稍後重試。",
+          frameNotReady: "畫面未準備好，請稍後再按辨識。",
+          skip: "跳至車牌搜尋",
           stop: "停止相機",
           openSearch: "打開完整搜尋頁",
           statusTitle: "辨識狀態",
@@ -46,7 +60,7 @@
           resultsBadgeLoading: "載入中",
           resultsBadgeOk: (count) => `${count} 筆`,
           resultsBadgeNone: "沒有結果",
-          resultsHintIdle: "開始相機辨識後，這裡會顯示最相關的 5 筆結果。",
+          resultsHintIdle: "辨識或手動搜尋後，這裡會顯示最相關的 5 筆結果。",
           resultsHintNoMatch: (q) => `找不到「${q}」的結果。你可以換角度重試，或改用手動輸入。`,
           resultsHintFound: (q, total) => `「${q}」目前共找到 ${total} 筆結果；以下先顯示最相關的 5 筆。`,
           resultsOpenFull: "查看完整結果",
@@ -56,11 +70,11 @@
           resultAmount: "成交價",
           resultUnknown: "未能自動解析",
           resultLegacyRange: "1973-2006 年分段",
-          cameraPermissionHelp: "請允許相機權限；此功能需要 HTTPS 與手機相機。",
+          cameraPermissionHelp: "開始相機或選擇車牌照片。亦可在下方直接輸入車牌。",
           cameraUnsupported: "此裝置或瀏覽器暫不支援即時相機辨識。",
           cameraPermissionDenied: "尚未獲得相機權限；請允許相機後再試。",
-          visionNotConfigured: "站點尚未設定 AI vision key。",
-          visionFailed: "AI 辨識失敗，請調整角度後再試。",
+          visionNotConfigured: "AI 辨識暫時不可用。請直接輸入車牌搜尋。",
+          visionFailed: "AI 辨識失敗，請換一張照片或調整相機角度後再試。",
           visionRateLimited: "辨識請求過於頻繁，請稍等片刻再試。",
           visionCooldownActive: (seconds) => `辨識過於頻繁，系統會在 ${seconds} 秒後再接受新請求。`,
           visionOriginDenied: "此辨識請求來源不被接受，請從本站重新打開相機頁。",
@@ -76,28 +90,42 @@
         },
         en: {
           title: "Camera Plate Search",
-          subtitle: "Open your phone camera and turn a Hong Kong plate into instant search results.",
+          subtitle: "Look up Hong Kong plate records using a camera, photo or manual input.",
           kicker: "Hong Kong plate camera lookup",
           lede:
-            "Start the camera, align a Hong Kong plate, then scan. You can also enter a mark manually without camera access.",
+            "Start the camera or choose a Hong Kong plate photo, then scan. You can also enter a mark manually without camera access.",
           tips: [
             "Keep the plate inside the center frame, level, with limited glare and minimal background text.",
             "The recognizer maps I→1, O→0, and drops Q because Hong Kong plates do not use them.",
-            "Tap AI Scan to send only the cropped plate region to the server-side vision model. If Macau or Mainland China plates are also visible, only the Hong Kong plate is searched."
+            "Only AI Scan sends the cropped camera region or resized selected photo for recognition. Only Hong Kong plates are searched."
           ],
           m1k: "Input",
-          m1v: "Phone camera",
+          m1v: "Camera or photo",
           m2k: "Recognition",
           m2v: "Server-side vision OCR",
           m3k: "Search source",
           m3v: "Site API",
           m4k: "Best case",
           m4v: "Daylight / front view / single HK plate",
-          privacyNote: "When you tap AI Scan, only the cropped plate region inside the frame is uploaded for server-side vision OCR, not the full camera view.",
+          privacyNote: "Choosing a photo only previews it locally. AI Scan sends either the cropped camera region or the selected photo, resized for recognition.",
           guideLeft: "Place the plate inside the frame",
           guideRight: "AI Scan uploads the cropped frame",
           start: "Start camera",
           aiScan: "AI Scan · Upload crop",
+          choosePhoto: "Choose photo",
+          removePhoto: "Remove photo",
+          scanPhoto: "AI Scan · Upload photo",
+          photoPreview: "Selected plate photo",
+          photoLoading: "Loading photo…",
+          photoReady: "Photo ready",
+          photoHint: "The photo stays in this browser until you choose AI Scan · Upload photo. That sends this photo; choose one containing only the plate.",
+          photoInvalid: "This photo could not be read. Choose a JPEG, PNG or WebP image and try again.",
+          photoTooLarge: "Choose a photo no larger than 20 MB and 40 megapixels.",
+          manualHelp: "Full-width input is supported; I / O become 1 / 0. Enter 1–8 letters or numbers; Q is not allowed.",
+          manualInvalid: "Enter 1–8 letters or numbers; Q is not allowed.",
+          searchFailed: "Search results could not be loaded. Please try again shortly.",
+          frameNotReady: "The preview is not ready. Wait a moment and scan again.",
+          skip: "Skip to plate search",
           stop: "Stop camera",
           openSearch: "Open full search page",
           statusTitle: "Recognition status",
@@ -121,7 +149,7 @@
           resultsBadgeLoading: "Loading",
           resultsBadgeOk: (count) => `${count} rows`,
           resultsBadgeNone: "No result",
-          resultsHintIdle: "Once camera search starts, the top 5 matches will appear here.",
+          resultsHintIdle: "After recognition or manual search, the top 5 matches will appear here.",
           resultsHintNoMatch: (q) => `No results were found for "${q}". Try another angle or correct the text manually.`,
           resultsHintFound: (q, total) => `"${q}" currently returns ${total} results; the 5 most relevant rows are shown first.`,
           resultsOpenFull: "Open full results",
@@ -131,11 +159,11 @@
           resultAmount: "Amount",
           resultUnknown: "Unparsed",
           resultLegacyRange: "1973-2006 range",
-          cameraPermissionHelp: "Please allow camera access; this feature needs HTTPS and a phone camera.",
+          cameraPermissionHelp: "Start the camera or choose a plate photo. You can also enter the plate below.",
           cameraUnsupported: "Live camera scanning is not supported on this device or browser.",
           cameraPermissionDenied: "Camera access is blocked. Please allow camera permission and try again.",
-          visionNotConfigured: "AI vision is not configured on the server.",
-          visionFailed: "AI scan failed. Please adjust the angle and try again.",
+          visionNotConfigured: "AI scanning is unavailable. Enter the plate number manually.",
+          visionFailed: "AI scan failed. Try another photo or adjust the camera angle.",
           visionRateLimited: "Too many AI scan requests. Please wait a moment and try again.",
           visionCooldownActive: (seconds) => `Too many scans. New AI requests will be accepted again in ${seconds} seconds.`,
           visionOriginDenied: "This scan request origin was rejected. Please reopen the camera page from this site.",
@@ -202,6 +230,13 @@
       const videoEl = document.getElementById("video");
       const cameraEmptyEl = document.getElementById("cameraEmpty");
       const canvasEl = document.getElementById("ocrCanvas");
+      const photoInputEl = document.getElementById("photoInput");
+      const choosePhotoEl = document.getElementById("choosePhoto");
+      const removePhotoEl = document.getElementById("removePhoto");
+      const photoPreviewEl = document.getElementById("photoPreview");
+      const photoHintEl = document.getElementById("photoHint");
+      const manualHelpEl = document.getElementById("manualHelp");
+      const manualErrorEl = document.getElementById("manualError");
       const backHomeEl = document.getElementById("backHome");
       const brandHomeLinkEl = document.getElementById("brandHomeLink");
       const apiDocEl = document.getElementById("apiDoc");
@@ -214,6 +249,11 @@
       let currentLang = params.get("lang") === "en" ? "en" : "zh";
       let mediaStream = null;
       let scanRunning = false;
+      let cameraStarting = false;
+      let photoLoading = false;
+      let photoImage = null;
+      let sourceGeneration = 0;
+      let visionAbort = null;
       let lastSearchedQuery = "";
       let latestCandidates = [];
       let latestConfidence = 0;
@@ -229,6 +269,7 @@
 
       function normalizePlate(value) {
         return String(value || "")
+          .normalize("NFKC")
           .toUpperCase()
           .replace(/\s+/g, "")
           .replace(/[^A-Z0-9]+/g, "")
@@ -401,6 +442,14 @@
         manualInputEl.placeholder = t("manualPlaceholder");
         const label=document.querySelector('#manualLabel');if(label)label.textContent=currentLang==='en'?'Correct or enter the plate number':'修正或輸入車牌號碼';
         manualInputEl.setAttribute('aria-label',label?.textContent||t('manualPlaceholder'));
+        manualHelpEl.textContent = t("manualHelp");
+        if (manualInputEl.getAttribute("aria-invalid") === "true") manualErrorEl.textContent = t("manualInvalid");
+        document.getElementById("cameraSkip").textContent = t("skip");
+        choosePhotoEl.textContent = t("choosePhoto");
+        removePhotoEl.textContent = t("removePhoto");
+        photoInputEl.setAttribute("aria-label", t("choosePhoto"));
+        photoPreviewEl.alt = t("photoPreview");
+        updateSourceUi();
         manualSearchBtnEl.textContent = t("manualSearch");
         backHomeEl.textContent = t("backHome");
         apiDocEl.textContent = t("apiDoc");
@@ -444,6 +493,109 @@
         resetResultsUi();
       }
 
+      function updateSourceUi() {
+        const busy = scanRunning || cameraStarting || photoLoading;
+        startBtnEl.disabled = busy || Boolean(mediaStream);
+        stopBtnEl.disabled = busy || !mediaStream;
+        choosePhotoEl.disabled = busy;
+        photoInputEl.disabled = busy;
+        removePhotoEl.disabled = busy || !photoImage;
+        removePhotoEl.hidden = !photoImage;
+        aiScanBtnEl.disabled = busy || !(mediaStream || photoImage);
+        aiScanBtnEl.textContent = t(photoImage ? "scanPhoto" : "aiScan");
+        videoEl.hidden = Boolean(photoImage);
+        photoPreviewEl.hidden = !photoImage;
+        guideBoxEl.hidden = Boolean(photoImage);
+        guideLeftEl.textContent = t(photoImage ? "photoPreview" : "guideLeft");
+        guideRightEl.textContent = photoImage ? "" : t("guideRight");
+        photoHintEl.hidden = !photoImage;
+        photoHintEl.textContent = t("photoHint");
+      }
+
+      function cancelSourceWork() {
+        sourceGeneration += 1;
+        visionAbort?.abort();
+        searchAbort?.abort();
+        if (mediaStream) for (const track of mediaStream.getTracks()) track.stop();
+        mediaStream = null;
+        videoEl.srcObject = null;
+        resultsEl.removeAttribute("aria-busy");
+      }
+
+      function releasePhoto() {
+        photoImage = null;
+        photoPreviewEl.removeAttribute("src");
+      }
+
+      async function loadPhoto(file) {
+        if (!file || scanRunning || cameraStarting || photoLoading) return;
+        photoInputEl.value = ""; // Allow selecting the same file again after a failure.
+        if (!file.type.startsWith("image/") || !file.size) {
+          setStatus("error", t("statusError"));
+          ocrMetaEl.textContent = t("photoInvalid");
+          return;
+        }
+        if (file.size > 20 * 1024 * 1024) {
+          setStatus("error", t("statusError"));
+          ocrMetaEl.textContent = t("photoTooLarge");
+          return;
+        }
+        photoLoading = true;
+        cancelSourceWork();
+        const generation = sourceGeneration;
+        updateSourceUi();
+        setStatus("", t("photoLoading"));
+        try {
+          // data: previews use the existing image CSP; no new source permission is needed.
+          const url = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(String(reader.result));
+            reader.onerror = () => reject(new Error(t("photoInvalid")));
+            reader.readAsDataURL(file);
+          });
+          if (generation !== sourceGeneration) return;
+          const image = new Image();
+          await new Promise((resolve, reject) => {
+            image.onload = resolve;
+            image.onerror = reject;
+            image.src = url;
+          });
+          if (generation !== sourceGeneration) return;
+          if (!image.naturalWidth || !image.naturalHeight) throw new Error(t("photoInvalid"));
+          if (image.naturalWidth * image.naturalHeight > 40_000_000) throw new Error(t("photoTooLarge"));
+          releasePhoto();
+          photoImage = image;
+          photoPreviewEl.src = url;
+          cameraEmptyEl.hidden = true;
+          resultsEl.replaceChildren();
+          renderCandidates([]);
+          setDetectedPlate("--", t("detectedHintIdle"));
+          resetResultsUi();
+          setStatus("ok", t("photoReady"));
+          ocrMetaEl.textContent = t("ocrMetaIdle");
+        } catch (err) {
+          if (generation !== sourceGeneration) return;
+          cameraEmptyEl.hidden = !photoImage;
+          cameraEmptyEl.textContent = t("cameraPermissionHelp");
+          setStatus("error", t("statusError"));
+          ocrMetaEl.textContent = err?.message || t("photoInvalid");
+        } finally {
+          photoLoading = false;
+          updateSourceUi();
+        }
+      }
+
+      function removePhoto() {
+        if (scanRunning || photoLoading) return;
+        cancelSourceWork();
+        releasePhoto();
+        resultsEl.replaceChildren();
+        renderCandidates([]);
+        setIdleUi();
+        cameraEmptyEl.hidden = false;
+        updateSourceUi();
+      }
+
       function visionSendingText() {
         return currentLang === "zh" ? "AI：正在傳送白框內圖像…" : "AI: sending cropped plate image…";
       }
@@ -470,13 +622,14 @@
         return Math.max(0, visionCooldownUntil - Date.now());
       }
 
-      async function ensureVisionSessionToken() {
+      async function ensureVisionSessionToken(signal) {
         const now = Math.floor(Date.now() / 1000);
         if (visionSessionToken && visionSessionExpiresAt - now > 20) return visionSessionToken;
         const resp = await fetch("./api/vision_session", {
           method: "GET",
           cache: "no-store",
           credentials: "same-origin",
+          signal,
         });
         const payload = await resp.json().catch(() => ({}));
         if (!resp.ok) {
@@ -542,6 +695,16 @@
 
       function drawFrameToCanvas() {
         const ctx = canvasEl.getContext("2d", { willReadFrequently: true });
+        if (!ctx) return false;
+        if (photoImage) {
+          const scale = Math.min(1, 1440 / Math.max(photoImage.naturalWidth, photoImage.naturalHeight));
+          canvasEl.width = Math.max(1, Math.round(photoImage.naturalWidth * scale));
+          canvasEl.height = Math.max(1, Math.round(photoImage.naturalHeight * scale));
+          ctx.fillStyle = "#fff";
+          ctx.fillRect(0, 0, canvasEl.width, canvasEl.height);
+          ctx.drawImage(photoImage, 0, 0, canvasEl.width, canvasEl.height);
+          return true;
+        }
         const vw = videoEl.videoWidth || 0;
         const vh = videoEl.videoHeight || 0;
         if (!vw || !vh) return false;
@@ -590,22 +753,33 @@
       }
 
       async function searchPlate(query) {
+        searchAbort?.abort();
+        const input = String(query || "").normalize("NFKC").toUpperCase().replace(/\s+/g, "");
+        if (!/^[A-Z0-9]{1,8}$/.test(input) || input.includes("Q")) {
+          manualInputEl.setAttribute("aria-invalid", "true");
+          manualErrorEl.textContent = t("manualInvalid");
+          manualInputEl.focus();
+          return;
+        }
         const q = normalizePlate(query);
-        if (!q) return;
+        manualInputEl.removeAttribute("aria-invalid");
+        manualErrorEl.textContent = "";
         if (searchAbort) searchAbort.abort();
-        searchAbort = new AbortController();
+        const controller = new AbortController();
+        searchAbort = controller;
         lastSearchedQuery = q;
         manualInputEl.value = q;
         updateNavLinks();
         resultsBadgeEl.className = "status-badge";
         resultsBadgeEl.textContent = t("resultsBadgeLoading");
         resultsHintEl.textContent = "";
+        resultsEl.setAttribute("aria-busy", "true");
         try {
           setStatus("", t("statusSearching"));
           const mode = q.length >= 3 ? "&mode=exact_prefix" : "";
           const resp = await fetch(`./api/search?dataset=all&q=${encodeURIComponent(q)}&page=1&page_size=5&sort=amount_desc${mode}`, {
             cache: "no-store",
-            signal: searchAbort.signal,
+            signal: controller.signal,
           });
           if (!resp.ok) {
             let message = await resp.text();
@@ -623,17 +797,21 @@
             throw new Error(message || "search_failed");
           }
           const payload = await resp.json();
+          if (controller.signal.aborted) return;
           renderResults(Array.isArray(payload.rows) ? payload.rows : [], Number(payload.total || 0), q);
           setStatus("ok", t("statusDetected"));
         } catch (err) {
           if (err?.name === "AbortError") return;
           renderResults([], 0, q);
+          resultsHintEl.textContent = /rate|too many|過於頻繁/i.test(err?.message || "") ? err.message : t("searchFailed");
           setStatus("error", t("statusError"));
+        } finally {
+          if (searchAbort === controller) resultsEl.removeAttribute("aria-busy");
         }
       }
 
       async function runVisionScan() {
-        if (!mediaStream || scanRunning) return;
+        if (!(mediaStream || photoImage) || scanRunning || photoLoading) return;
         const cooldownMs = remainingVisionCooldownMs();
         if (cooldownMs > 0) {
           const seconds = Math.max(1, Math.ceil(cooldownMs / 1000));
@@ -641,14 +819,22 @@
           ocrMetaEl.textContent = t("visionCooldownActive")(seconds);
           return;
         }
-        if (!drawFrameToCanvas()) return;
+        if (!drawFrameToCanvas()) {
+          ocrMetaEl.textContent = t("frameNotReady");
+          return;
+        }
+        const generation = sourceGeneration;
+        const controller = new AbortController();
+        visionAbort = controller;
+        const imageDataUrl = frameImageDataUrl();
         scanRunning = true;
-        aiScanBtnEl.disabled = true;
+        updateSourceUi();
         try {
           setStatus("", t("statusVision"));
-          ocrMetaEl.textContent = visionSendingText();
+          ocrMetaEl.textContent = photoImage ? t("scanPhoto") : visionSendingText();
           renderCandidates([]);
-          const visionToken = await ensureVisionSessionToken();
+          const visionToken = await ensureVisionSessionToken(controller.signal);
+          if (controller.signal.aborted || generation !== sourceGeneration) return;
           const resp = await fetch("./api/vision_plate", {
             method: "POST",
             headers: {
@@ -656,13 +842,15 @@
             },
             cache: "no-store",
             credentials: "same-origin",
+            signal: controller.signal,
             body: JSON.stringify({
               lang: currentLang,
               vision_token: visionToken,
-              image_data_url: frameImageDataUrl(),
+              image_data_url: imageDataUrl,
             }),
           });
           const payload = await resp.json().catch(() => ({}));
+          if (controller.signal.aborted || generation !== sourceGeneration) return;
           if (!resp.ok) {
             const code = String(payload?.error || "");
             if (code === "vision_not_configured") {
@@ -717,18 +905,27 @@
           setStatus("ok", t("statusDetected"));
           await searchPlate(primaryPlate);
         } catch (err) {
+          if (controller.signal.aborted || generation !== sourceGeneration) return;
           setStatus(err?.code === "rate_limited" ? "warn" : "error", t("statusError"));
           ocrMetaEl.textContent = String(err?.message || err || "");
         } finally {
           scanRunning = false;
-          aiScanBtnEl.disabled = !mediaStream;
+          if (visionAbort === controller) visionAbort = null;
+          updateSourceUi();
         }
       }
 
       async function startCamera() {
+        if (cameraStarting || scanRunning || photoLoading || mediaStream) return;
+        cancelSourceWork();
+        releasePhoto();
+        const generation = sourceGeneration;
+        cameraStarting = true;
+        cameraEmptyEl.hidden = false;
+        updateSourceUi();
         try {
           cameraEmptyEl.textContent = t("statusLoading");
-          mediaStream = await navigator.mediaDevices.getUserMedia({
+          const stream = await navigator.mediaDevices.getUserMedia({
             audio: false,
             video: {
               facingMode: { ideal: "environment" },
@@ -736,8 +933,14 @@
               height: { ideal: 720 },
             },
           });
+          if (generation !== sourceGeneration) {
+            for (const track of stream.getTracks()) track.stop();
+            return;
+          }
+          mediaStream = stream;
           videoEl.srcObject = mediaStream;
           await videoEl.play();
+          if (generation !== sourceGeneration) return;
           cameraEmptyEl.hidden = true;
           startBtnEl.disabled = true;
           aiScanBtnEl.disabled = false;
@@ -747,27 +950,27 @@
           ocrMetaEl.textContent = t("ocrMetaIdle");
           renderCandidates([]);
         } catch (err) {
+          if (generation !== sourceGeneration) return;
+          cancelSourceWork();
           cameraEmptyEl.hidden = false;
           cameraEmptyEl.textContent = t("cameraPermissionHelp");
           setStatus("error", t("statusError"));
           ocrMetaEl.textContent = readableCameraError(err);
+        } finally {
+          cameraStarting = false;
+          updateSourceUi();
         }
       }
 
       function stopCamera() {
-        if (searchAbort) searchAbort.abort();
-        searchAbort = null;
-        if (mediaStream) {
-          for (const track of mediaStream.getTracks()) track.stop();
-          mediaStream = null;
-        }
-        videoEl.srcObject = null;
-        cameraEmptyEl.hidden = false;
+        cancelSourceWork();
+        cameraEmptyEl.hidden = Boolean(photoImage);
         cameraEmptyEl.textContent = t("cameraPermissionHelp");
         startBtnEl.disabled = false;
         aiScanBtnEl.disabled = true;
         stopBtnEl.disabled = true;
-        setStatus("", t("statusIdle"));
+        setStatus(photoImage ? "ok" : "", t(photoImage ? "photoReady" : "statusIdle"));
+        updateSourceUi();
       }
 
       function setLang(lang) {
@@ -775,21 +978,27 @@
         params.set("lang", currentLang);
         history.replaceState({}, "", `${location.pathname}?${params.toString()}`);
         applyLanguage();
-        if (!mediaStream) {
+        if (photoImage) {
+          setStatus("ok", t("photoReady"));
+        } else if (!mediaStream) {
           setIdleUi();
         }
+        updateSourceUi();
       }
 
       function bindEvents() {
         startBtnEl.addEventListener("click", startCamera);
         aiScanBtnEl.addEventListener("click", runVisionScan);
         stopBtnEl.addEventListener("click", stopCamera);
+        choosePhotoEl.addEventListener("click", () => photoInputEl.click());
+        photoInputEl.addEventListener("change", () => loadPhoto(photoInputEl.files?.[0]));
+        removePhotoEl.addEventListener("click", removePhoto);
         manualSearchBtnEl.addEventListener("click", () => {
           searchPlate(manualInputEl.value);
         });
         manualInputEl.addEventListener("input", () => {
-          const next = normalizePlate(manualInputEl.value);
-          if (next !== manualInputEl.value) manualInputEl.value = next;
+          manualInputEl.removeAttribute("aria-invalid");
+          manualErrorEl.textContent = "";
           updateNavLinks();
         });
         manualInputEl.addEventListener("keydown", (ev) => {
@@ -809,8 +1018,13 @@
         document.addEventListener("visibilitychange", () => {
           if (document.visibilityState !== "visible") stopCamera();
         });
+        window.addEventListener("pagehide", () => {
+          cancelSourceWork();
+          releasePhoto();
+        });
       }
 
       applyLanguage();
       bindEvents();
       setIdleUi();
+      updateSourceUi();

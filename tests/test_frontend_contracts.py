@@ -527,7 +527,7 @@ class FrontendContractsTests(unittest.TestCase):
         self.assertIn("remainingVisionCooldownMs(", camera_js)
         self.assertIn("readableCameraError(", camera_js)
         self.assertIn("ocrMetaEl.textContent = readableCameraError(err);", camera_js)
-        self.assertIn("ensureVisionSessionToken()", camera_js)
+        self.assertIn("ensureVisionSessionToken(controller.signal)", camera_js)
         self.assertIn("vision_token: visionToken", camera_js)
 
     def test_no_legacy_php_runtime_files_remain(self) -> None:

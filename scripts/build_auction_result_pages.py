@@ -199,12 +199,12 @@ def shell(r: dict | None, lang: str, heading: str, description: str, body: str, 
 <link rel="stylesheet" href="/assets/growth.css?v=20260929-01">
 <script type="application/ld+json">{structured}</script>
 <script defer src="/assets/analytics.js?v=20260915-01"></script>
-<link rel="stylesheet" href="/assets/ux.css?v=20260928-01"><script defer src="/assets/ux.js?v=20260928-01"></script>
+<link rel="stylesheet" href="/assets/ux.css?v=20261010-01"><script defer src="/assets/ux.js?v=20261010-01"></script>
 </head><body class="auction-page" data-info-page="archive" data-auction-dataset="{r['dataset'] if r else ''}" data-auction-start="{r['start_date'] if r else ''}" data-auction-end="{r['end_date'] if r else ''}">
 <div data-info-shell-header><noscript><header class="auction-header"><a class="auction-brand" href="/{legacy}">Plate.hk</a><nav>{navigation}</nav></header></noscript></div>
 <main id="main-content"><p class="auction-kicker">{choose('運輸署結果・Plate.hk 整理', 'Transport Department results · Compiled by Plate.hk', lang)}</p><h1>{html.escape(heading)}</h1>{body}</main>
 <div data-info-shell-footer><noscript><footer class="auction-footer">{link('/about.html' + legacy, choose('資料來源與限制', 'Sources and limitations', lang))} · {link('/terms.html' + legacy, choose('使用條款', 'Terms', lang))} · {link('https://github.com/heathermhuang/platehk', 'GitHub')}</footer></noscript></div>
-<script src="/assets/info-shell.js?v=20260928-01"></script><script defer src="/assets/growth.js?v=20260929-01"></script></body></html>\n'''
+<script src="/assets/info-shell.js?v=20261010-01"></script><script defer src="/assets/growth.js?v=20260929-01"></script></body></html>\n'''
 
 
 def render_round(r: dict, lang: str) -> str:
@@ -253,7 +253,7 @@ def render_round(r: dict, lang: str) -> str:
 <p>{source}</p><dl class="auction-metrics">{metrics}</dl>
 <section aria-labelledby="top-sales"><h2 id="top-sales">{choose('最高五筆拍賣成交', 'Five highest auction sales', lang)}</h2><ol class="auction-top">{top_items}</ol></section>
 <section aria-labelledby="read-results"><h2 id="read-results">{choose('如何理解本場結果？', 'How to read this round', lang)}</h2><p>{interpretation}</p><p>{reconciliation}</p>{online}<p>{limits}</p></section>
-<section aria-labelledby="complete-results"><h2 id="complete-results">{choose('完整結果', 'Complete results', lang)} ({len(r['rows'])})</h2><p>{choose('按號碼排序；可用瀏覽器尋找功能查詢。金額破折號代表未售出，並非零元成交。', 'Sorted by mark; use your browser’s find function to look up a mark. A dash means unsold, not a zero-price sale.', lang)}</p>
+<section aria-labelledby="complete-results"><h2 id="complete-results">{choose('完整結果', 'Complete results', lang)} ({len(r['rows'])})</h2><p>{choose('按號碼排序；下方「在本場找車牌」會搜尋本場全部號碼。金額破折號代表未售出，並非零元成交。', 'Sorted by mark. Find a plate in this round searches all marks, across every page. A dash means unsold, not a zero-price sale.', lang)}</p><noscript><p>{choose('未啟用 JavaScript 時，全部號碼會顯示於下方，可使用瀏覽器尋找功能。', 'With JavaScript disabled, all marks appear below and you can use your browser’s find function.', lang)}</p></noscript>
 <div class="auction-table-wrap"><table><caption>{html.escape(title(r, lang))} — {choose('完整官方手冊紀錄', 'complete handout records', lang)}</caption><thead><tr>{''.join(f'<th scope="col">{h}</th>' for h in headings)}</tr></thead><tbody>{''.join(rows_html)}</tbody></table></div></section>
 <section><h2>{choose('其他已核對拍賣場次', 'Other verified rounds', lang)}</h2><div class="auction-related">{siblings}</div><p>{link(public_path(lang=lang), choose('返回結果目錄', 'Back to results archive', lang))}</p></section>'''
     return shell(r, lang, title(r, lang), description, body, [])
@@ -272,7 +272,8 @@ def render_index(lang: str) -> str:
         cards.append(f'<article><h2>{link(public_path(r, lang), title(r, lang))}</h2><p>{summary}</p><p>{choose("官方公布款項", "Official proceeds", lang)}: <strong>{money(r["official_proceeds_hkd"])}</strong></p><p>{link(r["source_url"], choose("完整官方 PDF", "Complete official PDF", lang))}</p></article>')
     scope = choose(f'本目錄收錄 {len(rounds)} 個已核對完整手冊的場次，並非所有歷年拍賣。其他歷史已收錄金額可回到搜尋工具查詢。', f'This archive contains {len(rounds)} rounds verified against their complete handouts; it is not the entire historical auction archive. Use the search tool for other indexed historical amounts.', lang)
     limits = choose('拍賣售出、無人競投後的特別費用分配、以及 U/S 未售出，是不同結果。款項不能當作現時估價或可用狀態；運輸署是最終來源。', 'Auction sales, allocations at special fees after no bidder, and U/S unsold marks are distinct outcomes. Amounts do not establish current value or availability; the Transport Department is the final source authority.', lang)
-    body = f'<p class="auction-summary">{description}</p><p>{scope}</p><p>{link("#updates", choose("訂閱新結果", "Follow new results", lang))}</p><div class="auction-rounds">{"".join(cards)}</div>{feed_controls(lang)}<section><h2>{choose("結果與價錢的限制", "Result and price limitations", lang)}</h2><p>{limits}</p>{link("/prices.html" + ("?lang=en" if lang == "en" else ""), choose("查詢車牌歷史價格", "Look up a plate’s price history", lang))}</section>'
+    newest = link('/?sort=date_desc&lang=' + lang, choose('查看最新已收錄成交', 'View newest indexed records', lang))
+    body = f'<p class="auction-summary">{description}</p><p>{scope}</p><p>{newest} · {link("#updates", choose("訂閱新結果", "Follow new results", lang))}</p><div class="auction-rounds">{"".join(cards)}</div>{feed_controls(lang)}<section><h2>{choose("結果與價錢的限制", "Result and price limitations", lang)}</h2><p>{limits}</p>{link("/prices.html" + ("?lang=en" if lang == "en" else ""), choose("查詢車牌歷史價格", "Look up a plate’s price history", lang))}</section>'
     schema = [{'@type': 'ItemList', 'numberOfItems': len(rounds), 'itemListElement': [
         {'@type': 'ListItem', 'position': i, 'name': title(r, lang), 'url': SITE + public_path(r, lang)} for i, r in enumerate(rounds, 1)]}]
     return shell(None, lang, heading, description, body, schema)
