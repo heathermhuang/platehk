@@ -54,6 +54,7 @@ node --check cloudflare-worker/src/api.mjs
 node --check cloudflare-worker/src/index.mjs
 node --check assets/camera.js
 node --test tests/camera_frontend_test.mjs
+node --test tests/vision_worker_test.mjs
 node --check assets/analytics.js
 node --check assets/growth.js
 node --check assets/decision.js

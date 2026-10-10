@@ -23,7 +23,10 @@
     "binding": "ASSETS",
     "run_worker_first": true
   },
+  "ai": { "binding": "AI" },
   "vars": {
+    "VISION_PROVIDER": "workers_ai",
+    "CLOUDFLARE_VISION_MODEL": "@cf/qwen/qwen3.8-27b",
     "APP_ENV": "production",
     "OPENAI_BASE_URL": "https://api.openai.com/v1",
     "OPENAI_VISION_MODEL": "gpt-4.1-mini",

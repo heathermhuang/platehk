@@ -142,6 +142,7 @@ The current production shape is:
 
 - Cloudflare Static Assets serves the frontend and prebuilt public data
 - Cloudflare Worker handles `/api/*` routes and the vision-assisted lookup flow
+- Camera and uploaded-photo OCR use the native `AI` binding with `VISION_PROVIDER=workers_ai` and the configured Qwen vision model. Requests retain same-origin/session checks and image limits; inference has a time limit and bounded output. Photo selection stays local until AI Scan. The OpenAI adapter remains available for deployments that explicitly configure it.
 - The Worker performs exact-plate lookups against a non-browsable, minimal external-sale signal asset
 - Fresh exact sale signals can launch a short, client-side WhatsApp buyer-enquiry draft
 - Canonical bounded indexes power search, issue shards power date browsing, and sorted result chunks back paginated result views

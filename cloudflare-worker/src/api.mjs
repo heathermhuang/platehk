@@ -1033,8 +1033,12 @@ async function handleVisionPlate(request, env) {
     enforceRateLimit(`vision_plate:hour:${request.headers.get("cf-connecting-ip") || "unknown"}`, 600, 3600);
   }
 
-  const { apiKey, baseUrl, timeoutSeconds, visionModel } = getOpenAiConfig(env);
-  if (!apiKey || !/^https:\/\//i.test(baseUrl)) return jsonResponse({ error: "vision_not_configured" }, 503);
+  const { apiKey, baseUrl, timeoutSeconds, visionModel: openAiModel } = getOpenAiConfig(env);
+  const workersAi = String(env.VISION_PROVIDER || "openai") === "workers_ai";
+  const visionModel = workersAi ? String(env.CLOUDFLARE_VISION_MODEL || "@cf/qwen/qwen3.8-27b") : openAiModel;
+  if (workersAi ? typeof env.AI?.run !== "function" : (!apiKey || !/^https:\/\//i.test(baseUrl))) {
+    return jsonResponse({ error: "vision_not_configured" }, 503);
+  }
 
   const req = await readJsonBody(request);
   const imageDataUrl = String(req.image_data_url || "");
@@ -1052,32 +1056,54 @@ async function handleVisionPlate(request, env) {
   }
 
   const prompt = lang === "en"
-    ? "Read the Hong Kong vehicle registration mark from this cropped plate image. If multiple plates are visible, choose the Hong Kong plate only and ignore Macau plates such as M-12-34 or MA-12-34 and Mainland China plates such as 粤Z1234港, 粵Z1234澳, or province-character plates. Return JSON only with keys: plate, confidence, raw_text, reasoning_note, plate_type, is_hong_kong_plate. Hong Kong registration marks do not use the letters I, O, or Q. Normalize HK marks by removing spaces, converting I to 1, converting O to 0, and dropping Q. Example: visible text like IRIS LAM should normalize as 1R1SLAM. If no Hong Kong plate is visible, return an empty plate, confidence 0, plate_type macau/mainland_china/not_hk, and is_hong_kong_plate false."
-    : "讀取這張已裁切的香港車牌圖像；如同時出現多個車牌，只選香港車牌，並忽略澳門車牌（例如 M-12-34 或 MA-12-34）及內地車牌（例如 粤Z1234港、粵Z1234澳 或省份漢字開頭的車牌）。只回傳 JSON，鍵為 plate、confidence、raw_text、reasoning_note、plate_type、is_hong_kong_plate。香港車牌不使用英文字母 I、O、Q。香港車牌正規化規則：移除空格，把 I 轉成 1，把 O 轉成 0，刪除 Q。例如畫面像 IRIS LAM 時，plate 應正規化為 1R1SLAM。如畫面沒有香港車牌，plate 請回傳空字串、confidence 為 0、plate_type 為 macau/mainland_china/not_hk，並把 is_hong_kong_plate 設為 false。";
-  const resp = await httpPostJson(env, `${baseUrl}/responses`, {
-    model: visionModel,
-    input: [{
-      role: "user",
-      content: [
-        { type: "input_text", text: prompt },
-        { type: "input_image", image_url: imageDataUrl, detail: "high" },
-      ],
-    }],
-    max_output_tokens: 190,
-  }, timeoutSeconds);
-  if (resp.status < 200 || resp.status >= 300 || !resp.json) {
-    console.error("[vision_plate] upstream_error", resp.status, String(resp.body).slice(0, 800));
-    return jsonResponse({ error: "vision_upstream_error" }, 502);
-  }
-  let outputText = String(resp.json.output_text || "").trim();
-  if (!outputText) {
-    const chunks = [];
-    for (const item of resp.json.output || []) {
-      for (const content of item.content || []) {
-        if (content.type === "output_text" && content.text) chunks.push(String(content.text));
-      }
+    ? "Read the Hong Kong vehicle registration mark from this plate image. If multiple plates are visible, choose the Hong Kong plate only and ignore Macau plates such as M-12-34 or MA-12-34 and Mainland China plates such as 粤Z1234港, 粵Z1234澳, or province-character plates. Return JSON only with keys: plate, confidence, raw_text, reasoning_note, plate_type, is_hong_kong_plate. Hong Kong registration marks do not use the letters I, O, or Q. Normalize HK marks by removing spaces, converting I to 1, converting O to 0, and dropping Q. Example: visible text like IRIS LAM should normalize as 1R1SLAM. If no Hong Kong plate is visible, return an empty plate, confidence 0, plate_type macau/mainland_china/not_hk, and is_hong_kong_plate false."
+    : "讀取這張香港車牌圖像；如同時出現多個車牌，只選香港車牌，並忽略澳門車牌（例如 M-12-34 或 MA-12-34）及內地車牌（例如 粤Z1234港、粵Z1234澳 或省份漢字開頭的車牌）。只回傳 JSON，鍵為 plate、confidence、raw_text、reasoning_note、plate_type、is_hong_kong_plate。香港車牌不使用英文字母 I、O、Q。香港車牌正規化規則：移除空格，把 I 轉成 1，把 O 轉成 0，刪除 Q。例如畫面像 IRIS LAM 時，plate 應正規化為 1R1SLAM。如畫面沒有香港車牌，plate 請回傳空字串、confidence 為 0、plate_type 為 macau/mainland_china/not_hk，並把 is_hong_kong_plate 設為 false。";
+  let outputText = "";
+  if (workersAi) {
+    try {
+      const output = await env.AI.run(visionModel, {
+        messages: [{ role: "user", content: [
+          { type: "text", text: prompt },
+          { type: "image_url", image_url: { url: imageDataUrl } },
+        ] }],
+        max_completion_tokens: 384,
+        reasoning_effort: "low",
+        chat_template_kwargs: { enable_thinking: false },
+        stream: false,
+        store: false,
+      }, { signal: AbortSignal.timeout(Math.max(5000, timeoutSeconds * 1000)) });
+      outputText = String(output?.choices?.[0]?.message?.content || output?.response || "").trim();
+    } catch {
+      // Never log image content, provider bodies, or credentials.
+      console.error("[vision_plate] upstream_error", "workers_ai");
+      return jsonResponse({ error: "vision_upstream_error" }, 502);
     }
-    outputText = chunks.join("\n").trim();
+  } else {
+    const resp = await httpPostJson(env, `${baseUrl}/responses`, {
+      model: visionModel,
+      input: [{
+        role: "user",
+        content: [
+          { type: "input_text", text: prompt },
+          { type: "input_image", image_url: imageDataUrl, detail: "high" },
+        ],
+      }],
+      max_output_tokens: 190,
+    }, timeoutSeconds);
+    if (resp.status < 200 || resp.status >= 300 || !resp.json) {
+      console.error("[vision_plate] upstream_error", "openai", resp.status);
+      return jsonResponse({ error: "vision_upstream_error" }, 502);
+    }
+    outputText = String(resp.json.output_text || "").trim();
+    if (!outputText) {
+      const chunks = [];
+      for (const item of resp.json.output || []) {
+        for (const content of item.content || []) {
+          if (content.type === "output_text" && content.text) chunks.push(String(content.text));
+        }
+      }
+      outputText = chunks.join("\n").trim();
+    }
   }
   if (!outputText) return jsonResponse({ error: "vision_empty_output" }, 502);
   const jsonStart = outputText.indexOf("{");
@@ -1091,9 +1117,11 @@ async function handleVisionPlate(request, env) {
   } catch {
     return jsonResponse({ error: "vision_invalid_output" }, 502);
   }
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return jsonResponse({ error: "vision_invalid_output" }, 502);
   const rawPlateText = String(parsed.plate || "");
   const rawTextOriginal = String(parsed.raw_text || rawPlateText);
-  const confidence = Math.max(0, Math.min(1, Number(parsed.confidence || 0)));
+  const numericConfidence = Number(parsed.confidence || 0);
+  const confidence = Number.isFinite(numericConfidence) ? Math.max(0, Math.min(1, numericConfidence)) : 0;
   const note = String(parsed.reasoning_note || "").slice(0, 160);
   const plateType = visionPlateTypeFromModel(parsed.plate_type || "");
   const isHongKongPlate = visionBooleanOrNull(parsed.is_hong_kong_plate);
