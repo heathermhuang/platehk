@@ -255,6 +255,7 @@
       let sourceGeneration = 0;
       let visionAbort = null;
       let lastSearchedQuery = "";
+      let lastResults = null;
       let latestCandidates = [];
       let latestConfidence = 0;
       let latestRawText = "";
@@ -422,6 +423,12 @@
         document.title = currentLang === "en"
           ? `Camera Plate Search | ${siteBrand()}`
           : `相機車牌辨識搜尋 | ${siteBrand()}`;
+        cameraEmptyEl.textContent = t("cameraPermissionHelp");
+        const processingLink = document.querySelector('a[href*="privacy.html"][href*="#camera-uploads"]');
+        if (processingLink) {
+          processingLink.textContent = currentLang === "en" ? "Image processing and privacy" : "圖像處理及私隱";
+          processingLink.href = `./privacy.html?lang=${currentLang}#camera-uploads`;
+        }
         titleEl.textContent = t("title");
         subtitleEl.textContent = t("subtitle");
         kickerEl.textContent = t("kicker");
@@ -462,6 +469,9 @@
         githubEl.textContent = t("github");
         updateNavLinks();
         renderCandidates(latestCandidates);
+        if (lastResults) renderResults(lastResults.rows, lastResults.total, lastResults.query);
+        if (latestRawText) ocrMetaEl.textContent = t("ocrMetaFmt")(latestRawText, latestConfidence);
+        else if (!scanRunning && document.body.dataset.cameraState !== "error") ocrMetaEl.textContent = t("ocrMetaIdle");
         updateLangButtons();
       }
 
@@ -484,6 +494,7 @@
       }
 
       function resetResultsUi() {
+        lastResults = null;
         resultsBadgeEl.className = "status-badge";
         resultsBadgeEl.textContent = t("resultsBadgeIdle");
         resultsHintEl.textContent = t("resultsHintIdle");
@@ -570,6 +581,8 @@
           if (image.naturalWidth * image.naturalHeight > 40_000_000) throw new Error(t("photoTooLarge"));
           releasePhoto();
           photoImage = image;
+          latestRawText = "";
+          latestConfidence = 0;
           photoPreviewEl.src = url;
           cameraEmptyEl.hidden = true;
           resultsEl.replaceChildren();
@@ -661,6 +674,7 @@
       }
 
       function renderResults(rows, total, query) {
+        lastResults = { rows, total, query };
         if (!rows || !rows.length) {
           resultsEl.innerHTML = "";
           resultsBadgeEl.className = "status-badge warn";
@@ -983,9 +997,11 @@
         history.replaceState({}, "", `${location.pathname}?${params.toString()}`);
         applyLanguage();
         if (photoImage) {
-          setStatus("ok", t("photoReady"));
-        } else if (!mediaStream) {
+          setStatus("ok", t(latestRawText ? "statusDetected" : "photoReady"));
+        } else if (!mediaStream && !lastResults) {
           setIdleUi();
+        } else if (lastResults) {
+          setStatus("ok", t("statusDetected"));
         }
         updateSourceUi();
       }

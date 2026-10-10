@@ -253,6 +253,7 @@ test('fullwidth manual input is preserved, normalized on submit and announced ac
 });
 
 test('choosing a photo needs no camera permission or upload before explicit scan', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
   let sessions = 0, uploads = 0;
   await page.addInitScript(() => {
     Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: {
@@ -276,6 +277,8 @@ test('choosing a photo needs no camera permission or upload before explicit scan
   await page.getByRole('button', { name: 'Choose photo', exact: true }).click();
   await (await picker).setFiles(photoFixture);
   await expect(page.locator('#photoPreview')).toBeVisible();
+  const previewFits = await page.locator('#photoPreview').evaluate(img => img.closest('.camera-shell').clientHeight >= img.clientHeight + 20);
+  expect(previewFits).toBe(true);
   await expect(page.getByRole('button', { name: 'AI Scan · Upload photo', exact: true })).toBeEnabled();
   expect(sessions).toBe(0); expect(uploads).toBe(0);
   await page.locator('#aiScanBtn').click();
@@ -310,4 +313,32 @@ test('bad photos and failed photo scans support replacement and retry', async ({
   await page.locator('#aiScanBtn').click();
   await expect.poll(() => uploads).toBe(2);
   await expect(page.locator('#manualInput')).toHaveValue('AA88');
+});
+
+
+test('tall phone screens keep camera results in the page flow', async ({ page }) => {
+  await page.route('**/api/search?**', route => route.fulfill({ json: { total: 1, rows: [{ single_line: 'HK 88', amount_hkd: 88000, auction_date: '2026-08-01', dataset_key: 'pvrm', source_url: 'https://example.test/source/HK88' }] } }));
+  for (const height of [844, 926]) {
+    await page.setViewportSize({ width: 390, height });
+    await page.goto('/camera.html?lang=en');
+    await page.locator('#manualInput').fill('HK88');
+    await page.locator('#manualSearchBtn').click();
+    await expect(page.locator('#results .result-row')).toHaveCount(1);
+    const flow = await page.evaluate(() => {
+      const main = document.querySelector('main').getBoundingClientRect();
+      const wrap = document.querySelector('.wrap').getBoundingClientRect();
+      const footer = document.querySelector('.info-site-footer').getBoundingClientRect();
+      return { mainBottom: main.bottom, wrapBottom: wrap.bottom, footerTop: footer.top };
+    });
+    expect(flow.wrapBottom).toBeGreaterThanOrEqual(flow.mainBottom - 2);
+    expect(flow.footerTop).toBeGreaterThanOrEqual(flow.mainBottom - 2);
+    await page.locator('#results .result-actions a').last().scrollIntoViewIfNeeded();
+    await expect(page.locator('#results .result-actions a').last()).toBeInViewport();
+    await page.locator('#langZh').click();
+    await expect(page.locator('#results')).toContainText('拍賣日期');
+    await expect(page.locator('#resultsBadge')).toContainText('1 筆');
+    await expect(page.locator('#results .result-actions a').first()).toHaveAttribute('href', /lang=zh/);
+    await expect(page.locator('a[href*="privacy.html"][href*="#camera-uploads"]')).toHaveAttribute('href', /lang=zh#camera-uploads/);
+    await expect(page.locator('#ocrMeta')).toContainText('尚未送出');
+  }
 });
