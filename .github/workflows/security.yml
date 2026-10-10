@@ -58,4 +58,4 @@ jobs:
         run: npx playwright install --with-deps chromium webkit
 
       - name: Verify plate flows and shared design across desktop and mobile browsers
-        run: npx playwright test e2e/camera.spec.mjs e2e/decision.spec.mjs e2e/auction-results.spec.mjs e2e/ux.spec.mjs e2e/growth.spec.mjs e2e/design-consistency.spec.mjs e2e/browser-compatibility.spec.mjs e2e/search-layout.spec.mjs --workers=1
+        run: npx playwright test e2e/camera.spec.mjs e2e/records-ui.spec.mjs e2e/decision.spec.mjs e2e/auction-results.spec.mjs e2e/ux.spec.mjs e2e/growth.spec.mjs e2e/design-consistency.spec.mjs e2e/browser-compatibility.spec.mjs e2e/search-layout.spec.mjs --workers=1
