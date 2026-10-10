@@ -912,7 +912,7 @@
           display: none;
         }
       }
-      @media (max-width: 700px) and (max-height: 760px) {
+      @media (max-width: 700px) {
         html,
         body {
           min-height: 100%;
@@ -940,6 +940,8 @@
           margin-top: 8px;
           display: block;
         }
+      }
+      @media (max-width: 700px) and (max-height: 760px) {
         .camera-shell {
           height: clamp(190px, 36dvh, 300px);
         }
@@ -959,7 +961,7 @@
     </style>
     <link rel="stylesheet" href="./assets/ledger.css?v=20260512-09" />
 
-  <link rel="stylesheet" href="/assets/ux.css?v=20261010-01"><script defer src="/assets/ux.js?v=20261010-01"></script>
+  <link rel="stylesheet" href="/assets/ux.css?v=20261010-02"><script defer src="/assets/ux.js?v=20261010-01"></script>
 </head>
   <body>
     <div class="wrap">
@@ -1075,7 +1077,7 @@
     </div>
 
     <canvas id="ocrCanvas" width="960" height="320"></canvas>
-    <script src="./assets/camera.js?v=20261010-01"></script>
+    <script src="./assets/camera.js?v=20261010-03"></script>
     <div data-info-shell-footer></div>
     <script src="./assets/info-shell.js?v=20261010-01" data-footer-only></script>
   </body>

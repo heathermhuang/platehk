@@ -1,6 +1,6 @@
 /* Shared task hierarchy; the existing ledger tokens and plate identity remain. */
 .photo-preview { width: 100%; height: 100%; object-fit: contain; display: block; }
-.camera-shell:has(.photo-preview:not([hidden])) { aspect-ratio: auto; }
+.camera-shell:has(.photo-preview:not([hidden])) { aspect-ratio: auto; height: auto; }
 .camera-shell .photo-preview:not([hidden]) { height: auto; max-height: 65vh; }
 .camera-shell:has(.photo-preview:not([hidden])) .guide-top { position: static; padding: 12px; background: #0b1523; }
 #manualError:not(:empty) { color: var(--ink); font-weight: 650; }

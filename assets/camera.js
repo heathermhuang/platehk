@@ -255,6 +255,7 @@
       let sourceGeneration = 0;
       let visionAbort = null;
       let lastSearchedQuery = "";
+      let lastResults = null;
       let latestCandidates = [];
       let latestConfidence = 0;
       let latestRawText = "";
@@ -462,6 +463,8 @@
         githubEl.textContent = t("github");
         updateNavLinks();
         renderCandidates(latestCandidates);
+        if (lastResults) renderResults(lastResults.rows, lastResults.total, lastResults.query);
+        if (latestRawText) ocrMetaEl.textContent = t("ocrMetaFmt")(latestRawText, latestConfidence);
         updateLangButtons();
       }
 
@@ -484,6 +487,7 @@
       }
 
       function resetResultsUi() {
+        lastResults = null;
         resultsBadgeEl.className = "status-badge";
         resultsBadgeEl.textContent = t("resultsBadgeIdle");
         resultsHintEl.textContent = t("resultsHintIdle");
@@ -570,6 +574,8 @@
           if (image.naturalWidth * image.naturalHeight > 40_000_000) throw new Error(t("photoTooLarge"));
           releasePhoto();
           photoImage = image;
+          latestRawText = "";
+          latestConfidence = 0;
           photoPreviewEl.src = url;
           cameraEmptyEl.hidden = true;
           resultsEl.replaceChildren();
@@ -661,6 +667,7 @@
       }
 
       function renderResults(rows, total, query) {
+        lastResults = { rows, total, query };
         if (!rows || !rows.length) {
           resultsEl.innerHTML = "";
           resultsBadgeEl.className = "status-badge warn";
@@ -983,9 +990,11 @@
         history.replaceState({}, "", `${location.pathname}?${params.toString()}`);
         applyLanguage();
         if (photoImage) {
-          setStatus("ok", t("photoReady"));
-        } else if (!mediaStream) {
+          setStatus("ok", t(latestRawText ? "statusDetected" : "photoReady"));
+        } else if (!mediaStream && !lastResults) {
           setIdleUi();
+        } else if (lastResults) {
+          setStatus("ok", t("statusDetected"));
         }
         updateSourceUi();
       }

@@ -20,6 +20,10 @@ on:
         description: "Deploy validated outputs to Cloudflare"
         type: boolean
         default: true
+      notify:
+        description: "Send the existing Telegram update report"
+        type: boolean
+        default: true
       force:
         description: "Force a verified refresh or code release even when sources are unchanged"
         type: boolean
@@ -33,6 +37,7 @@ on:
       scope: {type: string, default: market}
       mode: {type: string, default: incremental}
       deploy: {type: boolean, default: true}
+      notify: {type: boolean, default: true}
       force: {type: boolean, default: false}
       probe_id: {type: string, default: ""}
 
@@ -214,7 +219,7 @@ jobs:
         run: node scripts/refresh_control.mjs ack
 
       - name: Build Telegram update report
-        if: steps.plan.outputs.run == 'true' && env.DEPLOY_ENABLED == 'true'
+        if: steps.plan.outputs.run == 'true' && env.DEPLOY_ENABLED == 'true' && (github.event_name == 'schedule' || inputs.notify)
         id: telegram_report
         continue-on-error: true
         run: |
