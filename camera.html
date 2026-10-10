@@ -959,7 +959,7 @@
     </style>
     <link rel="stylesheet" href="./assets/ledger.css?v=20260512-09" />
 
-  <link rel="stylesheet" href="/assets/ux.css?v=20260928-01"><script defer src="/assets/ux.js?v=20260928-01"></script>
+  <link rel="stylesheet" href="/assets/ux.css?v=20261010-01"><script defer src="/assets/ux.js?v=20261010-01"></script>
 </head>
   <body>
     <div class="wrap">
@@ -977,6 +977,8 @@
         </div>
       </div>
 
+      <a id="cameraSkip" class="info-skip-link" href="#main-content">跳至車牌搜尋</a>
+      <main id="main-content">
       <section class="panel hero">
         <div>
           <div class="kicker" id="kicker"></div>
@@ -1010,6 +1012,7 @@
         <div>
           <div class="camera-shell">
             <video id="video" playsinline muted></video>
+            <img id="photoPreview" class="photo-preview" alt="已選擇的車牌照片" hidden />
             <div class="camera-empty" id="cameraEmpty"></div>
             <div class="guide" id="guideBox" aria-hidden="true"></div>
             <div class="guide-top">
@@ -1019,17 +1022,21 @@
           </div>
           <div class="camera-toolbar">
             <button class="primary" id="startBtn" type="button"></button>
+            <button id="choosePhoto" type="button">選擇照片</button>
+            <input id="photoInput" type="file" accept="image/*" hidden />
             <button class="primary" id="aiScanBtn" type="button" disabled></button>
             <button id="stopBtn" type="button" disabled></button>
+            <button id="removePhoto" type="button" hidden>移除照片</button>
             <a id="openSearchLink" href="./index.html"></a>
           </div>
+          <p id="photoHint" class="note" hidden></p>
         </div>
 
         <div>
           <section class="status-card">
             <div class="status-head">
               <strong id="statusTitle"></strong>
-              <span class="status-badge" id="statusBadge"></span>
+              <span class="status-badge" id="statusBadge" role="status" aria-atomic="true"></span>
             </div>
             <div class="detected-plate">
               <div>
@@ -1039,10 +1046,12 @@
             </div>
             <div class="candidate-list" id="candidateList"></div>
             <div class="manual">
-              <label id="manualLabel" class="ux-manual-label" for="manualInput">修正或輸入車牌號碼</label><input id="manualInput" inputmode="latin" autocomplete="off" spellcheck="false" />
+              <label id="manualLabel" class="ux-manual-label" for="manualInput">修正或輸入車牌號碼</label><input id="manualInput" inputmode="latin" autocomplete="off" spellcheck="false" aria-describedby="manualHelp manualError" />
               <button class="primary" id="manualSearchBtn" type="button"></button>
             </div>
-            <div class="note" id="ocrMeta"></div>
+            <p id="manualHelp" class="note"></p>
+            <p id="manualError" role="alert"></p>
+            <div class="note" id="ocrMeta" role="status" aria-atomic="true"></div>
           </section>
 
           <section class="results-card">
@@ -1051,10 +1060,11 @@
               <span class="status-badge" id="resultsBadge"></span>
             </div>
             <div class="results-stack" id="results"></div>
-            <div class="note" id="resultsHint"></div>
+            <div class="note" id="resultsHint" role="status" aria-atomic="true"></div>
           </section>
         </div>
       </section>
+      </main>
 
       <div class="footer-links">
         <a id="backHome" href="./index.html"></a> ·
@@ -1065,8 +1075,8 @@
     </div>
 
     <canvas id="ocrCanvas" width="960" height="320"></canvas>
-    <script src="./assets/camera.js?v=20260928-01"></script>
+    <script src="./assets/camera.js?v=20261010-01"></script>
     <div data-info-shell-footer></div>
-    <script src="./assets/info-shell.js?v=20261005-01" data-footer-only></script>
+    <script src="./assets/info-shell.js?v=20261010-01" data-footer-only></script>
   </body>
 </html>

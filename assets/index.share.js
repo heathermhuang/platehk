@@ -544,6 +544,7 @@ window.createPlateIndexShareModal = function createPlateIndexShareModal({
     const generation = ++posterGeneration;
     shareTrigger = document.activeElement;
     shareTitleEl.textContent = t("sharePosterTitle");
+    shareCloseEl.setAttribute("aria-label", getCurrentLang() === "en" ? "Close" : "關閉");
     shareDownloadEl.textContent = t("downloadPoster");
     sharePreviewEl.removeAttribute("src");
     sharePreviewEl.hidden = true;

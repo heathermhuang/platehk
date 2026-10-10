@@ -78,7 +78,7 @@
     records.setAttribute('aria-current', 'page');
     nav.replaceChildren(
       records,
-      anchor('最新拍賣結果', 'Latest auction results', `/auction-results/${english ? 'en/' : ''}index.html`),
+      anchor('已核對結果', 'Verified results', `/auction-results/${english ? 'en/' : ''}index.html`),
       anchor('日程', 'Auctions', '/auctions.html'),
       anchor('收藏', 'Shortlist', '/shortlist.html'),
       more,

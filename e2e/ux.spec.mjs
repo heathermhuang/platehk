@@ -41,6 +41,28 @@ test('round filters retain complete source rows and find sold versus unsold mark
   await expect(page.locator('.ux-pager')).toContainText('163 of 220');
   await expect(page.locator('tbody tr:visible')).toHaveCount(25);
   await expect(page.locator('html')).toHaveAttribute('lang','en');
+  await expect(page.getByText('Sorted by mark.', {exact:false})).toContainText('across every page');
+});
+
+test('verified archive and newest indexed records have distinct routes and labels', async ({page}) => {
+  await page.goto('/?lang=en');
+  await page.getByRole('navigation',{name:'Primary navigation'}).getByRole('link',{name:'Verified results',exact:true}).click();
+  await expect(page).toHaveURL(/auction-results\/en\/index.html/);
+  await page.getByRole('link',{name:'View newest indexed records',exact:true}).click();
+  await expect(page).toHaveURL(/sort=date_desc/);
+  await expect(page.locator('#sort')).toHaveValue('date_desc');
+  await page.goto('/?lang=zh');
+  await expect(page.getByRole('navigation',{name:'主要導覽'}).getByRole('link',{name:'已核對結果',exact:true})).toBeVisible();
+});
+
+test('share poster has a localized Close name and retains Escape dismissal', async ({page}) => {
+  for (const [lang, name] of [['en','Close'], ['zh','關閉']]) {
+    await page.goto('/?lang='+lang+'&q=AA88&mode=exact');
+    await page.locator('#rows .row-share-btn').first().click();
+    await expect(page.locator('#shareClose')).toHaveAccessibleName(name);
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#shareModal')).toBeHidden();
+  }
 });
 
 test('directory lookup, audit paging, camera fallback and legacy redirect are usable',async({page,request})=>{

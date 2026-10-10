@@ -10,7 +10,7 @@
     if(!host || document.querySelector('[data-info-shell-header]'))return;
     const legacy=document.querySelector('[aria-label="Plate tools"]');if(legacy&&legacy!==host)legacy.hidden=true;
     let nav=host.querySelector('.ux-task-nav');if(!nav){nav=make('nav',null,'info-nav ux-task-nav');nav.setAttribute('aria-label',text('主要工具','Primary tools'));host.append(nav);}nav.replaceChildren();
-    for(const [path,zh,en] of [['/','拍賣紀錄','Records'],[`/auction-results/${language()==='en'?'en/':''}index.html`,'最新拍賣結果','Latest auction results'],['/auctions.html','日程','Auctions'],['/shortlist.html','收藏','Shortlist']])nav.append(link(text(zh,en),path.startsWith('/auction-results/')?path:href(path)));
+    for(const [path,zh,en] of [['/','拍賣紀錄','Records'],[`/auction-results/${language()==='en'?'en/':''}index.html`,'已核對結果','Verified results'],['/auctions.html','日程','Auctions'],['/shortlist.html','收藏','Shortlist']])nav.append(link(text(zh,en),path.startsWith('/auction-results/')?path:href(path)));
     const more=make('details',null,'site-more');more.append(make('summary',text('更多','More')));const menu=make('div');
     for(const [path,zh,en] of [['/prices.html','查歷史成交價','Historical prices'],['/discover.html','按預算找車牌','Discover by budget'],['/availability.html','官方可用號碼及申請','Official availability and applications'],['/plates/index.html','熱門車牌','Popular plates'],['/camera.html','相機搜尋','Search by camera'],['/about.html','資料說明','Data guide'],['/audit.html','資料審核','Data audit'],['/api.html','開發者','Developers']]){const anchor=link(text(zh,en),href(path));if(location.pathname===path)anchor.setAttribute('aria-current','page');menu.append(anchor);}
     more.append(menu);nav.append(more);

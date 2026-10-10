@@ -95,7 +95,7 @@
           pageTitle: "私隱政策 | Plate.hk",
           title: "私隱政策",
           back: "← 返回首頁",
-          updated: "內容審閱：2026年10月4日 · 政策生效：2026年9月5日",
+          updated: "內容審閱：2026年10月10日 · 政策生效：2026年9月5日",
           html: `
             <p class="note">Plate.hk 按香港《個人資料（私隱）條例》（第486章）及資料保障原則，以資料最小化、用途限制及合理保安為基本方向處理資料。本政策說明我們在網站、API、分享海報及相機搜尋中如何處理資料。</p>
 
@@ -109,7 +109,7 @@
               <li><strong>瀏覽器本機資料：</strong>搜尋記錄、最近使用的資料集、介紹面板狀態、Service Worker 快取、靜態資產及公開資料快取可能儲存在你的裝置。你可透過瀏覽器設定清除。</li>
               <li><strong>技術及伺服器資料：</strong>當你載入頁面、使用 API 或讀取資料檔案時，主機、CDN 或伺服器可能記錄 IP 位址、時間、請求 URL、HTTP 狀態、使用者代理、參照頁及錯誤資訊，以維持服務、安全、防濫用及除錯。</li>
               <li><strong>分析資料：</strong>在 plate.hk 或 www.plate.hk 上，網站可能載入 Google Analytics，以了解流量、頁面使用、裝置/瀏覽器類型、概略地區及互動情況。若瀏覽器傳送 Do Not Track 訊號，網站程式會避免載入 Google Analytics。</li>
-              <li><strong>相機 OCR 資料：</strong>相機預覽在你的裝置上啟動。只有當你點擊 AI 辨識時，網站才會嘗試上傳畫面白框內的裁切車牌區域供伺服器端 vision OCR 判讀，而不是完整相機畫面。</li>
+              <li><strong>相機 OCR 資料：</strong>相機及已選照片只在你的裝置預覽；選擇照片不會上傳。按 AI 辨識時，才會傳送相機框內裁切圖像，或已選照片縮小後的圖像。重新產生的圖像不包含原照片的中繼資料。</li>
               <li><strong>反饋資料：</strong>如你透過 Google Forms 或其他外部渠道提交反饋，該資料會按該第三方服務的私隱政策處理，並可能由網站維護者用於回覆、修正資料或改善服務。</li>
               <li><strong>WhatsApp 介紹資料：</strong>短表格會組合目標車牌、最高預算、選填備註及來源連結。只有你在 WhatsApp 按傳送後，獨立介紹服務才會處理訊息、WhatsApp 識別碼、同意及配對狀態、Stripe 付款識別碼、群組識別碼、確認時間及退款狀態。服務不會儲存完整卡資料。</li>
             </ul>
@@ -137,7 +137,7 @@
             <p>傳送至分析服務的頁面及來源網址會移除查詢字串。經格式及長度檢查的公開推廣來源、媒介及活動標籤（utm_source、utm_medium、utm_campaign）可另行用於流量歸因；請勿在推廣標籤填寫個人資料。功能量度會區分查詢停止輸入後的結果及完全相符號碼，並保留量度版本。</p>
 
             <h2>6. 相機權限與影像處理</h2>
-            <p>相機權限由你的瀏覽器和裝置控制。Plate.hk 無法在你未授權或未點擊相關功能時啟動相機。相機 OCR 功能只應上傳裁切後的車牌區域作即時辨識；請避免把人物、私人物件、敏感環境或無關影像放入辨識框內。</p>
+            <p>相機權限由你的瀏覽器和裝置控制。Plate.hk 無法在你未授權或未點擊相關功能時啟動相機。使用相機時，AI 辨識只傳送框內裁切圖像；使用已選照片時，會傳送預覽照片縮小後的圖像。請選擇只包含車牌的照片，避免人物、私人物件、敏感環境或無關影像。移除照片只會清除本機預覽，不會撤回已傳送的辨識。</p>
             <p>OCR 影像及結果可能由伺服器、OCR/vision 基礎設施或安全防濫用系統短暫處理。除非為排錯、安全、防濫用或法律需要，我們不打算把相機影像用作建立可識別個人的長期檔案。</p>
 
             <h2>7. 分享、披露與跨境處理</h2>
@@ -168,7 +168,7 @@
           pageTitle: "Privacy Policy | Plate.hk",
           title: "Privacy Policy",
           back: "← Back to Home",
-          updated: "Reviewed: 4 October 2026 · Effective: 5 September 2026",
+          updated: "Reviewed: 10 October 2026 · Effective: 5 September 2026",
           html: `
             <p class="note">Plate.hk handles data with reference to Hong Kong’s Personal Data (Privacy) Ordinance (Cap. 486) and the Data Protection Principles, using data minimisation, purpose limitation, and reasonable security as baseline practices. This policy explains how data is handled across the website, APIs, share posters, and camera search.</p>
 
@@ -182,7 +182,7 @@
               <li><strong>Browser-local data:</strong> search history, recently used dataset, intro-panel state, service worker cache, static assets, and public-data cache may be stored on your device. You can clear this through browser settings.</li>
               <li><strong>Technical and server data:</strong> when you load pages, use APIs, or fetch data files, hosting, CDN, or server systems may log IP address, time, request URL, HTTP status, user agent, referrer, and error information for operation, security, abuse prevention, and debugging.</li>
               <li><strong>Analytics data:</strong> on plate.hk or www.plate.hk, the site may load Google Analytics to understand traffic, page usage, device/browser type, approximate geography, and interactions. If your browser sends a Do Not Track signal, the site code avoids loading Google Analytics.</li>
-              <li><strong>Camera OCR data:</strong> camera preview runs on your device. Only when you tap AI Scan does the site attempt to upload the cropped plate region inside the guide frame for server-side vision OCR, not the full camera frame.</li>
+              <li><strong>Camera OCR data:</strong> Camera preview and selected-photo preview run on your device. Selecting a photo does not upload it. AI Scan uploads either the cropped camera region or the selected photo, resized for recognition; photo metadata is not included in that generated image.</li>
               <li><strong>Feedback data:</strong> if you submit feedback through Google Forms or another external channel, that data is handled under the third-party service’s privacy policy and may be used by the site maintainer to reply, correct data, or improve the service.</li>
               <li><strong>WhatsApp introduction data:</strong> the short form assembles the target plate, maximum budget, optional note, and source link. Only after you press Send does the separate introduction service process the message, WhatsApp identifier, consent and matching states, Stripe payment identifiers, group identifier, confirmation times, and refund state. The service does not store complete card details.</li>
             </ul>
@@ -210,7 +210,7 @@
             <p>Page and referrer URLs sent to analytics omit query strings. Public campaign source, medium and name tags (utm_source, utm_medium, utm_campaign) that pass format and length checks may be used separately for traffic attribution; do not put personal data in campaign tags. Feature measurement distinguishes settled query results and exact plate matches, and records its measurement version.</p>
 
             <h2>6. Camera Permission and Image Processing</h2>
-            <p>Camera permission is controlled by your browser and device. Plate.hk cannot start camera preview unless you grant permission and use the feature. The camera OCR feature is designed to upload only the cropped plate area for immediate recognition; avoid placing people, private objects, sensitive locations, or unrelated images inside the recognition frame.</p>
+            <p>Camera permission is controlled by your browser and device. Plate.hk cannot start camera preview unless you grant permission and use the feature. AI Scan sends only the cropped camera area when using the camera. For a selected photo, it sends the resized photo shown in the preview. Choose a photo containing only the plate, and avoid people, private objects, sensitive locations or unrelated images. Remove photo clears the local preview; it does not undo a scan already sent.</p>
             <p>OCR images and results may be processed transiently by servers, OCR/vision infrastructure, or security/abuse-prevention systems. Except where needed for debugging, security, abuse prevention, or legal reasons, we do not intend to use camera images to create long-term identifiable profiles.</p>
 
             <h2>7. Sharing, Disclosure, and International Processing</h2>
