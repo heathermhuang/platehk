@@ -423,6 +423,12 @@
         document.title = currentLang === "en"
           ? `Camera Plate Search | ${siteBrand()}`
           : `相機車牌辨識搜尋 | ${siteBrand()}`;
+        cameraEmptyEl.textContent = t("cameraPermissionHelp");
+        const processingLink = document.querySelector('a[href*="privacy.html"][href*="#camera-uploads"]');
+        if (processingLink) {
+          processingLink.textContent = currentLang === "en" ? "Image processing and privacy" : "圖像處理及私隱";
+          processingLink.href = `./privacy.html?lang=${currentLang}#camera-uploads`;
+        }
         titleEl.textContent = t("title");
         subtitleEl.textContent = t("subtitle");
         kickerEl.textContent = t("kicker");
@@ -465,6 +471,7 @@
         renderCandidates(latestCandidates);
         if (lastResults) renderResults(lastResults.rows, lastResults.total, lastResults.query);
         if (latestRawText) ocrMetaEl.textContent = t("ocrMetaFmt")(latestRawText, latestConfidence);
+        else if (!scanRunning && document.body.dataset.cameraState !== "error") ocrMetaEl.textContent = t("ocrMetaIdle");
         updateLangButtons();
       }
 

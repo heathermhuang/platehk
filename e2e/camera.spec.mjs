@@ -338,5 +338,7 @@ test('tall phone screens keep camera results in the page flow', async ({ page })
     await expect(page.locator('#results')).toContainText('拍賣日期');
     await expect(page.locator('#resultsBadge')).toContainText('1 筆');
     await expect(page.locator('#results .result-actions a').first()).toHaveAttribute('href', /lang=zh/);
+    await expect(page.locator('a[href*="privacy.html"][href*="#camera-uploads"]')).toHaveAttribute('href', /lang=zh#camera-uploads/);
+    await expect(page.locator('#ocrMeta')).toContainText('尚未送出');
   }
 });
