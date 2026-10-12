@@ -2,6 +2,7 @@ import {timingSafeEqual} from 'node:crypto';
 import {observe,boundedRead,officialUrl,digest} from './probe.mjs';
 
 const LEASE_SECONDS = 7200;
+const SOURCE_REVISION=typeof __REFRESH_SOURCE_REVISION__==='string' ? __REFRESH_SOURCE_REVISION__ : 'unversioned';
 const json = (value,status=200) => Response.json(value,{status,headers:{'Cache-Control':'no-store'}});
 async function authorized(request,env) {
   const received = new TextEncoder().encode(request.headers.get('Authorization') || '');
@@ -133,7 +134,7 @@ function validMarket(payload) {
 export default {
   async fetch(request,env) {
     const url = new URL(request.url);
-    if (url.pathname === '/health' && request.method === 'GET') return json({ok:true,service:'platehk-refresh',observer_enabled:env.OBSERVER_ENABLED === 'true',dispatch_enabled:env.DISPATCH_ENABLED === 'true'});
+    if (url.pathname === '/health' && request.method === 'GET') return json({ok:true,service:'platehk-refresh',observer_enabled:env.OBSERVER_ENABLED === 'true',dispatch_enabled:env.DISPATCH_ENABLED === 'true',source_revision:SOURCE_REVISION});
     if (!await authorized(request,env)) return json({error:'not_found'},404);
     try {
       if (url.pathname === '/v1/status' && request.method === 'GET') return json({...await state(env),pending_source_count:(await env.DB.prepare('SELECT COUNT(*) AS count FROM refresh_pending_sources').first()).count});

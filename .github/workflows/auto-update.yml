@@ -67,6 +67,11 @@ jobs:
         with:
           ref: main
 
+      - name: Verify current observer deployment
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: node scripts/deploy_refresh_worker.mjs --ensure-current
+
       - name: Plan refresh before installing dependencies
         id: plan
         env:
