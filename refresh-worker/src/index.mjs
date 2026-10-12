@@ -49,7 +49,7 @@ export async function recordObservation(env,options={}) {
   await env.STORE.put('observed.json',JSON.stringify(record));
   const outcome=scopeFor(record)!=='check' ? 'observed_changed' : record.source_errors.length ? 'source_unavailable' : 'unchanged';
   await env.DB.prepare('UPDATE refresh_control SET cursor=cursor+1,last_checked_at=?,last_outcome=CASE WHEN lease_until<=? THEN ? ELSE last_outcome END,last_error=?,no_change_count=no_change_count+? WHERE id=1').bind(record.checked_at,Math.floor(Date.now()/1000),outcome,record.source_errors.length ? JSON.stringify(record.source_errors) : null,outcome==='unchanged' ? 1 : 0).run();
-  return {outcome,scope:scopeFor(record),source_error_count:record.source_errors.length,updates:record.updates.length};
+  return {outcome,scope:scopeFor(record),source_error_count:record.source_errors.length,source_retired_count:record.retired_sources?.length || 0,updates:record.updates.length};
 }
 export async function claim(env,{scope='check',force=false,refresh=false}={}) {
   if (!['check','official','events','market'].includes(scope)) throw new Error('invalid_scope');
@@ -76,7 +76,7 @@ export async function claim(env,{scope='check',force=false,refresh=false}={}) {
   if (selected === 'check') {
     const outcome = probe.source_errors.length ? 'source_unavailable' : 'unchanged';
     await env.DB.prepare('UPDATE refresh_control SET cursor=cursor+1,last_checked_at=?,last_outcome=?,last_error=?,no_change_count=no_change_count+? WHERE id=1').bind(probe.checked_at,outcome,probe.source_errors.length ? JSON.stringify(probe.source_errors) : null,outcome === 'unchanged' ? 1 : 0).run();
-    return {run:false,outcome,sources_observed:probe.sources_observed,source_error_count:probe.source_errors.length};
+    return {run:false,outcome,sources_observed:probe.sources_observed,source_error_count:probe.source_errors.length,source_retired_count:probe.retired_sources?.length || 0};
   }
   const id = crypto.randomUUID();
   const acquired = await env.DB.prepare('UPDATE refresh_control SET pending_id=?,pending_scope=?,lease_until=?,cursor=cursor+1,last_checked_at=?,last_outcome=?,last_error=NULL WHERE id=1 AND lease_until<=?').bind(id,selected,now+LEASE_SECONDS,probe.checked_at,'claimed',now).run();
