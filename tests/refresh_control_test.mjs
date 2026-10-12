@@ -36,13 +36,13 @@ test('an unchanged successful check does not retry',async()=>{
   assert.equal(result.status,0);assert.equal(result.calls.length,1);
 });
 
-async function deploymentFixture(check,{stale=false,dirty=false,advanced=false,dataOnly=false,timeout=false,confirm=true,healthy=false,tamper=false,oldFingerprint=false}={}) {
+async function deploymentFixture(check,{stale=false,dirty=false,advanced=false,dataOnly=false,timeout=false,confirm=true,healthy=false,tamper=false,oldFingerprint=false,settleChecks=0}={}) {
   const root=await mkdtemp(join(tmpdir(),'platehk-deploy-test-'));
   try {
     const files=['refresh-worker/src/index.mjs','refresh-worker/src/probe.mjs','refresh-worker/wrangler.jsonc','scripts/deploy_refresh_worker.mjs','package.json','package-lock.json'];
     for (const file of files) {await mkdir(join(root,file,'..'),{recursive:true});await writeFile(join(root,file),file);}
-    const revision=sourceRevision(root,files),calls=[];
-    let current=healthy,remoteCalls=0;
+    const revision=sourceRevision(root,files),calls=[],pauses=[];
+    let current=healthy,remoteCalls=0,healthChecks=0;
     const run=(command,args)=>{
       calls.push({command,args});
       if (command==='git') {
@@ -57,8 +57,8 @@ async function deploymentFixture(check,{stale=false,dirty=false,advanced=false,d
       } else if (command===process.execPath) {current=confirm;if(timeout)throw Error('Cloudflare activation timed out');}
       return '';
     };
-    const fetcher=async()=>Response.json({ok:true,service:'platehk-refresh',observer_enabled:true,dispatch_enabled:false,...(current ? {source_revision:revision}:oldFingerprint ? {source_revision:'0'.repeat(64)}:{})});
-    await check({root,files,revision,calls,options:{root,ensure:true,run,fetcher,pause:async()=>{}}});
+    const fetcher=async()=>Response.json({ok:true,service:'platehk-refresh',observer_enabled:true,dispatch_enabled:false,...(current && ++healthChecks>settleChecks ? {source_revision:revision}:oldFingerprint ? {source_revision:'0'.repeat(64)}:{})});
+    await check({root,files,revision,calls,pauses,options:{root,ensure:true,run,fetcher,pause:async(ms)=>pauses.push(ms)}});
   } finally {await rm(root,{recursive:true,force:true});}
 }
 
@@ -88,6 +88,16 @@ test('an activation timeout is accepted only when live provenance confirms succe
   await deploymentFixture(async({options})=>assert.equal((await deployObserver(options)).deployed,true),{timeout:true});
   await deploymentFixture(async({options})=>assert.rejects(deployObserver(options),/activation timed out/),{timeout:true,confirm:false});
   await deploymentFixture(async({options})=>assert.rejects(deployObserver(options),/did not expose/),{confirm:false});
+});
+test('post-deploy settling retries remain bounded and require the exact live fingerprint',async()=>{
+  await deploymentFixture(async({options,pauses})=>{
+    assert.equal((await deployObserver(options)).deployed,true);
+    assert.deepEqual(pauses,[5000,5000,5000,5000]);
+  },{settleChecks:4});
+  await deploymentFixture(async({options,pauses})=>{
+    await assert.rejects(deployObserver(options),/revision_match.*false/);
+    assert.equal(pauses.length,5);
+  },{settleChecks:6});
 });
 test('a source release advancing during preparation blocks the older deployment',async()=>{
   await deploymentFixture(async({options,calls})=>{

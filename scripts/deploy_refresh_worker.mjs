@@ -28,13 +28,16 @@ export async function deployObserver({root=ROOT,ensure=false,run,fetcher=fetch,p
   const files=git(['ls-files','--',...SOURCE_PATHS]).split('\n').filter(Boolean);
   if (!files.includes('refresh-worker/src/index.mjs') || !files.includes('refresh-worker/src/probe.mjs')) throw new Error('Incomplete observer source checkout.');
   const revision=sourceRevision(root,files);
+  let lastHealth={state:'not_checked'};
   const health=async()=>{
     try {
       const response=await fetcher(`${CONTROL_URL}/health`,{redirect:'error',signal:AbortSignal.timeout(10000)});
+      lastHealth={http_status:response.status};
       if (!response.ok) return false;
       const value=await response.json();
+      lastHealth={http_status:response.status,revision_match:value.source_revision===revision,service_match:value.service==='platehk-refresh',observer_enabled:value.observer_enabled===true,dispatch_enabled:value.dispatch_enabled===true};
       return value.ok===true && value.service==='platehk-refresh' && value.observer_enabled===true && value.dispatch_enabled===false && value.source_revision===revision;
-    } catch {return false;}
+    } catch (error) {lastHealth={error:error.name};return false;}
   };
   if (ensure && await health()) return {deployed:false,source_revision:revision};
   const wrangler=resolve(root,'node_modules/wrangler/bin/wrangler.js');
@@ -54,11 +57,11 @@ export async function deployObserver({root=ROOT,ensure=false,run,fetcher=fetch,p
     let failure;
     try {run(process.execPath,[wrangler,'deploy',bundle,'--no-bundle','--config','refresh-worker/wrangler.jsonc','--keep-vars','--message',`Verified observer source ${revision}`]);}
     catch (error) {failure=error;}
-    for (let attempt=0;attempt<3;attempt++) {
+    for (let attempt=0;attempt<6;attempt++) {
       if (await health()) return {deployed:true,source_revision:revision};
-      if (attempt<2) await pause(1000);
+      if (attempt<5) await pause(5000);
     }
-    throw failure || new Error('Observer deployment did not expose the expected source revision.');
+    throw failure || new Error(`Observer deployment did not expose the expected source revision: ${JSON.stringify(lastHealth)}`);
   } finally {
     rmSync(directory,{recursive:true,force:true});
   }
