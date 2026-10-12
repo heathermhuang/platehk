@@ -275,6 +275,7 @@ export async function handleContactUnlock(request, env) {
       mode: "payment",
       integration_identifier: STRIPE_INTEGRATION_IDENTIFIER,
       "adaptive_pricing[enabled]": "false",
+      "managed_payments[enabled]": "false",
       "line_items[0][price]": env.CONTACT_UNLOCK_PRICE_ID,
       "line_items[0][quantity]": "1",
       "metadata[purpose]": "seller_whatsapp_unlock", "metadata[owner]": owner,

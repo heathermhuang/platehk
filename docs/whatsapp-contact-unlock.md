@@ -93,6 +93,8 @@ offering another checkout, or suggesting that the buyer keep rechecking.
 
 Hosted Stripe Checkout uses dynamic payment methods configured in the account,
 including eligible Apple Pay/Google Pay wallets without a custom wallet UI.
+This integration explicitly uses standard payments and disables Managed
+Payments and adaptive pricing, keeping the checkout charge fixed at HKD 99.
 Adaptive Pricing is explicitly disabled so every unlock stays HKD 99. Available
 methods depend on the device and Stripe account settings. Delayed payments
 remain pending until Stripe confirms payment; they never reveal a contact early.

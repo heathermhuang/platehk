@@ -110,6 +110,7 @@ try {
   assert.equal(checkoutForm.has("line_items[0][price_data][product_data][name]"), false);
   assert.equal(checkoutForm.has("payment_method_types[0]"), false);
   assert.equal(checkoutForm.get("adaptive_pricing[enabled]"), "false");
+  assert.equal(checkoutForm.get("managed_payments[enabled]"), "false");
   assert.match(checkoutForm.get("integration_identifier"), /^platehk-contact-unlock-[a-z]{8}$/);
   assert.equal(checkoutForm.toString().includes("61112222"), false);
   const session = sessions.get("cs_test_fixture");
