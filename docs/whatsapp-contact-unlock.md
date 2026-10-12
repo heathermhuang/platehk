@@ -39,9 +39,20 @@ check or refund on seller non-response.
 2. Run a complete market refresh and confirm companion persistence and that raw
    private contact URLs return 404. Never upload contact files as CI artifacts
    or commit them.
-3. Set `STRIPE_SECRET_KEY` and `CONTACT_UNLOCK_ENCRYPTION_KEY` with managed
-   Worker secrets. The encryption key must be 32 random bytes encoded as 64 hex
-   characters. Do not reuse the legacy introduction service's encryption key.
+3. Create a one-time Stripe Product/Price for 9900 HKD and set its
+   `CONTACT_UNLOCK_PRICE_ID` in the target deployment. Create separate prices
+   in sandbox and live mode. Checkout verifies that the price is active,
+   one-time, HKD 9900, untransformed, and in the same mode before charging.
+   Set `STRIPE_SECRET_KEY` and `CONTACT_UNLOCK_ENCRYPTION_KEY` with managed
+   Worker secrets. Prefer an account-scoped restricted key (`rk_test_` or
+   `rk_live_`); existing account secret keys are also supported. Publishable
+   and organisation keys are rejected. The runtime needs Checkout Sessions
+   Write, Prices Read, Products Read, Payment Intents Read and Charges Read;
+   grant no refunds, payouts, account management or subscription writes.
+   Test these permissions against actual Checkout creation and expanded
+   payment retrieval before enabling production. The encryption key must be
+   32 random bytes encoded as 64 hex characters. Do not reuse the legacy
+   introduction service's encryption key.
 4. Use a test Stripe key and `CONTACT_UNLOCK_ENABLED=true` in a protected test
    deployment. Exercise an actual test checkout, return/reload, another browser,
    cancelled payment, and a Stripe refund. Local mocks are not provider proof.
@@ -60,9 +71,13 @@ WhatsApp draft, copy-number action, and receipt-based support link. Pending
 payments receive at most three automatic checks; no repeat purchase is offered
 while verifying an existing payment. Cancelling checkout retains plate context.
 
-Hosted Stripe Checkout supports card payments and eligible Apple Pay/Google Pay
-wallets without a custom wallet UI. Available methods depend on the device and
-Stripe account settings. PayMe is not listed among Stripe's native supported
+Hosted Stripe Checkout uses dynamic payment methods configured in the account,
+including eligible Apple Pay/Google Pay wallets without a custom wallet UI.
+Adaptive Pricing is explicitly disabled so every unlock stays HKD 99. Available
+methods depend on the device and Stripe account settings. Delayed payments
+remain pending until Stripe confirms payment; they never reveal a contact early.
+The runtime pins Stripe API version `2026-09-30.endive`.
+PayMe is not listed among Stripe's native supported
 methods. An automatic PayMe unlock would require a separate PayMe for Business
 API integration and server-side payment confirmation; a static PayCode/manual
 receipt workflow would not give immediate verified delivery.

@@ -2,12 +2,14 @@ import { getStaticJson, sameOriginError, enforcePublicReadRateLimit, normalizeQu
 
 const COOKIE = "__Host-platehk-contact";
 const PRICE = 9900;
+const STRIPE_API_VERSION = "2026-09-30.endive";
 const encoder = new TextEncoder();
 const phonePattern = /^852[456789]\d{7}$/;
 
 export function contactUnlockEnabled(env) {
   return env.CONTACT_UNLOCK_ENABLED === "true"
-    && /^sk_(test|live)_/.test(env.STRIPE_SECRET_KEY || "")
+    && /^(sk|rk)_(test|live)_/.test(env.STRIPE_SECRET_KEY || "")
+    && /^price_[a-zA-Z0-9]+$/.test(env.CONTACT_UNLOCK_PRICE_ID || "")
     && /^[a-f0-9]{64}$/i.test(env.CONTACT_UNLOCK_ENCRYPTION_KEY || "");
 }
 
@@ -91,7 +93,7 @@ export async function advertisedContact(request, env, plate, listingId, supplied
 async function stripeRequest(env, path, body) {
   const response = await fetch(`https://api.stripe.com/v1/${path}`, {
     method: body ? "POST" : "GET",
-    headers: { authorization: `Bearer ${env.STRIPE_SECRET_KEY}`, ...(body ? { "content-type": "application/x-www-form-urlencoded" } : {}) },
+    headers: { authorization: `Bearer ${env.STRIPE_SECRET_KEY}`, "stripe-version": STRIPE_API_VERSION, ...(body ? { "content-type": "application/x-www-form-urlencoded" } : {}) },
     body,
     signal: AbortSignal.timeout(15000),
   });
@@ -140,7 +142,7 @@ export async function handleContactUnlock(request, env) {
       if (session.status !== "complete" || session.payment_status !== "paid") return reply({ error: "payment_pending" }, 409);
       const charge = session.payment_intent?.latest_charge;
       if (session.mode !== "payment" || session.currency !== "hkd" || session.amount_total !== PRICE
-          || session.livemode !== env.STRIPE_SECRET_KEY.startsWith("sk_live_")
+          || session.livemode !== /^(sk|rk)_live_/.test(env.STRIPE_SECRET_KEY)
           || session.payment_intent?.status !== "succeeded" || !charge || charge.paid !== true
           || charge.refunded || charge.amount_refunded > 0 || charge.disputed) return reply({ error: "invalid_purchase" }, 403);
       const contact = await decryptContact(env, session.metadata.contact, owner);
@@ -163,13 +165,19 @@ export async function handleContactUnlock(request, env) {
     }
     const buyer = buyerCookie(request);
     if (!buyer) return reply({ error: "cookies_required" }, 403);
+    // Check the catalog before taking payment: a mistaken price must never charge
+    // a buyer an amount that the reveal endpoint cannot fulfill.
+    const price = await stripeRequest(env, `prices/${encodeURIComponent(env.CONTACT_UNLOCK_PRICE_ID)}`);
+    if (!price.active || price.type !== "one_time" || price.recurring != null
+        || price.currency !== "hkd" || price.unit_amount !== PRICE || price.transform_quantity != null
+        || price.livemode !== /^(sk|rk)_live_/.test(env.STRIPE_SECRET_KEY)) {
+      return reply({ error: "contact_unlock_unavailable" }, 503);
+    }
     const owner = await buyerHash(buyer);
     const params = new URLSearchParams({
-      mode: "payment", "payment_method_types[0]": "card",
+      mode: "payment",
       "adaptive_pricing[enabled]": "false",
-      "line_items[0][price_data][currency]": "hkd",
-      "line_items[0][price_data][unit_amount]": String(PRICE),
-      "line_items[0][price_data][product_data][name]": `Plate.hk — ${plate} seller WhatsApp contact`,
+      "line_items[0][price]": env.CONTACT_UNLOCK_PRICE_ID,
       "line_items[0][quantity]": "1",
       "metadata[purpose]": "seller_whatsapp_unlock", "metadata[owner]": owner,
       "metadata[plate]": plate, "metadata[listing_id]": listingId,

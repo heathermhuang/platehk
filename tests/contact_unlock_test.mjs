@@ -10,8 +10,9 @@ delete contacts.signals;
 let sessions = new Map();
 let stripeCalls = 0;
 let checkoutForm;
+const catalogPrice = { active: true, type: "one_time", recurring: null, currency: "hkd", unit_amount: 9900, transform_quantity: null, livemode: false };
 const env = {
-  CONTACT_UNLOCK_ENABLED: "true", STRIPE_SECRET_KEY: "sk_test_fixture", CONTACT_UNLOCK_ENCRYPTION_KEY: "ab".repeat(32),
+  CONTACT_UNLOCK_ENABLED: "true", STRIPE_SECRET_KEY: "rk_test_fixture", CONTACT_UNLOCK_PRICE_ID: "price_fixture", CONTACT_UNLOCK_ENCRYPTION_KEY: "ab".repeat(32),
   ASSETS: { async fetch(request) {
     const path = new URL(request.url).pathname;
     if (path === "/_market/28car/T.json") return Response.json(market);
@@ -24,7 +25,9 @@ const realFetch = globalThis.fetch;
 globalThis.fetch = async (input, options) => {
   const url = new URL(input);
   assert.equal(url.origin, "https://api.stripe.com");
+  assert.equal(options.headers["stripe-version"], "2026-09-30.endive");
   stripeCalls++;
+  if (url.pathname === "/v1/prices/price_fixture") return Response.json(catalogPrice);
   if (options.method === "POST") {
     checkoutForm = new URLSearchParams(options.body);
     const id = "cs_test_fixture";
@@ -59,10 +62,18 @@ try {
   assert.equal(preview.observed_at, now);
   response = await call("checkout", { body: { plate: "TEST8", listing_id: "n100001" }, cookie });
   assert.equal(response.status, 200);
-  assert.equal(checkoutForm.get("line_items[0][price_data][unit_amount]"), "9900");
-  assert.equal(checkoutForm.get("line_items[0][price_data][currency]"), "hkd");
+  assert.equal(checkoutForm.get("line_items[0][price]"), "price_fixture");
+  assert.equal(checkoutForm.has("line_items[0][price_data][product_data][name]"), false);
+  assert.equal(checkoutForm.has("payment_method_types[0]"), false);
+  assert.equal(checkoutForm.get("adaptive_pricing[enabled]"), "false");
   assert.equal(checkoutForm.toString().includes("61112222"), false);
   const session = sessions.get("cs_test_fixture");
+  for (const change of [{ active: false }, { type: "recurring", recurring: { interval: "month" } }, { unit_amount: 19900 }, { currency: "usd" }, { livemode: true }, { transform_quantity: { divide_by: 2, round: "up" } }]) {
+    const previous = { ...catalogPrice };
+    Object.assign(catalogPrice, change);
+    assert.equal((await call("checkout", { body: { plate: "TEST8", listing_id: "n100001" }, cookie })).status, 503);
+    Object.assign(catalogPrice, previous);
+  }
   response = await call("reveal", { body: { session_id: session.id }, cookie });
   assert.equal(response.status, 200);
   const unlocked = await response.json();
@@ -70,6 +81,16 @@ try {
   assert.equal(unlocked.asking_price_hkd, 88000);
   assert.equal(unlocked.source_url, listing.source_url);
   assert.equal(unlocked.observed_at, now);
+  // Restricted live keys must enforce live mode, just like unrestricted keys.
+  const liveEnv = { ...env, STRIPE_SECRET_KEY: "rk_live_fixture" };
+  assert.equal((await call("reveal", { body: { session_id: session.id }, cookie, overrideEnv: liveEnv })).status, 403);
+  session.livemode = true;
+  assert.equal((await call("reveal", { body: { session_id: session.id }, cookie, overrideEnv: liveEnv })).status, 200);
+  session.livemode = false;
+  for (const key of ["pk_test_fixture", "sk_org_fixture", "invalid"]) {
+    assert.equal((await call("availability?plate=TEST8&listing_id=n100001", { overrideEnv: { ...env, STRIPE_SECRET_KEY: key } })).status, 503);
+  }
+  assert.equal((await call("availability?plate=TEST8&listing_id=n100001", { overrideEnv: { ...env, CONTACT_UNLOCK_PRICE_ID: "" } })).status, 503);
   // Existing purchases with no preview metadata still reveal their purchased number.
   const savedPreview = { source_url: session.metadata.source_url, observed_at: session.metadata.observed_at, asking_price_hkd: session.metadata.asking_price_hkd };
   for (const key of Object.keys(savedPreview)) delete session.metadata[key];
