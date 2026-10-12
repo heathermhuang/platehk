@@ -152,10 +152,18 @@ export async function observe(published = {}, {fetcher = fetch, now = new Date()
   // New links outside a recent window are still observed in bounded subsequent polls.
   const newLinks = [...results.values()].filter(item => !known[item.url]);
   for (const item of [...rotated(prioritized,4,cursor),...rotated(newLinks,4,cursor)]) if (selected.length<16 && !selected.some(x => x.url === item.url)) selected.push(item);
-  const updates = [], observedHashes={},observations=[];
+  const updates = [], observedHashes={},observations=[],retiredSources=[];
   for (const item of selected) {
     try {
       const response = await sourceFetch(item.url,fetcher);
+      // Published inputs outlive TD's result links. Preserve their parsed data
+      // when TD removes an unlinked PDF; a currently linked result must stay live.
+      const baseline=known[item.url];
+      if ([404,410].includes(response.status) && !results.has(item.url) && /^[a-f0-9]{64}$/.test(baseline?.sha256 || '') && baseline?.consumers?.includes(item.kind)) {
+        await response.body?.cancel();
+        retiredSources.push({url:item.url,sha256:baseline.sha256,status:response.status,observed_at:now.toISOString()});
+        continue;
+      }
       if (!response.ok) throw new Error(`pdf_http_${response.status}`);
       const bytes = await boundedRead(response,8*1024*1024);
       if (new TextDecoder().decode(bytes.slice(0,5)) !== '%PDF-') throw new Error('source_not_pdf');
@@ -169,5 +177,5 @@ export async function observe(published = {}, {fetcher = fetch, now = new Date()
   const indexesChanged = JSON.stringify(indexUrls) !== JSON.stringify(published.index_urls || []) || JSON.stringify(indexEntries) !== JSON.stringify(published.index_entries || []);
   const calendarDigest = await digest(JSON.stringify({links:calendar.sort((a,b)=>JSON.stringify(a).localeCompare(JSON.stringify(b))),month:new Date(now.getTime()+8*3600000).toISOString().slice(0,7)}));
   const auctionChanged = !published.sources || indexesChanged || updates.length > 0;
-  return {index_urls:indexUrls,index_entries:indexEntries,updates,observed_hashes:observedHashes,observations,source_errors:errors,calendar_digest:calendarDigest,auction_changed:auctionChanged,calendar_changed:calendarDigest !== published.calendar_digest,digest:await digest(JSON.stringify({indexEntries,updates,calendarDigest})),checked_at:now.toISOString(),sources_observed:selected.length};
+  return {index_urls:indexUrls,index_entries:indexEntries,updates,observed_hashes:observedHashes,observations,retired_sources:retiredSources,source_errors:errors,calendar_digest:calendarDigest,auction_changed:auctionChanged,calendar_changed:calendarDigest !== published.calendar_digest,digest:await digest(JSON.stringify({indexEntries,updates,calendarDigest})),checked_at:now.toISOString(),sources_observed:selected.length};
 }

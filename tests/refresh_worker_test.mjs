@@ -50,6 +50,43 @@ test('network failures and malformed PDFs cannot become an unchanged success',as
   const result=await observe(published,{fetcher:upstream({pdfStatus:503}),now});
   assert(result.source_errors.length>0);assert.equal(result.updates.length,0);
 });
+test('removed historical PDFs retain their published data without blocking current sources',async()=>{
+  const {now,published}=await baseline();
+  const retired='https://www.td.gov.hk/filemanager/tc/content_4804/tvrm_auction_result_20260912_chi.pdf';
+  const source={kind:'physical',date:'2026-09-12',sha256:await digest(bytes),consumers:['physical']};
+  published.sources[retired]=source;
+  for (const status of [404,410]) {
+    const fetcher=async(url,options)=>url===retired ? new Response('removed',{status}) : upstream()(url,options);
+    const result=await observe(published,{fetcher,now,priority:[{url:retired}]});
+    assert.deepEqual(result.source_errors,[]);assert.deepEqual(result.updates,[]);
+    assert.equal(result.auction_changed,false);
+    assert.deepEqual(result.retired_sources,[{url:retired,sha256:source.sha256,status,observed_at:now.toISOString()}]);
+    assert.deepEqual(published.sources[retired],source);
+    assert.equal(result.observed_hashes[retired],undefined);
+  }
+});
+test('retirement never masks linked PDFs, new inputs, server errors or invalid content',async()=>{
+  const {now,published}=await baseline();
+  const archived='https://www.td.gov.hk/filemanager/tc/content_4804/tvrm_auction_result_20260912_chi.pdf';
+  published.sources[archived]={kind:'physical',date:'2026-09-12',sha256:await digest(bytes),consumers:['physical']};
+  const cases=[{url:physical,status:404},{url:physical,status:410},{url:archived,status:503},{url:archived,status:200,body:'not a PDF'},
+    {url:archived,status:404,unpublished:true}];
+  for (const item of cases) {
+    const input=item.unpublished ? {...published,sources:{...published.sources,[archived]:undefined}} : published;
+    if (item.unpublished) delete input.sources[archived];
+    const fetcher=async(url,options)=>url===item.url ? new Response(item.body || 'unavailable',{status:item.status}) : upstream()(url,options);
+    const result=await observe(input,{fetcher,now,priority:[{url:archived,kind:'physical',date:'2026-09-12'}]});
+    assert(result.source_errors.some(error=>error.url===item.url),JSON.stringify(item));
+    assert.deepEqual(result.retired_sources,[]);
+  }
+  for (const source of [{kind:'physical',date:'2026-09-12',sha256:'invalid',consumers:['physical']},
+    {kind:'physical',date:'2026-09-12',sha256:await digest(bytes),consumers:[]}]) {
+    const input={...published,sources:{...published.sources,[archived]:source}};
+    const fetcher=async(url,options)=>url===archived ? new Response('removed',{status:404}) : upstream()(url,options);
+    const result=await observe(input,{fetcher,now});
+    assert(result.source_errors.some(error=>error.url===archived));assert.deepEqual(result.retired_sources,[]);
+  }
+});
 test('calendar-only changes and registration month rollover stay independent',async()=>{
   const {now,published}=await baseline();
   const result=await observe(published,{fetcher:upstream(),now:new Date('2026-11-01T01:00:00Z')});
@@ -121,6 +158,31 @@ test('credential-free observation stores a fresh plan that collection reuses wit
     const probe=await (await STORE.get(`probes/${decision.probe_id}.json`)).json();
     assert.equal(probe.updates[0].sha256,await digest('%PDF-correction'));
     assert.equal((await DB.prepare('SELECT dispatch_count FROM refresh_control WHERE id=1').first()).dispatch_count,0);
+  } finally {globalThis.fetch=originalFetch;await mf.dispose();}
+});
+
+test('retirement is recorded for operators while a fresh claim clears the incident without publication',async()=>{
+  const mf=new Miniflare({modules:true,scriptPath:new URL('../refresh-worker/src/index.mjs',import.meta.url).pathname,compatibilityDate:'2026-10-05',compatibilityFlags:['nodejs_compat'],d1Databases:{DB:'retirement-test'},r2Buckets:{STORE:'retirement-test'}});
+  const originalFetch=globalThis.fetch;
+  try {
+    const DB=await mf.getD1Database('DB'),STORE=await mf.getR2Bucket('STORE');
+    await migrate(DB);
+    const {published}=await baseline();
+    const retired='https://www.td.gov.hk/filemanager/tc/content_4804/tvrm_auction_result_20260912_chi.pdf';
+    published.sources[retired]={kind:'physical',date:'2026-09-12',sha256:await digest(bytes),consumers:['physical']};
+    const serialized=JSON.stringify(published);
+    await STORE.put('published.json',serialized);
+    await DB.prepare("UPDATE refresh_control SET last_outcome='source_unavailable',last_error='pdf_http_404' WHERE id=1").run();
+    const env={DB,STORE,PRODUCTION_URL:'https://production.test'};
+    globalThis.fetch=async(url,options)=>url==='https://production.test/data/events.json' ? Response.json({events:[]}) : url===retired ? new Response('removed',{status:404}) : upstream()(url,options);
+    const result=await claim(env,{refresh:true});
+    assert.equal(result.run,false);assert.equal(result.outcome,'unchanged');assert.equal(result.source_retired_count,1);
+    assert.equal(result.source_error_count,0);
+    const record=await (await STORE.get('observed.json')).json();
+    assert.equal(record.retired_sources[0].url,retired);assert.equal(record.updates.length,0);
+    assert.equal(await (await STORE.get('published.json')).text(),serialized);
+    const state=await DB.prepare('SELECT last_error,pending_id,lease_until FROM refresh_control WHERE id=1').first();
+    assert.deepEqual(state,{last_error:null,pending_id:null,lease_until:0});
   } finally {globalThis.fetch=originalFetch;await mf.dispose();}
 });
 
