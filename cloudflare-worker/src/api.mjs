@@ -844,7 +844,22 @@ async function publicMarketSignal(plate, payload, offers, env, request, contactS
     .map((offer) => Number(offer.asking_price_hkd))
     .filter((amount) => Number.isSafeInteger(amount) && amount > 0))]
     .sort((a, b) => a - b);
-  const primary = offers.find((offer) => Number(offer.asking_price_hkd) === prices[0]) || offers[0];
+  let primary = offers.find((offer) => Number(offer.asking_price_hkd) === prices[0]) || offers[0];
+  let contactAvailable = false;
+  if (contactUnlockEnabled(env)) {
+    const price = (offer) => {
+      const amount = Number(offer.asking_price_hkd);
+      return Number.isSafeInteger(amount) && amount > 0 ? amount : Infinity;
+    };
+    const candidates = [primary, ...offers.filter((offer) => offer !== primary).sort((a, b) => price(a) - price(b))];
+    for (const offer of candidates) {
+      if (await advertisedContact(request, env, plate, String(offer.listing_id), { market: payload, contacts: contactShard })) {
+        primary = offer;
+        contactAvailable = true;
+        break;
+      }
+    }
+  }
   const freshHours = Math.max(1, Math.min(168, Number(payload.fresh_for_hours || 72)));
   const observedAt = String(primary.last_seen_at || payload.scraped_at || "");
   const observedMs = Date.parse(observedAt);
@@ -859,7 +874,7 @@ async function publicMarketSignal(plate, payload, offers, env, request, contactS
     fresh_until: Number.isFinite(observedMs)
       ? new Date(observedMs + freshHours * 60 * 60 * 1000).toISOString()
       : null,
-    contact_unlock_available: contactUnlockEnabled(env) && Boolean(await advertisedContact(request, env, plate, String(primary.listing_id), { market: payload, contacts: contactShard })),
+    contact_unlock_available: contactAvailable,
     contact_unlock_price_hkd: 99,
     listing_id: String(primary.listing_id),
     source_url: String(primary.source_url),

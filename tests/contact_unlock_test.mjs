@@ -68,6 +68,42 @@ try {
   assert.equal(preview.asking_price_hkd, 88000);
   assert.equal(preview.source_url, listing.source_url);
   assert.equal(preview.observed_at, now);
+  // A cheaper offer without WhatsApp must not hide another eligible seller.
+  const savedOffers = [...market.signals.TEST8];
+  const savedContacts = { ...contacts.contacts };
+  try {
+    for (const [id, asking] of [["n100003", 99000], ["n100004", 92000]]) {
+      market.signals.TEST8.push({ ...listing, listing_id: id, asking_price_hkd: asking, source_url: `https://m.28car.com/num_dsp.php?h_vid=5000000${id.slice(-1)}` });
+      contacts.contacts[id] = { plate: "TEST8", whatsapp_number: "85261112222", observed_at: now };
+    }
+    delete contacts.contacts.n100001;
+    const signal = async (batch = false, overrideEnv = env) => {
+      const response = await worker.fetch(new Request(`https://plate.hk/api/market_signal?${batch ? "plates" : "plate"}=TEST8`, { headers: { origin: "https://plate.hk", "cf-connecting-ip": "192.0.2.250" } }), overrideEnv, {});
+      assert.equal(response.status, 200);
+      const data = await response.json();
+      assert.equal(JSON.stringify(data).includes("61112222"), false);
+      return batch ? data.signals[0] : data;
+    };
+    for (const batch of [false, true]) {
+      const qualified = await signal(batch);
+      assert.equal(qualified.contact_unlock_available, true);
+      assert.equal(qualified.listing_id, "n100004");
+      assert.equal(qualified.source_url, "https://m.28car.com/num_dsp.php?h_vid=50000004");
+      assert.deepEqual(qualified.asking_prices_hkd, [88000, 92000, 99000]);
+    }
+    const held = await signal(false, { ...env, CONTACT_UNLOCK_ENABLED: "false" });
+    assert.equal(held.contact_unlock_available, false);
+    assert.equal(held.listing_id, "n100001");
+    contacts.contacts.n100001 = savedContacts.n100001;
+    assert.equal((await signal()).listing_id, "n100001");
+    contacts.contacts = {};
+    const unavailable = await signal();
+    assert.equal(unavailable.contact_unlock_available, false);
+    assert.equal(unavailable.listing_id, "n100001");
+  } finally {
+    market.signals.TEST8 = savedOffers;
+    contacts.contacts = savedContacts;
+  }
   response = await call("checkout", { body: { plate: "TEST8", listing_id: "n100001" }, cookie });
   assert.equal(response.status, 200);
   assert.equal(checkoutForm.get("line_items[0][price]"), "price_fixture");
