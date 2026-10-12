@@ -21,9 +21,17 @@ metadata contains ciphertext and a hash, never a plaintext number. The reveal
 endpoint verifies ownership, mode, amount, currency, payment success, test/live
 mode and refunded/disputed charge status directly with Stripe before decrypting.
 The purchased snapshot can still be delivered if the listing later disappears.
-There is no asynchronous WhatsApp delivery job: repeated verified reads return
-the same purchased contact. No webhook endpoint is required for this on-demand
-reveal; customers who do not return use their receipt for manual support.
+Signed Stripe webhooks at `/api/contact/webhook` process
+`checkout.session.completed` and `checkout.session.async_payment_succeeded`.
+They retrieve the current payment, verify the purchased encrypted contact, and
+mark the durable Stripe Session metadata with `contact_fulfillment_version=1`.
+The browser return uses the same fulfillment function for immediate access;
+retries share a deterministic Stripe idempotency key. An unpaid/delayed payment
+never grants access, and refunds/disputes are rechecked on each reveal. Raw
+request bytes, HMAC SHA-256, v1 signatures and a five-minute timestamp tolerance
+are verified before processing. Unrelated events are ignored; provider failures
+return a retryable error. The contact is still retrieved in the original browser,
+with receipt-based support if the browser cookie is lost.
 
 The cookie lasts 30 days. Keep the encryption key stable to deliver earlier
 purchases. Clearing cookies, changing browsers/devices or key rotation requires
@@ -43,6 +51,12 @@ check or refund on seller non-response.
    `CONTACT_UNLOCK_PRICE_ID` in the target deployment. Create separate prices
    in sandbox and live mode. Checkout verifies that the price is active,
    one-time, HKD 9900, untransformed, and in the same mode before charging.
+   Register the two Checkout events with a webhook destination for the target
+   deployment's `/api/contact/webhook` URL, using its pinned API version.
+   Set `STRIPE_WEBHOOK_SECRET` from that destination in managed Worker secrets;
+   sandbox and live endpoints have separate signing secrets. New checkout
+   remains disabled until this secret exists. Existing paid contacts can still
+   be retrieved if the new-sales feature switch is turned off.
    Set `STRIPE_SECRET_KEY` and `CONTACT_UNLOCK_ENCRYPTION_KEY` with managed
    Worker secrets. Prefer an account-scoped restricted key (`rk_test_` or
    `rk_live_`); existing account secret keys are also supported. Publishable
@@ -55,7 +69,8 @@ check or refund on seller non-response.
    introduction service's encryption key.
 4. Use a test Stripe key and `CONTACT_UNLOCK_ENABLED=true` in a protected test
    deployment. Exercise an actual test checkout, return/reload, another browser,
-   cancelled payment, and a Stripe refund. Local mocks are not provider proof.
+   cancelled payment, webhook delivery/retry, delayed-payment gating, and a
+   Stripe refund. Local mocks are not provider proof.
 5. Only after those canaries pass, set the live Stripe key and enable the flag
    in the production configuration. The repository default is disabled.
 

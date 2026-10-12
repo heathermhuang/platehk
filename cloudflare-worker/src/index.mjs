@@ -1,4 +1,4 @@
-import { handleContactUnlock } from "./contact-unlock.mjs";
+import { handleContactUnlock, handleContactWebhook } from "./contact-unlock.mjs";
 import { handleApiRequest } from "./api.mjs";
 import {
   buildOAuthProtectedResourceMetadata,
@@ -410,6 +410,7 @@ export default {
     }
     const canonicalHtmlRedirect = redirectToCanonicalHtml(request, url);
     if (canonicalHtmlRedirect) return canonicalHtmlRedirect;
+    if (url.pathname === "/api/contact/webhook") return handleContactWebhook(request,env);
     if (url.pathname.startsWith("/api/contact/")) return handleContactUnlock(request, env);
     if (url.pathname.startsWith("/api/")) {
       const response = await handleApiRequest(request, env, ctx);

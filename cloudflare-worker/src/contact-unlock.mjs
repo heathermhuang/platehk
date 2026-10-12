@@ -4,13 +4,18 @@ const COOKIE = "__Host-platehk-contact";
 const PRICE = 9900;
 const STRIPE_API_VERSION = "2026-09-30.endive";
 const encoder = new TextEncoder();
+const STRIPE_INTEGRATION_IDENTIFIER = "platehk-contact-unlock-lrqmxwpt";
 const phonePattern = /^852[456789]\d{7}$/;
 
-export function contactUnlockEnabled(env) {
-  return env.CONTACT_UNLOCK_ENABLED === "true"
-    && /^(sk|rk)_(test|live)_/.test(env.STRIPE_SECRET_KEY || "")
+function contactRuntimeReady(env) {
+  return /^(sk|rk)_(test|live)_/.test(env.STRIPE_SECRET_KEY || "")
     && /^price_[a-zA-Z0-9]+$/.test(env.CONTACT_UNLOCK_PRICE_ID || "")
     && /^[a-f0-9]{64}$/i.test(env.CONTACT_UNLOCK_ENCRYPTION_KEY || "");
+}
+
+export function contactUnlockEnabled(env) {
+  return env.CONTACT_UNLOCK_ENABLED === "true" && contactRuntimeReady(env)
+    && /^whsec_[A-Za-z0-9]+$/.test(env.STRIPE_WEBHOOK_SECRET || "");
 }
 
 function reply(body, status = 200, cookie = null) {
@@ -90,15 +95,101 @@ export async function advertisedContact(request, env, plate, listingId, supplied
   };
 }
 
-async function stripeRequest(env, path, body) {
+async function stripeRequest(env, path, body, idempotencyKey) {
   const response = await fetch(`https://api.stripe.com/v1/${path}`, {
     method: body ? "POST" : "GET",
-    headers: { authorization: `Bearer ${env.STRIPE_SECRET_KEY}`, "stripe-version": STRIPE_API_VERSION, ...(body ? { "content-type": "application/x-www-form-urlencoded" } : {}) },
+    headers: { authorization: `Bearer ${env.STRIPE_SECRET_KEY}`, "stripe-version": STRIPE_API_VERSION, ...(idempotencyKey ? { "idempotency-key": idempotencyKey } : {}), ...(body ? { "content-type": "application/x-www-form-urlencoded" } : {}) },
     body,
     signal: AbortSignal.timeout(15000),
   });
   if (!response.ok) throw new Error("payment_provider_unavailable");
   return response.json();
+}
+
+async function verifiedPurchase(env, session) {
+  const charge = session.payment_intent?.latest_charge;
+  if (!/^cs_(test|live)_[a-zA-Z0-9]{1,200}$/.test(session.id || "") || session.metadata?.purpose !== "seller_whatsapp_unlock" || !/^[a-f0-9]{64}$/.test(session.metadata.owner || "")
+      || session.mode !== "payment" || session.currency !== "hkd" || session.amount_total !== PRICE
+      || session.livemode !== /^(sk|rk)_live_/.test(env.STRIPE_SECRET_KEY)
+      || session.status !== "complete" || session.payment_status !== "paid"
+      || session.payment_intent?.status !== "succeeded" || !charge || charge.paid !== true
+      || charge.refunded || charge.amount_refunded > 0 || charge.disputed) return null;
+  const contact = await decryptContact(env, session.metadata.contact, session.metadata.owner);
+  if (!phonePattern.test(contact.whatsapp_number) || !/^[A-Z0-9]{1,16}$/.test(contact.plate || "")
+      || !/^n\d+$/.test(contact.listing_id || "") || contact.plate !== session.metadata.plate
+      || contact.listing_id !== session.metadata.listing_id) return null;
+  return contact;
+}
+
+async function fulfillPurchase(env, session) {
+  const contact = await verifiedPurchase(env, session);
+  if (!contact) return null;
+  if (session.metadata.contact_fulfillment_version !== "1") {
+    // Stripe owns the durable purchase record. A deterministic update and
+    // idempotency key let webhook retries and browser returns share fulfillment.
+    await stripeRequest(env, `checkout/sessions/${encodeURIComponent(session.id)}`,
+      new URLSearchParams({ "metadata[contact_fulfillment_version]": "1" }), `platehk-contact-fulfill-${session.id}`);
+  }
+  return contact;
+}
+
+async function boundedBody(request, limit) {
+  const reader = request.body?.getReader();
+  const chunks = [];
+  let size = 0;
+  if (reader) while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    size += value.byteLength;
+    if (size > limit) { await reader.cancel(); return null; }
+    chunks.push(value);
+  }
+  const bytes = new Uint8Array(size);
+  let offset = 0;
+  for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
+  return bytes;
+}
+
+async function validStripeSignature(bytes, header, secret) {
+  const parts = String(header || "").split(",").map(part => part.trim().split("="));
+  const times = parts.filter(([key]) => key === "t").map(([,value]) => value);
+  const signatures = parts.filter(([key]) => key === "v1").map(([,value]) => value).filter(value => /^[a-f0-9]{64}$/.test(value || ""));
+  if (times.length !== 1 || !/^\d+$/.test(times[0]) || !signatures.length || signatures.length > 8) return false;
+  const timestamp = Number(times[0]);
+  if (!Number.isSafeInteger(timestamp) || Math.abs(Date.now() / 1000 - timestamp) > 300) return false;
+  const prefix = encoder.encode(`${times[0]}.`);
+  const payload = new Uint8Array(prefix.length + bytes.length);
+  payload.set(prefix); payload.set(bytes, prefix.length);
+  const key = await crypto.subtle.importKey("raw", encoder.encode(secret), { name:"HMAC", hash:"SHA-256" }, false, ["verify"]);
+  for (const signature of signatures) {
+    const digest = Uint8Array.from(signature.match(/../g), hex => parseInt(hex,16));
+    if (await crypto.subtle.verify("HMAC", key, digest, payload)) return true;
+  }
+  return false;
+}
+
+export async function handleContactWebhook(request, env) {
+  if (request.method !== "POST") return reply({ error:"method_not_allowed" },405);
+  if (!contactRuntimeReady(env) || !/^whsec_[A-Za-z0-9]+$/.test(env.STRIPE_WEBHOOK_SECRET || "")) return reply({ error:"webhook_unavailable" },503);
+  const bytes = await boundedBody(request,65536);
+  if (!bytes) return reply({ error:"request_too_large" },413);
+  if (!await validStripeSignature(bytes,request.headers.get("stripe-signature"),env.STRIPE_WEBHOOK_SECRET)) return reply({ error:"invalid_signature" },400);
+  let event;
+  try { event = JSON.parse(new TextDecoder("utf-8",{fatal:true}).decode(bytes)); } catch { return reply({ error:"invalid_event" },400); }
+  if (!event || event.livemode !== /^(sk|rk)_live_/.test(env.STRIPE_SECRET_KEY)) return reply({ error:"invalid_event" },400);
+  if (!["checkout.session.completed","checkout.session.async_payment_succeeded"].includes(event.type)) return reply({ received:true });
+  const object = event.data?.object;
+  if (object?.metadata?.purpose !== "seller_whatsapp_unlock") return reply({ received:true });
+  if (!/^cs_(test|live)_[a-zA-Z0-9]{1,200}$/.test(object.id || "")) return reply({ error:"invalid_event" },400);
+  try {
+    const session = await stripeRequest(env, `checkout/sessions/${encodeURIComponent(object.id)}?expand[]=payment_intent.latest_charge`);
+    // Completed sessions can still be awaiting a delayed payment; the later
+    // async success event retries the same verified fulfillment function.
+    if (session.payment_status !== "paid") return reply({ received:true });
+    const contact = await fulfillPurchase(env,session);
+    if (!contact) return reply({ received:true });
+    return reply({ received:true,fulfilled:true });
+  } catch { return reply({ error:"fulfillment_unavailable" },503); }
 }
 
 export async function handleContactUnlock(request, env) {
@@ -108,7 +199,7 @@ export async function handleContactUnlock(request, env) {
   if (request.method !== "POST") return reply({ error: "method_not_allowed" }, 405);
   const originError = sameOriginError(request);
   if (originError) return reply({ error: "invalid_origin" }, 403);
-  if (!contactUnlockEnabled(env)) return reply({ error: "contact_unlock_unavailable" }, 503);
+  if (!(route === "reveal" ? contactRuntimeReady(env) : contactUnlockEnabled(env))) return reply({ error: "contact_unlock_unavailable" }, 503);
   try {
     enforcePublicReadRateLimit(request, `contact-${route}`, route === "checkout" ? 5 : 30, route === "checkout" ? 30 : 300);
     let body = {};
@@ -140,14 +231,8 @@ export async function handleContactUnlock(request, env) {
       const owner = await buyerHash(buyer);
       if (session.metadata?.purpose !== "seller_whatsapp_unlock" || session.metadata?.owner !== owner) return reply({ error: "invalid_purchase" }, 403);
       if (session.status !== "complete" || session.payment_status !== "paid") return reply({ error: "payment_pending" }, 409);
-      const charge = session.payment_intent?.latest_charge;
-      if (session.mode !== "payment" || session.currency !== "hkd" || session.amount_total !== PRICE
-          || session.livemode !== /^(sk|rk)_live_/.test(env.STRIPE_SECRET_KEY)
-          || session.payment_intent?.status !== "succeeded" || !charge || charge.paid !== true
-          || charge.refunded || charge.amount_refunded > 0 || charge.disputed) return reply({ error: "invalid_purchase" }, 403);
-      const contact = await decryptContact(env, session.metadata.contact, owner);
-      if (!phonePattern.test(contact.whatsapp_number) || contact.plate !== session.metadata.plate
-          || contact.listing_id !== session.metadata.listing_id) return reply({ error: "invalid_purchase" }, 403);
+      const contact = await fulfillPurchase(env,session);
+      if (!contact) return reply({ error:"invalid_purchase" },403);
       const sourceUrl = /^https:\/\/m\.28car\.com\/num_dsp\.php\?/.test(session.metadata.source_url || "") ? session.metadata.source_url : null;
       const asking = Number(session.metadata.asking_price_hkd);
       return reply({ ...contact, whatsapp_url: `https://wa.me/${contact.whatsapp_number}`,
@@ -176,6 +261,7 @@ export async function handleContactUnlock(request, env) {
     const owner = await buyerHash(buyer);
     const params = new URLSearchParams({
       mode: "payment",
+      integration_identifier: STRIPE_INTEGRATION_IDENTIFIER,
       "adaptive_pricing[enabled]": "false",
       "line_items[0][price]": env.CONTACT_UNLOCK_PRICE_ID,
       "line_items[0][quantity]": "1",

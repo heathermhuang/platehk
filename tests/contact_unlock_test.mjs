@@ -10,9 +10,10 @@ delete contacts.signals;
 let sessions = new Map();
 let stripeCalls = 0;
 let checkoutForm;
+let fulfillmentWrites = 0;
 const catalogPrice = { active: true, type: "one_time", recurring: null, currency: "hkd", unit_amount: 9900, transform_quantity: null, livemode: false };
 const env = {
-  CONTACT_UNLOCK_ENABLED: "true", STRIPE_SECRET_KEY: "rk_test_fixture", CONTACT_UNLOCK_PRICE_ID: "price_fixture", CONTACT_UNLOCK_ENCRYPTION_KEY: "ab".repeat(32),
+  CONTACT_UNLOCK_ENABLED: "true", STRIPE_WEBHOOK_SECRET: "whsec_fixture", STRIPE_SECRET_KEY: "rk_test_fixture", CONTACT_UNLOCK_PRICE_ID: "price_fixture", CONTACT_UNLOCK_ENCRYPTION_KEY: "ab".repeat(32),
   ASSETS: { async fetch(request) {
     const path = new URL(request.url).pathname;
     if (path === "/_market/28car/T.json") return Response.json(market);
@@ -28,6 +29,13 @@ globalThis.fetch = async (input, options) => {
   assert.equal(options.headers["stripe-version"], "2026-09-30.endive");
   stripeCalls++;
   if (url.pathname === "/v1/prices/price_fixture") return Response.json(catalogPrice);
+  if (options.method === "POST" && /^\/v1\/checkout\/sessions\/cs_/.test(url.pathname)) {
+    const session = sessions.get(url.pathname.split("/").at(-1));
+    assert.equal(options.headers["idempotency-key"], `platehk-contact-fulfill-${session.id}`);
+    fulfillmentWrites++;
+    session.metadata.contact_fulfillment_version = "1";
+    return Response.json(session);
+  }
   if (options.method === "POST") {
     checkoutForm = new URLSearchParams(options.body);
     const id = "cs_test_fixture";
@@ -66,8 +74,50 @@ try {
   assert.equal(checkoutForm.has("line_items[0][price_data][product_data][name]"), false);
   assert.equal(checkoutForm.has("payment_method_types[0]"), false);
   assert.equal(checkoutForm.get("adaptive_pricing[enabled]"), "false");
+  assert.match(checkoutForm.get("integration_identifier"), /^platehk-contact-unlock-[a-z]{8}$/);
   assert.equal(checkoutForm.toString().includes("61112222"), false);
   const session = sessions.get("cs_test_fixture");
+
+  const sign = async (body, timestamp = Math.floor(Date.now()/1000)) => {
+    const key = await crypto.subtle.importKey("raw",new TextEncoder().encode(env.STRIPE_WEBHOOK_SECRET),{name:"HMAC",hash:"SHA-256"},false,["sign"]);
+    const hash = new Uint8Array(await crypto.subtle.sign("HMAC",key,new TextEncoder().encode(`${timestamp}.${body}`)));
+    return `t=${timestamp},v1=${[...hash].map(byte=>byte.toString(16).padStart(2,"0")).join("")}`;
+  };
+  const event = {id:"evt_fixture",livemode:false,type:"checkout.session.completed",data:{object:{id:session.id,metadata:{purpose:"seller_whatsapp_unlock"}}}};
+  const webhook = (body,signature,overrideEnv=env) => worker.fetch(new Request("https://plate.hk/api/contact/webhook",{method:"POST",headers:{"stripe-signature":signature,"content-type":"application/json"},body}),overrideEnv,{});
+  const eventBody=JSON.stringify(event);
+  let eventSignature=await sign(eventBody);
+  const callsBefore=stripeCalls;
+  assert.equal((await webhook(eventBody,"invalid")).status,400);
+  assert.equal((await webhook(eventBody,await sign(eventBody,Math.floor(Date.now()/1000)-1000))).status,400);
+  assert.equal((await webhook(eventBody+" ",eventSignature)).status,400);
+  assert.equal(stripeCalls,callsBefore);
+  let eventResponse=await webhook(eventBody,eventSignature);
+  assert.equal(eventResponse.status,200);
+  assert.equal((await eventResponse.json()).fulfilled,true);
+  assert.equal(fulfillmentWrites,1);
+  assert.equal(session.metadata.contact_fulfillment_version,"1");
+  assert.equal((await webhook(eventBody,eventSignature)).status,200);
+  assert.equal(fulfillmentWrites,1);
+  // Server-confirmed payment is required even when the signed event says complete.
+  delete session.metadata.contact_fulfillment_version;
+  session.payment_status="unpaid";
+  eventResponse=await webhook(eventBody,eventSignature);
+  assert.equal((await eventResponse.json()).fulfilled,undefined);
+  assert.equal(fulfillmentWrites,1);
+  session.payment_status="paid";
+  event.type="checkout.session.async_payment_succeeded";
+  const delayed=JSON.stringify(event);
+  assert.equal((await webhook(delayed,await sign(delayed))).status,200);
+  assert.equal(fulfillmentWrites,2);
+  event.livemode=true;
+  const wrongMode=JSON.stringify(event);
+  assert.equal((await webhook(wrongMode,await sign(wrongMode))).status,400);
+  event.livemode=false;
+  // New checkout is held until its signing secret exists, while an already paid
+  // owner can recover the contact even after the new-sales switch is disabled.
+  assert.equal((await call("availability?plate=TEST8&listing_id=n100001",{overrideEnv:{...env,STRIPE_WEBHOOK_SECRET:""}})).status,503);
+  assert.equal((await call("reveal",{body:{session_id:session.id},cookie,overrideEnv:{...env,CONTACT_UNLOCK_ENABLED:"false"}})).status,200);
   for (const change of [{ active: false }, { type: "recurring", recurring: { interval: "month" } }, { unit_amount: 19900 }, { currency: "usd" }, { livemode: true }, { transform_quantity: { divide_by: 2, round: "up" } }]) {
     const previous = { ...catalogPrice };
     Object.assign(catalogPrice, change);
