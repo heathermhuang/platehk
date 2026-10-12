@@ -124,3 +124,32 @@ test('blocked local storage preserves the paid return URL instead of offering an
   await expect(page.getByRole('button',{name:'Continue to payment — HK$99'})).toBeHidden();
   expect(checks).toBe(2);
 });
+
+for (const lang of ['en','zh']) {
+  test(`expired unpaid checkout returns to its listing without retrying or charging (${lang})`,async({page})=>{
+    await page.route('**/api/contact/reveal',route=>route.fulfill({status:410,json:{error:'payment_expired',plate:'TEST8',listing_id:'n100001'}}));
+    await page.route('**/api/contact/availability',route=>route.fulfill({json:preview}));
+    await page.route('**/api/contact/checkout',()=>{throw new Error('An expired return must not start another payment');});
+    await page.goto(`/contact.html?session_id=cs_test_fixture&lang=${lang}`);
+    await expect(page.getByRole('heading',{name:lang==='en'?'Checkout expired':'付款頁已逾時',exact:true})).toBeVisible();
+    await expect(page.locator('#pay')).toBeHidden();
+    await expect(page.locator('#retry')).toBeHidden();
+    await expect(page.locator('#phone')).toBeHidden();
+    const back=page.getByRole('link',{name:lang==='en'?'Return to listing':'返回刊登',exact:true});
+    await expect(back).toHaveAttribute('href',`/contact.html?plate=TEST8&listing_id=n100001&lang=${lang}`);
+    await back.click();
+    await expect(page.locator('#pay')).toBeVisible();
+    await expect(page.locator('#plate')).toHaveText('TEST8');
+    await expect(page.locator('#source')).toHaveAttribute('href',signal.source_url);
+  });
+  test(`refunded purchase gives a definitive status without another payment or contact (${lang})`,async({page})=>{
+    await page.route('**/api/contact/reveal',route=>route.fulfill({status:403,json:{error:'purchase_refunded',plate:'TEST8',listing_id:'n100001'}}));
+    await page.route('**/api/contact/checkout',()=>{throw new Error('A refunded purchase must not charge again');});
+    await page.goto(`/contact.html?session_id=cs_test_fixture&lang=${lang}`);
+    await expect(page.getByRole('heading',{name:lang==='en'?'A refund was recorded':'付款已有退款紀錄',exact:true})).toBeVisible();
+    for(const id of ['pay','retry','phone','whatsapp','copy']) await expect(page.locator(`#${id}`)).toBeHidden();
+    await expect(page.locator('#plate')).toHaveText('TEST8');
+    await expect(page.locator('#help')).toBeVisible();
+    await checkAccessibility(page);
+  });
+}

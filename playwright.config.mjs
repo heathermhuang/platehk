@@ -4,6 +4,9 @@ const PORT = Number(process.env.E2E_PORT || 18280);
 const BASE_URL = process.env.E2E_BASE_URL || `http://127.0.0.1:${PORT}`;
 
 export default defineConfig({
+  // Generated auction data can exceed the reporter's string limit. Keep CI
+  // commit metadata, but do not collect the entire Git patch for reports.
+  captureGitInfo: { diff: false },
   testDir: "./e2e",
   fullyParallel: false,
   timeout: 60_000,
