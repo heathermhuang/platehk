@@ -20,6 +20,7 @@
     verifyingTitle: "Checking your payment", verifyingDescription: "We’re checking the payment before showing your contact. You don’t need to pay again.", verifying: "Checking payment with Stripe…",
     pending: "Payment isn’t confirmed yet. We’ll check again shortly; you can also retry below.",
     pendingStopped: "Payment still isn’t confirmed. Check again below, or get help with your receipt. You don’t need to pay again.",
+    expiredTitle: "Checkout expired", expiredDescription: "Stripe closed this unpaid checkout. Return to the listing to start again whenever you’re ready.", expired: "No payment was completed for this checkout.", restart: "Return to listing",
     failed: "We couldn’t confirm this purchase yet. Check again, or get help below with your Stripe receipt. Please don’t pay again.",
     originalBrowser: "Open this page in the browser you used to pay. If that isn’t possible, get help below with your Stripe receipt.",
     retry: "Check again", paidTitle: "Your seller contact is ready", paidDescription: "Open a WhatsApp draft to ask about the plate, or copy the number to save it.", paid: "Payment confirmed · Contact unlocked",
@@ -44,6 +45,7 @@
     verifyingTitle: "正在核對付款", verifyingDescription: "核對付款後就會顯示聯絡資料，你不用再次付款。", verifying: "正在向 Stripe 核對付款…",
     pending: "付款尚未確認，我們會稍後再檢查。你亦可按下方按鈕重試。",
     pendingStopped: "付款仍未確認。請按下方按鈕重新檢查，或保留收據並聯絡我們協助核對。你不用再次付款。",
+    expiredTitle: "付款頁已逾時", expiredDescription: "這次未付款的付款頁已關閉。你可返回刊登，準備好後再開始。", expired: "這次付款尚未完成。", restart: "返回刊登",
     failed: "暫時未能確認這次付款。請重新檢查，或保留 Stripe 收據並透過下方連結聯絡我們。請勿再次付款。",
     originalBrowser: "請在付款時使用的瀏覽器開啟此頁。如無法使用該瀏覽器，請保留 Stripe 收據並透過下方連結聯絡我們。",
     retry: "重新檢查", paidTitle: "賣家聯絡資料已準備好", paidDescription: "開啟 WhatsApp 草稿查詢車牌，或複製號碼自行保存。", paid: "付款已確認 · 聯絡資料已解鎖",
@@ -106,7 +108,7 @@
       headers:{"content-type":"application/json"},body:JSON.stringify(body),
     });
     const data = await response.json();
-    if (!response.ok) throw new Error(data.error || "unavailable");
+    if (!response.ok) throw Object.assign(new Error(data.error || "unavailable"), { data });
     return data;
   }
   async function reveal(automatic = false) {
@@ -142,6 +144,18 @@
       // Keep the return URL usable when site storage is blocked; the server still requires the buyer cookie.
       try { if (remembered) history.replaceState(null,"",`/contact.html?plate=${encodeURIComponent(plate)}&listing_id=${encodeURIComponent(listing)}&lang=${lang}`); } catch {}
     } catch (error) {
+      if (error.message === "payment_expired") {
+        setListing(error.data || {});
+        showState("expired");
+        el("title").textContent = t.expiredTitle;
+        el("description").textContent = t.expiredDescription;
+        status.textContent = t.expired;
+        if (/^[A-Z0-9]{1,16}$/.test(plate) && /^n\d+$/.test(listing)) {
+          el("back").textContent = t.restart;
+          el("back").href = `/contact.html?plate=${encodeURIComponent(plate)}&listing_id=${encodeURIComponent(listing)}&lang=${lang}`;
+        }
+        return;
+      }
       showState(error.message === "payment_pending" ? "pending" : "error");
       el("retry").hidden = false;
       status.textContent = error.message === "payment_pending" ? t.pending : error.message === "original_browser_required" ? t.originalBrowser : t.failed;

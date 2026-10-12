@@ -230,6 +230,11 @@ export async function handleContactUnlock(request, env) {
       const session = await stripeRequest(env, `checkout/sessions/${encodeURIComponent(body.session_id)}?expand[]=payment_intent.latest_charge`);
       const owner = await buyerHash(buyer);
       if (session.metadata?.purpose !== "seller_whatsapp_unlock" || session.metadata?.owner !== owner) return reply({ error: "invalid_purchase" }, 403);
+      if (session.status === "expired" && session.payment_status === "unpaid"
+          && (!session.payment_intent || ["canceled", "requires_payment_method"].includes(session.payment_intent.status))
+          && !session.payment_intent?.latest_charge?.paid) {
+        return reply({ error: "payment_expired", plate: session.metadata.plate, listing_id: session.metadata.listing_id }, 410);
+      }
       if (session.status !== "complete" || session.payment_status !== "paid") return reply({ error: "payment_pending" }, 409);
       const contact = await fulfillPurchase(env,session);
       if (!contact) return reply({ error:"invalid_purchase" },403);

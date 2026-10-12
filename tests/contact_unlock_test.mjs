@@ -131,6 +131,21 @@ try {
   assert.equal(unlocked.asking_price_hkd, 88000);
   assert.equal(unlocked.source_url, listing.source_url);
   assert.equal(unlocked.observed_at, now);
+  // An expired unpaid checkout can restart; processing/paid payments never do.
+  const savedIntent = session.payment_intent;
+  session.status = "expired";
+  session.payment_status = "unpaid";
+  session.payment_intent = null;
+  response = await call("reveal", { body: { session_id: session.id }, cookie });
+  assert.equal(response.status, 410);
+  assert.deepEqual(await response.json(), { error: "payment_expired", plate: "TEST8", listing_id: "n100001" });
+  assert.equal((await call("reveal", { body: { session_id: session.id }, cookie: `__Host-platehk-contact=${"cd".repeat(32)}` })).status, 403);
+  session.payment_intent = { status: "processing" };
+  assert.equal((await call("reveal", { body: { session_id: session.id }, cookie })).status, 409);
+  session.payment_intent = savedIntent;
+  assert.equal((await call("reveal", { body: { session_id: session.id }, cookie })).status, 409);
+  session.status = "complete";
+  session.payment_status = "paid";
   // Restricted live keys must enforce live mode, just like unrestricted keys.
   const liveEnv = { ...env, STRIPE_SECRET_KEY: "rk_live_fixture" };
   assert.equal((await call("reveal", { body: { session_id: session.id }, cookie, overrideEnv: liveEnv })).status, 403);
