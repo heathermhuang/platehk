@@ -178,7 +178,11 @@ try {
     const charge = session.payment_intent.latest_charge;
     const previous = { ...charge };
     Object.assign(charge, change);
-    assert.equal((await call("reveal", { body: { session_id: session.id }, cookie })).status, 403);
+    const denied = await call("reveal", { body: { session_id: session.id }, cookie });
+    assert.equal(denied.status, 403);
+    if (change.refunded || change.amount_refunded > 0) {
+      assert.deepEqual(await denied.json(), { error: "purchase_refunded", plate: "TEST8", listing_id: "n100001" });
+    }
     Object.assign(charge, previous);
   }
   assert.equal((await call("reveal", { body: { session_id: session.id } })).status, 403);

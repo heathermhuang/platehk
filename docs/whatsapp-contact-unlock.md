@@ -88,6 +88,8 @@ while verifying an existing payment. Cancelling checkout retains plate context.
 An expired, unpaid checkout with no processing or successful Payment Intent
 shows a clear expiry message and a link back to that listing; pending or paid
 payments never receive a restart link.
+A refunded purchase shows a clear refund status without exposing the number,
+offering another checkout, or suggesting that the buyer keep rechecking.
 
 Hosted Stripe Checkout uses dynamic payment methods configured in the account,
 including eligible Apple Pay/Google Pay wallets without a custom wallet UI.

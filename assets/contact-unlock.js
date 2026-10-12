@@ -21,6 +21,7 @@
     pending: "Payment isn’t confirmed yet. We’ll check again shortly; you can also retry below.",
     pendingStopped: "Payment still isn’t confirmed. Check again below, or get help with your receipt. You don’t need to pay again.",
     expiredTitle: "Checkout expired", expiredDescription: "Stripe closed this unpaid checkout. Return to the listing to start again whenever you’re ready.", expired: "No payment was completed for this checkout.", restart: "Return to listing",
+    refundedTitle: "A refund was recorded", refundedDescription: "Contact access for this purchase is closed. For help with the refund, use your Stripe receipt below.", refunded: "Refund recorded · Contact access closed",
     failed: "We couldn’t confirm this purchase yet. Check again, or get help below with your Stripe receipt. Please don’t pay again.",
     originalBrowser: "Open this page in the browser you used to pay. If that isn’t possible, get help below with your Stripe receipt.",
     retry: "Check again", paidTitle: "Your seller contact is ready", paidDescription: "Open a WhatsApp draft to ask about the plate, or copy the number to save it.", paid: "Payment confirmed · Contact unlocked",
@@ -46,6 +47,7 @@
     pending: "付款尚未確認，我們會稍後再檢查。你亦可按下方按鈕重試。",
     pendingStopped: "付款仍未確認。請按下方按鈕重新檢查，或保留收據並聯絡我們協助核對。你不用再次付款。",
     expiredTitle: "付款頁已逾時", expiredDescription: "這次未付款的付款頁已關閉。你可返回刊登，準備好後再開始。", expired: "這次付款尚未完成。", restart: "返回刊登",
+    refundedTitle: "付款已有退款紀錄", refundedDescription: "這次購買的聯絡資料已停止開放。如對退款有疑問，請保留 Stripe 收據並透過下方連結聯絡我們。", refunded: "已有退款紀錄 · 聯絡資料已關閉",
     failed: "暫時未能確認這次付款。請重新檢查，或保留 Stripe 收據並透過下方連結聯絡我們。請勿再次付款。",
     originalBrowser: "請在付款時使用的瀏覽器開啟此頁。如無法使用該瀏覽器，請保留 Stripe 收據並透過下方連結聯絡我們。",
     retry: "重新檢查", paidTitle: "賣家聯絡資料已準備好", paidDescription: "開啟 WhatsApp 草稿查詢車牌，或複製號碼自行保存。", paid: "付款已確認 · 聯絡資料已解鎖",
@@ -144,6 +146,14 @@
       // Keep the return URL usable when site storage is blocked; the server still requires the buyer cookie.
       try { if (remembered) history.replaceState(null,"",`/contact.html?plate=${encodeURIComponent(plate)}&listing_id=${encodeURIComponent(listing)}&lang=${lang}`); } catch {}
     } catch (error) {
+      if (error.message === "purchase_refunded") {
+        setListing(error.data || {});
+        showState("refunded");
+        el("title").textContent = t.refundedTitle;
+        el("description").textContent = t.refundedDescription;
+        status.textContent = t.refunded;
+        return;
+      }
       if (error.message === "payment_expired") {
         setListing(error.data || {});
         showState("expired");

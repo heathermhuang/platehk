@@ -236,6 +236,13 @@ export async function handleContactUnlock(request, env) {
         return reply({ error: "payment_expired", plate: session.metadata.plate, listing_id: session.metadata.listing_id }, 410);
       }
       if (session.status !== "complete" || session.payment_status !== "paid") return reply({ error: "payment_pending" }, 409);
+      const charge = session.payment_intent?.latest_charge;
+      if (session.mode === "payment" && session.currency === "hkd" && session.amount_total === PRICE
+          && session.livemode === /^(sk|rk)_live_/.test(env.STRIPE_SECRET_KEY)
+          && session.payment_intent?.status === "succeeded" && charge?.paid === true
+          && (charge.refunded || charge.amount_refunded > 0)) {
+        return reply({ error: "purchase_refunded", plate: session.metadata.plate, listing_id: session.metadata.listing_id }, 403);
+      }
       const contact = await fulfillPurchase(env,session);
       if (!contact) return reply({ error:"invalid_purchase" },403);
       const sourceUrl = /^https:\/\/m\.28car\.com\/num_dsp\.php\?/.test(session.metadata.source_url || "") ? session.metadata.source_url : null;
