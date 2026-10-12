@@ -151,6 +151,24 @@ export default {
         await release(env,payload.probe_id,'failed','workflow_failed');
         return json({released:true});
       }
+      if (url.pathname === '/v1/market-contacts' && request.method === 'GET') {
+        const object = await env.STORE.get('market/28car.active.contacts.json');
+        if (!object) return json({error:'contact_snapshot_missing'},404);
+        return new Response(object.body,{headers:{'Content-Type':'application/json','Cache-Control':'no-store'}});
+      }
+      if (url.pathname === '/v1/market-contacts' && request.method === 'PUT') {
+        const payload = await body(request,32*1024*1024);
+        const observed = Date.parse(payload.scraped_at);
+        if (payload.schema_version !== 1 || payload.source !== '28car' || payload.coverage?.complete !== true
+            || !Number.isFinite(observed) || observed > Date.now()+600000 || observed < Date.now()-168*3600000
+            || !payload.contacts || typeof payload.contacts !== 'object' || Array.isArray(payload.contacts)
+            || !Object.entries(payload.contacts).every(([id,item]) => /^n\d+$/.test(id)
+              && item && Object.keys(item).sort().join() === ['observed_at','plate','whatsapp_number'].join()
+              && /^[A-Z0-9]{1,16}$/.test(item.plate) && /^852[456789]\d{7}$/.test(item.whatsapp_number)
+              && item.observed_at === payload.scraped_at)) return json({error:'invalid_contact_snapshot'},400);
+        await env.STORE.put('market/28car.active.contacts.json',JSON.stringify(payload));
+        return json({stored:true});
+      }
       if (url.pathname === '/v1/market' && request.method === 'GET') {
         const object = await env.STORE.get('market/28car.active.json');
         if (!object) return json({error:'market_snapshot_missing'},404);

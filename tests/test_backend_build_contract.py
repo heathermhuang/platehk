@@ -18,6 +18,35 @@ def _load_script(name: str, filename: str):
 
 
 class BackendBuildContractTests(unittest.TestCase):
+    def test_private_contact_build_keeps_the_signal_schema_separate(self) -> None:
+        module = _load_script('contact_build_test', 'build_cloudflare_public.py')
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            module.ROOT = root
+            module.TARGET = root / 'publish'
+            source = root / 'data' / 'market' / '28car.active.json'
+            source.parent.mkdir(parents=True)
+            observed = '2026-10-06T00:00:00Z'
+            offer = {'listing_id': 'n100001', 'source_url': 'https://m.28car.com/num_dsp.php?h_vid=1', 'price_type': 'fixed', 'asking_price_hkd': 88000, 'first_seen_at': observed, 'last_seen_at': observed}
+            snapshot = {'schema_version': 1, 'source': '28car', 'scraped_at': observed, 'fresh_for_hours': 72, 'coverage': {'complete': True}, 'signals': {'TEST8': [offer]}}
+            contacts = {'schema_version': 1, 'source': '28car', 'scraped_at': observed, 'coverage': {'complete': True}, 'contacts': {'n100001': {'plate': 'TEST8', 'whatsapp_number': '85261112222', 'observed_at': observed}}}
+            source.write_text(json.dumps(snapshot))
+            companion = source.with_name('28car.active.contacts.json')
+            companion.write_text(json.dumps(contacts))
+            module.copy_private_market_signals()
+            target = module.TARGET / '_market' / '28car'
+            self.assertNotIn('61112222', (target / 'T.json').read_text())
+            self.assertNotIn('61112222', (target / 'manifest.json').read_text())
+            self.assertIn('61112222', (target / 'contacts' / 'T.json').read_text())
+            contacts['contacts']['n100001']['plate'] = 'OTHER8'
+            companion.write_text(json.dumps(contacts))
+            with self.assertRaisesRegex(RuntimeError, 'Invalid private WhatsApp contact'):
+                module.copy_private_market_signals()
+            contacts['scraped_at'] = '2026-01-01T00:00:00Z'
+            companion.write_text(json.dumps(contacts))
+            with self.assertRaisesRegex(RuntimeError, 'Contact snapshot does not match'):
+                module.copy_private_market_signals()
+
     def test_tracked_catalog_matches_published_chunk_contract(self) -> None:
         index = json.loads((ROOT / "api" / "v1" / "index.json").read_text(encoding="utf-8"))
         all_manifest = json.loads((ROOT / "data" / "all" / "issues.manifest.json").read_text(encoding="utf-8"))

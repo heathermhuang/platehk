@@ -4,6 +4,9 @@ const PORT = Number(process.env.E2E_PORT || 18280);
 const BASE_URL = process.env.E2E_BASE_URL || `http://127.0.0.1:${PORT}`;
 
 export default defineConfig({
+  // Generated auction data can exceed the reporter's string limit. Keep CI
+  // commit metadata, but do not collect the entire Git patch for reports.
+  captureGitInfo: { diff: false },
   testDir: "./e2e",
   fullyParallel: false,
   timeout: 60_000,
@@ -43,7 +46,7 @@ export default defineConfig({
     },
     {
       name: "webkit-desktop",
-      testMatch: ["**/design-consistency.spec.mjs", "**/browser-compatibility.spec.mjs", "**/search-layout.spec.mjs"],
+      testMatch: ["**/contact-unlock.spec.mjs", "**/design-consistency.spec.mjs", "**/browser-compatibility.spec.mjs", "**/search-layout.spec.mjs"],
       use: {
         ...devices["Desktop Safari"],
         viewport: { width: 1366, height: 900 },
@@ -51,7 +54,7 @@ export default defineConfig({
     },
     {
       name: "webkit-mobile",
-      testMatch: ["**/design-consistency.spec.mjs", "**/browser-compatibility.spec.mjs", "**/search-layout.spec.mjs"],
+      testMatch: ["**/contact-unlock.spec.mjs", "**/design-consistency.spec.mjs", "**/browser-compatibility.spec.mjs", "**/search-layout.spec.mjs"],
       use: { ...devices["iPhone 13"] },
     },
   ],

@@ -18,7 +18,8 @@ window.createPlateMarketFlow = function createPlateMarketFlow({
       kicker: "外部放售訊號",
       titleSuffix: "或可洽購",
       plateLabelText: (plate) => `車牌 ${plate}`,
-      body: "我們在第三方平台發現近期放售訊號。Plate.hk 可記錄買方出價，並在雙方同意後安排三方 WhatsApp 介紹。",
+      body: "我們在第三方平台發現近期放售訊號。你可透過 WhatsApp 向 Plate.hk 查詢。",
+      unlockBody: "付款 HK$99，解鎖這則刊登列明的賣方 WhatsApp 號碼；你亦可免費查看 28car 原刊登。",
       price: "目前叫價",
       priceRange: "目前叫價範圍",
       priceContact: "部分放售須另議價格",
@@ -49,7 +50,8 @@ window.createPlateMarketFlow = function createPlateMarketFlow({
       kicker: "External sale signal",
       titleSuffix: "may be obtainable",
       plateLabelText: (plate) => `Plate ${plate}`,
-      body: "We found a recent sale signal on a third-party platform. Plate.hk can record a buyer offer and, with both parties' consent, arrange a three-party WhatsApp introduction.",
+      body: "We found a recent sale signal on a third-party platform. You can enquire with Plate.hk via WhatsApp.",
+      unlockBody: "Pay HK$99 to unlock this listing’s advertised seller WhatsApp number. You can also view the original listing on 28car for free.",
       price: "Current asking price",
       priceRange: "Current asking range",
       priceContact: "Some offers require a price enquiry",
@@ -186,8 +188,9 @@ window.createPlateMarketFlow = function createPlateMarketFlow({
         button.className = "icon-btn row-market-btn";
         button.type = "button";
         button.dataset.marketInquire = plate;
-        button.title = copy.inquire;
-        button.setAttribute("aria-label", `${copy.inquire}: ${plateLabel}`);
+        const actionLabel = signal.contact_unlock_available === true ? (getCurrentLang() === "en" ? "Unlock seller WhatsApp — HK$99" : "解鎖賣方 WhatsApp — HK$99") : copy.inquire;
+        button.title = actionLabel;
+        button.setAttribute("aria-label", `${actionLabel}: ${plateLabel}`);
         button.innerHTML = whatsappIcon();
         actions.append(button);
       });
@@ -219,13 +222,13 @@ window.createPlateMarketFlow = function createPlateMarketFlow({
       ? `<span class="market-contact-price">${escapeHtml(copy.priceContact)}</span>`
       : "";
     const enabled = signal.inquiry_enabled === true;
-    const introductionEnabled = Boolean(validIntroductionNumber(signal));
+    const introductionEnabled = signal.contact_unlock_available !== true && Boolean(validIntroductionNumber(signal));
     return `
       <article class="market-signal-item" data-market-plate="${escapeHtml(plate)}">
       <div class="market-signal-copy">
         <div class="market-kicker">${escapeHtml(copy.kicker)}</div>${plate !== currentQuery ? `<p class="market-relation">${escapeHtml(getCurrentLang()==="en"?`Similar plate: ${plateLabel}`:`相似車牌：${plateLabel}`)}</p>` : ""}
         <h2 class="market-title"><span class="plate" aria-label="${escapeHtml(copy.plateLabelText(plateLabel))}">${escapeHtml(plateLabel)}</span><span> ${escapeHtml(copy.titleSuffix)}</span></h2>
-        <p>${escapeHtml(copy.body)}</p>
+        <p>${escapeHtml(signal.contact_unlock_available === true ? copy.unlockBody : copy.body)}</p>
         <div class="market-facts">
           <span><strong>${escapeHtml(prices.label)}:</strong> ${escapeHtml(prices.value)}</span>
           ${observed ? `<span>${escapeHtml(copy.observed(observed))}</span>` : ""}
@@ -234,9 +237,10 @@ window.createPlateMarketFlow = function createPlateMarketFlow({
         <p class="market-disclaimer">${escapeHtml(copy.disclaimer)}</p>
       </div>
       <div class="market-actions">
-        <button class="market-inquire-btn" type="button" data-market-inquire="${escapeHtml(plate)}" ${enabled ? "" : "disabled"}>
+        ${signal.contact_unlock_available === true ? `<a class="market-inquire-btn" href="/contact.html?plate=${encodeURIComponent(plate)}&listing_id=${encodeURIComponent(signal.listing_id)}&lang=${getCurrentLang() === "en" ? "en" : "zh"}">${whatsappIcon()}<span>${getCurrentLang() === "en" ? "Unlock seller WhatsApp — HK$99" : "解鎖賣方 WhatsApp — HK$99"}</span></a>` : ""}
+        ${signal.contact_unlock_available !== true ? `<button class="market-inquire-btn" type="button" data-market-inquire="${escapeHtml(plate)}" ${enabled ? "" : "disabled"}>
           ${whatsappIcon()}<span>${escapeHtml(copy.inquire)}</span>
-        </button>
+        </button>` : ""}
         ${introductionEnabled && sourceUrl ? `<button class="market-seller-btn" type="button" data-market-sell="${escapeHtml(plate)}">${escapeHtml(copy.seller)}</button>` : ""}
         ${sourceLink}
       </div>
@@ -272,6 +276,11 @@ window.createPlateMarketFlow = function createPlateMarketFlow({
   }
 
   function openModal(plate) {
+    const unlock = currentSignals.get(normalizePlate(plate));
+    if (unlock?.contact_unlock_available === true) {
+      location.assign(`/contact.html?plate=${encodeURIComponent(unlock.plate)}&listing_id=${encodeURIComponent(unlock.listing_id)}&lang=${getCurrentLang() === "en" ? "en" : "zh"}`);
+      return;
+    }
     const signal = currentSignals.get(normalizePlate(plate));
     if (!signal?.availability_detected || !signal.inquiry_enabled) return;
     activeSignal = signal;

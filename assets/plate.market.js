@@ -10,7 +10,8 @@
     obtainable: "may be obtainable",
     plateLabel: "Plate",
     asking: "Current asking price: ",
-    body: "Plate.hk can record a buyer offer and, with both parties' consent, arrange a three-party WhatsApp introduction. Third-party data may be stale or wrong and does not guarantee availability or transferability.",
+    body: "You can enquire with Plate.hk via WhatsApp. Third-party data may be stale or wrong and does not guarantee availability or transferability.",
+    unlockBody: "Pay HK$99 to unlock this listing’s advertised seller WhatsApp number. The original listing on 28car is free to view. Seller replies, availability and transferability are not guaranteed.",
     mandate: "Submit a buyer offer via WhatsApp",
     seller: "I am the seller: receive buyer offers",
     source: "View the 28car listing",
@@ -20,7 +21,8 @@
     obtainable: "或可洽購",
     plateLabel: "車牌",
     asking: "目前叫價：",
-    body: "Plate.hk 可記錄買方出價，並在雙方同意後安排三方 WhatsApp 介紹。第三方資料可能過期或有誤，並不保證可買到或可轉名。",
+    body: "你可透過 WhatsApp 向 Plate.hk 查詢。第三方資料可能過期或有誤，並不保證可買到或可轉名。",
+    unlockBody: "付款 HK$99 解鎖此刊登列明的賣方 WhatsApp 號碼，亦可免費查看 28car 原刊登。賣方回覆、可買到或可轉名均無保證。",
     mandate: "透過 WhatsApp 提交買方出價",
     seller: "我是賣方：接收買家出價",
     source: "查看 28car 來源刊登",
@@ -77,16 +79,21 @@
       const priceLine = node("div", "market-price", t.asking);
       priceLine.append(node("strong", "", price));
       copy.append(priceLine);
-      copy.append(node("p", "", t.body));
+      copy.append(node("p", "", signal.contact_unlock_available === true ? t.unlockBody : t.body));
 
       const actions = node("div", "market-actions");
-      if (signal.inquiry_enabled === true) {
+      if (signal.contact_unlock_available === true) {
+        const unlock = node("a", "btn primary whatsapp-action", lang === "en" ? "Unlock seller WhatsApp — HK$99" : "解鎖賣方 WhatsApp — HK$99");
+        unlock.href = `/contact.html?plate=${encodeURIComponent(plate)}&listing_id=${encodeURIComponent(signal.listing_id)}&lang=${lang}`;
+        actions.append(unlock);
+      }
+      if (signal.inquiry_enabled === true && signal.contact_unlock_available !== true) {
         const mandate = node("a", "btn primary whatsapp-action");
         mandate.href = `../?lang=${lang}&q=${encodeURIComponent(plate)}&broker=1`;
         mandate.append(whatsappIcon(), node("span", "", t.mandate));
         actions.append(mandate);
       }
-      if (signal.introduction_enabled === true) {
+      if (signal.introduction_enabled === true && signal.contact_unlock_available !== true) {
         const number = String(signal.introduction_whatsapp_number || "").replace(/\D/g, "");
         if (/^\d{8,15}$/.test(number)) {
           const seller = node("a", "btn", t.seller);

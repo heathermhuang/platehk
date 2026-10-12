@@ -8,7 +8,7 @@ const token = process.env.REFRESH_CONTROL_TOKEN || '';
 if (!base.startsWith('https://') || !token) throw new Error('Configure REFRESH_CONTROL_URL and REFRESH_CONTROL_TOKEN');
 async function request(path,method='GET',payload) {
   const response = await fetch(new URL(path,base),{method,redirect:'error',signal:AbortSignal.timeout(240000),headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:payload === undefined ? undefined : JSON.stringify(payload)});
-  if (!response.ok) throw new Error(`Refresh control ${path.split('?')[0]} returned HTTP ${response.status}`);
+  if (!response.ok) { const error = new Error(`Refresh control ${path.split('?')[0]} returned HTTP ${response.status}`); error.status = response.status; throw error; }
   return JSON.parse(new TextDecoder().decode(await boundedRead(response,32*1024*1024)));
 }
 if (command === 'plan') {
@@ -56,9 +56,26 @@ if (command === 'plan') {
   if (snapshot.source !== '28car' || snapshot.schema_version !== 1 || snapshot.coverage?.complete !== true) throw new Error('Invalid stored market snapshot');
   await fs.mkdir('data/market',{recursive:true});
   await fs.writeFile('data/market/28car.active.json',JSON.stringify(snapshot));
+  // Contacts remain a separate private file; a missing/mismatched companion disables unlocks.
+  const contactPath='data/market/28car.active.contacts.json';
+  try {
+    const contacts=await request('/v1/market-contacts');
+    if (contacts.scraped_at !== snapshot.scraped_at) throw new Error('Contact snapshot timestamp mismatch');
+    await fs.writeFile(contactPath,JSON.stringify(contacts));
+  } catch (error) {
+    await fs.rm(contactPath,{force:true});
+    console.warn('Private contact snapshot unavailable; seller unlocks will be disabled for this build.');
+  }
   console.log(`Restored complete private market snapshot, observed ${snapshot.scraped_at}`);
 } else if (command === 'store-market') {
   const snapshot = JSON.parse(await fs.readFile('data/market/28car.active.json','utf8'));
+  const contacts=JSON.parse(await fs.readFile('data/market/28car.active.contacts.json','utf8'));
+  if (contacts.scraped_at !== snapshot.scraped_at) throw new Error('Contact snapshot timestamp mismatch');
+  try { await request('/v1/market-contacts','PUT',contacts); }
+  catch (error) {
+    if (error.status !== 404) throw error;
+    console.warn('Refresh controller does not support contact persistence yet; current build retains contacts, future restores disable unlocks.');
+  }
   console.log(JSON.stringify(await request('/v1/market','PUT',snapshot)));
 } else if (command === 'ack') {
   const probe = JSON.parse(await fs.readFile('.tmp/source-probe.json','utf8'));
