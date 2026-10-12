@@ -22,7 +22,7 @@ from pdf_parse_cache import PdfParseCache, parser_version
 # 2) Online "E-Auction" result handouts (拍牌易網上拍賣結果) -- PDFs hosted on td.gov.hk filemanager
 
 BASE_URL = "https://www.td.gov.hk"
-INDEX_URL_TVRM = "https://www.td.gov.hk/tc/public_services/vehicle_registration_mark/tvrm_auction/index.html"
+INDEX_URL_TVRM = "https://www.td.gov.hk/tc/public_services/vehicle_registration_mark_n/ar/index.html"
 
 DATA_DIR = Path("data")
 
@@ -120,6 +120,8 @@ def extract_date_from_href(href: str) -> Optional[str]:
             "november": 11,
             "december": 12,
         }
+        month_map.update({name[:3]: value for name, value in list(month_map.items())})
+        month_map['sept'] = 9
         same_month = re.search(r"\b(\d{1,2})\s*-\s*(\d{1,2})\s+([A-Za-z]+)\s+(20\d{2})\b", normalized)
         if same_month:
             d1, _d2, mon, y = same_month.groups()
@@ -860,17 +862,30 @@ def build() -> int:
 
     pvrm_date_by_url: dict[str, str] = {}
     lny_url_set: set[str] = set()
+    physical_auctions_path = DATA_DIR / "tvrm_physical" / "auctions.json"
     pvrm_auctions_path = DATA_DIR / "auctions.json"
-    if pvrm_auctions_path.exists():
+    # PVRM discovery can replace PDF URLs after a TD site migration. Retained
+    # TVRM inputs still need the mixed-document classification already established
+    # for their original URLs, including generic filenames without an LNY hint.
+    for metadata_path in (physical_auctions_path, pvrm_auctions_path):
+        if not metadata_path.exists():
+            continue
         try:
-            pvrm_auctions = json.loads(pvrm_auctions_path.read_text(encoding="utf-8"))
+            pvrm_auctions = json.loads(metadata_path.read_text(encoding="utf-8"))
             for x in pvrm_auctions:
-                u = normalize_url(str(x.get("pdf_url") or ""))
+                if metadata_path == physical_auctions_path:
+                    urls = x.get("lny_pdf_urls")
+                    if not isinstance(urls, list):
+                        urls = [x.get("pdf_url")] if x.get("is_lny") else []
+                else:
+                    urls = [x.get("pdf_url")]
                 d = str(x.get("auction_date") or "").strip()
-                if u and d:
-                    pvrm_date_by_url[u] = d
-                if u and (x.get("is_lny") or re.fullmatch(r"https?://.*?/content_4806/\d{8}ret\.pdf", u, re.IGNORECASE)):
-                    lny_url_set.add(u)
+                for raw_url in urls:
+                    u = normalize_url(str(raw_url or ""))
+                    if u and d:
+                        pvrm_date_by_url[u] = d
+                    if u and (metadata_path == physical_auctions_path or x.get("is_lny") or re.fullmatch(r"https?://.*?/content_4806/\d{8}ret\.pdf", u, re.IGNORECASE)):
+                        lny_url_set.add(u)
         except Exception:
             pass
 

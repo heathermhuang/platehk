@@ -133,7 +133,22 @@ def load_dataset_state(dataset_key: str) -> dict:
     issues_dir = base / "issues"
     manifest = read_json(base / "issues.manifest.json")
     auctions = read_json(base / "auctions.json")
-    auctions_by_date = {str(item["auction_date"]): dict(item) for item in auctions}
+    auctions_by_date = {}
+    for item in auctions:
+        issue_date = str(item["auction_date"])
+        previous = auctions_by_date.get(issue_date, {})
+        urls = set(previous.get("pdf_urls", []))
+        urls.update(item.get("pdf_urls") or [])
+        if item.get("pdf_url"):
+            urls.add(item["pdf_url"])
+        # Aggregating by auction date must not discard parser classification
+        # for retained mirrors when a different URL becomes representative.
+        mixed_urls = set(previous.get("lny_pdf_urls", []))
+        if "lny_pdf_urls" in item:
+            mixed_urls.update(item["lny_pdf_urls"])
+        elif item.get("is_lny") and item.get("pdf_url"):
+            mixed_urls.add(item["pdf_url"])
+        auctions_by_date[issue_date] = {**item, "pdf_urls": sorted(urls), "lny_pdf_urls": sorted(mixed_urls)}
     rows_by_issue: dict[str, list[dict]] = {}
     for item in manifest.get("issues", []):
         issue_date = str(item["auction_date"])
@@ -225,6 +240,7 @@ def rebuild_dataset(dataset_key: str, state: dict) -> dict[str, int]:
                 "auction_date_label": auction_label,
                 "pdf_url": existing_pdf_url or EXACT_SOURCE_URL,
                 "pdf_urls": meta_pdf_urls,
+                "lny_pdf_urls": meta.get("lny_pdf_urls", []),
                 "source_format": "xlsx" if any(str(x).lower().endswith(".xlsx") for x in meta_pdf_urls) else meta.get("source_format"),
                 "source_type": "xlsx_exact_dates" if any(str(x).lower().endswith(".xlsx") for x in meta_pdf_urls) else meta.get("source_type"),
                 "entry_count": len(rows),

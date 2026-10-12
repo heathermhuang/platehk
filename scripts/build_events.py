@@ -15,8 +15,8 @@ from bs4 import BeautifulSoup
 ROOT = Path(__file__).resolve().parents[1]
 DATA_PATH = ROOT / "data" / "events.json"
 BASE_URL = "https://www.td.gov.hk"
-MAIN_EN_URL = f"{BASE_URL}/en/public_services/vehicle_registration_mark/index.html"
-MAIN_ZH_URL = f"{BASE_URL}/tc/public_services/vehicle_registration_mark/index.html"
+MAIN_EN_URL = f"{BASE_URL}/en/public_services/vehicle_registration_mark_n/ca/index.html"
+MAIN_ZH_URL = f"{BASE_URL}/tc/public_services/vehicle_registration_mark_n/ca/index.html"
 EAUCTION_URL_EN = "https://e-auction.td.gov.hk/en"
 EAUCTION_URL_ZH = "https://e-auction.td.gov.hk/tc"
 HK_TZ = timezone(timedelta(hours=8))
@@ -189,9 +189,9 @@ def scrape_application_links(soup: BeautifulSoup) -> dict[str, str]:
     for a in soup.find_all("a", href=True):
         href = a["href"].strip()
         lower = href.lower()
-        if "pvrm_application" in lower:
+        if "pvrm_application" in lower or '/opvrmba/aanfa/' in lower:
             out["pvrm"] = absolute_url(href)
-        elif "tvrm_application" in lower:
+        elif "tvrm_application" in lower or '/otvrmba/' in lower:
             out["tvrm"] = absolute_url(href)
     return out
 
@@ -236,8 +236,11 @@ def scrape_coming_link_records(soup: BeautifulSoup) -> list[dict[str, Any]]:
     for a in soup.find_all("a", href=True):
         text = normalize_space(a.get_text(" ", strip=True))
         href = a["href"].strip()
-        if not text or ".pdf" not in href.lower() or "content_4802" not in href.lower():
+        if not text or ".pdf" not in href.lower() or not any(folder in href.lower() for folder in ('content_4802', 'content_5419')):
             continue
+        row = a.find_parent('tr')
+        if row:
+            text = normalize_space(row.get_text(' ', strip=True))
         classified = classify_coming_link(text, href)
         if not classified:
             continue
@@ -255,6 +258,10 @@ def scrape_coming_link_records(soup: BeautifulSoup) -> list[dict[str, Any]]:
             date_parsed = parse_physical_date(text) if kind != "tvrm_eauction" else None
             if date_parsed:
                 start, end = date_parsed
+                if session_hint == 'morning':
+                    end = start.replace(hour=12, minute=59, second=59)
+                elif session_hint == 'afternoon':
+                    start = start.replace(hour=12)
             elif eauction_range:
                 start, end = eauction_range
         out.append(
@@ -332,7 +339,28 @@ def scrape_coming_auction_events(now: datetime, soup_en: BeautifulSoup, soup_zh:
             )
         )
 
-    return [event for event in events if datetime.fromisoformat(event["end_at"]) >= now]
+    # The new schedule publishes online windows as table rows, with one shared action link.
+    for table in soup_en.find_all('table'):
+        if not table.find('a', href=re.compile(r'^https://e-auction\.td\.gov\.hk/')):
+            continue
+        en_rows = [normalize_space(row.get_text(' ', strip=True)) for row in table.find_all('tr')]
+        zh_table = next((table for table in soup_zh.find_all('table') if table.find('a', href=re.compile(r'^https://e-auction\.td\.gov\.hk/'))), None)
+        zh_rows = [normalize_space(row.get_text(' ', strip=True)) for row in zh_table.find_all('tr')] if zh_table else []
+        for i, text in enumerate(en_rows):
+            window = parse_eauction_noon_range(text)
+            if not window:
+                continue
+            start, end = window
+            events.append(make_event(
+                kind='tvrm_eauction', start=start, end=end,
+                source_page_url_en=MAIN_EN_URL, source_page_url_zh=MAIN_ZH_URL,
+                source_text_en=text, source_url_en=MAIN_EN_URL, source_url_zh=MAIN_ZH_URL,
+                action_url_en=EAUCTION_URL_EN, action_url_zh=EAUCTION_URL_ZH,
+                date_label_en=text,
+                date_label_zh=zh_rows[i] if i < len(zh_rows) else f'{zh_date(start)}中午12時至{zh_date(end)}中午12時',
+                meta={'source': 'td_coming_auction'},
+            ))
+    return dedupe_events([event for event in events if datetime.fromisoformat(event["end_at"]) >= now])
 
 
 def dedupe_events(events: list[dict[str, Any]]) -> list[dict[str, Any]]:

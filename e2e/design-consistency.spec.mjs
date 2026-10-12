@@ -20,8 +20,8 @@ for (const width of [320, 768, 1440]) {
       const nav = page.locator('.info-site-header .info-nav, .topbar .ux-task-nav');
       await expect(nav).toBeVisible();
       await expect(nav.locator(':scope > a')).toHaveText(lang === 'en'
-        ? ['Records', 'Latest auction results', 'Auctions', 'Shortlist']
-        : ['拍賣紀錄', '最新拍賣結果', '日程', '收藏']);
+        ? ['Records', 'Verified results', 'Auctions', 'Shortlist']
+        : ['拍賣紀錄', '已核對結果', '日程', '收藏']);
       await expect(page.locator('.info-site-footer')).toBeVisible();
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${path} ${lang}`).toBe(true);
       const heights = await page.locator('.lang-toggle button, .info-lang-option, button[data-save-plate], .ux-directory-more').evaluateAll(elements => elements.filter(el => el.getClientRects().length).map(el => el.getBoundingClientRect().height));

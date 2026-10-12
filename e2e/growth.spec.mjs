@@ -18,13 +18,13 @@ test('homepage keeps lookup focused with verified rounds in their own archive', 
   await expect(page.getByRole('link', {name:'Historical prices', exact:true})).toBeVisible();
   await expect(page.getByRole('link', {name:'Official availability and applications', exact:true})).toBeVisible();
   await page.locator('.site-more > summary').click();
-  await expect(page.getByRole('link', {name:'Latest auction results', exact:true})).toBeVisible();
+  await expect(page.getByRole('link', {name:'Verified results', exact:true})).toBeVisible();
   await expect(page.locator('#verifiedAuctionHighlights')).toHaveCount(0);
   await page.locator('#q').fill('AA88');
   await expect(page.locator('#rows tr[data-plate="AA88"]')).toHaveCount(1);
   await page.locator('#reset').click();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
-  await page.getByRole('link', {name:'Latest auction results', exact:true}).click();
+  await page.getByRole('link', {name:'Verified results', exact:true}).click();
   await expect(page).toHaveURL(/\/auction-results\/en\/index\.html$/);
   await expect(page.locator('.auction-rounds article')).toHaveCount(9);
   const personalized = page.locator('.auction-rounds article').filter({has:page.getByRole('link',{name:'Personalized marks results: 12 September 2026',exact:true})});

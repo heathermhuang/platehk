@@ -224,3 +224,121 @@ test("mobile double-line results, language, and short-height navigation stay coh
   await page.locator("#manualInput").fill("");
   await expect(page.locator("#openSearchLink")).toHaveAttribute("href", /index\.html\?lang=zh&q=HK88$/);
 });
+
+const photoFixture = {
+  name: 'plate.png', mimeType: 'image/png',
+  buffer: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4//8/AAX+Av4N70a4AAAAAElFTkSuQmCC', 'base64'),
+};
+
+test('fullwidth manual input is preserved, normalized on submit and announced accessibly', async ({ page }) => {
+  let query;
+  await page.route('**/api/search?**', route => {
+    query = new URL(route.request().url()).searchParams.get('q');
+    return route.fulfill({ json: { total: 0, rows: [] } });
+  });
+  await page.goto('/camera.html?lang=en');
+  await expect(page.getByRole('main')).toHaveCount(1);
+  await page.locator('#manualInput').fill('ＡＡ８８');
+  await expect(page.locator('#manualInput')).toHaveValue('ＡＡ８８');
+  await page.locator('#manualSearchBtn').click();
+  await expect.poll(() => query).toBe('AA88');
+  await expect(page.locator('#manualInput')).toHaveValue('AA88');
+  await expect(page.locator('#resultsHint')).toHaveAttribute('role', 'status');
+  await expect(page.locator('#resultsHint')).toContainText('No results');
+  await page.locator('#manualInput').fill('Q88');
+  await page.locator('#manualSearchBtn').click();
+  await expect(page.getByRole('alert')).toContainText('Q is not allowed');
+  await expect(page.locator('#manualInput')).toHaveValue('Q88');
+  await expect(page.locator('#openSearchLink')).toHaveAttribute('href', /q=AA88$/);
+});
+
+test('choosing a photo needs no camera permission or upload before explicit scan', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  let sessions = 0, uploads = 0;
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: {
+      getUserMedia() { throw new Error('Photo selection must not request camera access'); },
+    } });
+  });
+  await page.route('**/api/vision_session', route => {
+    sessions += 1;
+    return route.fulfill({ json: { token: 'photo-token', expires_at: 4_000_000_000 } });
+  });
+  await page.route('**/api/vision_plate', route => {
+    uploads += 1;
+    const body = route.request().postDataJSON();
+    expect(body.image_data_url).toMatch(/^data:image\/jpeg;base64,/);
+    expect(Object.keys(body).sort()).toEqual(['image_data_url','lang','vision_token']);
+    return route.fulfill({ json: { plate: 'AA88', confidence: .99, is_hong_kong_plate: true } });
+  });
+  await page.route('**/api/search?**', route => route.fulfill({ json: { total: 0, rows: [] } }));
+  await page.goto('/camera.html?lang=en');
+  const picker = page.waitForEvent('filechooser');
+  await page.getByRole('button', { name: 'Choose photo', exact: true }).click();
+  await (await picker).setFiles(photoFixture);
+  await expect(page.locator('#photoPreview')).toBeVisible();
+  const previewFits = await page.locator('#photoPreview').evaluate(img => img.closest('.camera-shell').clientHeight >= img.clientHeight + 20);
+  expect(previewFits).toBe(true);
+  await expect(page.getByRole('button', { name: 'AI Scan · Upload photo', exact: true })).toBeEnabled();
+  expect(sessions).toBe(0); expect(uploads).toBe(0);
+  await page.locator('#aiScanBtn').click();
+  await expect.poll(() => uploads).toBe(1);
+  await expect(page.locator('#manualInput')).toHaveValue('AA88');
+  await page.getByRole('button', { name: 'Remove photo', exact: true }).click();
+  await expect(page.locator('#photoPreview')).toBeHidden();
+  await expect(page.locator('#aiScanBtn')).toBeDisabled();
+});
+
+test('bad photos and failed photo scans support replacement and retry', async ({ page }) => {
+  let uploads = 0;
+  await page.route('**/api/vision_session', route => route.fulfill({ json: { token: 'retry-photo', expires_at: 4_000_000_000 } }));
+  await page.route('**/api/vision_plate', route => {
+    uploads += 1;
+    return uploads === 1 ? route.fulfill({ status: 502, json: { error: 'vision_upstream_error' } })
+      : route.fulfill({ json: { plate: 'AA88', confidence: .99, is_hong_kong_plate: true } });
+  });
+  await page.route('**/api/search?**', route => route.fulfill({ json: { total: 0, rows: [] } }));
+  await page.goto('/camera.html?lang=en');
+  await page.locator('#photoInput').setInputFiles({ name: 'broken.png', mimeType: 'image/png', buffer: Buffer.from('broken') });
+  await expect(page.locator('#ocrMeta')).toContainText('could not be read');
+  await expect(page.locator('#choosePhoto')).toBeEnabled();
+  await expect(page.locator('#aiScanBtn')).toBeDisabled();
+  await page.locator('#photoInput').setInputFiles(photoFixture);
+  await expect(page.locator('#aiScanBtn')).toBeEnabled();
+  await page.locator('#langZh').click();
+  await expect(page.getByRole('button', { name: 'AI 辨識 · 上傳照片', exact: true })).toBeEnabled();
+  await page.locator('#aiScanBtn').click();
+  await expect(page.locator('#ocrMeta')).toContainText('失敗');
+  await expect(page.locator('#aiScanBtn')).toBeEnabled();
+  await page.locator('#aiScanBtn').click();
+  await expect.poll(() => uploads).toBe(2);
+  await expect(page.locator('#manualInput')).toHaveValue('AA88');
+});
+
+
+test('tall phone screens keep camera results in the page flow', async ({ page }) => {
+  await page.route('**/api/search?**', route => route.fulfill({ json: { total: 1, rows: [{ single_line: 'HK 88', amount_hkd: 88000, auction_date: '2026-08-01', dataset_key: 'pvrm', source_url: 'https://example.test/source/HK88' }] } }));
+  for (const height of [844, 926]) {
+    await page.setViewportSize({ width: 390, height });
+    await page.goto('/camera.html?lang=en');
+    await page.locator('#manualInput').fill('HK88');
+    await page.locator('#manualSearchBtn').click();
+    await expect(page.locator('#results .result-row')).toHaveCount(1);
+    const flow = await page.evaluate(() => {
+      const main = document.querySelector('main').getBoundingClientRect();
+      const wrap = document.querySelector('.wrap').getBoundingClientRect();
+      const footer = document.querySelector('.info-site-footer').getBoundingClientRect();
+      return { mainBottom: main.bottom, wrapBottom: wrap.bottom, footerTop: footer.top };
+    });
+    expect(flow.wrapBottom).toBeGreaterThanOrEqual(flow.mainBottom - 2);
+    expect(flow.footerTop).toBeGreaterThanOrEqual(flow.mainBottom - 2);
+    await page.locator('#results .result-actions a').last().scrollIntoViewIfNeeded();
+    await expect(page.locator('#results .result-actions a').last()).toBeInViewport();
+    await page.locator('#langZh').click();
+    await expect(page.locator('#results')).toContainText('拍賣日期');
+    await expect(page.locator('#resultsBadge')).toContainText('1 筆');
+    await expect(page.locator('#results .result-actions a').first()).toHaveAttribute('href', /lang=zh/);
+    await expect(page.locator('a[href*="privacy.html"][href*="#camera-uploads"]')).toHaveAttribute('href', /lang=zh#camera-uploads/);
+    await expect(page.locator('#ocrMeta')).toContainText('尚未送出');
+  }
+});

@@ -19,7 +19,13 @@ from lny_mixed_parser import is_lny_url, parse_lny_mixed_pdf  # noqa: E402
 from pdf_parse_cache import PdfParseCache, parser_version  # noqa: E402
 
 BASE_URL = "https://www.td.gov.hk"
-INDEX_URL = "https://www.td.gov.hk/tc/public_services/vehicle_registration_mark/pvrm_auction/index.html"
+INDEX_URL = f"{BASE_URL}/tc/public_services/vehicle_registration_mark_n/ar/cy/index.html"
+INDEX_URLS = [
+    INDEX_URL,
+    *(f"{BASE_URL}/tc/public_services/vehicle_registration_mark_n/ar/{page}/index.html"
+      for page in ('pyar', 'lnyar')),
+    f"{BASE_URL}/tc/public_services/vehicle_registration_mark_n/ar/index.html",
+]
 DATA_DIR = Path("data")
 PDF_DIR = DATA_DIR / "pdfs"
 JSON_PATH = DATA_DIR / "results.json"
@@ -119,17 +125,26 @@ def normalize_url(url: str) -> str:
 
 
 def scrape_pdf_index() -> list[AuctionPdf]:
-    html = request_bytes(INDEX_URL).decode("utf-8", errors="replace")
+    # The revamped site separates current PVRM, historical PVRM and mixed LNY results.
+    pages = []
+    for url in INDEX_URLS:
+        page = BeautifulSoup(request_bytes(url).decode("utf-8", errors="replace"), "html.parser")
+        if url == INDEX_URLS[-1]:
+            for a in page.find_all('a', href=True):
+                if not is_lny_url(a['href']):
+                    a.decompose()
+        pages.append(str(page))
+    html = '\n'.join(pages)
     soup = BeautifulSoup(html, "html.parser")
 
     items: list[AuctionPdf] = []
     seen: set[tuple[str, str]] = set()
 
-    for li in soup.find_all("li"):
-        anchors = [a for a in li.find_all("a", href=True) if ".pdf" in a["href"].lower()]
-        if not anchors:
+    for a in soup.find_all("a", href=True):
+        if ".pdf" not in a["href"].lower():
             continue
-
+        li = a.find_parent('li') or a.find_parent('tr') or a.parent
+        anchors = [a]
         li_text = normalize_space(li.get_text(" ", strip=True))
         date_info = extract_date(li_text)
         session = detect_session(li_text)

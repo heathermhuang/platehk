@@ -31,12 +31,12 @@ test('records and their sources own the browsing view on arrival', async ({page}
   const first = page.locator('#rows tr[data-plate]').first();
   for (const field of ['.col-single', '.col-price', '.col-source']) await expect(first.locator(field)).toBeInViewport({ratio:1});
   await expect(page.locator('#verifiedAuctionHighlights, .auction-context')).toHaveCount(0);
-  await expect(page.getByRole('link',{name:'Latest auction results',exact:true})).toHaveAttribute('href','/auction-results/en/index.html');
+  await expect(page.getByRole('link',{name:'Verified results',exact:true})).toHaveAttribute('href','/auction-results/en/index.html');
   await page.screenshot({path:info.outputPath('records-home-en.png')});
   await accessibility(page);
   await page.goto('/?lang=zh');
   await ready(page);
-  await expect(page.getByRole('link',{name:'最新拍賣結果',exact:true})).toHaveAttribute('href','/auction-results/index.html');
+  await expect(page.getByRole('link',{name:'已核對結果',exact:true})).toHaveAttribute('href','/auction-results/index.html');
   await page.screenshot({path:info.outputPath('records-home.png')});
 });
 

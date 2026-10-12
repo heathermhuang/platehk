@@ -9,7 +9,7 @@
 
 Open-source search, audit, and publishing pipeline for Hong Kong vehicle registration mark auction results.
 
-Plate.hk turns Transport Department source documents into a searchable static website, a public JSON API, SEO landing pages, and Cloudflare-ready deployment artifacts. The repository covers personalized marks, traditional TVRM auctions, E-Auction records, historical legacy ranges, and camera-assisted lookup.
+Plate.hk turns Transport Department source documents into a searchable static website, a public JSON API, SEO landing pages, and Cloudflare-ready deployment artifacts. The repository covers personalized marks, traditional TVRM auctions, E-Auction records, historical legacy ranges, and camera-assisted lookup. Camera search supports live preview, a locally previewed photo (up to 20 MB / 40 megapixels), and manual plate input. Selecting a photo does not upload it: AI Scan explicitly sends the selected photo after resizing, while live-camera scans send the guide-frame crop.
 
 The current public UI uses a flat Ledger visual system: compact auction-record tables, square Hong Kong plate branding, dense generated plate pages, and separate Traditional Chinese and English legal/policy pages designed to stay calm and source-first rather than decorative.
 
@@ -142,6 +142,7 @@ The current production shape is:
 
 - Cloudflare Static Assets serves the frontend and prebuilt public data
 - Cloudflare Worker handles `/api/*` routes and the vision-assisted lookup flow
+- Camera and uploaded-photo OCR use the native `AI` binding with `VISION_PROVIDER=workers_ai` and the configured Qwen vision model. Requests retain same-origin/session checks and image limits; inference has a time limit and bounded output. Photo selection stays local until AI Scan. The OpenAI adapter remains available for deployments that explicitly configure it.
 - The Worker performs exact-plate lookups against a non-browsable, minimal external-sale signal asset
 - Fresh exact sale signals can launch a short, client-side WhatsApp buyer-enquiry draft
 - Canonical bounded indexes power search, issue shards power date browsing, and sorted result chunks back paginated result views

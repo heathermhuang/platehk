@@ -71,7 +71,9 @@ class RefreshPublicationTests(unittest.TestCase):
         value=bundle();value['rows']=[]
         run_cached_builder.capture_result(self.pvrm,self.pdf,{'pdf_url':URL},value,'fixture-probe',self.receipts,expected_nonempty=True)
         self.probe['updates']=[]
-        with self.assertRaisesRegex(ValueError,'previously nonempty'):self.verify()
+        with self.assertRaisesRegex(ValueError,'previously nonempty') as error:self.verify()
+        self.assertIn(URL,str(error.exception))
+        self.assertIn('pvrm:',str(error.exception))
     def test_builder_caught_parser_exception_still_leaves_a_failed_receipt(self):
         tmp=self.root/'.tmp';tmp.mkdir();(tmp/'source-probe.json').write_text(json.dumps({'probe_id':'fixture-probe'}))
         def failed():raise RuntimeError('parser failed')
