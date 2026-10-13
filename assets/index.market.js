@@ -19,7 +19,7 @@ window.createPlateMarketFlow = function createPlateMarketFlow({
       titleSuffix: "或可洽購",
       plateLabelText: (plate) => `車牌 ${plate}`,
       body: "我們在第三方平台發現近期放售訊號。你可透過 WhatsApp 向 Plate.hk 查詢。",
-      unlockBody: "付款 HK$99，解鎖這則刊登列明的賣方 WhatsApp 號碼；你亦可免費查看 28car 原刊登。",
+      unlockBody: "付款 HK$99，解鎖這則刊登列明的賣方 WhatsApp 號碼。",
       price: "目前叫價",
       priceRange: "目前叫價範圍",
       priceContact: "部分放售須另議價格",
@@ -27,7 +27,6 @@ window.createPlateMarketFlow = function createPlateMarketFlow({
       disclaimer: "第三方刊登可能已過期、資料有誤或不符合轉移規則；這不是可買到或可轉名的保證。",
       inquire: "透過 WhatsApp 提交買方出價",
       seller: "我是賣方：接收買家出價",
-      source: "查看 28car 來源刊登",
       dialogTitle: "WhatsApp 買方出價",
       dialogIntro: "告訴我們你的預算和要求，我們會準備一則由你確認後才傳送的 WhatsApp 訊息。",
       plateLabel: "目標車牌",
@@ -51,7 +50,7 @@ window.createPlateMarketFlow = function createPlateMarketFlow({
       titleSuffix: "may be obtainable",
       plateLabelText: (plate) => `Plate ${plate}`,
       body: "We found a recent sale signal on a third-party platform. You can enquire with Plate.hk via WhatsApp.",
-      unlockBody: "Pay HK$99 to unlock this listing’s advertised seller WhatsApp number. You can also view the original listing on 28car for free.",
+      unlockBody: "Pay HK$99 to unlock this listing’s advertised seller WhatsApp number.",
       price: "Current asking price",
       priceRange: "Current asking range",
       priceContact: "Some offers require a price enquiry",
@@ -59,7 +58,6 @@ window.createPlateMarketFlow = function createPlateMarketFlow({
       disclaimer: "Third-party listings may be stale, inaccurate, or incompatible with transfer rules. This is not a guarantee of availability or transferability.",
       inquire: "Submit a buyer offer via WhatsApp",
       seller: "I am the seller: receive buyer offers",
-      source: "View the source listing on 28car",
       dialogTitle: "WhatsApp buyer offer",
       dialogIntro: "Add your budget and context. We prepare a WhatsApp message that is not sent until you confirm it.",
       plateLabel: "Target plate",
@@ -215,9 +213,6 @@ window.createPlateMarketFlow = function createPlateMarketFlow({
     const prices = priceSummary(signal);
     const observed = formatObserved(signal.observed_at);
     const sourceUrl = validSourceUrl(signal.source_url);
-    const sourceLink = sourceUrl
-      ? `<a class="market-source-link" href="${escapeHtml(sourceUrl)}" target="_blank" rel="nofollow noopener noreferrer">${escapeHtml(copy.source)}</a>`
-      : "";
     const contactPrice = signal.has_contact_price && signal.asking_prices_hkd?.length
       ? `<span class="market-contact-price">${escapeHtml(copy.priceContact)}</span>`
       : "";
@@ -242,7 +237,6 @@ window.createPlateMarketFlow = function createPlateMarketFlow({
           ${whatsappIcon()}<span>${escapeHtml(copy.inquire)}</span>
         </button>` : ""}
         ${introductionEnabled && sourceUrl ? `<button class="market-seller-btn" type="button" data-market-sell="${escapeHtml(plate)}">${escapeHtml(copy.seller)}</button>` : ""}
-        ${sourceLink}
       </div>
       </article>
     `;

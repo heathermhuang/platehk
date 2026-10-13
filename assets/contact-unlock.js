@@ -6,7 +6,6 @@
     eyebrow: "Contact the seller", title: "Get the seller’s WhatsApp", description: "Unlock the WhatsApp number on this listing and speak to the seller directly.",
     back: "Back to search", priceLabel: "WhatsApp contact unlock", oneTime: "One-time payment · No account needed · Not the plate price",
     pay: "Continue to payment — HK$99", paymentNote: "At secure Stripe checkout, enter your own email and WhatsApp number so we can contact you about this purchase, support or refunds after you leave. Pay by card, or Apple Pay / Google Pay where available.",
-    sourceIntro: "You can also go directly to the source:", source: "View this 28car listing for free",
     detailsLabel: "What to know before paying", disclosure: "HK$99 buys convenient access to one listing’s contact. It is not a subscription or a plate deposit. The original listing is free to view. A seller reply, ownership and transfer eligibility are not guaranteed.",
     recovery: "Reopen your contact in the browser you used to pay. If you change devices or clear browser data, keep your Stripe receipt so we can help recover your purchase.",
     help: "Need help with payment or this contact?", helpNote: "If the number is incorrect or you paid but could not get it, keep your Stripe receipt and contact us for verification and a refund.",
@@ -14,7 +13,7 @@
     checking: "Checking the advertised contact…", ready: "The listing advertises a WhatsApp contact. You’ll see the number after payment.",
     asking: "Seller’s asking price: ", priceRequest: "Price on enquiry", observed: "Last seen on 28car: ",
     opening: "Opening secure checkout…", cancelled: "Checkout cancelled. Continue whenever you’re ready.",
-    unavailableTitle: "Contact temporarily unavailable", unavailable: "We can’t offer this unlock right now. You can still check the original listing for free.",
+    unavailableTitle: "Contact temporarily unavailable", unavailable: "We can’t offer this unlock right now. Please try again later, or contact us for help.",
     checkoutFailed: "We couldn’t open checkout. Please try again. If you have already paid, use your receipt to get help below.",
     cookies: "To reopen your purchase, this browser needs to allow site storage. Update your browser settings and reload before paying.",
     verifyingTitle: "Checking your payment", verifyingDescription: "We’re checking the payment before showing your contact. You don’t need to pay again.", verifying: "Checking payment with Stripe…",
@@ -32,7 +31,6 @@
     eyebrow: "聯絡賣家", title: "取得賣家的 WhatsApp", description: "一次付款，取得這則刊登的 WhatsApp 號碼，直接與賣家傾談。",
     back: "返回搜尋", priceLabel: "WhatsApp 聯絡資料", oneTime: "一次付款 · 不用登記 · 並非車牌售價",
     pay: "繼續付款 — HK$99", paymentNote: "請在 Stripe 安全付款頁填寫你自己的電郵及 WhatsApp 號碼，方便我們在你離開頁面後就這次購買、客服或退款聯絡你。支援信用卡，以及適用裝置上的 Apple Pay 或 Google Pay。",
-    sourceIntro: "你亦可直接到來源網站：", source: "免費查看 28car 原刊登",
     detailsLabel: "付款前須知", disclosure: "HK$99 是取得一則刊登聯絡資料的便利服務費，並非訂閱或車牌訂金。原刊登可免費查看；賣家是否回覆、車牌擁有權及能否轉名，均須另行確認。",
     recovery: "你可在付款時使用的瀏覽器再次查看聯絡資料。換裝置或清除瀏覽器資料後，請保留 Stripe 收據以便我們協助核對。",
     help: "付款或聯絡資料有問題？聯絡我們", helpNote: "如號碼有誤或付款後未能取得資料，請保留 Stripe 收據，聯絡我們核對及安排退款。",
@@ -40,7 +38,7 @@
     checking: "正在檢查刊登的聯絡資料…", ready: "刊登列明可透過 WhatsApp 聯絡。付款後即可查看號碼。",
     asking: "賣家叫價：", priceRequest: "價格另議", observed: "最近在 28car 見到：",
     opening: "正在開啟安全付款頁…", cancelled: "已取消這次付款流程。準備好後可再繼續。",
-    unavailableTitle: "暫時未能提供聯絡資料", unavailable: "現在未能提供解鎖服務，你仍可免費查看原刊登。",
+    unavailableTitle: "暫時未能提供聯絡資料", unavailable: "現在未能提供解鎖服務，請稍後再試，或聯絡我們協助。",
     checkoutFailed: "暫時未能開啟付款頁，請再試一次。如你已付款，請保留收據並透過下方連結聯絡我們。",
     cookies: "為方便你再次查看已購聯絡資料，瀏覽器需要允許儲存網站資料。請調整瀏覽器設定，重新載入後再付款。",
     verifyingTitle: "正在核對付款", verifyingDescription: "核對付款後就會顯示聯絡資料，你不用再次付款。", verifying: "正在向 Stripe 核對付款…",
@@ -56,7 +54,7 @@
     draft: (plate) => `你好，我對車牌 ${plate} 有興趣。請問現在仍有放售嗎？`,
   };
   const el = (id) => document.getElementById(id);
-  const keys = { eyebrow:"eyebrow", title:"title", description:"description", back:"back", "price-label":"priceLabel", "one-time":"oneTime", pay:"pay", "payment-note":"paymentNote", "source-intro":"sourceIntro", source:"source", "details-label":"detailsLabel", disclosure:"disclosure", recovery:"recovery", help:"help", "help-note":"helpNote", terms:"terms", privacy:"privacy", "footer-note":"footerNote", retry:"retry", "phone-label":"phoneLabel", whatsapp:"whatsapp", copy:"copy", "reopen-note":"reopenNote" };
+  const keys = { eyebrow:"eyebrow", title:"title", description:"description", back:"back", "price-label":"priceLabel", "one-time":"oneTime", pay:"pay", "payment-note":"paymentNote", "details-label":"detailsLabel", disclosure:"disclosure", recovery:"recovery", help:"help", "help-note":"helpNote", terms:"terms", privacy:"privacy", "footer-note":"footerNote", retry:"retry", "phone-label":"phoneLabel", whatsapp:"whatsapp", copy:"copy", "reopen-note":"reopenNote" };
   Object.entries(keys).forEach(([id,key]) => { el(id).textContent = t[key]; });
   document.documentElement.lang = english ? "en" : "zh-HK";
   document.title = `${t.eyebrow} | Plate.hk`;
@@ -96,13 +94,6 @@
       el("observed").textContent = t.observed + new Intl.DateTimeFormat(english ? "en-HK" : "zh-HK",{dateStyle:"medium",timeStyle:"short",timeZone:"Asia/Hong_Kong"}).format(observed);
       el("observed").hidden = false;
     }
-    try {
-      const source = new URL(data.source_url);
-      if (source.protocol === "https:" && source.hostname === "m.28car.com" && source.pathname === "/num_dsp.php") {
-        el("source").href = source.toString();
-        el("source-row").hidden = false;
-      }
-    } catch {}
   }
   async function request(route, body) {
     const response = await fetch(`/api/contact/${route}`,{

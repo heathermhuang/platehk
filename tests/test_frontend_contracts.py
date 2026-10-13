@@ -60,7 +60,7 @@ class FrontendContractsTests(unittest.TestCase):
         self.assertNotIn('id="brokerConsent"', html)
         self.assertIn('class="plate"', market_js)
         self.assertIn("whatsapp-icon", market_js)
-        self.assertIn("nofollow noopener noreferrer", market_js)
+        self.assertNotIn('class="market-source-link"', market_js)
         self.assertIn("marketFlow.update({ query: qEl.value, rows: list })", index_js)
         self.assertIn("availability_detected", plate_market_js)
         self.assertIn('url.hostname === "m.28car.com"', plate_market_js)

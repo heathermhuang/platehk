@@ -33,9 +33,6 @@ body { margin:0; line-height:1.55; }
 .contact-number input { box-sizing:border-box; width:100%; border:0 !important; border-bottom:1px solid var(--line) !important; border-radius:0 !important; background:transparent !important; padding:8px 0; color:var(--ink); font-size:1.625rem; font-weight:700; }
 #copy-status:empty { display:none; }
 #payment-note,#reopen-note { text-align:center; margin-top:12px; }
-.contact-source { border-top:1px solid var(--line); margin:24px 0 0; padding-top:20px; font-size:0.875rem; }
-.contact-source span { display:block; color:var(--muted); margin-bottom:4px; }
-.contact-source a { display:inline-flex; align-items:center; min-height:44px; }
 .contact-details { margin-top:16px; font-size:0.875rem; }
 .contact-details summary { cursor:pointer; min-height:44px; align-content:center; color:var(--muted); }
 .contact-details p { color:var(--muted); margin:8px 0 12px; }
