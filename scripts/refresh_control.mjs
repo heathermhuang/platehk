@@ -1,6 +1,6 @@
 import fs from 'node:fs/promises';
 import {execFileSync} from 'node:child_process';
-import {boundedRead} from '../refresh-worker/src/probe.mjs';
+import {boundedRead,officialUrl} from '../refresh-worker/src/probe.mjs';
 
 const command = process.argv[2];
 const base = process.env.REFRESH_CONTROL_URL || '';
@@ -8,7 +8,17 @@ const token = process.env.REFRESH_CONTROL_TOKEN || '';
 if (!base.startsWith('https://') || !token) throw new Error('Configure REFRESH_CONTROL_URL and REFRESH_CONTROL_TOKEN');
 async function request(path,method='GET',payload) {
   const response = await fetch(new URL(path,base),{method,redirect:'error',signal:AbortSignal.timeout(240000),headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:payload === undefined ? undefined : JSON.stringify(payload)});
-  if (!response.ok) { const error = new Error(`Refresh control ${path.split('?')[0]} returned HTTP ${response.status}`); error.status = response.status; throw error; }
+  if (!response.ok) {
+    let detail='';
+    try {
+      const value=JSON.parse(new TextDecoder().decode(await boundedRead(response,8192)));
+      if (/^(?:index_http_\d{3}|index_not_html|result_index_empty|calendar_index_empty|production_events_unavailable)$/.test(value.cause)) {
+        const source=value.source_url && officialUrl(value.source_url);
+        detail=` (${value.cause}${source ? `; source: ${source}` : ''})`;
+      }
+    } catch {} // Preserve the HTTP failure even when its body is malformed or oversized.
+    const error = new Error(`Refresh control ${path.split('?')[0]} returned HTTP ${response.status}${detail}`); error.status = response.status; throw error;
+  }
   return JSON.parse(new TextDecoder().decode(await boundedRead(response,32*1024*1024)));
 }
 if (command === 'plan') {

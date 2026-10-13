@@ -186,7 +186,9 @@ export default {
     } catch (error) {
       await env.DB.prepare('UPDATE refresh_control SET last_checked_at=?,last_outcome=?,last_error=? WHERE id=1').bind(new Date().toISOString(),'failed',error.message).run();
       console.error(JSON.stringify({event:'refresh_request_failed',error:error.message}));
-      return json({error:'refresh_failed'},503);
+      // Only known source codes and official URLs belong in workflow diagnostics.
+      const cause=/^(?:index_http_\d{3}|index_not_html|result_index_empty|calendar_index_empty|production_events_unavailable)$/.test(error.message) ? error.message : undefined;
+      return json({error:'refresh_failed',...(cause ? {cause,source_url:error.source_url ? officialUrl(error.source_url) || undefined : undefined} : {})},503);
     }
   },
   async scheduled(controller,env,ctx) {

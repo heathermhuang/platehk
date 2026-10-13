@@ -103,26 +103,39 @@ function rotated(items, size, cursor) {
   if (items.length <= size) return items;
   return Array.from({length:size}, (_,i) => items[(cursor * size + i) % items.length]);
 }
+function calendarDateTable(content) {
+  return [...(content || '').matchAll(/<table\b[^>]*>([\s\S]*?)<\/table>/gi)].some(([,table]) => {
+    const headers=[...table.matchAll(/<th\b[^>]*>([\s\S]*?)<\/th>/gi)].map(([,cell])=>text(cell));
+    if (!headers.some(value=>/^(?:Date|日期)$/i.test(value)) || !headers.some(value=>/Auction List|拍賣名單/i.test(value))) return false;
+    return [...table.matchAll(/<tr\b[^>]*>\s*<td\b[^>]*>([\s\S]*?)<\/td>/gi)].some(([,cell]) => {
+      // Online windows put the year after the end date; physical dates have no noon range.
+      const date=dateFromUrl(text(cell).replace(/\s+noon\s+to\s+\d{1,2}\s+[A-Za-z]+\s+noon/i,''));
+      const timestamp=Date.parse(date);
+      return Number.isFinite(timestamp) && new Date(timestamp).toISOString().slice(0,10)===date;
+    });
+  });
+}
+const indexFailure=(code,url)=>Object.assign(new Error(code),{source_url:url});
 export async function observe(published = {}, {fetcher = fetch, now = new Date(), cursor = 0, priority = []} = {}) {
   const known = published.sources || {};
   const results = new Map(); const calendar = []; const indexEntries=[];
   for (const [i, url] of INDEXES.entries()) {
     const response = await sourceFetch(url, fetcher);
-    if (!response.ok) throw new Error(`index_http_${response.status}`);
+    if (!response.ok) throw indexFailure(`index_http_${response.status}`,url);
     const html = new TextDecoder().decode(await boundedRead(response, 4 * 1024 * 1024));
-    if (!/<html\b/i.test(html)) throw new Error('index_not_html');
+    if (!/<html\b/i.test(html)) throw indexFailure('index_not_html',url);
     const links = anchors(html);
     if (i < INDEXES.length-2) {
       const resultLinks=links.filter(item=>resultKind(item[0],url));
       for (const item of resultLinks) { const href=item[0],kind = resultKind(href,url); results.set(href,{url:href,kind,date:dateFromUrl(href) || dateFromUrl(item[1])});indexEntries.push(item); }
-      if (!resultLinks.length) throw new Error('result_index_empty');
+      if (!resultLinks.length) throw indexFailure('result_index_empty',url);
     } else {
       // The official auction/application links carry the calendar semantics; navigation and page timestamps do not.
       const relevant = links.filter(([href]) => /content_4802|pvrm|tvrm|E-Auction|auction|application/i.test(decodeURIComponent(href)));
-      if (!relevant.length) throw new Error('calendar_index_empty');
+      const content=/<!-- CONTENT START -->([\s\S]*?)<!-- CONTENT END -->/.exec(html);
+      if (!relevant.length && !calendarDateTable(content?.[1])) throw indexFailure('calendar_index_empty',url);
       calendar.push(...relevant.map(item => [url,...item]));
       // Calendar tables also list online windows without a per-window PDF link.
-      const content=/<!-- CONTENT START -->([\s\S]*?)<!-- CONTENT END -->/.exec(html);
       if (content) calendar.push([url,text(content[1])]);
     }
   }
