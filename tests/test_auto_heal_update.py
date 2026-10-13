@@ -3,8 +3,10 @@ from __future__ import annotations
 import importlib.util
 import json
 import sys
+import subprocess
 import tempfile
 import unittest
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 
@@ -87,6 +89,39 @@ class AutoHealUpdateTests(unittest.TestCase):
         self.assertEqual(plan["action"], "escalate_llm_repair")
         self.assertTrue(plan["llm_escalation_required"])
 
+    def test_old_source_alert_requires_verified_newer_unchanged_source_evidence(self) -> None:
+        observer = {"last_checked_at":"2026-10-14T01:10:00Z", "last_outcome":"unchanged", "last_error":None,
+                    "pending_source_count":0, "lease_until":0, "source_revision":"a"*64,
+                    "source_observation":{"checked_at":"2026-10-14T01:10:00Z", "source_revision":"a"*64, "source_error_count":0}}
+        now = datetime(2026, 10, 14, 1, 20, tzinfo=timezone.utc)
+        args = {"observer":observer, "observer_verified":True, "failed_run_updated_at":"2026-10-14T01:00:00Z", "now":now}
+        plan = self.module.classify("SOURCE_OBSERVATION_UNAVAILABLE", {"status":"current"}, self.rules, **args)
+        self.assertEqual(plan["classification"], "source_observation_recovered")
+        self.assertEqual(plan["status"], "noop")
+        self.assertEqual(plan["commands"], [])
+        for changes in [{"source_observation":{**observer["source_observation"], "checked_at":"2026-10-13T23:00:00Z"}}, {"last_outcome":"published"},
+                        {"last_outcome":"failed"}, {"last_error":"pdf_http_503"}, {"pending_source_count":1},
+                        {"lease_until":int(now.timestamp())+100},
+                        *[{"source_observation":{**observer["source_observation"], **change}} for change in
+                          [{"checked_at":"invalid"}, {"checked_at":"2026-10-14T02:00:00Z"}, {"source_revision":"b"*64}, {"source_error_count":1}]],
+                        {"source_observation":None}, {"source_revision":"unversioned"}]:
+            with self.subTest(changes=changes):
+                blocked = self.module.classify("SOURCE_OBSERVATION_UNAVAILABLE", {"status":"current"}, self.rules,
+                    **{**args,"observer":{**observer,**changes}})
+                self.assertEqual(blocked["status"], "blocked")
+        for changes in [{"pending_source_count":False}, {"lease_until":False}, {"lease_until":"0"},
+                        {"source_observation":{**observer["source_observation"], "source_error_count":False}}]:
+            self.assertEqual(self.module.classify("SOURCE_OBSERVATION_UNAVAILABLE", {"status":"current"}, self.rules,
+                **{**args,"observer":{**observer,**changes}})["status"], "blocked")
+        for changes in [{"observer_verified":False}, {"failed_run_updated_at":None},
+                        {"failed_run_updated_at":"2026-10-14T01:15:00Z"}]:
+            self.assertEqual(self.module.classify("SOURCE_OBSERVATION_UNAVAILABLE", {"status":"current"}, self.rules,
+                **{**args,**changes})["status"], "blocked")
+        for log in ["SOURCE_PARSE_UNVERIFIED", "SOURCE_OBSERVATION_UNAVAILABLE\nSOURCE_PARSE_UNVERIFIED",
+                    "SOURCE_OBSERVATION_UNAVAILABLE\nSet the CLOUDFLARE_API_TOKEN"]:
+            self.assertEqual(self.module.classify(log, {"status":"current"}, self.rules, **args)["status"], "blocked")
+        self.assertEqual(self.module.classify("SOURCE_OBSERVATION_UNAVAILABLE", {"status":"drift"}, self.rules, **args)["status"], "blocked")
+
     def test_issue_count_shrink_runs_full_repair(self) -> None:
         plan = self.classify("Guardrail failed: issue_count shrank after incremental build.")
 
@@ -122,6 +157,29 @@ class AutoHealUpdateTests(unittest.TestCase):
         self.assertIn("action=run_events_repair\n", text)
         self.assertIn("deploy_required=true\n", text)
 
+    def test_recovery_cli_requires_a_complete_status_receipt(self) -> None:
+        now = datetime.now(timezone.utc)
+        observed = now-timedelta(minutes=1)
+        receipt = {"last_outcome":"unchanged", "last_error":None, "pending_source_count":0, "lease_until":0,
+                   "source_revision":"a"*64, "source_observation":{"source_revision":"a"*64,
+                    "checked_at":observed.isoformat(), "source_error_count":0}}
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root/"failed.log").write_text("SOURCE_OBSERVATION_UNAVAILABLE")
+            (root/"freshness.json").write_text(json.dumps({"status":"current"}))
+            for content, expected in [(json.dumps(receipt), "noop"), ("{partial", "blocked"), (None, "blocked")]:
+                status = root/"status.json"
+                if content is None:
+                    status.unlink(missing_ok=True)
+                else:
+                    status.write_text(content)
+                result = subprocess.run([sys.executable, str(ROOT/"scripts/auto_heal_update.py"), "classify",
+                    "--log-file", str(root/"failed.log"), "--freshness-json", str(root/"freshness.json"),
+                    "--observer-json", str(status), "--observer-verified", "true",
+                    "--failed-run-updated-at", (now-timedelta(minutes=5)).isoformat(), "--output", str(root/"plan.json")],
+                    capture_output=True, text=True, check=True)
+                self.assertEqual(json.loads(result.stdout)["status"], expected)
+
     def test_workflow_is_failure_triggered_and_uses_classifier(self) -> None:
         workflow = (ROOT / ".github" / "workflows" / "auto-heal.yml").read_text(encoding="utf-8")
 
@@ -138,6 +196,13 @@ class AutoHealUpdateTests(unittest.TestCase):
         self.assertIn("npm run cf:deploy:official", workflow)
         self.assertIn("node scripts/refresh_control.mjs restore-market", workflow)
         self.assertNotIn("python scripts/scrape_28car_market.py", workflow)
+        evidence = workflow.index("name: Inspect current observer after a source failure")
+        classify = workflow.index("name: Classify repair plan")
+        alert = workflow.index("name: Open human repair issue")
+        self.assertLess(evidence, classify)
+        self.assertLess(classify, alert)
+        self.assertIn('echo "verified=true"', workflow[evidence:classify])
+        self.assertIn('--observer-verified "$OBSERVER_VERIFIED"', workflow)
 
 
 if __name__ == "__main__":

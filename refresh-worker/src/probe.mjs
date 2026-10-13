@@ -55,8 +55,9 @@ export function dateFromUrl(url) {
   if (range) return `${range[4]}-${String(MONTHS.findIndex(m => m.toLowerCase() === range[2].toLowerCase()) + 1).padStart(2,'0')}-${range[1].padStart(2,'0')}`;
   return '';
 }
+async function discardBody(response) { await response.body?.cancel().catch(()=>{}); }
 export async function boundedRead(response, limit) {
-  if (Number(response.headers.get('content-length') || 0) > limit) throw new Error('source_too_large');
+  if (Number(response.headers.get('content-length') || 0) > limit) {await discardBody(response);throw new Error('source_too_large');}
   if (!response.body) return new Uint8Array();
   const reader = response.body.getReader();
   const chunks = []; let size = 0;
@@ -77,11 +78,14 @@ export async function sourceFetch(url, fetcher = fetch, method = 'GET') {
   if (!officialUrl(url)) throw new Error('untrusted_source');
   const response = await fetcher(url, {method, redirect:'manual', signal:AbortSignal.timeout(15000), headers:{'User-Agent':'PlateHKSourceMonitor/1.0'}});
   if (response.status >= 300 && response.status < 400) {
+    await discardBody(response);
     const next = officialUrl(new URL(response.headers.get('location') || '', url).href);
     if (!next) throw new Error('untrusted_source_redirect');
-    const redirected = await fetcher(next, {method, redirect:'error', signal:AbortSignal.timeout(15000)});
+    const redirected = await fetcher(next, {method, redirect:'error', signal:AbortSignal.timeout(15000), headers:{'User-Agent':'PlateHKSourceMonitor/1.0'}});
+    if (method==='HEAD') await discardBody(redirected);
     return redirected;
   }
+  if (method==='HEAD') await discardBody(response);
   return response;
 }
 export function discoveryCandidates(sources, now) {
@@ -121,7 +125,7 @@ export async function observe(published = {}, {fetcher = fetch, now = new Date()
   const results = new Map(); const calendar = []; const indexEntries=[];
   for (const [i, url] of INDEXES.entries()) {
     const response = await sourceFetch(url, fetcher);
-    if (!response.ok) throw indexFailure(`index_http_${response.status}`,url);
+    if (!response.ok) {await discardBody(response);throw indexFailure(`index_http_${response.status}`,url);}
     const html = new TextDecoder().decode(await boundedRead(response, 4 * 1024 * 1024));
     if (!/<html\b/i.test(html)) throw indexFailure('index_not_html',url);
     const links = anchors(html);
@@ -141,14 +145,18 @@ export async function observe(published = {}, {fetcher = fetch, now = new Date()
   }
   const indexUrls = [...results.keys()].sort();
   indexEntries.sort((a,b)=>JSON.stringify(a).localeCompare(JSON.stringify(b)));
-  const candidates = rotated(discoveryCandidates(known,now),12,cursor);
-  const errors = [];
+  const discoveryRetries=rotated(priority.filter(item=>/^discovery_/.test(item.error || '') && !known[item.url] && officialUrl(item.url))
+    .map(item=>({url:officialUrl(item.url),kind:resultKind(item.url),date:dateFromUrl(item.url)})),4,cursor);
+  const candidates=[...new Map([...discoveryRetries,...rotated(discoveryCandidates(known,now),12,cursor)].map(item=>[item.url,item])).values()].slice(0,12);
+  // An unchecked URL has not recovered. Rotation must not erase an earlier failure.
+  const errors = new Map(priority.filter(item=>typeof item.error==='string' && officialUrl(item.url)).map(item=>[officialUrl(item.url),{url:officialUrl(item.url),error:item.error}]));
   for (const item of candidates) {
     try {
       const response = await sourceFetch(item.url,fetcher,'HEAD');
+      if ((response.ok || [404,410].includes(response.status)) && /^discovery_/.test(errors.get(item.url)?.error || '')) errors.delete(item.url);
       if (response.ok) results.set(item.url,item);
-      else if (![404,410].includes(response.status)) errors.push({url:item.url,error:`discovery_http_${response.status}`});
-    } catch { errors.push({url:item.url,error:'discovery_unavailable'}); }
+      else if (![404,410].includes(response.status)) errors.set(item.url,{url:item.url,error:`discovery_http_${response.status}`});
+    } catch { errors.set(item.url,{url:item.url,error:'discovery_unavailable'}); }
   }
   const linked = [...results.keys()].sort();
   const combined = new Map(Object.entries(known).map(([url,item]) => [url,{url,...item}]));
@@ -156,6 +164,7 @@ export async function observe(published = {}, {fetcher = fetch, now = new Date()
   const prioritized=[];
   for (const item of priority) {
     const url=officialUrl(item.url),kind=url && (known[url]?.kind || item.kind || resultKind(url));
+    if (/^discovery_/.test(item.error || '') && !known[url] && !results.has(url)) continue;
     if (url && kind && !prioritized.some(x=>x.url===url)) prioritized.push({url,kind,date:known[url]?.date || item.date || dateFromUrl(url)});
   }
   const all = [...combined.values()].sort((a,b) => a.url.localeCompare(b.url));
@@ -173,22 +182,24 @@ export async function observe(published = {}, {fetcher = fetch, now = new Date()
       // when TD removes an unlinked PDF; a currently linked result must stay live.
       const baseline=known[item.url];
       if ([404,410].includes(response.status) && !results.has(item.url) && /^[a-f0-9]{64}$/.test(baseline?.sha256 || '') && baseline?.consumers?.includes(item.kind)) {
-        await response.body?.cancel();
+        await discardBody(response);
+        errors.delete(item.url);
         retiredSources.push({url:item.url,sha256:baseline.sha256,status:response.status,observed_at:now.toISOString()});
         continue;
       }
-      if (!response.ok) throw new Error(`pdf_http_${response.status}`);
+      if (!response.ok) {await discardBody(response);throw new Error(`pdf_http_${response.status}`);}
       const bytes = await boundedRead(response,8*1024*1024);
       if (new TextDecoder().decode(bytes.slice(0,5)) !== '%PDF-') throw new Error('source_not_pdf');
       const sha256 = await digest(bytes);
+      errors.delete(item.url);
       observedHashes[item.url]=sha256;
       const observation={...item,sha256,baseline_sha256:known[item.url]?.sha256 || null,observed_at:new Date().toISOString()};
       observations.push(observation);
       if (sha256 !== known[item.url]?.sha256) updates.push(observation);
-    } catch (error) { errors.push({url:item.url,error:error.message}); }
+    } catch (error) { errors.set(item.url,{url:item.url,error:error.message}); }
   }
   const indexesChanged = JSON.stringify(indexUrls) !== JSON.stringify(published.index_urls || []) || JSON.stringify(indexEntries) !== JSON.stringify(published.index_entries || []);
   const calendarDigest = await digest(JSON.stringify({links:calendar.sort((a,b)=>JSON.stringify(a).localeCompare(JSON.stringify(b))),month:new Date(now.getTime()+8*3600000).toISOString().slice(0,7)}));
   const auctionChanged = !published.sources || indexesChanged || updates.length > 0;
-  return {index_urls:indexUrls,index_entries:indexEntries,updates,observed_hashes:observedHashes,observations,retired_sources:retiredSources,source_errors:errors,calendar_digest:calendarDigest,auction_changed:auctionChanged,calendar_changed:calendarDigest !== published.calendar_digest,digest:await digest(JSON.stringify({indexEntries,updates,calendarDigest})),checked_at:now.toISOString(),sources_observed:selected.length};
+  return {index_urls:indexUrls,index_entries:indexEntries,updates,observed_hashes:observedHashes,observations,retired_sources:retiredSources,source_errors:[...errors.values()],calendar_digest:calendarDigest,auction_changed:auctionChanged,calendar_changed:calendarDigest !== published.calendar_digest,digest:await digest(JSON.stringify({indexEntries,updates,calendarDigest})),checked_at:now.toISOString(),sources_observed:selected.length};
 }

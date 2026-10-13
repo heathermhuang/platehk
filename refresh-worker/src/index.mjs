@@ -13,7 +13,7 @@ async function state(env) { return env.DB.prepare('SELECT * FROM refresh_control
 async function stored(env,key) { const object = await env.STORE.get(key); return object ? object.json() : null; }
 async function body(request,limit=2*1024*1024) { return JSON.parse(new TextDecoder().decode(await boundedRead(request,limit))); }
 function scopeFor(probe) { return probe.auction_changed ? 'official' : probe.calendar_changed || probe.events_expired ? 'events' : 'check'; }
-const observationFresh = (record,revision) => record?.published_revision === revision && Date.parse(record.checked_at) >= Date.now()-90*60*1000 && Date.parse(record.checked_at) <= Date.now()+600000;
+const observationFresh = (record,revision) => record?.observer_source_revision === SOURCE_REVISION && record?.published_revision === revision && Date.parse(record.checked_at) >= Date.now()-90*60*1000 && Date.parse(record.checked_at) <= Date.now()+600000;
 const sourceRevision = published => digest(JSON.stringify({sources:published.sources && Object.fromEntries(Object.entries(published.sources).map(([url,item])=>[url,{kind:item.kind,date:item.date,sha256:item.sha256,consumers:item.consumers}])),index_urls:published.index_urls,index_entries:published.index_entries}));
 export function combineObservation(probe,previous,published,revision) {
   const updates=new Map((previous?.updates || []).filter(item=>item.sha256!==published.sources?.[item.url]?.sha256 && (!Object.hasOwn(item,'baseline_sha256') || item.baseline_sha256===(published.sources?.[item.url]?.sha256 || null))).map(item=>[item.url,item]));
@@ -46,7 +46,7 @@ export async function recordObservation(env,options={}) {
   const current=await stored(env,'published.json') || {};
   await persistObservations(env,probe,current);
   // Retain corrections found by earlier archive rotations until a real publication acknowledges them.
-  const record=combineObservation({...probe,updates:[],observed_hashes:{}},{updates:await pendingSources(env)},current,revision);
+  const record={...combineObservation({...probe,updates:[],observed_hashes:{}},{updates:await pendingSources(env)},current,revision),observer_source_revision:SOURCE_REVISION};
   await env.STORE.put('observed.json',JSON.stringify(record));
   const outcome=scopeFor(record)!=='check' ? 'observed_changed' : record.source_errors.length ? 'source_unavailable' : 'unchanged';
   await env.DB.prepare('UPDATE refresh_control SET cursor=cursor+1,last_checked_at=?,last_outcome=CASE WHEN lease_until<=? THEN ? ELSE last_outcome END,last_error=?,no_change_count=no_change_count+? WHERE id=1').bind(record.checked_at,Math.floor(Date.now()/1000),outcome,record.source_errors.length ? JSON.stringify(record.source_errors) : null,outcome==='unchanged' ? 1 : 0).run();
@@ -63,7 +63,7 @@ export async function claim(env,{scope='check',force=false,refresh=false}={}) {
   const fresh=scope!=='market' && !(scope==='check' && !force && !refresh && observationFresh(cached,revision));
   const observed=scope==='market' ? {updates:[],index_urls:published.index_urls || [],calendar_digest:published.calendar_digest,checked_at:new Date().toISOString(),source_errors:[]} : fresh ? await observe(published,{cursor:control.cursor,priority:[...pending,...(cached?.source_errors || [])]}) : cached;
   if (fresh) await persistObservations(env,observed,published);
-  const probe=scope==='market' ? observed : combineObservation({...observed,updates:[],observed_hashes:{}},{updates:await pendingSources(env)},published,revision);
+  const probe={...(scope==='market' ? observed : combineObservation({...observed,updates:[],observed_hashes:{}},{updates:await pendingSources(env)},published,revision)),observer_source_revision:SOURCE_REVISION};
   if (fresh) await env.STORE.put('observed.json',JSON.stringify(probe));
   if (scope !== 'market') {
     const response = await fetch(`${env.PRODUCTION_URL}/data/events.json`,{signal:AbortSignal.timeout(15000)});
@@ -137,7 +137,11 @@ export default {
     if (url.pathname === '/health' && request.method === 'GET') return json({ok:true,service:'platehk-refresh',observer_enabled:env.OBSERVER_ENABLED === 'true',dispatch_enabled:env.DISPATCH_ENABLED === 'true',source_revision:SOURCE_REVISION});
     if (!await authorized(request,env)) return json({error:'not_found'},404);
     try {
-      if (url.pathname === '/v1/status' && request.method === 'GET') return json({...await state(env),pending_source_count:(await env.DB.prepare('SELECT COUNT(*) AS count FROM refresh_pending_sources').first()).count});
+      if (url.pathname === '/v1/status' && request.method === 'GET') {
+        const control=await state(env),observed=await stored(env,'observed.json');
+        return json({...control,pending_source_count:(await env.DB.prepare('SELECT COUNT(*) AS count FROM refresh_pending_sources').first()).count,
+          source_revision:SOURCE_REVISION,source_observation:observed ? {source_revision:observed.observer_source_revision,checked_at:observed.checked_at,source_error_count:observed.source_errors?.length ?? null} : null});
+      }
       if (url.pathname === '/v1/claim' && request.method === 'POST') return json(await claim(env,await body(request,8192)));
       if (url.pathname === '/v1/probe' && request.method === 'GET') {
         const id = url.searchParams.get('id');
