@@ -88,12 +88,33 @@ jobs:
           echo "freshness_status=${freshness_status}" >> logs/autoheal/evidence.env
           cat logs/autoheal/freshness.json
 
+      - name: Inspect current observer after a source failure
+        id: source_recovery
+        if: ${{ github.event_name == 'workflow_run' }}
+        continue-on-error: true
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          REFRESH_CONTROL_TOKEN: ${{ secrets.REFRESH_CONTROL_TOKEN }}
+        run: |
+          if ! grep -q 'SOURCE_OBSERVATION_UNAVAILABLE' logs/autoheal/failed.log; then
+            exit 0
+          fi
+          node scripts/deploy_refresh_worker.mjs --ensure-current
+          node scripts/refresh_control.mjs status > logs/autoheal/control-status.json
+          echo "verified=true" >> "$GITHUB_OUTPUT"
+
       - name: Classify repair plan
         id: plan
+        env:
+          OBSERVER_VERIFIED: ${{ steps.source_recovery.outputs.verified || 'false' }}
+          FAILED_RUN_UPDATED_AT: ${{ github.event.workflow_run.updated_at }}
         run: |
           python scripts/auto_heal_update.py classify \
             --log-file logs/autoheal/failed.log \
             --freshness-json logs/autoheal/freshness.json \
+            --observer-json logs/autoheal/control-status.json \
+            --observer-verified "$OBSERVER_VERIFIED" \
+            --failed-run-updated-at "$FAILED_RUN_UPDATED_AT" \
             --output logs/autoheal/plan.json \
             --github-output "$GITHUB_OUTPUT"
 
@@ -221,11 +242,16 @@ jobs:
         id: repair_lease
         if: ${{ steps.plan.outputs.status == 'repairable' || steps.override.outputs.status == 'repairable' }}
         env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          REPAIR_DEPLOY_ENABLED: ${{ github.event.inputs.deploy != 'false' && github.event.inputs.dry_run != 'true' }}
           REFRESH_CONTROL_TOKEN: ${{ secrets.REFRESH_CONTROL_TOKEN }}
           REFRESH_FORCE: "true"
           REFRESH_SCOPE: ${{ (steps.override.outputs.action || steps.plan.outputs.action) == 'run_events_repair' && 'events' || 'official' }}
         run: |
           test "$GITHUB_REF" = refs/heads/main
+          if [ "$REPAIR_DEPLOY_ENABLED" = true ]; then
+            node scripts/deploy_refresh_worker.mjs --ensure-current
+          fi
           node scripts/refresh_control.mjs plan
 
       - name: Restore previous complete private market snapshot

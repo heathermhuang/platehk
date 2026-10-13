@@ -319,6 +319,65 @@ test('pending archive corrections receive bounded priority even outside the norm
   const prioritized=await observe(published,{fetcher,cursor:3,priority:[{url:target}]});
   assert(prioritized.updates.some(x=>x.url===target));assert(prioritized.sources_observed<=16);
 });
+test('rotation retains failed sources until that exact source recovers or is qualified as retired',async()=>{
+  const {now,published}=await baseline();
+  const archive=i=>`https://www.td.gov.hk/filemanager/tc/content_4804/archive_${String(i).padStart(2,'0')}.pdf`;
+  for (let i=0;i<40;i++) published.sources[archive(i)]={kind:'physical',date:'2010-01-01',sha256:await digest(bytes),consumers:['physical']};
+  const priority=[35,36,37,38,39].map(i=>({url:archive(i),error:'pdf_http_503'}));
+  const visited=[];
+  const fetcher=async(url,options)=>{visited.push(url);return upstream()(url,options);};
+  const held=await observe(published,{fetcher,now,cursor:0,priority});
+  assert(!visited.includes(archive(39)));
+  assert.deepEqual(held.source_errors,[priority[4]]);
+  for (const status of [503,200,404,410]) {
+    const retry=await observe(published,{now,cursor:1,priority:held.source_errors,fetcher:async(url,options)=>url===archive(39) ? new Response(status===200 ? bytes : 'unavailable',{status}) : upstream()(url,options)});
+    assert.equal(retry.source_errors.length,status===503 ? 1 : 0);
+    if ([404,410].includes(status)) assert.equal(retry.retired_sources[0].url,archive(39));
+  }
+});
+test('discarded redirect, HTTP-error and oversized bodies release their source connection',async()=>{
+  let cancelled=0;
+  const response=(status,headers={})=>new Response(new ReadableStream({cancel(){cancelled++;}}),{status,headers});
+  await assert.rejects(sourceFetch(pvrm,async()=>response(302,{location:'https://evil.test/'})),/untrusted_source_redirect/);
+  assert.equal(cancelled,1);
+  await assert.rejects(boundedRead(response(200,{'content-length':'9'}),8),/source_too_large/);
+  assert.equal(cancelled,2);
+  await assert.rejects(observe({}, {fetcher:async()=>response(503)}),/index_http_503/);
+  assert.equal(cancelled,3);
+});
+test('an absent optional discovery candidate clears its previous HEAD error',async()=>{
+  const {now,published}=await baseline();
+  const candidate=discoveryCandidates(published.sources,now)[0];
+  let heads=0;
+  const result=await observe(published,{fetcher:async(url,options)=>{if(options?.method==='HEAD') heads++;return upstream()(url,options);},now,cursor:3,priority:[{url:candidate.url,error:'discovery_http_503'}]});
+  assert.equal(heads,12);
+  assert.deepEqual(result.source_errors,[]);
+  assert(!result.updates.some(item=>item.url===candidate.url));
+});
+test('cached observations from a different observer version are refreshed before a claim',async()=>{
+  const mf=new Miniflare({modules:true,scriptPath:new URL('../refresh-worker/src/index.mjs',import.meta.url).pathname,compatibilityDate:'2026-10-05',compatibilityFlags:['nodejs_compat'],d1Databases:{DB:'observation-version'},r2Buckets:{STORE:'observation-version'}});
+  const originalFetch=globalThis.fetch;
+  try {
+    const DB=await mf.getD1Database('DB'),STORE=await mf.getR2Bucket('STORE');await migrate(DB);
+    const {published}=await baseline();await STORE.put('published.json',JSON.stringify(published));
+    const env={DB,STORE,PRODUCTION_URL:'https://production.test',CONTROL_TOKEN:'fixture-control'};
+    await recordObservation(env,{fetcher:upstream()});
+    const cached=await (await STORE.get('observed.json')).json();
+    cached.observer_source_revision='older-observer';await STORE.put('observed.json',JSON.stringify(cached));
+    let indexCalls=0;
+    globalThis.fetch=async(url,options)=>{
+      if (url==='https://production.test/data/events.json') return Response.json({events:[]});
+      if (INDEXES.includes(url)) indexCalls++;
+      return upstream()(url,options);
+    };
+    assert.equal((await claim(env)).outcome,'unchanged');assert.equal(indexCalls,6);
+    const response=await worker.fetch(new Request('https://refresh.test/v1/status',{headers:{Authorization:'Bearer fixture-control'}}),env);
+    const status=await response.json();
+    assert.equal(status.source_observation.source_revision,status.source_revision);
+    assert.equal(status.source_observation.source_error_count,0);
+    assert.equal(status.last_error,null);
+  } finally {globalThis.fetch=originalFetch;await mf.dispose();}
+});
 
 test('revamped TD indexes distinguish datasets and observe dates in adjacent table cells',async()=>{
   assert(INDEXES.every(url=>url.includes('/vehicle_registration_mark_n/')));

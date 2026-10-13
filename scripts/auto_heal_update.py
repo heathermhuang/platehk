@@ -6,6 +6,7 @@ import json
 import re
 from pathlib import Path
 from typing import Any
+from datetime import datetime, timezone
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -118,7 +119,35 @@ def classify_freshness(freshness: dict[str, Any] | None) -> dict[str, Any] | Non
     return None
 
 
-def classify(log_text: str, freshness: dict[str, Any] | None, rules_config: dict[str, Any]) -> dict[str, Any]:
+def source_recovered(observer: dict[str, Any] | None, verified: bool, failed_at: str | None, now: datetime) -> bool:
+    if verified is not True or not isinstance(observer, dict) or not failed_at:
+        return False
+    observation = observer.get("source_observation")
+    if not isinstance(observation, dict):
+        return False
+    revision = observer.get("source_revision")
+    if not isinstance(revision, str) or not re.fullmatch(r"[a-f0-9]{64}", revision) or observation.get("source_revision") != revision:
+        return False
+    if observer.get("last_outcome") != "unchanged" or "last_error" not in observer or observer["last_error"] is not None:
+        return False
+    counts = [observer.get("pending_source_count"), observation.get("source_error_count")]
+    if any(type(value) is not int or value != 0 for value in counts):
+        return False
+    if type(observer.get("lease_until")) is not int or observer["lease_until"] < 0:
+        return False
+    try:
+        checked = datetime.fromisoformat(observation["checked_at"].replace("Z", "+00:00"))
+        failed = datetime.fromisoformat(failed_at.replace("Z", "+00:00"))
+        if checked.tzinfo is None or failed.tzinfo is None:
+            return False
+        return failed < checked and 0 <= (now-checked).total_seconds() <= 90*60 and observer["lease_until"] <= now.timestamp()
+    except (KeyError, TypeError, ValueError, AttributeError):
+        return False
+
+
+def classify(log_text: str, freshness: dict[str, Any] | None, rules_config: dict[str, Any], *,
+             observer: dict[str, Any] | None = None, observer_verified: bool = False,
+             failed_run_updated_at: str | None = None, now: datetime | None = None) -> dict[str, Any]:
     matched_rules: list[dict[str, Any]] = []
     rules = sorted(rules_config.get("rules") or [], key=lambda item: int(item.get("priority", 0)), reverse=True)
 
@@ -134,6 +163,15 @@ def classify(log_text: str, freshness: dict[str, Any] | None, rules_config: dict
             }
         )
         action = str(rule.get("action"))
+        if (rule.get("id") == "source_observation_unavailable" and isinstance(freshness, dict)
+                and freshness.get("status") == "current"
+                and not any(other.get("id") != rule["id"] and int(other.get("priority", 0)) >= 90
+                            and _matches_rule(other, log_text) for other in rules)
+                and source_recovered(observer, observer_verified, failed_run_updated_at, now or datetime.now(timezone.utc))):
+            return make_plan(classification="source_observation_recovered", status="noop", action="no_op",
+                confidence="high", deploy_required=False,
+                reason="A newer, fresh source observation from the verified current observer is unchanged with zero errors; production is current. Retain the old failure evidence without repeating its alert.",
+                matched_rules=matched_rules)
         return make_plan(
             classification=str(rule.get("id")),
             status=str(rule.get("status")),
@@ -213,6 +251,9 @@ def parse_args() -> argparse.Namespace:
     classify_parser.add_argument("--freshness-json", help="Optional check_production_freshness.py --json output.")
     classify_parser.add_argument("--output", default=str(DEFAULT_OUTPUT), help="Path to write the repair plan JSON.")
     classify_parser.add_argument("--github-output", help="Optional GITHUB_OUTPUT path for workflow step outputs.")
+    classify_parser.add_argument("--observer-json", help="Optional authenticated current-observer status receipt.")
+    classify_parser.add_argument("--observer-verified", choices=["true", "false"], default="false")
+    classify_parser.add_argument("--failed-run-updated-at", help="Completion/update timestamp of the failed upstream run.")
     return parser.parse_args()
 
 
@@ -229,7 +270,14 @@ def main() -> int:
         if freshness_path.exists() and freshness_path.stat().st_size > 0:
             freshness = load_json_file(freshness_path)
 
-    plan = classify(log_text, freshness, rules_config)
+    observer = None
+    if args.observer_json:
+        try:
+            observer = load_json_file(Path(args.observer_json))
+        except (OSError, ValueError):
+            pass  # Missing or incomplete evidence cannot establish recovery.
+    plan = classify(log_text, freshness, rules_config, observer=observer,
+        observer_verified=args.observer_verified == "true", failed_run_updated_at=args.failed_run_updated_at)
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(plan, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
