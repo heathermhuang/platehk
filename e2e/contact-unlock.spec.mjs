@@ -10,7 +10,7 @@ const signal = { availability_detected: true, plate: 'TEST8', listing_id: 'n1000
 const preview = {available:true,price_hkd:99,plate:'TEST8',listing_id:'n100001',asking_price_hkd:88000,observed_at:new Date().toISOString(),source_url:signal.source_url};
 const contact = { ...preview, plate: 'TEST8', listing_id: 'n100001', whatsapp_number: '85261112222', whatsapp_url: 'https://wa.me/85261112222' };
 async function sources(page) { await page.route('**/api/market_signal?*', route => route.fulfill({ json: signal })); }
-test('HK$99 checkout discloses the free source and opens Stripe', async ({page},testInfo) => {
+test('HK$99 checkout explains the purchase without an external listing link and opens Stripe', async ({page},testInfo) => {
   await sources(page);
   await page.route('**/api/contact/availability', route => { expect(route.request().method()).toBe('POST'); return route.fulfill({ json: preview }); });
   let submitted;
@@ -26,7 +26,7 @@ test('HK$99 checkout discloses the free source and opens Stripe', async ({page},
   await page.screenshot({path:testInfo.outputPath('contact-ready.png'),fullPage:true});
   await page.getByText('What to know before paying',{exact:true}).click();
   await expect(page.getByText('The original listing is free to view',{exact:false})).toBeVisible();
-  await expect(page.getByRole('link',{name:'View this 28car listing for free'})).toHaveAttribute('href',signal.source_url);
+  await expect(page.locator('a[href*="28car.com"]')).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.getByRole('button',{name:'Continue to payment — HK$99'}).click();
   await expect(page).toHaveURL('https://checkout.stripe.com/c/pay/fixture');
@@ -42,6 +42,7 @@ test('paid return reveals contact and restores it without charging again', async
   await expect(page).not.toHaveURL(/session_id/);
   await expect(page.getByRole('button',{name:'Continue to payment — HK$99'})).toBeHidden();
   await expect(page.locator('#phone')).toHaveValue('+852 6111 2222');
+  await expect(page.locator('a[href*="28car.com"]')).toHaveCount(0);
   await expect(page.getByRole('heading',{name:'Your seller contact is ready'})).toBeVisible();
   await checkAccessibility(page);
   await page.screenshot({path:testInfo.outputPath('contact-paid.png'),fullPage:true});
@@ -142,7 +143,7 @@ for (const lang of ['en','zh']) {
     await back.click();
     await expect(page.locator('#pay')).toBeVisible();
     await expect(page.locator('#plate')).toHaveText('TEST8');
-    await expect(page.locator('#source')).toHaveAttribute('href',signal.source_url);
+    await expect(page.locator('a[href*="28car.com"]')).toHaveCount(0);
   });
   test(`refunded purchase gives a definitive status without another payment or contact (${lang})`,async({page})=>{
     await page.route('**/api/contact/reveal',route=>route.fulfill({status:403,json:{error:'purchase_refunded',plate:'TEST8',listing_id:'n100001'}}));

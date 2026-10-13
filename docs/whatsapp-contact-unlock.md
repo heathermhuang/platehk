@@ -1,7 +1,8 @@
 # HK$99 seller WhatsApp contact unlock
 
 A buyer pays HK$99 for one listing's explicitly advertised WhatsApp number. The
-original 28car listing remains freely accessible and linked. This purchase does
+28car source is retained internally for verification; buyer pages do not link
+to the source listing. This purchase does
 not require Render, OpenWA, a WhatsApp QR session or a three-party group.
 
 `scripts/scrape_28car_market.py` parses only the listing contact field and writes
@@ -89,7 +90,8 @@ and `customer_details.phone` on the completed Checkout Session; they are not
 placed in URLs, public APIs, analytics, custom fields or metadata. Operators can
 retrieve the Session associated with a payment in Stripe to contact the buyer.
 The runtime does not require Customer Write or store complete card details.
-The free source listing remains visible. After payment, buyers get a prepared
+Search, plate detail and contact screens omit external listing links. After
+payment, buyers get a prepared
 WhatsApp draft, copy-number action, and receipt-based support link. Pending
 payments receive at most three automatic checks; no repeat purchase is offered
 while verifying an existing payment. Cancelling checkout retains plate context.

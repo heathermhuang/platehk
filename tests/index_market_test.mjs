@@ -156,6 +156,7 @@ assert.equal((marketSignalEl.innerHTML.match(/class="market-signal-item"/g) || [
 assert.match(marketSignalEl.innerHTML, /data-market-plate="HUANG"/);
 assert.doesNotMatch(marketSignalEl.innerHTML, /data-market-plate="DRHUANG"/);
 assert.match(marketSignalEl.innerHTML, /data-market-sell="HUANG"/);
+assert.doesNotMatch(marketSignalEl.innerHTML, /href="https:\/\/m\.28car\.com/);
 
 const sellerButton = new FakeElement();
 sellerButton.dataset.marketSell = "HUANG";

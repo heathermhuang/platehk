@@ -11,10 +11,9 @@
     plateLabel: "Plate",
     asking: "Current asking price: ",
     body: "You can enquire with Plate.hk via WhatsApp. Third-party data may be stale or wrong and does not guarantee availability or transferability.",
-    unlockBody: "Pay HK$99 to unlock this listing’s advertised seller WhatsApp number. The original listing on 28car is free to view. Seller replies, availability and transferability are not guaranteed.",
+    unlockBody: "Pay HK$99 to unlock this listing’s advertised seller WhatsApp number. Seller replies, availability and transferability are not guaranteed.",
     mandate: "Submit a buyer offer via WhatsApp",
     seller: "I am the seller: receive buyer offers",
-    source: "View the 28car listing",
   } : {
     priceRequest: "價格另議",
     kicker: "外部放售訊號",
@@ -22,10 +21,9 @@
     plateLabel: "車牌",
     asking: "目前叫價：",
     body: "你可透過 WhatsApp 向 Plate.hk 查詢。第三方資料可能過期或有誤，並不保證可買到或可轉名。",
-    unlockBody: "付款 HK$99 解鎖此刊登列明的賣方 WhatsApp 號碼，亦可免費查看 28car 原刊登。賣方回覆、可買到或可轉名均無保證。",
+    unlockBody: "付款 HK$99 解鎖此刊登列明的賣方 WhatsApp 號碼。賣方回覆、可買到或可轉名均無保證。",
     mandate: "透過 WhatsApp 提交買方出價",
     seller: "我是賣方：接收買家出價",
-    source: "查看 28car 來源刊登",
   };
 
   const node = (tag, className, text) => {
@@ -108,11 +106,7 @@
           actions.append(seller);
         }
       }
-      const source = node("a", "", t.source);
-      source.href = sourceUrl.toString();
-      source.target = "_blank";
-      source.rel = "nofollow noopener noreferrer";
-      actions.append(source);
+
 
       card.replaceChildren(copy, actions);
       card.hidden = false;

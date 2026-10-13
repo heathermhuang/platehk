@@ -495,7 +495,7 @@ test.describe("Plate.hk browser journeys", () => {
     expect(plateDecoration).toEqual({ before: "none", after: "none" });
     await expect(page.locator("#marketSignal .market-title")).toContainText("may be obtainable");
     await expect(page.locator("#marketSignal")).not.toContainText("1 recent signal");
-    await expect(page.locator("#marketSignal .market-source-link")).toHaveAttribute("href", /m\.28car\.com/);
+    await expect(page.locator("#marketSignal a[href*=\"28car.com\"]")).toHaveCount(0);
     await expect(page.locator("#marketSignal .market-inquire-btn .whatsapp-icon")).toBeVisible();
     await expect(page.locator("#marketSignal .market-inquire-btn")).toHaveCSS("background-color", "rgb(7, 94, 84)");
     const rowWhatsAppButton = page.locator("#rows tr[data-plate='88'] .row-market-btn").first();
@@ -552,6 +552,7 @@ test.describe("Plate.hk browser journeys", () => {
           source: "28car",
           offer_count: 1,
           asking_prices_hkd: [385000],
+          contact_unlock_available: true,
           has_contact_price: false,
           observed_at: new Date().toISOString(),
           listing_id: "n100001",
@@ -568,6 +569,8 @@ test.describe("Plate.hk browser journeys", () => {
     await expect(page.locator("[data-market-card] .market-kicker")).toHaveText("External sale signal");
     await expect(page.locator("[data-market-card] .market-title")).toContainText("may be obtainable");
     await expect(page.locator("[data-market-card]")).not.toContainText("外部放售訊號");
+    await expect(page.locator('[data-market-card] a[href*="28car.com"]')).toHaveCount(0);
+    await expect(page.getByRole('link', { name: 'Unlock seller WhatsApp — HK$99' })).toBeVisible();
     await expect(plate).toHaveCSS("background-color", "rgb(240, 201, 77)");
     await expect(plate).toHaveCSS("color", "rgb(23, 22, 18)");
     const decoration = await plate.evaluate((element) => ({
@@ -581,6 +584,8 @@ test.describe("Plate.hk browser journeys", () => {
     await expect(page.locator("[data-market-card] .market-kicker")).toHaveText("外部放售訊號");
     await expect(page.locator("[data-market-card] .market-title")).toContainText("或可洽購");
     await expect(page.locator("[data-market-card]")).not.toContainText("External sale signal");
+    await expect(page.locator('[data-market-card] a[href*="28car.com"]')).toHaveCount(0);
+    await expect(page.getByRole('link', { name: '解鎖賣方 WhatsApp — HK$99' })).toBeVisible();
   });
 
   test("shows one external signal while keeping actions on all matching result rows", async ({ page }) => {
