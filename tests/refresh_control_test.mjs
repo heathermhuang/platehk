@@ -31,6 +31,20 @@ test('controller HTTP failure also receives a bounded retry and operator attenti
   const result=await run([{status:503,payload:{error:'unavailable'}},{status:503,payload:{error:'unavailable'}}]);
   assert.equal(result.status,1);assert.equal(result.calls.length,2);assert.match(result.stderr,/SOURCE_OBSERVATION_UNAVAILABLE/);
 });
+test('source-shape failures preserve the cause and official page in workflow evidence',async()=>{
+  const source='https://www.td.gov.hk/en/public_services/vehicle_registration_mark_n/ca/index.html';
+  const failure={status:503,payload:{error:'refresh_failed',cause:'calendar_index_empty',source_url:source}};
+  const result=await run([failure,failure]);
+  assert.equal(result.status,1);assert.equal(result.calls.length,2);
+  assert.match(result.stdout,/calendar_index_empty/);assert(result.stdout.includes(source));
+});
+test('HTTP diagnostics do not print arbitrary server errors or untrusted source URLs',async()=>{
+  for (const payload of [{cause:'private-secret',source_url:'https://evil.test/private'},
+    {cause:'calendar_index_empty',source_url:'https://evil.test/private'}]) {
+    const failure={status:503,payload};const result=await run([failure,failure]);
+    assert.equal(result.status,1);assert.doesNotMatch(result.stdout,/private-secret|evil\.test/);
+  }
+});
 test('an unchanged successful check does not retry',async()=>{
   const result=await run([{payload:{run:false,outcome:'unchanged',source_error_count:0}}]);
   assert.equal(result.status,0);assert.equal(result.calls.length,1);

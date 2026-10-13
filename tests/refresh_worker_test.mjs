@@ -108,6 +108,53 @@ test('calendar date changes in surrounding list text are detected even with unch
   };
   const result=await observe(published,{fetcher,now});assert.equal(result.calendar_changed,true);assert.equal(result.auction_changed,false);
 });
+// Minimized from TD's English/Chinese Coming Auction pages on 2026-10-14.
+// The only action links use e-auction.td.gov.hk; there are no www.td.gov.hk PDF links.
+const calendarTables = [
+  '<table><tr><th>Date</th><th>Auction List</th></tr><tr><td>22 October noon to 26 October noon 2026</td><td>Please visit <a href="https://e-auction.td.gov.hk/en">E-Auction</a></td></tr></table>',
+  '<table><tr><th>日期</th><th>⾞輛登記號碼拍賣名單</th></tr><tr><td>2026年10月22日中午至10月26日中午</td><td>參與網上拍賣詳情請瀏覽「<a href="https://e-auction.td.gov.hk/tc">拍牌易</a>」網頁</td></tr></table>',
+];
+const calendarPage = content => `<html><!-- CONTENT START -->${content}<!-- CONTENT END --></html>`;
+test('linkless bilingual auction tables are observed and date changes trigger only calendar work',async()=>{
+  const {now,published}=await baseline();
+  const fetcher=async(url,options)=>INDEXES.slice(-2).includes(url)
+    ? new Response(calendarPage(calendarTables[INDEXES.indexOf(url)-4])) : upstream()(url,options);
+  const result=await observe(published,{fetcher,now});
+  assert.equal(result.calendar_changed,true);assert.equal(result.auction_changed,false);
+  assert.deepEqual(result.source_errors,[]);assert.deepEqual(result.updates,[]);
+  const current={...published,calendar_digest:result.calendar_digest};
+  assert.equal((await observe(current,{fetcher,now})).calendar_changed,false);
+  const changed=async(url,options)=>url===INDEXES[4]
+    ? new Response(calendarPage(calendarTables[0].replace('22 October','29 October'))) : fetcher(url,options);
+  assert.equal((await observe(current,{fetcher:changed,now})).calendar_changed,true);
+  const physical=calendarTables[0].replace('22 October noon to 26 October noon 2026','7 November 2026 (Sat)').replace(/<a.*?<\/a>/,'To be confirmed');
+  assert.equal((await observe(published,{fetcher:async(url,options)=>url===INDEXES[4] ? new Response(calendarPage(physical)) : fetcher(url,options),now})).calendar_changed,true);
+});
+test('linkless calendar validation rejects missing content, dates and auction headers',async()=>{
+  const {now,published}=await baseline();
+  for (const html of ['<html>temporarily unavailable</html>',`<html>${calendarTables[0]}</html>`,
+    calendarPage(calendarTables[0].replace('22 October noon to 26 October noon 2026','To be confirmed')),
+    calendarPage(calendarTables[0].replace('22 October noon to 26 October noon 2026','99 October 2026')),
+    calendarPage(calendarTables[0].replace('Auction List','Status')),
+    calendarPage('<p>Coming Auction 22 October 2026</p>')]) {
+    await assert.rejects(observe(published,{fetcher:async(url,options)=>url===INDEXES[4] ? new Response(html) : upstream()(url,options),now}),/calendar_index_empty/);
+  }
+});
+test('authenticated source failures include a bounded cause and the failing official page',async()=>{
+  const mf=new Miniflare({modules:true,scriptPath:new URL('../refresh-worker/src/index.mjs',import.meta.url).pathname,compatibilityDate:'2026-10-05',compatibilityFlags:['nodejs_compat'],d1Databases:{DB:'calendar-error'},r2Buckets:{STORE:'calendar-error'}});
+  const originalFetch=globalThis.fetch;
+  try {
+    const DB=await mf.getD1Database('DB'),STORE=await mf.getR2Bucket('STORE');await migrate(DB);
+    const env={DB,STORE,CONTROL_TOKEN:'fixture-control',PRODUCTION_URL:'https://production.test'};
+    globalThis.fetch=async(url,options)=>url===INDEXES[4] ? new Response(calendarPage('<p>No schedule</p>')) : upstream()(url,options);
+    const request=()=>new Request('https://refresh.test/v1/claim',{method:'POST',headers:{Authorization:'Bearer fixture-control'},body:JSON.stringify({scope:'check'})});
+    const response=await worker.fetch(request(),env);
+    assert.equal(response.status,503);
+    assert.deepEqual(await response.json(),{error:'refresh_failed',cause:'calendar_index_empty',source_url:INDEXES[4]});
+    globalThis.fetch=async()=>{throw new Error('internal diagnostic must stay private');};
+    assert.deepEqual(await (await worker.fetch(request(),env)).json(),{error:'refresh_failed'});
+  } finally {globalThis.fetch=originalFetch;await mf.dispose();}
+});
 test('discovery keeps cross-month filename variants and rotates a bounded batch',()=>{
   const candidates=discoveryCandidates({},new Date('2026-10-05T01:00:00Z'));
   assert(candidates.some(item=>decodeURIComponent(item.url).includes('24-28 September 2026')));
