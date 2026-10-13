@@ -1,9 +1,9 @@
 # HK$99 seller WhatsApp contact unlock
 
 A buyer pays HK$99 for one listing's explicitly advertised WhatsApp number. The
-28car source is retained internally for verification; buyer pages do not link
-to the source listing. This purchase does
-not require Render, OpenWA, a WhatsApp QR session or a three-party group.
+source URL is retained for verification; buyer pages do not link to the 28car
+listing. This purchase does not require Render, OpenWA, a WhatsApp QR session
+or a three-party group.
 
 `scripts/scrape_28car_market.py` parses only the listing contact field and writes
 explicit WhatsApp numbers to `data/market/28car.active.contacts.json`. Plain phone
