@@ -5,7 +5,7 @@
   const t = english ? {
     eyebrow: "Contact the seller", title: "Get the seller’s WhatsApp", description: "Unlock the WhatsApp number on this listing and speak to the seller directly.",
     back: "Back to search", priceLabel: "WhatsApp contact unlock", oneTime: "One-time payment · No account needed · Not the plate price",
-    pay: "Continue to payment — HK$99", paymentNote: "Secure checkout by Stripe. Pay by card, or Apple Pay / Google Pay where available.",
+    pay: "Continue to payment — HK$99", paymentNote: "At secure Stripe checkout, enter your own email and WhatsApp number so we can contact you about this purchase, support or refunds after you leave. Pay by card, or Apple Pay / Google Pay where available.",
     sourceIntro: "You can also go directly to the source:", source: "View this 28car listing for free",
     detailsLabel: "What to know before paying", disclosure: "HK$99 buys convenient access to one listing’s contact. It is not a subscription or a plate deposit. The original listing is free to view. A seller reply, ownership and transfer eligibility are not guaranteed.",
     recovery: "Reopen your contact in the browser you used to pay. If you change devices or clear browser data, keep your Stripe receipt so we can help recover your purchase.",
@@ -31,7 +31,7 @@
   } : {
     eyebrow: "聯絡賣家", title: "取得賣家的 WhatsApp", description: "一次付款，取得這則刊登的 WhatsApp 號碼，直接與賣家傾談。",
     back: "返回搜尋", priceLabel: "WhatsApp 聯絡資料", oneTime: "一次付款 · 不用登記 · 並非車牌售價",
-    pay: "繼續付款 — HK$99", paymentNote: "由 Stripe 安全處理付款。支援信用卡，以及適用裝置上的 Apple Pay 或 Google Pay。",
+    pay: "繼續付款 — HK$99", paymentNote: "請在 Stripe 安全付款頁填寫你自己的電郵及 WhatsApp 號碼，方便我們在你離開頁面後就這次購買、客服或退款聯絡你。支援信用卡，以及適用裝置上的 Apple Pay 或 Google Pay。",
     sourceIntro: "你亦可直接到來源網站：", source: "免費查看 28car 原刊登",
     detailsLabel: "付款前須知", disclosure: "HK$99 是取得一則刊登聯絡資料的便利服務費，並非訂閱或車牌訂金。原刊登可免費查看；賣家是否回覆、車牌擁有權及能否轉名，均須另行確認。",
     recovery: "你可在付款時使用的瀏覽器再次查看聯絡資料。換裝置或清除瀏覽器資料後，請保留 Stripe 收據以便我們協助核對。",

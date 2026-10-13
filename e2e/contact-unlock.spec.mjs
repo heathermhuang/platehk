@@ -20,6 +20,7 @@ test('HK$99 checkout discloses the free source and opens Stripe', async ({page},
   await expect(page.getByRole('button',{name:'Continue to payment — HK$99'})).toBeVisible();
   await expect(page.getByText('Seller’s asking price: HK$88,000')).toBeVisible();
   await expect(page.getByText('One-time payment · No account needed · Not the plate price')).toBeVisible();
+  await expect(page.locator('#payment-note')).toContainText('enter your own email and WhatsApp number');
   await expect(page.locator('#phone')).toBeHidden();
   await checkAccessibility(page);
   await page.screenshot({path:testInfo.outputPath('contact-ready.png'),fullPage:true});
@@ -87,6 +88,7 @@ test('Chinese contact screen works at 320px and 200 percent text size',async({pa
   await page.goto('/contact.html?plate=TEST8&listing_id=n100001');
   await expect(page.getByRole('button',{name:'繼續付款 — HK$99'})).toBeVisible();
   await expect(page.getByText('賣家叫價：HK$88,000')).toBeVisible();
+  await expect(page.locator('#payment-note')).toContainText('你自己的電郵及 WhatsApp 號碼');
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   await page.addStyleTag({content:'html {font-size:200% !important}'});
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);

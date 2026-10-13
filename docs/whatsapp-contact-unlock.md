@@ -17,7 +17,7 @@ only eligibility and price. Service Worker caching excludes contact pages/APIs.
 
 Stripe Checkout charges exactly 9900 HKD minor units. The encrypted purchased
 contact snapshot is bound to a random HttpOnly browser cookie; Stripe session
-metadata contains ciphertext and a hash, never a plaintext number. The reveal
+metadata contains ciphertext and a hash, never a plaintext seller number. The reveal
 endpoint verifies ownership, mode, amount, currency, payment success, test/live
 mode and refunded/disputed charge status directly with Stripe before decrypting.
 The purchased snapshot can still be delivered if the listing later disappears.
@@ -72,7 +72,7 @@ check or refund on seller non-response.
    cancelled payment, webhook delivery/retry, delayed-payment gating, and a
    Stripe refund. Local mocks are not provider proof.
 5. Only after those canaries pass, set the live Stripe key and enable the flag
-   in the production configuration. The repository default is disabled.
+   in the production configuration. Keep it disabled until qualification passes.
 
 The old introduction service remains available as a separate disabled pilot;
 its seller-funded HK$199 contract is not the new buyer-funded unlock.
@@ -80,7 +80,15 @@ its seller-funded HK$199 contract is not the new buyer-funded unlock.
 ## Buyer experience and payment methods
 
 The contact screen separates the seller's asking price from the HK$99 fee and
-shows the source observation time. No account signup or contact form is needed.
+shows the source observation time. No account signup is needed. Stripe Checkout
+requires an email and its native phone field (`phone_number_collection.enabled`).
+Bilingual copy asks buyers to use their own WhatsApp number for purchase support
+and refunds, including after leaving the page. This does not verify WhatsApp
+account ownership. Contacts are retained by Stripe as `customer_details.email`
+and `customer_details.phone` on the completed Checkout Session; they are not
+placed in URLs, public APIs, analytics, custom fields or metadata. Operators can
+retrieve the Session associated with a payment in Stripe to contact the buyer.
+The runtime does not require Customer Write or store complete card details.
 The free source listing remains visible. After payment, buyers get a prepared
 WhatsApp draft, copy-number action, and receipt-based support link. Pending
 payments receive at most three automatic checks; no repeat purchase is offered
@@ -93,7 +101,9 @@ offering another checkout, or suggesting that the buyer keep rechecking.
 
 Hosted Stripe Checkout uses dynamic payment methods configured in the account,
 including eligible Apple Pay/Google Pay wallets without a custom wallet UI.
-Adaptive Pricing is explicitly disabled so every unlock stays HKD 99. Available
+This integration explicitly uses standard payments and disables Managed
+Payments and adaptive pricing, keeping the checkout charge fixed at HKD 99.
+Available
 methods depend on the device and Stripe account settings. Delayed payments
 remain pending until Stripe confirms payment; they never reveal a contact early.
 The runtime pins Stripe API version `2026-09-30.endive`.
