@@ -111,6 +111,9 @@ try {
   assert.equal(checkoutForm.has("payment_method_types[0]"), false);
   assert.equal(checkoutForm.get("adaptive_pricing[enabled]"), "false");
   assert.equal(checkoutForm.get("managed_payments[enabled]"), "false");
+  assert.equal(checkoutForm.get("phone_number_collection[enabled]"), "true");
+  assert.match(checkoutForm.get("custom_text[submit][message]"), /WhatsApp/);
+  assert.equal(checkoutForm.get("locale"), "zh-HK");
   assert.match(checkoutForm.get("integration_identifier"), /^platehk-contact-unlock-[a-z]{8}$/);
   assert.equal(checkoutForm.toString().includes("61112222"), false);
   const session = sessions.get("cs_test_fixture");
