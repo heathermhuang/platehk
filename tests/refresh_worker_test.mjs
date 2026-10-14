@@ -27,7 +27,7 @@ async function migrate(db) {
   }
 }
 async function baseline() {
-  const now=new Date('2026-10-05T10:00:00Z');
+  const now=new Date();
   const first=await observe({}, {fetcher:upstream(),now});
   return {now,published:{sources:{[pvrm]:{kind:'pvrm',date:'2026-10-03',sha256:await digest(bytes)},[physical]:{kind:'physical',date:'2026-10-03',sha256:await digest(bytes)}},index_urls:first.index_urls,index_entries:first.index_entries,calendar_digest:first.calendar_digest}};
 }
@@ -89,7 +89,9 @@ test('retirement never masks linked PDFs, new inputs, server errors or invalid c
 });
 test('calendar-only changes and registration month rollover stay independent',async()=>{
   const {now,published}=await baseline();
-  const result=await observe(published,{fetcher:upstream(),now:new Date('2026-11-01T01:00:00Z')});
+  const hkNow=new Date(now.getTime()+8*3600000);
+  const rollover=new Date(Date.UTC(hkNow.getUTCFullYear(),hkNow.getUTCMonth()+1,1)-8*3600000);
+  const result=await observe(published,{fetcher:upstream(),now:rollover});
   assert.equal(result.auction_changed,false);assert.equal(result.calendar_changed,true);
 });
 test('source URLs, redirects and oversized responses are bounded',async()=>{
@@ -377,6 +379,24 @@ test('cached observations from a different observer version are refreshed before
     assert.equal(status.source_observation.source_error_count,0);
     assert.equal(status.last_error,null);
   } finally {globalThis.fetch=originalFetch;await mf.dispose();}
+});
+test('unchanged source checks remain unchanged in later months and years',async(context)=>{
+  const originalFetch=globalThis.fetch;
+  try {
+    for (const date of ['2026-11-02T10:00:00Z','2027-01-02T10:00:00Z','2030-01-02T10:00:00Z']) {
+      context.mock.timers.enable({apis:['Date'],now:Date.parse(date)});
+      const mf=new Miniflare({modules:true,scriptPath:new URL('../refresh-worker/src/index.mjs',import.meta.url).pathname,compatibilityDate:'2026-10-05',compatibilityFlags:['nodejs_compat'],d1Databases:{DB:'future-month'},r2Buckets:{STORE:'future-month'}});
+      try {
+        const DB=await mf.getD1Database('DB'),STORE=await mf.getR2Bucket('STORE');await migrate(DB);
+        const {published}=await baseline();await STORE.put('published.json',JSON.stringify(published));
+        const env={DB,STORE,PRODUCTION_URL:'https://production.test'};
+        assert.equal((await recordObservation(env,{fetcher:upstream()})).outcome,'unchanged',date);
+        globalThis.fetch=async(url)=>{assert.equal(url,'https://production.test/data/events.json');return Response.json({events:[]});};
+        const decision=await claim(env);
+        assert.equal(decision.run,false,date);assert.equal(decision.outcome,'unchanged',date);
+      } finally {await mf.dispose();context.mock.timers.reset();}
+    }
+  } finally {globalThis.fetch=originalFetch;}
 });
 
 test('revamped TD indexes distinguish datasets and observe dates in adjacent table cells',async()=>{
