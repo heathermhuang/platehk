@@ -32,6 +32,7 @@ import {
   normalizeSearchQuery,
   notFound,
   plateNormForRow,
+  readBoundedText,
   readJsonBody,
   requireFormUrlencodedContentType,
   requireGetLike,
@@ -71,8 +72,7 @@ function parseClientBasicAuth(request) {
 async function readTokenForm(request) {
   const mediaErr = requireFormUrlencodedContentType(request);
   if (mediaErr) return { error: mediaErr, form: null };
-  const raw = await request.text();
-  if (raw.length > 8192) throw new ApiError("payload_too_large", 400);
+  const raw = await readBoundedText(request, 8192);
   return {
     error: null,
     form: new URLSearchParams(raw),
@@ -1054,6 +1054,14 @@ async function handleVisionPlate(request, env) {
     enforceRateLimit(`vision_plate:minute:${request.headers.get("cf-connecting-ip") || "unknown"}`, 45, 60);
     enforceRateLimit(`vision_plate:hour:${request.headers.get("cf-connecting-ip") || "unknown"}`, 600, 3600);
   }
+  // A Bearer prefix is untrusted until verification succeeds. Bound attempts
+  // before authentication and never read/decode an image for invalid clients.
+  enforcePublicReadRateLimit(request, "vision-plate-auth", 180, 2400);
+  if (hasBearerToken) {
+    const token = await requireOAuthAccessToken(request, env);
+    enforceRateLimit(`vision_plate_oauth_client:minute:${String(token.client_id || token.sub || "unknown")}`, 90, 60);
+    enforceRateLimit(`vision_plate_oauth_client:hour:${String(token.client_id || token.sub || "unknown")}`, 1200, 3600);
+  }
 
   const { apiKey, baseUrl, timeoutSeconds, visionModel: openAiModel } = getOpenAiConfig(env);
   const workersAi = String(env.VISION_PROVIDER || "openai") === "workers_ai";
@@ -1063,19 +1071,15 @@ async function handleVisionPlate(request, env) {
   }
 
   const req = await readJsonBody(request);
+  if (!hasBearerToken) {
+    await requireVisionSessionToken(request, env, String(req.vision_token || ""));
+  }
   const imageDataUrl = String(req.image_data_url || "");
   const lang = String(req.lang || "zh") === "en" ? "en" : "zh";
   const m = imageDataUrl.match(/^data:image\/(png|jpeg|jpg|webp);base64,([A-Za-z0-9+/=]+)$/);
   if (!m) return badRequest("invalid_image_data_url");
   const bytes = Uint8Array.from(atob(m[2]), (c) => c.charCodeAt(0));
   if (bytes.length > 5 * 1024 * 1024) return badRequest("image_too_large");
-  if (hasBearerToken) {
-    const token = await requireOAuthAccessToken(request, env);
-    enforceRateLimit(`vision_plate_oauth_client:minute:${String(token.client_id || token.sub || "unknown")}`, 90, 60);
-    enforceRateLimit(`vision_plate_oauth_client:hour:${String(token.client_id || token.sub || "unknown")}`, 1200, 3600);
-  } else {
-    await requireVisionSessionToken(request, env, String(req.vision_token || ""));
-  }
 
   const prompt = lang === "en"
     ? "Read the Hong Kong vehicle registration mark from this plate image. If multiple plates are visible, choose the Hong Kong plate only and ignore Macau plates such as M-12-34 or MA-12-34 and Mainland China plates such as 粤Z1234港, 粵Z1234澳, or province-character plates. Return JSON only with keys: plate, confidence, raw_text, reasoning_note, plate_type, is_hong_kong_plate. Hong Kong registration marks do not use the letters I, O, or Q. Normalize HK marks by removing spaces, converting I to 1, converting O to 0, and dropping Q. Example: visible text like IRIS LAM should normalize as 1R1SLAM. If no Hong Kong plate is visible, return an empty plate, confidence 0, plate_type macau/mainland_china/not_hk, and is_hong_kong_plate false."

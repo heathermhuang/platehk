@@ -1,9 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile,readdir} from 'node:fs/promises';
-import {Miniflare} from 'miniflare';
+import {Miniflare,convertV4MiniflareOptions} from 'miniflare';
 import worker,{recordObservation,claim,combineObservation} from '../refresh-worker/src/index.mjs';
 import {observe,digest,officialUrl,boundedRead,sourceFetch,discoveryCandidates,INDEXES,resultKind} from '../refresh-worker/src/probe.mjs';
+
+// Miniflare 5 requires the complete source graph, even through its v4 converter.
+const refreshModules=['index.mjs','probe.mjs'].map(name=>({type:'ESModule',path:new URL(`../refresh-worker/src/${name}`,import.meta.url).pathname}));
 
 const pvrm='https://www.td.gov.hk/filemanager/tc/content_4806/pvrm_result_20261003_chi.pdf';
 const physical='https://www.td.gov.hk/filemanager/tc/content_4804/tvrm_auction_result_20261003_chi.pdf';
@@ -143,7 +146,7 @@ test('linkless calendar validation rejects missing content, dates and auction he
   }
 });
 test('authenticated source failures include a bounded cause and the failing official page',async()=>{
-  const mf=new Miniflare({modules:true,scriptPath:new URL('../refresh-worker/src/index.mjs',import.meta.url).pathname,compatibilityDate:'2026-10-05',compatibilityFlags:['nodejs_compat'],d1Databases:{DB:'calendar-error'},r2Buckets:{STORE:'calendar-error'}});
+  const mf=new Miniflare(convertV4MiniflareOptions({modules:refreshModules,compatibilityDate:'2026-10-05',compatibilityFlags:['nodejs_compat'],d1Databases:{DB:'calendar-error'},r2Buckets:{STORE:'calendar-error'}}));
   const originalFetch=globalThis.fetch;
   try {
     const DB=await mf.getD1Database('DB'),STORE=await mf.getR2Bucket('STORE');await migrate(DB);
@@ -183,7 +186,7 @@ test('unrelated publications retain corrections; acknowledgement, supersession a
 });
 
 test('credential-free observation stores a fresh plan that collection reuses without another TD scan',async()=>{
-  const mf=new Miniflare({modules:true,scriptPath:new URL('../refresh-worker/src/index.mjs',import.meta.url).pathname,compatibilityDate:'2026-10-05',compatibilityFlags:['nodejs_compat'],d1Databases:{DB:'observe-test'},r2Buckets:{STORE:'observe-test'}});
+  const mf=new Miniflare(convertV4MiniflareOptions({modules:refreshModules,compatibilityDate:'2026-10-05',compatibilityFlags:['nodejs_compat'],d1Databases:{DB:'observe-test'},r2Buckets:{STORE:'observe-test'}}));
   const originalFetch=globalThis.fetch;
   try {
     const DB=await mf.getD1Database('DB'),STORE=await mf.getR2Bucket('STORE');
@@ -211,7 +214,7 @@ test('credential-free observation stores a fresh plan that collection reuses wit
 });
 
 test('retirement is recorded for operators while a fresh claim clears the incident without publication',async()=>{
-  const mf=new Miniflare({modules:true,scriptPath:new URL('../refresh-worker/src/index.mjs',import.meta.url).pathname,compatibilityDate:'2026-10-05',compatibilityFlags:['nodejs_compat'],d1Databases:{DB:'retirement-test'},r2Buckets:{STORE:'retirement-test'}});
+  const mf=new Miniflare(convertV4MiniflareOptions({modules:refreshModules,compatibilityDate:'2026-10-05',compatibilityFlags:['nodejs_compat'],d1Databases:{DB:'retirement-test'},r2Buckets:{STORE:'retirement-test'}}));
   const originalFetch=globalThis.fetch;
   try {
     const DB=await mf.getD1Database('DB'),STORE=await mf.getR2Bucket('STORE');
@@ -236,7 +239,7 @@ test('retirement is recorded for operators while a fresh claim clears the incide
 });
 
 test('D1 leases coalesce jobs, reject stale receipts, and release after acknowledgement',async()=>{
-  const mf=new Miniflare({modules:true,scriptPath:new URL('../refresh-worker/src/index.mjs',import.meta.url).pathname,compatibilityDate:'2026-03-17',compatibilityFlags:['nodejs_compat'],bindings:{CONTROL_TOKEN:'fixture-control-token',DISPATCH_ENABLED:'false'},d1Databases:{DB:'refresh-test'},r2Buckets:{STORE:'refresh-test'}});
+  const mf=new Miniflare(convertV4MiniflareOptions({modules:refreshModules,compatibilityDate:'2026-03-17',compatibilityFlags:['nodejs_compat'],bindings:{CONTROL_TOKEN:'fixture-control-token',DISPATCH_ENABLED:'false'},d1Databases:{DB:'refresh-test'},r2Buckets:{STORE:'refresh-test'}}));
   try {
     const db=await mf.getD1Database('DB');
     await migrate(db);
@@ -268,7 +271,7 @@ test('D1 leases coalesce jobs, reject stale receipts, and release after acknowle
 });
 
 test('D1 retains correction B observed while publication A holds its lease',async()=>{
-  const mf=new Miniflare({modules:true,scriptPath:new URL('../refresh-worker/src/index.mjs',import.meta.url).pathname,compatibilityDate:'2026-10-05',compatibilityFlags:['nodejs_compat'],d1Databases:{DB:'concurrent-publish'},r2Buckets:{STORE:'concurrent-publish'}});
+  const mf=new Miniflare(convertV4MiniflareOptions({modules:refreshModules,compatibilityDate:'2026-10-05',compatibilityFlags:['nodejs_compat'],d1Databases:{DB:'concurrent-publish'},r2Buckets:{STORE:'concurrent-publish'}}));
   const originalFetch=globalThis.fetch;
   try {
     const DB=await mf.getD1Database('DB'),STORE=await mf.getR2Bucket('STORE');await migrate(DB);
@@ -294,7 +297,7 @@ test('D1 retains correction B observed while publication A holds its lease',asyn
 });
 
 test('partial source failures hold publication and retain verified changes for a fresh retry',async()=>{
-  const mf=new Miniflare({modules:true,scriptPath:new URL('../refresh-worker/src/index.mjs',import.meta.url).pathname,compatibilityDate:'2026-10-05',compatibilityFlags:['nodejs_compat'],d1Databases:{DB:'partial-failure'},r2Buckets:{STORE:'partial-failure'}});
+  const mf=new Miniflare(convertV4MiniflareOptions({modules:refreshModules,compatibilityDate:'2026-10-05',compatibilityFlags:['nodejs_compat'],d1Databases:{DB:'partial-failure'},r2Buckets:{STORE:'partial-failure'}}));
   const originalFetch=globalThis.fetch;
   try {
     const DB=await mf.getD1Database('DB'),STORE=await mf.getR2Bucket('STORE');await migrate(DB);
@@ -357,7 +360,7 @@ test('an absent optional discovery candidate clears its previous HEAD error',asy
   assert(!result.updates.some(item=>item.url===candidate.url));
 });
 test('cached observations from a different observer version are refreshed before a claim',async()=>{
-  const mf=new Miniflare({modules:true,scriptPath:new URL('../refresh-worker/src/index.mjs',import.meta.url).pathname,compatibilityDate:'2026-10-05',compatibilityFlags:['nodejs_compat'],d1Databases:{DB:'observation-version'},r2Buckets:{STORE:'observation-version'}});
+  const mf=new Miniflare(convertV4MiniflareOptions({modules:refreshModules,compatibilityDate:'2026-10-05',compatibilityFlags:['nodejs_compat'],d1Databases:{DB:'observation-version'},r2Buckets:{STORE:'observation-version'}}));
   const originalFetch=globalThis.fetch;
   try {
     const DB=await mf.getD1Database('DB'),STORE=await mf.getR2Bucket('STORE');await migrate(DB);
@@ -385,7 +388,7 @@ test('unchanged source checks remain unchanged in later months and years',async(
   try {
     for (const date of ['2026-11-02T10:00:00Z','2027-01-02T10:00:00Z','2030-01-02T10:00:00Z']) {
       context.mock.timers.enable({apis:['Date'],now:Date.parse(date)});
-      const mf=new Miniflare({modules:true,scriptPath:new URL('../refresh-worker/src/index.mjs',import.meta.url).pathname,compatibilityDate:'2026-10-05',compatibilityFlags:['nodejs_compat'],d1Databases:{DB:'future-month'},r2Buckets:{STORE:'future-month'}});
+      const mf=new Miniflare(convertV4MiniflareOptions({modules:refreshModules,compatibilityDate:'2026-10-05',compatibilityFlags:['nodejs_compat'],d1Databases:{DB:'future-month'},r2Buckets:{STORE:'future-month'}}));
       try {
         const DB=await mf.getD1Database('DB'),STORE=await mf.getR2Bucket('STORE');await migrate(DB);
         const {published}=await baseline();await STORE.put('published.json',JSON.stringify(published));

@@ -48,6 +48,9 @@ jobs:
       - name: Install project test dependencies
         run: npm ci
 
+      - name: Audit Worker tooling dependencies
+        run: npm audit
+
       - name: Run local verification suite
         env:
           CHECK_SECURITY_SKIP_DEPS: "1"

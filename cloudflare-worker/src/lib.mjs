@@ -166,10 +166,38 @@ export function sameOriginError(request) {
   return null;
 }
 
+export async function readBoundedText(request, maxBytes) {
+  const length = request.headers.get("content-length");
+  if (length && /^\d+$/.test(length) && Number(length) > maxBytes) {
+    await request.body?.cancel().catch(() => {});
+    throw new ApiError("payload_too_large", 413);
+  }
+  if (!request.body) return "";
+  const reader = request.body.getReader();
+  const decoder = new TextDecoder();
+  const parts = [];
+  let bytes = 0;
+  try {
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      bytes += value.byteLength;
+      if (bytes > maxBytes) throw new ApiError("payload_too_large", 413);
+      parts.push(decoder.decode(value, { stream: true }));
+    }
+    parts.push(decoder.decode());
+    return parts.join("");
+  } catch (error) {
+    await reader.cancel().catch(() => {});
+    throw error;
+  } finally {
+    reader.releaseLock();
+  }
+}
+
 export async function readJsonBody(request, maxBytes = 7 * 1024 * 1024) {
-  const raw = await request.text();
+  const raw = await readBoundedText(request, maxBytes);
   if (!raw) throw new ApiError("empty_body", 400);
-  if (raw.length > maxBytes) throw new ApiError("payload_too_large", 400);
   let parsed;
   try {
     parsed = JSON.parse(raw);

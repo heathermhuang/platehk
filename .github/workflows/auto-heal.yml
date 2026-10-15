@@ -60,6 +60,12 @@ jobs:
         with:
           ref: main
 
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22.22.2"
+          cache: npm
+
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
@@ -227,12 +233,6 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
 
-      - name: Set up Node
-        if: ${{ steps.plan.outputs.status == 'repairable' || steps.override.outputs.status == 'repairable' }}
-        uses: actions/setup-node@v6
-        with:
-          node-version: "20"
-          cache: npm
 
       - name: Install Node dependencies
         if: ${{ steps.plan.outputs.status == 'repairable' || steps.override.outputs.status == 'repairable' }}
