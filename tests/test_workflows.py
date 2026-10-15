@@ -37,6 +37,7 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn("--require-complete", auto_update)
         self.assertIn("Plan refresh before installing dependencies", auto_update)
         self.assertLess(auto_update.index("node scripts/refresh_control.mjs plan"), auto_update.index("Install Python dependencies"))
+        self.assertLess(auto_update.index("uses: actions/setup-node@"), auto_update.index("node scripts/deploy_refresh_worker.mjs"))
         self.assertIn("Restore content-addressed PDF parsing cache", auto_update)
         cache_step = auto_update.index('name: Save validated PDF parsing results')
         self.assertLess(auto_update.index('name: Build actual parsed-input catalog'), cache_step)
@@ -47,6 +48,7 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn("scope: market", market)
         self.assertFalse((ROOT / ".github/workflows/broker-notifications.yml").exists())
         auto_heal = (ROOT / ".github/workflows/auto-heal.yml").read_text()
+        self.assertLess(auto_heal.index("uses: actions/setup-node@"), auto_heal.index("node scripts/deploy_refresh_worker.mjs"))
         self.assertNotIn(scrape_marker, auto_heal)
         self.assertIn("node scripts/refresh_control.mjs restore-market", auto_heal)
         for workflow in (auto_update, auto_heal):

@@ -67,6 +67,12 @@ jobs:
         with:
           ref: main
 
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22.22.2"
+          cache: npm
+
       - name: Verify current observer deployment
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -92,12 +98,6 @@ jobs:
           cache: pip
           cache-dependency-path: requirements.txt
 
-      - name: Set up Node
-        if: steps.plan.outputs.run == 'true'
-        uses: actions/setup-node@v6
-        with:
-          node-version: "22.22.2"
-          cache: npm
 
       - name: Install Python dependencies
         if: steps.plan.outputs.run == 'true'
