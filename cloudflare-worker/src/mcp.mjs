@@ -1,4 +1,5 @@
 import { handleApiRequest } from "./api.mjs";
+import { ApiError, readBoundedText } from "./lib.mjs";
 
 const MCP_PROTOCOL_VERSIONS = ["2025-06-18", "2025-03-26"];
 const MCP_SERVER_VERSION = "2026.4.18";
@@ -267,8 +268,11 @@ export async function handleMcpRequest(request, env, ctx) {
 
   let rpc;
   try {
-    rpc = await request.json();
-  } catch {
+    rpc = JSON.parse(await readBoundedText(request, 64 * 1024));
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 413) {
+      return jsonRpcError(null, -32600, "Request too large", 413);
+    }
     return jsonRpcError(null, -32700, "Parse error", 400);
   }
   if (!rpc || typeof rpc !== "object" || Array.isArray(rpc)) {

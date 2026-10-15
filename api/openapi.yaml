@@ -20,6 +20,7 @@ paths:
       description: |
         OAuth 2.0 token endpoint for agent clients.
         Supports the `client_credentials` grant with `client_secret_basic` or `client_secret_post`.
+        The form body is limited to 8 KiB, measured as streamed bytes before parsing.
       requestBody:
         required: true
         content:
@@ -45,6 +46,8 @@ paths:
           description: Invalid request, unsupported grant, or invalid scope
         "401":
           description: Invalid client authentication
+        "413":
+          description: Form body exceeds 8 KiB
   /api/v1/index.json:
     get:
       summary: API entrypoint
@@ -545,6 +548,10 @@ paths:
         If Macau or Mainland China plates are visible, the endpoint ignores them
         and returns an empty `plate` with `ignored_plate_type`.
         Browser clients can continue using the same-origin `vision_session` flow, while machine clients can send a bearer token with the `vision:ocr` scope.
+        JSON bodies are limited to 7 MiB of streamed bytes and decoded images to 5 MiB.
+        Bearer credentials are verified before reading the body. All OCR requests
+        share a pre-authentication IP ceiling of 180/minute and 2400/hour,
+        in addition to browser and OAuth-client limits. Limits are best-effort per Worker isolate.
       security:
         - BearerToken: []
       requestBody:
@@ -595,6 +602,10 @@ paths:
                     enum: [macau, mainland_china, not_hk]
         "403":
           description: Missing or invalid authorization
+        "413":
+          description: JSON body exceeds 7 MiB
+        "429":
+          description: Request or authenticated-client rate limit exceeded
 components:
   securitySchemes:
     BearerToken:

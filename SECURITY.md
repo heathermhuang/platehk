@@ -4,7 +4,7 @@ This document captures the current application threat model, attack surface, and
 
 ## Assessment Date
 
-- Reviewed: 2026-09-05
+- Source controls reviewed: 2026-10-15. This is not a formal runtime qualification or certification.
 - Scope:
   - static frontend
   - Cloudflare Worker API routes
@@ -18,7 +18,7 @@ This document captures the current application threat model, attack surface, and
 - Architecture: Cloudflare Worker plus Cloudflare Static Assets
 - Primary data stores: generated static JSON artifacts under `data/` and `api/v1/`
 - Sensitive integrations:
-  - OpenAI Responses API for server-side plate vision OCR
+  - Cloudflare Workers AI or OpenAI Responses API for server-side plate vision OCR
   - Worker secrets for OCR, session signing, and optional OAuth clients
   - Stripe Checkout/refunds and an isolated OpenWA browser session on Render
 - Primary public entry points:
@@ -31,6 +31,8 @@ This document captures the current application threat model, attack surface, and
   - `/api/vision_plate`
   - `/api/oauth/token`
   - `/api/market_signal`
+  - `/api/contact/availability`, `/api/contact/checkout`, `/api/contact/reveal`
+  - `/api/contact/webhook`
   - `/mcp`
   - `/.well-known/*` discovery documents
   - `/camera.html`
@@ -49,6 +51,7 @@ This document captures the current application threat model, attack surface, and
   - temporary user-submitted OCR image payloads in transit
   - rate-limit state and operational logs
   - introduction contacts, consent/match state, Stripe identifiers, proxy credentials, and WhatsApp session data
+  - private advertised seller WhatsApp snapshots and buyer-bound encrypted contact purchase metadata
 
 ## Trust Boundaries
 
@@ -89,7 +92,7 @@ This document captures the current application threat model, attack surface, and
 | Spoofing | Machine OCR clients | Medium | OAuth client credentials and scoped bearer tokens |
 | Tampering | Query params / JSON body | Medium | Strict dataset validation, normalized query handling, JSON content-type enforcement |
 | Information Disclosure | WhatsApp introduction data | High -> Lowered | Draft values remain client-side until Send; two-stage consent, buyer-specific match approval, encrypted state, and 30-day contact-record deletion |
-| Information Disclosure | 28car seller data | Medium -> Lowered | Allowlisted ingestion schema discards seller names, phones, descriptions, photos, comments, and views |
+| Information Disclosure | 28car seller data | Medium -> Lowered | Public signals exclude contact fields; advertised WhatsApp contacts are segregated into private shards and disclosed only after browser ownership and paid-purchase verification |
 | Repudiation | Paid introduction delivery | Medium -> Lowered | Stripe event IDs, idempotent outbox actions, unique group IDs, and buyer confirmation in the three-party group |
 | Spoofing | Self-identified seller | High -> Medium | Seller is never presented as ownership-verified; buyer must approve that exact seller before payment and disclosure |
 | Repudiation | Abuse visibility | Medium | Rate limiting, Worker error logging, and security summarization tooling |
@@ -111,12 +114,19 @@ This document captures the current application threat model, attack surface, and
 - Public OCR endpoint protections:
   - POST-only
   - JSON content-type enforcement
-  - request body size limit
+  - streaming request body byte limit of 7 MiB, with cancellation and HTTP 413 on overflow, including streams without Content-Length
+  - 5 MiB decoded image limit
   - same-origin request enforcement with required browser provenance headers
   - short-lived signed vision session token plus Strict HttpOnly cookie binding
   - OAuth bearer-token path for approved machine clients
+  - bearer authentication before reading or decoding an image; browser session authentication before image decoding
+  - pre-authentication IP ceiling of 180 attempts/minute and 2,400/hour, in addition to browser and OAuth-client limits
   - minute/hour IP rate limits
   - HTTPS-only upstream to OpenAI
+- Other public body limits:
+  - MCP JSON: 64 KiB before parsing
+  - OAuth token forms: 8 KiB before parsing
+  - byte limits count UTF-8 bytes and do not trust an absent or understated Content-Length
 - Public read API protections:
   - endpoint-specific IP rate limits
   - public page-size caps on list/search endpoints
@@ -133,7 +143,12 @@ This document captures the current application threat model, attack surface, and
   - source URL host allowlisting and freshness expiry
   - active-listing verification before a WhatsApp action is shown
   - short form values are composed locally and never submitted to Plate.hk
-  - no seller contact fields in the scrape output
+  - no seller contact fields in public signal output; advertised WhatsApp contacts use a separate private snapshot
+  - contact reveal requires the original HttpOnly browser cookie and a matching paid Stripe purchase; a session ID alone does not authorize disclosure
+  - AES-GCM binds encrypted purchase contact metadata to the hashed browser owner
+  - contact fulfillment verifies amount, currency, account mode, payment status, refund/dispute state and listing identity
+  - contact webhooks authenticate a bounded raw body with a signed timestamp before fulfillment
+  - contact pages and APIs use no-store/no-referrer policies and are excluded from service-worker caching
   - introduction controls remain disabled unless both the Render service URL and secondary public number are configured
   - buyer consent, seller consent, buyer match approval, payment, group creation, and delivery confirmation are separate states
   - Stripe webhook signatures and amount/currency/session metadata are verified before group creation
@@ -177,3 +192,30 @@ This document captures the current application threat model, attack surface, and
 2. Add alerting thresholds on repeated `search_index_unavailable`, `results_index_unavailable`, `invalid_paging`, and `vision_token_invalid` patterns.
 3. Consider user- or session-aware throttling if authenticated features are added later.
 4. Move security-event aggregation to a Worker or Cloudflare log sink if operational monitoring needs grow.
+
+## Verification and Formal Qualification
+
+The request-ingestion regression suite is part of `scripts/check_site.sh`:
+
+```sh
+node --test tests/vision_worker_test.mjs
+```
+
+It measures stream consumption and cancellation, UTF-8 byte limits, early bearer
+rejection, pre-authentication throttling, and legitimate browser/OAuth/MCP
+behavior. It also exercises rejection and legitimate MCP requests in the local
+Workers runtime. Provider inference is replaced only in the inference tests;
+the request reader, authentication and routing under test remain application code.
+
+For a security release, run the repository secret scan, `scripts/check_site.sh`,
+the relevant browser regressions, and dependency audits. Worker tooling and all
+CI jobs that install it require Node 22 or newer; the CI baseline is 22.22.2.
+
+Formal CSO qualification is a separate evidence gate. It requires an admitted
+isolated runtime and qualified immutable scanner/runtime profiles, supported
+dependency acquisition and canonical startup/test plans, and matching external
+security assertions on the original and repaired source. Ordinary project tests
+and npm/pip audit results do not grant that qualification. Incomplete history,
+withheld snapshot files, missing profiles, and unavailable provider/admin evidence
+must stay visible in the formal report. A proposed or locally passing repair
+cannot silently close the retained formal finding.
