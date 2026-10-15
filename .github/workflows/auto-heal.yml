@@ -231,7 +231,7 @@ jobs:
         if: ${{ steps.plan.outputs.status == 'repairable' || steps.override.outputs.status == 'repairable' }}
         uses: actions/setup-node@v6
         with:
-          node-version: "20"
+          node-version: "22.22.2"
           cache: npm
 
       - name: Install Node dependencies
