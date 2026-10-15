@@ -87,18 +87,21 @@ try {
     for (const batch of [false, true]) {
       const qualified = await signal(batch);
       assert.equal(qualified.contact_unlock_available, true);
+      assert.equal(qualified.inquiry_enabled, true);
       assert.equal(qualified.listing_id, "n100004");
       assert.equal(qualified.source_url, "https://m.28car.com/num_dsp.php?h_vid=50000004");
       assert.deepEqual(qualified.asking_prices_hkd, [88000, 92000, 99000]);
     }
     const held = await signal(false, { ...env, CONTACT_UNLOCK_ENABLED: "false" });
     assert.equal(held.contact_unlock_available, false);
+    assert.equal(held.inquiry_enabled, false);
     assert.equal(held.listing_id, "n100001");
     contacts.contacts.n100001 = savedContacts.n100001;
     assert.equal((await signal()).listing_id, "n100001");
     contacts.contacts = {};
     const unavailable = await signal();
     assert.equal(unavailable.contact_unlock_available, false);
+    assert.equal(unavailable.inquiry_enabled, false);
     assert.equal(unavailable.listing_id, "n100001");
   } finally {
     market.signals.TEST8 = savedOffers;

@@ -10,9 +10,9 @@
     obtainable: "may be obtainable",
     plateLabel: "Plate",
     asking: "Current asking price: ",
-    body: "You can enquire with Plate.hk via WhatsApp. Third-party data may be stale or wrong and does not guarantee availability or transferability.",
+    body: "This listing has no verified seller WhatsApp contact available to unlock.",
     unlockBody: "Pay HK$99 to unlock this listing’s advertised seller WhatsApp number. Seller replies, availability and transferability are not guaranteed.",
-    mandate: "Submit a buyer offer via WhatsApp",
+    unavailable: "Contact unavailable",
     seller: "I am the seller: receive buyer offers",
   } : {
     priceRequest: "價格另議",
@@ -20,9 +20,9 @@
     obtainable: "或可洽購",
     plateLabel: "車牌",
     asking: "目前叫價：",
-    body: "你可透過 WhatsApp 向 Plate.hk 查詢。第三方資料可能過期或有誤，並不保證可買到或可轉名。",
+    body: "此刊登暫時沒有已核實、可供解鎖的賣方 WhatsApp 聯絡資料。",
     unlockBody: "付款 HK$99 解鎖此刊登列明的賣方 WhatsApp 號碼。賣方回覆、可買到或可轉名均無保證。",
-    mandate: "透過 WhatsApp 提交買方出價",
+    unavailable: "聯絡資料暫未提供",
     seller: "我是賣方：接收買家出價",
   };
 
@@ -85,11 +85,10 @@
         unlock.href = `/contact.html?plate=${encodeURIComponent(plate)}&listing_id=${encodeURIComponent(signal.listing_id)}&lang=${lang}`;
         actions.append(unlock);
       }
-      if (signal.inquiry_enabled === true && signal.contact_unlock_available !== true) {
-        const mandate = node("a", "btn primary whatsapp-action");
-        mandate.href = `../?lang=${lang}&q=${encodeURIComponent(plate)}&broker=1`;
-        mandate.append(whatsappIcon(), node("span", "", t.mandate));
-        actions.append(mandate);
+      if (signal.contact_unlock_available !== true) {
+        const unavailable=node('span','market-disclaimer',t.unavailable);
+        unavailable.setAttribute('role','status');
+        actions.append(unavailable);
       }
       if (signal.introduction_enabled === true && signal.contact_unlock_available !== true) {
         const number = String(signal.introduction_whatsapp_number || "").replace(/\D/g, "");

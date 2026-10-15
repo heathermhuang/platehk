@@ -149,14 +149,16 @@ assert.equal(fetchedBatches.length, 1);
 assert.equal(fetchedBatches[0].length, 200);
 assert.equal(fetchedBatches[0][0], "HUANG");
 assert.equal(fetchedBatches[0][199], "DRHUANG");
-assert.equal(rowActions.get("HUANG").children.length, 1);
-assert.equal(rowActions.get("DRHUANG").children.length, 1);
+assert.equal(rowActions.get("HUANG").children.length, 0);
+assert.equal(rowActions.get("DRHUANG").children.length, 0);
 assert.equal(rowActions.get("HUANG88").children.length, 0);
 assert.equal((marketSignalEl.innerHTML.match(/class="market-signal-item"/g) || []).length, 1);
 assert.match(marketSignalEl.innerHTML, /data-market-plate="HUANG"/);
 assert.doesNotMatch(marketSignalEl.innerHTML, /data-market-plate="DRHUANG"/);
 assert.match(marketSignalEl.innerHTML, /data-market-sell="HUANG"/);
 assert.doesNotMatch(marketSignalEl.innerHTML, /href="https:\/\/m\.28car\.com/);
+assert.match(marketSignalEl.innerHTML,/Contact unavailable/);
+assert.doesNotMatch(marketSignalEl.innerHTML,/data-market-inquire=/);
 
 const sellerButton = new FakeElement();
 sellerButton.dataset.marketSell = "HUANG";
@@ -167,10 +169,13 @@ assert.equal(sellerUrl.pathname, "/85261112222");
 assert.match(sellerUrl.searchParams.get("text"), /^\[PLATEHK SELL\]/);
 assert.match(sellerUrl.searchParams.get("text"), /Plate: HUANG/);
 
-const drHuangButton = rowActions.get("DRHUANG").children[0];
+const drHuangButton = new FakeElement();
+drHuangButton.dataset.marketInquire = 'DRHUANG';
 rowsEl.listeners.get("click")({ target: drHuangButton });
-assert.equal(brokerModalEl.hidden, false);
-assert.equal(brokerPlateEl.value, "DR HUANG");
+assert.equal(brokerModalEl.hidden, true);
+const beforeSubmit=window.openedUrls.length;
+brokerFormEl.listeners.get('submit')({preventDefault(){}});
+assert.equal(window.openedUrls.length,beforeSubmit);
 
 console.log("Single-listing market signal frontend test passed.");
 

@@ -1,6 +1,8 @@
 import { test, expect } from '@playwright/test';
 import { createRequire } from 'node:module';
+import { readFileSync } from 'node:fs';
 const require=createRequire(import.meta.url);
+test.use({serviceWorkers:'block'});
 async function checkAccessibility(page) {
   await page.addScriptTag({path:require.resolve('axe-core/axe.min.js')});
   const issues=await page.evaluate(async()=> (await axe.run(document,{runOnly:{type:'tag',values:['wcag2a','wcag2aa']}})).violations.map(item=>({id:item.id,nodes:item.nodes.map(node=>node.target)})));
@@ -10,6 +12,39 @@ const signal = { availability_detected: true, plate: 'TEST8', listing_id: 'n1000
 const preview = {available:true,price_hkd:99,plate:'TEST8',listing_id:'n100001',asking_price_hkd:88000,observed_at:new Date().toISOString(),source_url:signal.source_url};
 const contact = { ...preview, plate: 'TEST8', listing_id: 'n100001', whatsapp_number: '85261112222', whatsapp_url: 'https://wa.me/85261112222' };
 async function sources(page) { await page.route('**/api/market_signal?*', route => route.fulfill({ json: signal })); }
+for (const eligible of [false,true]) {
+  test(`search and plate pages use ${eligible ? 'paid unlock' : 'contact unavailable'} without a free buyer route`,async({page},testInfo)=>{
+    // CI has no private market snapshot, so use an actual generated market page.
+    await page.route('**/plates/0J.html?lang=en',route=>route.fulfill({contentType:'text/html',body:readFileSync(new URL('../plates/0J.html',import.meta.url),'utf8')}));
+    const item={...signal,plate:'88',inquiry_enabled:true,contact_unlock_available:eligible,asking_prices_hkd:[88000]};
+    await page.route('**/api/market_signal?*',route=>{
+      const params=new URL(route.request().url()).searchParams;
+      return route.fulfill({json:params.has('plates') ? {signals:[item]} : {...item,plate:params.get('plate')}});
+    });
+    for (const url of ['/?lang=en&q=88','/plates/0J.html?lang=en']) {
+      await page.goto(url);
+      const card=url.startsWith('/?') ? page.locator('#marketSignal') : page.locator('[data-market-card]');
+      await expect(card).toBeVisible();
+      await expect(card.locator('a[href*="broker="]')).toHaveCount(0);
+      await expect(page.locator('#brokerForm')).toHaveCount(0);
+      if (eligible) {
+        const plate=url.startsWith('/?') ? '88' : '0J';
+        await expect(card.getByRole('link',{name:'Unlock seller WhatsApp — HK$99'})).toHaveAttribute('href',`/contact.html?plate=${plate}&listing_id=n100001&lang=en`);
+      } else {
+        await expect(card).toContainText('Contact unavailable');
+        await expect(card.getByRole('button',{name:/buyer offer/i})).toHaveCount(0);
+        await expect(card.locator('a[href*="wa.me"]')).toHaveCount(0);
+      }
+      await card.screenshot({path:testInfo.outputPath(`${eligible?'paid':'unavailable'}-${url.startsWith('/?')?'search':'plate'}.png`)});
+    }
+    if (!eligible) {
+      await page.goto('/?lang=en&q=88&broker=1');
+      await expect(page.locator('#marketSignal')).toContainText('Contact unavailable');
+      await expect(page.locator('#brokerModal')).toHaveCount(0);
+      await expect(page).toHaveURL(/broker=1/);
+    }
+  });
+}
 test('HK$99 checkout explains the purchase without an external listing link and opens Stripe', async ({page},testInfo) => {
   await sources(page);
   await page.route('**/api/contact/availability', route => { expect(route.request().method()).toBe('POST'); return route.fulfill({ json: preview }); });
