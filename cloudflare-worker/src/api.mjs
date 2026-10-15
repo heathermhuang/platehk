@@ -835,7 +835,7 @@ async function publicMarketSignal(plate, payload, offers, env, request, contactS
     return {
       plate,
       availability_detected: false,
-      inquiry_enabled: true,
+      inquiry_enabled: false,
       introduction_enabled: introductionEnabled,
       ...(introductionEnabled ? { introduction_whatsapp_number: introductionNumber } : {}),
     };
@@ -879,7 +879,7 @@ async function publicMarketSignal(plate, payload, offers, env, request, contactS
     listing_id: String(primary.listing_id),
     source_url: String(primary.source_url),
     source_attribution: "28car",
-    inquiry_enabled: true,
+    inquiry_enabled: contactAvailable,
     introduction_enabled: introductionEnabled,
     ...(introductionEnabled ? { introduction_whatsapp_number: introductionNumber } : {}),
   };

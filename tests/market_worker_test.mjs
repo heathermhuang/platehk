@@ -145,7 +145,7 @@ const signal = await signalResponse.json();
 assert.equal(signal.availability_detected, true);
 assert.equal(signal.plate, "TEST8");
 assert.equal(signal.asking_prices_hkd[0], 88000);
-assert.equal(signal.inquiry_enabled, true);
+assert.equal(signal.inquiry_enabled, false);
 assert.equal(signal.introduction_enabled, true);
 assert.equal(signal.introduction_whatsapp_number, "85261112222");
 assert.equal(Object.hasOwn(signal, "seller"), false);

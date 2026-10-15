@@ -25,8 +25,8 @@ class FrontendContractsTests(unittest.TestCase):
         self.assertIn('id="homeShelf"', html)
         self.assertIn('id="resultsContext"', html)
         self.assertIn('id="marketSignal"', html)
-        self.assertIn('id="brokerModal"', html)
-        self.assertIn('id="brokerForm"', html)
+        self.assertNotIn('id="brokerModal"', html)
+        self.assertNotIn('id="brokerForm"', html)
         self.assertIn('id="queryLabel"', html)
         self.assertIn('id="datasetLabel"', html)
         self.assertIn('id="issueLabel"', html)
@@ -50,11 +50,12 @@ class FrontendContractsTests(unittest.TestCase):
         self.assertIn("function createPlateMarketFlow(", market_js)
         self.assertIn("./api/market_signal", market_js)
         self.assertIn("https://wa.me/", market_js)
-        self.assertIn('const WHATSAPP_NUMBER = "85293247246"', market_js)
-        self.assertIn('"[PLATEHK BUY]"', market_js)
+        self.assertNotIn('const WHATSAPP_NUMBER', market_js)
+        self.assertNotIn('"[PLATEHK BUY]"', market_js)
         self.assertIn("introduction_whatsapp_number", market_js)
         self.assertIn("data-market-sell", market_js)
-        self.assertIn("window.open(url", market_js)
+        self.assertNotIn("Please record my buyer offer", market_js)
+        self.assertNotIn('id="brokerForm"', html)
         self.assertNotIn("./api/broker_inquiry", market_js)
         self.assertNotIn('id="brokerContact"', html)
         self.assertNotIn('id="brokerConsent"', html)
@@ -142,7 +143,7 @@ class FrontendContractsTests(unittest.TestCase):
             "scripts/build_popular_plate_pages.py",
         ):
             self.assertIn(favicon_ref, (ROOT / path).read_text(encoding="utf-8"), path)
-        self.assertIn("pvrm-static-v162", (ROOT / "sw.js").read_text(encoding="utf-8"))
+        self.assertIn("pvrm-static-v163", (ROOT / "sw.js").read_text(encoding="utf-8"))
 
     def test_camera_prototype_page_and_links_exist(self) -> None:
         camera = (ROOT / "camera.html").read_text(encoding="utf-8")
@@ -434,7 +435,7 @@ class FrontendContractsTests(unittest.TestCase):
 
         index_html = (ROOT / "index.html").read_text(encoding="utf-8")
         ledger_css = (ROOT / "assets" / "ledger.css").read_text(encoding="utf-8")
-        self.assertIn('class="plate broker-plate-value"', index_html)
+        self.assertNotIn('class="plate broker-plate-value"', index_html)
         self.assertNotIn(".market-plate {", index_html)
         self.assertNotIn(".market-plate", ledger_css)
         self.assertIn(".info-page .actions a:not(.primary)", ledger_css)
