@@ -202,8 +202,16 @@ test.describe("Plate.hk public API", () => {
     const authGuide = await request.get("/auth.md");
     expect(authGuide.ok()).toBeTruthy();
     expect(authGuide.headers()["content-type"]).toContain("text/markdown");
+    expect((await authGuide.text()).split("\n")[0]).toContain("auth.md");
     expect(await authGuide.text()).toContain("does not offer automatic");
     expect(await authGuide.text()).toContain("client_credentials");
+    const personalAgent = await request.get("/.well-known/poppy.json");
+    expect(personalAgent.ok()).toBeTruthy();
+    expect(await personalAgent.json()).toEqual({
+      protocol_version: "0.2",
+      organization: { name: "Plate.hk", domain: new URL(origin).hostname },
+      web: {},
+    });
 
     for (const protocol of ["2025-06-18", "2025-03-26"]) {
       const toolsResp = await request.post("/mcp", {

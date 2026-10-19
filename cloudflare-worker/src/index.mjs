@@ -144,6 +144,7 @@ function appendDiscoveryLinkHeaders(headers, url) {
   appendLink(headers, `</.well-known/ard.json>; rel="ard"; type="application/json"`);
   appendLink(headers, `</.well-known/ai-catalog.json>; rel="ai-catalog"; type="application/json"`);
   appendLink(headers, `</auth.md>; rel="describedby"; type="text/markdown"`);
+  appendLink(headers, `</.well-known/poppy.json>; rel="alternate"; type="application/json"`);
   appendLink(headers, `</.well-known/oauth-protected-resource>; rel="alternate"; type="application/json"`);
   appendLink(headers, `</.well-known/oauth-authorization-server>; rel="alternate"; type="application/json"`);
   appendLink(headers, `</.well-known/jwks.json>; rel="alternate"; type="application/jwk-set+json"`);
@@ -247,6 +248,16 @@ async function serveAgentCatalog(request, env, { noindex = false } = {}) {
   return new Response(request.method === "HEAD" ? null : body, { status: 200, headers });
 }
 
+function servePersonalAgentMetadata(request, { noindex = false } = {}) {
+  const headers = jsonAssetHeaders("application/json", { noindex, crossOrigin: true });
+  const metadata = {
+    protocol_version: "0.2",
+    organization: { name: "Plate.hk", domain: new URL(request.url).hostname },
+    web: {},
+  };
+  return new Response(request.method === "HEAD" ? null : JSON.stringify(metadata), { status: 200, headers });
+}
+
 function serveOauthJwks(request, env, { noindex = false } = {}) {
   const headers = jsonAssetHeaders("application/jwk-set+json", {
     noindex,
@@ -315,6 +326,9 @@ async function serveAsset(request, env) {
   if ((url.pathname === "/.well-known/ard.json" || url.pathname === "/.well-known/ai-catalog.json")
       && (request.method === "GET" || request.method === "HEAD")) {
     return serveAgentCatalog(request, env, { noindex: genericNoindex });
+  }
+  if (url.pathname === "/.well-known/poppy.json" && (request.method === "GET" || request.method === "HEAD")) {
+    return servePersonalAgentMetadata(request, { noindex: genericNoindex });
   }
   if ((url.pathname === "/.well-known/oauth-protected-resource"
       || url.pathname === "/.well-known/oauth-protected-resource/api/vision_plate")

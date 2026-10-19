@@ -108,6 +108,24 @@ for (const [suffix, resource] of [["", "https://plate.hk"], ["/api/vision_plate"
 const robots = await readFile(new URL("../robots.txt", import.meta.url), "utf8");
 assert.match(robots, /^Content-Signal: search=yes, ai-input=yes, ai-train=no$/m);
 assert.match(robots, /^Agentmap: https:\/\/plate.hk\/\.well-known\/ard.json$/m);
+const authGuide = await readFile(new URL("../auth.md", import.meta.url), "utf8");
+assert.match(authGuide.split("\n")[0], /^# .*auth\.md/);
+
+for (const hostname of ["plate.hk", "preview.example"]) {
+  const url = `https://${hostname}/.well-known/poppy.json`;
+  const response = await worker.fetch(new Request(url), env, ctx);
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get("access-control-allow-origin"), "*");
+  assert.deepEqual(await response.json(), {
+    protocol_version: "0.2",
+    organization: { name: "Plate.hk", domain: hostname },
+    web: {},
+  });
+  if (hostname !== "plate.hk") assert.match(response.headers.get("x-robots-tag"), /noindex/);
+  const head = await worker.fetch(new Request(url, { method: "HEAD" }), env, ctx);
+  assert.equal(head.status, 200);
+  assert.equal(await head.text(), "");
+}
 
 const catalogJson = await readFile(new URL("../.well-known/ard.json", import.meta.url), "utf8");
 const discoveryEnv = { ASSETS: { async fetch(request) {

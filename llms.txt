@@ -57,6 +57,7 @@ Agent-readable guidance:
 - API catalog: /.well-known/api-catalog
 - ARD capability catalog: /.well-known/ard.json (compatibility alias: /.well-known/ai-catalog.json)
 - Authentication and public access guide: /auth.md
+- Personal Agent Protocol website discovery: /.well-known/poppy.json (anonymous website browsing only; no account/session bridge)
 - OAuth protected resource metadata: /.well-known/oauth-protected-resource
 - OCR-specific protected resource metadata: /.well-known/oauth-protected-resource/api/vision_plate
 - OAuth authorization server metadata for protected APIs: /.well-known/oauth-authorization-server

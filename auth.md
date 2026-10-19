@@ -1,4 +1,4 @@
-# Plate.hk authentication for agents
+# Plate.hk auth.md: authentication for agents
 
 ## Public auction data
 
