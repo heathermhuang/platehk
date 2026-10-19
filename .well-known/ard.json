@@ -1,0 +1,45 @@
+{
+  "specVersion": "1.0",
+  "host": {
+    "displayName": "Plate.hk",
+    "identifier": "https://plate.hk",
+    "url": "https://plate.hk"
+  },
+  "entries": [
+    {
+      "identifier": "urn:air:plate.hk:mcp:public-data",
+      "displayName": "Plate.hk Public Data MCP",
+      "type": "application/mcp-server-card+json",
+      "url": "https://plate.hk/.well-known/mcp/server-card.json",
+      "description": "Read-only tools for historical Hong Kong vehicle registration mark auction results with official source links. Historical amounts are not valuations or availability checks.",
+      "capabilities": ["platehk_list_datasets", "platehk_search", "platehk_list_issues", "platehk_get_issue"],
+      "representativeQueries": [
+        "Find historical Hong Kong auction results for plate AA88",
+        "Show the official source for a Hong Kong plate auction result",
+        "List the auction issues in the PVRM dataset"
+      ]
+    },
+    {
+      "identifier": "urn:air:plate.hk:api:auction-data",
+      "displayName": "Plate.hk Auction Data API",
+      "type": "application/vnd.oai.openapi",
+      "url": "https://plate.hk/api/openapi.yaml",
+      "description": "Public read APIs for auction history and structural comparisons; OCR requires separately approved credentials. Official Transport Department results prevail.",
+      "representativeQueries": [
+        "Search Hong Kong plate auction history using a JSON API",
+        "Compare historical auction sales of plates with the same number"
+      ]
+    },
+    {
+      "identifier": "urn:air:plate.hk:skill:public-data",
+      "displayName": "Plate.hk Public Data Skill",
+      "type": "text/markdown",
+      "url": "https://plate.hk/skill.md",
+      "description": "Instructions for reading source-linked plate history without confusing auction sales, special-fee allocations, asking prices, or current availability.",
+      "representativeQueries": [
+        "How should an agent interpret Hong Kong vehicle registration mark auction data?",
+        "Find source-linked plate results across PVRM and traditional auctions"
+      ]
+    }
+  ]
+}

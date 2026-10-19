@@ -141,6 +141,9 @@ function appendLink(headers, value) {
 
 function appendDiscoveryLinkHeaders(headers, url) {
   appendLink(headers, `</.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json"`);
+  appendLink(headers, `</.well-known/ard.json>; rel="ard"; type="application/json"`);
+  appendLink(headers, `</.well-known/ai-catalog.json>; rel="ai-catalog"; type="application/json"`);
+  appendLink(headers, `</auth.md>; rel="describedby"; type="text/markdown"`);
   appendLink(headers, `</.well-known/oauth-protected-resource>; rel="alternate"; type="application/json"`);
   appendLink(headers, `</.well-known/oauth-authorization-server>; rel="alternate"; type="application/json"`);
   appendLink(headers, `</.well-known/jwks.json>; rel="alternate"; type="application/jwk-set+json"`);
@@ -232,7 +235,16 @@ function serveOauthProtectedResourceMetadata(request, env, { noindex = false } =
   const headers = jsonAssetHeaders("application/json", { noindex, crossOrigin: true });
   appendLink(headers, `</.well-known/oauth-authorization-server>; rel="alternate"; type="application/json"`);
   if (request.method === "HEAD") return new Response(null, { status: 200, headers });
-  return new Response(JSON.stringify(buildOAuthProtectedResourceMetadata(request, env, "/api/vision_plate")), { status: 200, headers });
+  const resourcePath = new URL(request.url).pathname.slice("/.well-known/oauth-protected-resource".length);
+  return new Response(JSON.stringify(buildOAuthProtectedResourceMetadata(request, env, resourcePath)), { status: 200, headers });
+}
+
+async function serveAgentCatalog(request, env, { noindex = false } = {}) {
+  const body = await getStaticText(env, request.url, "/.well-known/ard.json");
+  if (body == null) return new Response("Not found", { status: 404 });
+  const headers = jsonAssetHeaders("application/json", { noindex, crossOrigin: true });
+  appendLink(headers, `</.well-known/ard.json>; rel="ard"; type="application/json"`);
+  return new Response(request.method === "HEAD" ? null : body, { status: 200, headers });
 }
 
 function serveOauthJwks(request, env, { noindex = false } = {}) {
@@ -299,6 +311,10 @@ async function serveAsset(request, env) {
   }
   if (url.pathname === "/.well-known/api-catalog" && (request.method === "GET" || request.method === "HEAD")) {
     return serveApiCatalog(request, env, { noindex: genericNoindex });
+  }
+  if ((url.pathname === "/.well-known/ard.json" || url.pathname === "/.well-known/ai-catalog.json")
+      && (request.method === "GET" || request.method === "HEAD")) {
+    return serveAgentCatalog(request, env, { noindex: genericNoindex });
   }
   if ((url.pathname === "/.well-known/oauth-protected-resource"
       || url.pathname === "/.well-known/oauth-protected-resource/api/vision_plate")

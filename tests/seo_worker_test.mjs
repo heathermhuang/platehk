@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 
 import worker from "../cloudflare-worker/src/index.mjs";
 
@@ -86,6 +87,64 @@ const mcpApi = await worker.fetch(new Request("https://plate.hk/mcp"), env, ctx)
 assert.equal(mcpApi.status, 405);
 assert.equal(mcpApi.headers.get("location"), null);
 assert.deepEqual(assetRequests, []);
+
+// RFC 9728 binds discovery metadata to the resource encoded in its URL,
+// independently of the authorization server's issuer or token audience.
+for (const [suffix, resource] of [["", "https://plate.hk"], ["/api/vision_plate", "https://plate.hk/api/vision_plate"]]) {
+  const url = `https://plate.hk/.well-known/oauth-protected-resource${suffix}`;
+  const metadata = await worker.fetch(new Request(url), { ...env, OAUTH_ISSUER: "https://auth.example" }, ctx);
+  assert.equal(metadata.status, 200);
+  assert.equal(metadata.headers.get("access-control-allow-origin"), "*");
+  const body = await metadata.json();
+  assert.equal(body.resource, resource);
+  assert.deepEqual(body.authorization_servers, ["https://auth.example"]);
+  assert.deepEqual(body.scopes_supported, ["vision:ocr"]);
+  assert.deepEqual(body.bearer_methods_supported, ["header"]);
+  const head = await worker.fetch(new Request(url, { method: "HEAD" }), env, ctx);
+  assert.equal(head.status, 200);
+  assert.equal(await head.text(), "");
+}
+
+const robots = await readFile(new URL("../robots.txt", import.meta.url), "utf8");
+assert.match(robots, /^Content-Signal: search=yes, ai-input=yes, ai-train=no$/m);
+assert.match(robots, /^Agentmap: https:\/\/plate.hk\/\.well-known\/ard.json$/m);
+
+const catalogJson = await readFile(new URL("../.well-known/ard.json", import.meta.url), "utf8");
+const discoveryEnv = { ASSETS: { async fetch(request) {
+  if (new URL(request.url).pathname === "/.well-known/ard.json") return new Response(catalogJson);
+  return env.ASSETS.fetch(request);
+} } };
+for (const path of ["/.well-known/ard.json", "/.well-known/ai-catalog.json"]) {
+  const response = await worker.fetch(new Request(`https://plate.hk${path}`), discoveryEnv, ctx);
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get("content-type"), /^application\/json/);
+  assert.equal(response.headers.get("access-control-allow-origin"), "*");
+  assert.equal(response.headers.get("cross-origin-resource-policy"), "cross-origin");
+  const catalog = await response.json();
+  assert.equal(catalog.host.url, "https://plate.hk");
+  assert.equal(catalog.host.displayName, "Plate.hk");
+  assert.equal(catalog.host.identifier, "https://plate.hk");
+  assert.equal(catalog.entries.length, 3);
+  assert.equal(new Set(catalog.entries.map(entry => entry.identifier)).size, 3);
+  for (const entry of catalog.entries) {
+    assert.match(entry.identifier, /^urn:air:plate.hk:/);
+    assert.ok(entry.representativeQueries.length >= 2);
+    assert.ok(entry.displayName);
+    assert.ok(entry.type);
+    assert.equal(new URL(entry.url).origin, "https://plate.hk");
+    assert.equal("data" in entry, false);
+  }
+  const head = await worker.fetch(new Request(`https://plate.hk${path}`, { method: "HEAD" }), discoveryEnv, ctx);
+  assert.equal(head.status, 200);
+  assert.equal(await head.text(), "");
+}
+const missingCatalog = await worker.fetch(new Request("https://missing.example/.well-known/ard.json"), env, ctx);
+assert.equal(missingCatalog.status, 404);
+const homeDiscovery = await worker.fetch(new Request("https://plate.hk/"), env, ctx);
+assert.match(homeDiscovery.headers.get("link"), /<\/\.well-known\/ard.json>; rel="ard"/);
+assert.match(homeDiscovery.headers.get("link"), /<\/auth.md>; rel="describedby"/);
+const stagingCatalog = await worker.fetch(new Request("https://preview.example/.well-known/ard.json"), discoveryEnv, ctx);
+assert.match(stagingCatalog.headers.get("x-robots-tag"), /noindex/);
 
 for (const path of ["/auction-results/feed.xml", "/auction-results/en/feed.xml"]) {
   const feed = await worker.fetch(new Request(`https://plate.hk${path}`), env, ctx);

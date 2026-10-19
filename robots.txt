@@ -1,4 +1,6 @@
 User-agent: *
+# Public search and AI answer retrieval; no model training permission.
+Content-Signal: search=yes, ai-input=yes, ai-train=no
 Allow: /
 Allow: /api/openapi.yaml
 Allow: /api/v1/index.json
@@ -6,3 +8,4 @@ Disallow: /api/
 Disallow: /api/v1/
 Disallow: /api/admin/
 Sitemap: https://plate.hk/sitemap.xml
+Agentmap: https://plate.hk/.well-known/ard.json

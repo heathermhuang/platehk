@@ -290,6 +290,10 @@ The isolated service under `services/whatsapp-introductions/` implements the HK$
 - Do not commit credentials, tokens, or local environment files
 - Camera OCR requires the Cloudflare Worker secret `OPENAI_API_KEY`; set it with `wrangler secret put OPENAI_API_KEY` and verify it with `npm run cf:secrets:check`
 - Protected agent-facing OCR auth is published via `/.well-known/oauth-protected-resource`, `/.well-known/oauth-authorization-server`, and `/.well-known/jwks.json`
+- `/.well-known/oauth-protected-resource` describes the origin; the OCR-specific metadata is at `/.well-known/oauth-protected-resource/api/vision_plate`. Resource identifiers use the resource origin independently of `OAUTH_ISSUER`; OCR token audiences and access checks are unchanged.
+- `/auth.md` explains anonymous public reads and approved OCR client credentials. Automatic agent registration is not supported.
+- ARD capability discovery is published at `/.well-known/ard.json`, with `/.well-known/ai-catalog.json` as a compatibility alias, public CORS, `Link` headers, and a robots.txt `Agentmap`. Entries reference the existing MCP server, OpenAPI document, and public data skill.
+- robots.txt declares `search=yes, ai-input=yes, ai-train=no` Content Signals; source attribution and upstream data terms still apply.
 - The worker expects `OAUTH_CLIENTS_JSON`, `OAUTH_JWT_PRIVATE_JWK`, and `OAUTH_JWKS_JSON` to issue and verify bearer tokens for `/api/vision_plate`
 - The worker now also serves a public MCP transport at `/mcp` with discovery at `/.well-known/mcp/server-card.json` and `/.well-known/mcp-server-card`
 
