@@ -1,5 +1,7 @@
 import { handleContactUnlock, handleContactWebhook } from "./contact-unlock.mjs";
 import { handleApiRequest } from "./api.mjs";
+import { guardAgentRead, handleAgentRegistration } from "./agent-registration.mjs";
+export { AgentRegistrationStore } from "./agent-registration.mjs";
 import {
   buildOAuthProtectedResourceMetadata,
   buildOAuthAuthorizationServerMetadata,
@@ -102,6 +104,10 @@ function securityHeadersForAsset(request, response, { noindex = false } = {}) {
   headers.set("x-content-type-options", "nosniff");
   headers.set("x-frame-options", "SAMEORIGIN");
   headers.set("referrer-policy", "strict-origin-when-cross-origin");
+  if (new URL(request.url).pathname === "/agent-claim.html") {
+    headers.set("cache-control", "private, no-store");
+    headers.set("referrer-policy", "no-referrer");
+  }
   headers.set("permissions-policy", "geolocation=(), microphone=(), camera=(self), browsing-topics=()");
   headers.set("cross-origin-resource-policy", "same-origin");
   const contentType = String(headers.get("content-type") || "").toLowerCase();
@@ -387,7 +393,7 @@ async function serveAsset(request, env) {
     && url.pathname.startsWith("/data/")
     && contentType.includes("application/json");
   const privateDecisionView = ["/plate.html", "/shortlist.html"].includes(url.pathname)
-    || url.pathname === "/contact.html"
+    || ["/contact.html", "/agent-claim.html"].includes(url.pathname)
     || (url.pathname === "/discover.html" && url.searchParams.has("q"));
   const noindex = ((genericNoindex || privateDecisionView) && contentType.includes("text/html")) || isPublicDataJson;
   if (!primaryHost && contentType.includes("text/html")) {
@@ -415,7 +421,7 @@ async function serveAsset(request, env) {
     headers.delete("content-encoding");
     headers.delete("etag");
   }
-  if (url.pathname === "/contact.html") {
+  if (["/contact.html", "/agent-claim.html"].includes(url.pathname)) {
     headers.set("cache-control", "private, no-store");
     headers.set("referrer-policy", "no-referrer");
   }
@@ -440,6 +446,17 @@ export default {
     }
     const canonicalHtmlRedirect = redirectToCanonicalHtml(request, url);
     if (canonicalHtmlRedirect) return canonicalHtmlRedirect;
+    if (url.pathname === "/agent/claim") {
+      const asset = new URL("/agent-claim.html", url);
+      return serveAsset(new Request(asset, request), env);
+    }
+    if (url.pathname.startsWith("/api/agent/")) return handleAgentRegistration(request, env);
+    if (url.pathname.startsWith("/api/") || url.pathname === "/mcp") {
+      try {
+        const denied = await guardAgentRead(request, env);
+        if (denied) return denied;
+      } catch { return new Response('{"error":"agent_registration_unavailable"}', { status: 503, headers: { "content-type": "application/json", "cache-control": "no-store" } }); }
+    }
     if (url.pathname === "/api/contact/webhook") return handleContactWebhook(request,env);
     if (url.pathname.startsWith("/api/contact/")) return handleContactUnlock(request, env);
     if (url.pathname.startsWith("/api/")) {

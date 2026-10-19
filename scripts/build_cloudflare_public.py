@@ -36,6 +36,7 @@ ROOT_FILES = [
     "terms.html",
     "privacy.html",
     "contact.html",
+    "agent-claim.html",
     "mcp.html",
     "robots.txt",
     "sitemap.xml",
