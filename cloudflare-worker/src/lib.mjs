@@ -528,9 +528,9 @@ export function getOAuthScopeCatalog() {
 
 export function buildOAuthProtectedResourceMetadata(request, env, resourcePath = "/api/vision_plate") {
   const issuer = getOAuthIssuer(request, env);
-  const normalizedPath = `/${String(resourcePath || "/api/vision_plate").replace(/^\/+/, "")}`;
+  const normalizedPath = resourcePath ? `/${String(resourcePath).replace(/^\/+/, "")}` : "";
   return {
-    resource: `${issuer}${normalizedPath}`,
+    resource: `${new URL(request.url).origin}${normalizedPath}`,
     authorization_servers: [issuer],
     scopes_supported: getOAuthScopeCatalog(),
     bearer_methods_supported: ["header"],

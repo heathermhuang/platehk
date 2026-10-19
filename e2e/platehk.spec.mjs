@@ -183,6 +183,28 @@ test.describe("Plate.hk public API", () => {
     const mcp = await mcpResp.json();
     expect(JSON.stringify(mcp)).toContain("platehk_search");
 
+    const origin = new URL(indexResp.url()).origin;
+    for (const suffix of ["", "/api/vision_plate"]) {
+      const metadata = await request.get(`/.well-known/oauth-protected-resource${suffix}`);
+      expect(metadata.ok()).toBeTruthy();
+      expect((await metadata.json()).resource).toBe(`${origin}${suffix}`);
+    }
+    for (const path of ["/.well-known/ard.json", "/.well-known/ai-catalog.json"]) {
+      const catalog = await request.get(path);
+      expect(catalog.ok()).toBeTruthy();
+      expect(catalog.headers()["access-control-allow-origin"]).toBe("*");
+      const entries = (await catalog.json()).entries;
+      expect(entries).toHaveLength(3);
+      for (const entry of entries) {
+        expect((await request.get(new URL(entry.url).pathname)).ok()).toBeTruthy();
+      }
+    }
+    const authGuide = await request.get("/auth.md");
+    expect(authGuide.ok()).toBeTruthy();
+    expect(authGuide.headers()["content-type"]).toContain("text/markdown");
+    expect(await authGuide.text()).toContain("does not offer automatic");
+    expect(await authGuide.text()).toContain("client_credentials");
+
     for (const protocol of ["2025-06-18", "2025-03-26"]) {
       const toolsResp = await request.post("/mcp", {
         headers: {

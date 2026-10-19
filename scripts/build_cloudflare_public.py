@@ -41,6 +41,7 @@ ROOT_FILES = [
     "sitemap.xml",
     "llms.txt",
     "agent.md",
+    "auth.md",
     "skill.md",
     "sw.js",
 ]
