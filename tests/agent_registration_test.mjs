@@ -39,7 +39,9 @@ test("real SQLite-backed registration, public read, one-time claim and immediate
   assert.equal((await session.json()).registration_id, registration.registration_id);
   await runtime.unsafeEvictDurableObject("agent-registration-test", "AgentRegistrationStore", { name: registration.registration_id });
   assert.equal((await call("/api/agent/session", { token: registration.access_token })).status, 200);
-  assert.equal((await call("/api/v1/index.json", { token: registration.access_token })).status, 200);
+  const dataset = await call("/api/v1/index.json", { token: registration.access_token });
+  assert.equal(dataset.status, 200);
+  assert.equal(dataset.headers.get("cache-control"), "private, no-store");
   const claim = await call("/api/agent/claim", { method: "POST", json: { claim_token: registration.claim_token } });
   assert.equal(claim.status, 200);
   const owner = await claim.json();
@@ -125,4 +127,17 @@ test("persistent per-IP limits, bounded bodies, cross-origin rejection and corre
   assert.deepEqual(root.scopes_supported, ["auction:read", "vision:ocr"]);
   const ocr = await (await call("/.well-known/oauth-protected-resource/api/vision_plate")).json();
   assert.deepEqual(ocr.scopes_supported, ["vision:ocr"]);
+});
+
+test("authenticated-read abuse returns 429 without being misreported as a storage outage", async () => {
+  const registration = await register();
+  for (let i = 0; i < 240; i++) {
+    const response = await call("/api/v1/index.json", { token: registration.access_token, client: "198.51.100.91" });
+    assert.equal(response.status, 200);
+    await response.text();
+  }
+  const limited = await call("/api/v1/index.json", { token: registration.access_token, client: "198.51.100.91" });
+  assert.equal(limited.status, 429);
+  assert.ok(Number(limited.headers.get("retry-after")) > 0);
+  await call("/api/agent/revoke", { method: "POST", form: { token: registration.access_token } });
 });

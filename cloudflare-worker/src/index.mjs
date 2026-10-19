@@ -3,10 +3,12 @@ import { handleApiRequest } from "./api.mjs";
 import { guardAgentRead, handleAgentRegistration } from "./agent-registration.mjs";
 export { AgentRegistrationStore } from "./agent-registration.mjs";
 import {
+  ApiError,
   buildOAuthProtectedResourceMetadata,
   buildOAuthAuthorizationServerMetadata,
   getOAuthJwksDocument,
   getStaticText,
+  handleApiError,
 } from "./lib.mjs";
 import {
   buildMcpServerCard,
@@ -455,12 +457,21 @@ export default {
       try {
         const denied = await guardAgentRead(request, env);
         if (denied) return denied;
-      } catch { return new Response('{"error":"agent_registration_unavailable"}', { status: 503, headers: { "content-type": "application/json", "cache-control": "no-store" } }); }
+      } catch (error) {
+        if (error instanceof ApiError) return handleApiError(error);
+        return new Response('{"error":"agent_registration_unavailable"}', { status: 503, headers: { "content-type": "application/json", "cache-control": "no-store" } });
+      }
     }
     if (url.pathname === "/api/contact/webhook") return handleContactWebhook(request,env);
     if (url.pathname.startsWith("/api/contact/")) return handleContactUnlock(request, env);
     if (url.pathname.startsWith("/api/")) {
-      const response = await handleApiRequest(request, env, ctx);
+      let response = await handleApiRequest(request, env, ctx);
+      if (/^Bearer\s+phk_/i.test(request.headers.get("authorization") || "")) {
+        const headers = new Headers(response.headers);
+        headers.set("cache-control", "private, no-store");
+        headers.append("vary", "Authorization");
+        response = new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+      }
       return isPrimaryHost(url.hostname) ? withDiscoveryLinkHeaders(response, url) : response;
     }
     if (url.pathname === "/mcp") {
