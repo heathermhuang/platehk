@@ -106,10 +106,6 @@ function securityHeadersForAsset(request, response, { noindex = false } = {}) {
   headers.set("x-content-type-options", "nosniff");
   headers.set("x-frame-options", "SAMEORIGIN");
   headers.set("referrer-policy", "strict-origin-when-cross-origin");
-  if (new URL(request.url).pathname === "/agent-claim.html") {
-    headers.set("cache-control", "private, no-store");
-    headers.set("referrer-policy", "no-referrer");
-  }
   headers.set("permissions-policy", "geolocation=(), microphone=(), camera=(self), browsing-topics=()");
   headers.set("cross-origin-resource-policy", "same-origin");
   const contentType = String(headers.get("content-type") || "").toLowerCase();
@@ -395,7 +391,7 @@ async function serveAsset(request, env) {
     && url.pathname.startsWith("/data/")
     && contentType.includes("application/json");
   const privateDecisionView = ["/plate.html", "/shortlist.html"].includes(url.pathname)
-    || ["/contact.html", "/agent-claim.html"].includes(url.pathname)
+    || url.pathname === "/contact.html"
     || (url.pathname === "/discover.html" && url.searchParams.has("q"));
   const noindex = ((genericNoindex || privateDecisionView) && contentType.includes("text/html")) || isPublicDataJson;
   if (!primaryHost && contentType.includes("text/html")) {
@@ -423,7 +419,7 @@ async function serveAsset(request, env) {
     headers.delete("content-encoding");
     headers.delete("etag");
   }
-  if (["/contact.html", "/agent-claim.html"].includes(url.pathname)) {
+  if (url.pathname === "/contact.html") {
     headers.set("cache-control", "private, no-store");
     headers.set("referrer-policy", "no-referrer");
   }
@@ -448,9 +444,15 @@ export default {
     }
     const canonicalHtmlRedirect = redirectToCanonicalHtml(request, url);
     if (canonicalHtmlRedirect) return canonicalHtmlRedirect;
-    if (url.pathname === "/agent/claim") {
-      const asset = new URL("/agent-claim.html", url);
-      return serveAsset(new Request(asset, request), env);
+    if (["/agent/claim", "/agent-claim", "/agent-claim.html"].includes(url.pathname)) {
+      if (!["GET", "HEAD"].includes(request.method)) return new Response(null, { status: 405, headers: { allow: "GET, HEAD", "cache-control": "no-store" } });
+      // Fetch the clean asset path directly. Cloudflare redirects .html assets;
+      // following that redirect must not bypass the claim page's privacy headers.
+      const response = await env.ASSETS.fetch(new Request(new URL("/agent-claim", url), request));
+      const headers = securityHeadersForAsset(request, response, { noindex: true });
+      headers.set("cache-control", "private, no-store");
+      headers.set("referrer-policy", "no-referrer");
+      return new Response(response.body, { status: response.status, headers });
     }
     if (url.pathname.startsWith("/api/agent/")) return handleAgentRegistration(request, env);
     if (url.pathname.startsWith("/api/") || url.pathname === "/mcp") {

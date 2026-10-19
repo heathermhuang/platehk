@@ -115,7 +115,7 @@ self.addEventListener('fetch', (event) => {
   if (url.origin !== self.location.origin) return;
   if (req.headers.has("authorization")) return;
   if (url.pathname.startsWith("/api/contact/") || url.pathname.startsWith("/api/agent/")
-      || ["/contact.html", "/agent/claim", "/agent-claim.html"].includes(url.pathname)) return;
+      || ["/contact.html", "/agent/claim", "/agent-claim", "/agent-claim.html"].includes(url.pathname)) return;
 
   const isData =
     url.pathname.endsWith('/data/all.search.meta.json') ||

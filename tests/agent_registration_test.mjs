@@ -11,7 +11,12 @@ const runtime = new Miniflare(convertV4MiniflareOptions({
   compatibilityDate: "2026-03-24",
   compatibilityFlags: ["nodejs_compat"],
   durableObjects: { AGENT_REGISTRATIONS: { className: "AgentRegistrationStore", useSQLite: true } },
-  serviceBindings: { ASSETS: request => new URL(request.url).pathname === "/api/v1/index.json" ? Response.json({ datasets: ["all"] }) : new Response("fixture", { headers: { "content-type": "text/html" } }) },
+  serviceBindings: { ASSETS: request => {
+    const url = new URL(request.url);
+    if (url.pathname === "/api/v1/index.json") return Response.json({ datasets: ["all"] });
+    if (url.pathname === "/agent-claim.html") return Response.redirect(new URL("/agent-claim", url), 301);
+    return new Response(request.method === "HEAD" ? null : "fixture", { headers: { "content-type": "text/html" } });
+  } },
 }));
 after(() => runtime.dispose());
 let ip = 1;
@@ -140,4 +145,18 @@ test("authenticated-read abuse returns 429 without being misreported as a storag
   assert.equal(limited.status, 429);
   assert.ok(Number(limited.headers.get("retry-after")) > 0);
   await call("/api/agent/revoke", { method: "POST", form: { token: registration.access_token } });
+});
+
+test("claim page aliases preserve privacy without Cloudflare asset redirects on any host", async () => {
+  for (const origin of ["https://plate.hk", "https://preview.example"]) {
+    for (const path of ["/agent/claim", "/agent-claim", "/agent-claim.html"]) {
+      const response = await runtime.dispatchFetch(origin + path, { redirect: "manual" });
+      assert.equal(response.status, 200);
+      assert.equal(response.headers.get("location"), null);
+      assert.equal(response.headers.get("cache-control"), "private, no-store");
+      assert.equal(response.headers.get("referrer-policy"), "no-referrer");
+      assert.match(response.headers.get("x-robots-tag"), /noindex/);
+      assert.equal((await runtime.dispatchFetch(origin + path, { method: "POST" })).status, 405);
+    }
+  }
 });
