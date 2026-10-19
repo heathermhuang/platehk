@@ -216,6 +216,7 @@ jobs:
             sleep 20
           done
           test "$verified" = true
+          node scripts/check_agent_registration.mjs https://plate.hk
 
       - name: Acknowledge verified publication
         if: steps.plan.outputs.run == 'true' && env.DEPLOY_ENABLED == 'true'

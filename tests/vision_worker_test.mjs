@@ -205,7 +205,7 @@ test('OAuth form ingestion is byte-bounded while legitimate token issuance works
 });
 
 test('Workers runtime preserves body rejection and legitimate MCP behavior', async () => {
-  const modules = ['index.mjs', 'api.mjs', 'lib.mjs', 'contact-unlock.mjs', 'mcp.mjs']
+  const modules = ['index.mjs', 'api.mjs', 'lib.mjs', 'contact-unlock.mjs', 'mcp.mjs', 'agent-registration.mjs']
     .map(name => ({ type: 'ESModule', path: new URL(`../cloudflare-worker/src/${name}`, import.meta.url).pathname }));
   modules.push({ type: 'ESModule', path: new URL('../assets/decision-core.mjs', import.meta.url).pathname });
   const mf = new Miniflare(convertV4MiniflareOptions({ modules,

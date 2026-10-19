@@ -14,6 +14,68 @@ externalDocs:
   description: Plate.hk data classification, provenance, and legal limits
   url: https://plate.hk/about.html
 paths:
+  /api/agent/register:
+    post:
+      summary: Register an anonymous agent for optional public-read credentials
+      description: |
+        Issues a 24-hour auction:read bearer API key and a single-use claim token.
+        Does not assert a user identity or grant OCR, payment, or private-data access.
+        Bodies are limited to 2 KiB. Creation limits are 5/minute and 40/hour per IP, and 500/hour globally.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [type]
+              properties:
+                type: {type: string, enum: [anonymous]}
+                scope: {type: string, enum: ["auction:read"]}
+      responses:
+        "201": {description: Registration and credentials issued; store them privately}
+        "400": {description: Unsupported identity, scope, or field}
+        "413": {description: Body too large}
+        "429": {description: Creation limit reached; respect Retry-After}
+        "503": {description: Registration storage unavailable}
+  /api/agent/session:
+    get:
+      summary: Inspect the registration associated with an auction:read bearer credential
+      responses:
+        "200": {description: Registration ID, scope, expiration and claim status}
+        "401": {description: Invalid, expired, or revoked credential}
+  /api/agent/claim:
+    post:
+      summary: Exchange a single-use claim token for revocation control
+      description: Transfers management of this registration only; does not verify identity or increase scopes.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [claim_token]
+              properties:
+                claim_token: {type: string}
+      responses:
+        "200": {description: Management token issued once}
+        "401": {description: Invalid, used, expired, or revoked claim token}
+        "413": {description: Body too large}
+  /api/agent/revoke:
+    post:
+      summary: Immediately revoke an anonymous agent registration
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token: {type: string, description: Access or management token}
+      responses:
+        "200": {description: Revocation processed; also returned for unknown or already-revoked tokens per RFC 7009}
+        "413": {description: Body too large}
   /api/oauth/token:
     post:
       summary: Issue machine bearer tokens for protected OCR access

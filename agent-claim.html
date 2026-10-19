@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh-HK">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="referrer" content="no-referrer">
+  <title>管理代理程式存取權限 | Plate.hk</title>
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+  <link rel="stylesheet" href="/assets/ledger.css?v=20260825-02">
+  <link rel="stylesheet" href="/assets/contact-unlock.css?v=20261006-02">
+  <script src="/assets/agent-claim.js" defer></script>
+  <style>
+    .agent-form { display: grid; gap: 1rem; }
+    .agent-form textarea { width: 100%; box-sizing: border-box; min-height: 7rem; padding: .8rem; font: inherit; overflow-wrap: anywhere; border: 1px solid var(--line, #ccc); border-radius: .4rem; }
+    .agent-form button { min-height: 44px; }
+    .agent-form[hidden], .agent-form [hidden] { display: none; }
+  </style>
+</head>
+<body>
+  <main class="contact-wrap">
+    <nav class="contact-nav" aria-label="導覽"><a class="contact-brand" href="/">Plate.hk</a><a href="/auth.md">Agent authentication guide</a></nav>
+    <section class="contact-card" aria-labelledby="title">
+      <div class="contact-heading"><h1 id="title">管理代理程式存取權限</h1><p>接管後，你可以撤銷這個代理程式的憑證。權限只包括讀取公開拍賣資料，不包括 OCR、賣家聯絡資料或管理功能。</p><p lang="en">Take control of a registration so you can revoke its credential. Access covers public auction data only. This does not verify your identity or link an account.</p></div>
+      <form id="claim-form" class="agent-form">
+        <label for="claim-token">接管碼 / Claim token</label>
+        <textarea id="claim-token" required autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="phc_reg_…"></textarea>
+        <button class="contact-primary" id="claim-button" type="submit">接管 / Take control</button>
+      </form>
+      <div id="management" class="agent-form" hidden>
+        <p id="registration"></p>
+        <label for="management-token">管理碼 / Management token</label>
+        <textarea id="management-token" readonly autocomplete="off" spellcheck="false"></textarea>
+        <p>請私下保存管理碼。重新載入後，這個頁面不會保留管理碼。 / Save this privately; this page does not retain it after reload.</p>
+      </div>
+      <form id="revoke-form" class="agent-form">
+        <label for="revoke-token">撤銷憑證或管理碼 / Access or management token to revoke</label>
+        <textarea id="revoke-token" required autocomplete="off" autocapitalize="off" spellcheck="false"></textarea>
+        <button class="contact-secondary" id="revoke-button" type="submit">撤銷 / Revoke access</button>
+      </form>
+      <p id="status" role="status" aria-live="polite"></p>
+      <p class="contact-caption">只輸入 Plate.hk 的代理程式憑證，切勿輸入密碼或其他服務的金鑰。 / Only enter Plate.hk agent credentials here.</p>
+    </section>
+  </main>
+</body>
+</html>

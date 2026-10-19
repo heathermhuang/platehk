@@ -30,6 +30,8 @@ This document captures the current application threat model, attack surface, and
   - `/api/vision_session`
   - `/api/vision_plate`
   - `/api/oauth/token`
+  - `/api/agent/register`, `/api/agent/session`, `/api/agent/claim`, `/api/agent/revoke`
+  - `/agent/claim`
   - `/api/market_signal`
   - `/api/contact/availability`, `/api/contact/checkout`, `/api/contact/reveal`
   - `/api/contact/webhook`
@@ -128,6 +130,14 @@ This document captures the current application threat model, attack surface, and
   - OAuth token forms: 8 KiB before parsing
   - byte limits count UTF-8 bytes and do not trust an absent or understated Content-Length
 - Public read API protections:
+  - optional anonymous registrations issue only `auction:read` credentials, valid for 24 hours
+  - credentials use 256 random bits; only SHA-256 hashes persist in SQLite-backed Durable Objects
+  - registration creation is capped persistently at 5/minute and 40/hour per hashed IP and 500/hour globally
+  - one-time claim tokens transfer revocation control without asserting identity, linking accounts, or granting additional scopes
+  - every authenticated API/MCP request checks current registration state; revocation immediately disables access and claim/management tokens
+  - registration bodies are capped at 2 KiB and browser-origin mismatches fail closed; machine callers need no Origin header
+  - expiry alarms remove registration and rate-bucket records; credentials never appear in URLs or browser storage
+  - registration credentials cannot enter OCR, OAuth issuance, paid contacts, private market, or administrative routes
   - endpoint-specific IP rate limits
   - public page-size caps on list/search endpoints
   - canonical bounded search indexes with no production fallback to full-dataset scans

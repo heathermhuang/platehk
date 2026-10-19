@@ -532,7 +532,7 @@ export function buildOAuthProtectedResourceMetadata(request, env, resourcePath =
   return {
     resource: `${new URL(request.url).origin}${normalizedPath}`,
     authorization_servers: [issuer],
-    scopes_supported: getOAuthScopeCatalog(),
+    scopes_supported: !normalizedPath && env.AGENT_REGISTRATIONS ? ["auction:read", ...getOAuthScopeCatalog()] : getOAuthScopeCatalog(),
     bearer_methods_supported: ["header"],
   };
 }
@@ -547,6 +547,16 @@ export function buildOAuthAuthorizationServerMetadata(request, env) {
     token_endpoint_auth_methods_supported: ["client_secret_basic", "client_secret_post"],
     scopes_supported: getOAuthScopeCatalog(),
     service_documentation: `${issuer}/api.html`,
+    ...(env.AGENT_REGISTRATIONS ? {
+      agent_auth: {
+        skill: `${issuer}/auth.md`,
+        register_uri: `${issuer}/api/agent/register`,
+        identity_types_supported: ["anonymous"],
+        anonymous: { credential_types_supported: ["api_key"], scopes_supported: ["auction:read"] },
+        claim_uri: `${issuer}/agent/claim`,
+        revocation_uri: `${issuer}/api/agent/revoke`,
+      },
+    } : {}),
   };
 }
 
