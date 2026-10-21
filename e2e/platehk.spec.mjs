@@ -203,7 +203,8 @@ test.describe("Plate.hk public API", () => {
     expect(authGuide.ok()).toBeTruthy();
     expect(authGuide.headers()["content-type"]).toContain("text/markdown");
     expect((await authGuide.text()).split("\n")[0]).toContain("auth.md");
-    expect(await authGuide.text()).toContain("does not offer automatic");
+    expect(await authGuide.text()).toContain("Anonymous agent registration");
+    expect(await authGuide.text()).toContain("does not verify a person's identity or create or link a user account");
     expect(await authGuide.text()).toContain("client_credentials");
     const personalAgent = await request.get("/.well-known/poppy.json");
     expect(personalAgent.ok()).toBeTruthy();

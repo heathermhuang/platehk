@@ -86,6 +86,7 @@
         <div class="info-footer-intro">
           <a class="info-footer-brand" href="${withLanguage("/", lang)}">Plate.hk</a>
           <p>${t.intro}</p>
+          <a class="hkapp-maker-badge" href="https://hk.app/b/b0f6d265-cb4a-48c0-bbc9-b53b8e339a0a" style="display:inline-flex;align-items:center;min-height:44px;max-width:100%;margin-top:12px" aria-label="Made with love in Hong Kong · hk.app"><img src="https://hk.app/badges/b0f6d265-cb4a-48c0-bbc9-b53b8e339a0a.svg" width="214" height="40" referrerpolicy="origin" alt="Made with love in HK · hk.app" style="display:block;max-width:100%;height:auto"></a>
         </div>
         <div class="info-footer-group"><strong>${t.groups.data}</strong>
           <a href="${withLanguage("/about.html", lang)}"${footerCurrent("about")}>${t.links.about}</a>
