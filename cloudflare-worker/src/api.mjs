@@ -1042,6 +1042,52 @@ function visionNonHongKongPlateType(plateText, rawText, note, modelType, isHongK
   return "";
 }
 
+function parseVisionOutput(value) {
+  let text = String(value || "").trim();
+  if (!text) throw new ApiError("vision_empty_output", 502);
+  const start = text.indexOf("{");
+  const end = text.lastIndexOf("}");
+  if (start !== -1 && end >= start) text = text.slice(start, end + 1);
+  let parsed;
+  try { parsed = JSON.parse(text); } catch { throw new ApiError("vision_invalid_output", 502); }
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new ApiError("vision_invalid_output", 502);
+  return parsed;
+}
+
+async function runNativeVision(request, env, model, input, timeoutSeconds) {
+  const started = Date.now();
+  const attemptBudget = Math.min(20_000, Math.max(5_000, timeoutSeconds * 1000));
+  const deadline = started + Math.min(30_000, attemptBudget * 2);
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    const remaining = deadline - Date.now();
+    if (request.signal.aborted || remaining < 1000) throw new ApiError("vision_upstream_error", 502);
+    const signal = AbortSignal.any([request.signal, AbortSignal.timeout(Math.min(attemptBudget, remaining))]);
+    try {
+      const output = await env.AI.run(model, input, { signal });
+      if (signal.aborted) throw signal.reason;
+      const parsed = parseVisionOutput(output?.choices?.[0]?.message?.content || output?.response);
+      if (attempt > 1) console.info("[vision_plate]", JSON.stringify({ event: "inference_recovered", attempt, elapsed_ms: Date.now() - started }));
+      return parsed;
+    } catch (error) {
+      // Retain only an allowlisted numeric code. Provider messages can include
+      // request contents, so never log their text, output, images or credentials.
+      const numericCode = Number(error?.code || String(error?.message || "").match(/^(\d{4}):/)?.[1]);
+      const providerCode = [3006, 3007, 3008, 3036, 3040, 3042, 5005].includes(numericCode) ? numericCode : null;
+      const outputError = ["vision_empty_output", "vision_invalid_output"].includes(error?.code);
+      const timeout = signal.aborted && !request.signal.aborted || error?.name === "TimeoutError";
+      const transient = outputError || timeout || [3007, 3008, 3040].includes(providerCode)
+        || providerCode === null && (error?.name === "InferenceUpstreamError"
+          || [408, 500, 502, 503, 504].includes(Number(error?.httpStatus || error?.status)));
+      const retrying = attempt < 2 && transient && !request.signal.aborted && deadline - Date.now() > 1250;
+      console.warn("[vision_plate]", JSON.stringify({ event: "inference_failed", attempt, provider_code: providerCode,
+        reason: request.signal.aborted ? "aborted" : outputError ? error.code : timeout ? "timeout" : "upstream",
+        elapsed_ms: Date.now() - started, retrying }));
+      if (!retrying) throw outputError ? error : new ApiError("vision_upstream_error", 502);
+      await new Promise(resolve => setTimeout(resolve, 250));
+    }
+  }
+}
+
 async function handleVisionPlate(request, env) {
   const methodErr = requireMethod(request, "POST");
   if (methodErr) return methodErr;
@@ -1085,9 +1131,9 @@ async function handleVisionPlate(request, env) {
     ? "Read the Hong Kong vehicle registration mark from this plate image. If multiple plates are visible, choose the Hong Kong plate only and ignore Macau plates such as M-12-34 or MA-12-34 and Mainland China plates such as 粤Z1234港, 粵Z1234澳, or province-character plates. Return JSON only with keys: plate, confidence, raw_text, reasoning_note, plate_type, is_hong_kong_plate. Hong Kong registration marks do not use the letters I, O, or Q. Normalize HK marks by removing spaces, converting I to 1, converting O to 0, and dropping Q. Example: visible text like IRIS LAM should normalize as 1R1SLAM. If no Hong Kong plate is visible, return an empty plate, confidence 0, plate_type macau/mainland_china/not_hk, and is_hong_kong_plate false."
     : "讀取這張香港車牌圖像；如同時出現多個車牌，只選香港車牌，並忽略澳門車牌（例如 M-12-34 或 MA-12-34）及內地車牌（例如 粤Z1234港、粵Z1234澳 或省份漢字開頭的車牌）。只回傳 JSON，鍵為 plate、confidence、raw_text、reasoning_note、plate_type、is_hong_kong_plate。香港車牌不使用英文字母 I、O、Q。香港車牌正規化規則：移除空格，把 I 轉成 1，把 O 轉成 0，刪除 Q。例如畫面像 IRIS LAM 時，plate 應正規化為 1R1SLAM。如畫面沒有香港車牌，plate 請回傳空字串、confidence 為 0、plate_type 為 macau/mainland_china/not_hk，並把 is_hong_kong_plate 設為 false。";
   let outputText = "";
+  let parsed;
   if (workersAi) {
-    try {
-      const output = await env.AI.run(visionModel, {
+      parsed = await runNativeVision(request, env, visionModel, {
         messages: [{ role: "user", content: [
           { type: "text", text: prompt },
           { type: "image_url", image_url: { url: imageDataUrl } },
@@ -1097,13 +1143,7 @@ async function handleVisionPlate(request, env) {
         chat_template_kwargs: { enable_thinking: false },
         stream: false,
         store: false,
-      }, { signal: AbortSignal.timeout(Math.max(5000, timeoutSeconds * 1000)) });
-      outputText = String(output?.choices?.[0]?.message?.content || output?.response || "").trim();
-    } catch {
-      // Never log image content, provider bodies, or credentials.
-      console.error("[vision_plate] upstream_error", "workers_ai");
-      return jsonResponse({ error: "vision_upstream_error" }, 502);
-    }
+      }, timeoutSeconds);
   } else {
     const resp = await httpPostJson(env, `${baseUrl}/responses`, {
       model: visionModel,
@@ -1131,19 +1171,7 @@ async function handleVisionPlate(request, env) {
       outputText = chunks.join("\n").trim();
     }
   }
-  if (!outputText) return jsonResponse({ error: "vision_empty_output" }, 502);
-  const jsonStart = outputText.indexOf("{");
-  const jsonEnd = outputText.lastIndexOf("}");
-  if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd >= jsonStart) {
-    outputText = outputText.slice(jsonStart, jsonEnd + 1);
-  }
-  let parsed;
-  try {
-    parsed = JSON.parse(outputText);
-  } catch {
-    return jsonResponse({ error: "vision_invalid_output" }, 502);
-  }
-  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return jsonResponse({ error: "vision_invalid_output" }, 502);
+  parsed ??= parseVisionOutput(outputText);
   const rawPlateText = String(parsed.plate || "");
   const rawTextOriginal = String(parsed.raw_text || rawPlateText);
   const numericConfidence = Number(parsed.confidence || 0);

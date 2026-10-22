@@ -94,6 +94,22 @@ test('invalid manual input is preserved and produces validation without a reques
   assert.equal(app.requests.length, 0);
 });
 
+test('an unavailable inference service keeps the same photo and manual search usable', async () => {
+  const app = cameraApp({ fetch: async (url) => {
+    if (url.includes('vision_session')) return { ok: true, json: async () => ({ token: 'fixture-token', expires_at: 4_000_000_000 }) };
+    if (url.includes('vision_plate')) return { ok: false, json: async () => ({ error: 'vision_upstream_error' }) };
+    return { ok: true, json: async () => ({ rows: [], total: 0 }) };
+  } });
+  await app.run("loadPhoto({type:'image/png',size:5000})");
+  await app.run('runVisionScan()');
+  assert.match(app.element('ocrMeta').textContent, /temporarily unavailable.*Retry this scan.*manually/);
+  assert.equal(app.element('photoPreview').hidden, false);
+  assert.equal(app.element('aiScanBtn').disabled, false);
+  app.element('manualInput').value = 'AA88';
+  await app.run("searchPlate('AA88')");
+  assert.match(app.requests.at(-1).url, /q=AA88/);
+});
+
 test('photo preview stays local until an explicit scan and resizes without changing aspect ratio', async () => {
   const app = cameraApp();
   await app.run("loadPhoto({type:'image/png',size:5000})");
