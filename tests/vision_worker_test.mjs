@@ -14,8 +14,8 @@ async function client(run) {
   const { token } = await session.json();
   headers.cookie = session.headers.get('set-cookie').split(';')[0];
   headers['content-type'] = 'application/json';
-  return { calls, post: (body = {}, extraHeaders = {}) => handleApiRequest(new Request('https://plate.test/api/vision_plate', {
-    method: 'POST', headers: { ...headers, ...extraHeaders }, body: JSON.stringify({ image_data_url: 'data:image/jpeg;base64,/9j/2Q==', vision_token: token, lang: 'en', ...body }),
+  return { calls, post: (body = {}, extraHeaders = {}, signal) => handleApiRequest(new Request('https://plate.test/api/vision_plate', {
+    method: 'POST', signal, headers: { ...headers, ...extraHeaders }, body: JSON.stringify({ image_data_url: 'data:image/jpeg;base64,/9j/2Q==', vision_token: token, lang: 'en', ...body }),
   }), env, {}) };
 }
 const result = (value) => ({ choices: [{ message: { content: `\`\`\`json\n${JSON.stringify(value)}\n\`\`\`` } }] });
@@ -49,6 +49,62 @@ test('invalid and oversized uploads never invoke inference', async () => {
 test('provider failure returns a retryable error without exposing upstream details', async () => {
   const c = await client(() => { throw Error('private provider details'); });
   const r = await c.post(); assert.equal(r.status, 502); assert.deepEqual(await r.json(), { error: 'vision_upstream_error' });
+});
+test('one scan recovers from a transient native timeout or capacity failure', async () => {
+  for (const code of [3007, 3040]) {
+    let attempts = 0;
+    const c = await client(() => {
+      if (++attempts === 1) throw Object.assign(new Error('private provider details'), { code });
+      return result({ plate: 'AA88', confidence: .99, is_hong_kong_plate: true });
+    });
+    const response = await c.post();
+    assert.equal(response.status, 200);
+    assert.equal((await response.json()).plate, 'AA88');
+    assert.equal(attempts, 2);
+  }
+});
+test('transient inference failure is bounded to two attempts and sanitized diagnostics', async () => {
+  const originalWarn = console.warn;
+  const diagnostics = [];
+  console.warn = (...args) => diagnostics.push(args.join(' '));
+  try {
+    const c = await client(() => { throw Object.assign(new Error('private provider details'), { code: 3007 }); });
+    const response = await c.post();
+    assert.equal(response.status, 502);
+    assert.deepEqual(await response.json(), { error: 'vision_upstream_error' });
+    assert.equal(c.calls.length, 2);
+    assert.match(diagnostics.join('\n'), /3007/);
+    assert.doesNotMatch(diagnostics.join('\n'), /private provider details|base64|test-only-signing-secret|fixture-token/);
+  } finally { console.warn = originalWarn; }
+});
+test('malformed inference output gets one recovery attempt, while valid non-HK output is final', async () => {
+  let attempts = 0;
+  const c = await client(() => ++attempts === 1 ? { response: '{"plate":' }
+    : result({ plate: 'MA-12-34', plate_type: 'macau', is_hong_kong_plate: false }));
+  const response = await c.post();
+  assert.equal(response.status, 200);
+  assert.equal((await response.json()).ignored_plate_type, 'macau');
+  assert.equal(attempts, 2);
+});
+test('permanent native failures and an aborted client never trigger inference replay', async () => {
+  for (const code of [3006, 3036, 3042]) {
+    const c = await client(() => { throw Object.assign(new Error('private provider details'), { code }); });
+    assert.equal((await c.post()).status, 502);
+    assert.equal(c.calls.length, 1);
+  }
+  const controller = new AbortController();
+  const c = await client(() => { controller.abort(); throw Object.assign(new Error('request ended'), { code: 3007 }); });
+  assert.equal((await c.post({}, {}, controller.signal)).status, 502);
+  assert.equal(c.calls.length, 1);
+});
+test('an exhausted overall inference deadline prevents a second provider request', async () => {
+  const originalNow = Date.now;
+  const started = originalNow();
+  try {
+    const c = await client(() => { Date.now = () => started + 30_001; throw Object.assign(new Error('late timeout'), { code: 3007 }); });
+    assert.equal((await c.post()).status, 502);
+    assert.equal(c.calls.length, 1);
+  } finally { Date.now = originalNow; }
 });
 test('empty and malformed provider output return clear errors', async () => {
   for (const [output, error] of [[{}, 'vision_empty_output'], ...['not JSON', 'null', '[]'].map(response => [{ response }, 'vision_invalid_output'])]) {
