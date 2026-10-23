@@ -609,13 +609,14 @@ paths:
         Protected OCR endpoint for Hong Kong vehicle registration marks.
         If Macau or Mainland China plates are visible, the endpoint ignores them
         and returns an empty `plate` with `ignored_plate_type`.
-        Browser clients can continue using the same-origin `vision_session` flow, while machine clients can send a bearer token with the `vision:ocr` scope.
+        Browser clients send the `vision_session` token in `X-Vision-Token` with its same-origin session cookie; machine clients send a bearer token with the `vision:ocr` scope.
         JSON bodies are limited to 7 MiB of streamed bytes and decoded images to 5 MiB.
-        Bearer credentials are verified before reading the body. All OCR requests
+        Browser session and bearer credentials are verified before reading the body. All OCR requests
         share a pre-authentication IP ceiling of 180/minute and 2400/hour,
         in addition to browser and OAuth-client limits. Limits are best-effort per Worker isolate.
       security:
         - BearerToken: []
+        - VisionSessionToken: []
       requestBody:
         required: true
         content:
@@ -630,9 +631,6 @@ paths:
                 lang:
                   type: string
                   enum: [zh, en]
-                vision_token:
-                  type: string
-                  description: Browser-only same-origin session token.
       responses:
         "200":
           description: OCR result
@@ -670,6 +668,11 @@ paths:
           description: Request or authenticated-client rate limit exceeded
 components:
   securitySchemes:
+    VisionSessionToken:
+      type: apiKey
+      in: header
+      name: X-Vision-Token
+      description: Same-origin browser session token, bound to its HttpOnly vision cookie.
     BearerToken:
       type: http
       scheme: bearer

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from collections import Counter
 import unittest
 from datetime import datetime
 from pathlib import Path
@@ -39,45 +40,30 @@ class GeneratedDataTests(unittest.TestCase):
         self.assertTrue(latest_issue_key.endswith(str(all_dataset["latest_issue"])))
 
     def test_legacy_overlap_report_matches_source_data(self) -> None:
-        physical = _load(DATA / "tvrm_physical" / "results.slim.json")
-        eauction = _load(DATA / "tvrm_eauction" / "results.slim.json")
         legacy = _load(DATA / "tvrm_legacy" / "results.slim.json")
+        combined = _load(DATA / "all" / "results.slim.json")
         overlap = _load(DATA / "all.tvrm_legacy_overlap.json")
-
-        nonlegacy_exact_keys = {
-            json.dumps(
-                [_normalize_plate(r.get("single_line") or r.get("double_line")), r.get("amount_hkd"), r.get("auction_date")],
-                ensure_ascii=False,
-                separators=(",", ":"),
-            )
-            for r in physical + eauction
-        }
-        nonlegacy_coarse_keys = {
-            json.dumps([_normalize_plate(r.get("single_line") or r.get("double_line")), r.get("amount_hkd")], ensure_ascii=False, separators=(",", ":"))
-            for r in physical + eauction
-        }
-        legacy_rows_to_drop = 0
-        legacy_overlap_keys = set()
-        legacy_overlap_exact_keys = set()
+        retained = [row for row in combined if row.get("dataset_key") == "tvrm_legacy"]
+        # Validate the retained snapshot independently of the algorithm used to
+        # generate it. New builds must also pass the source-level overlap tests.
+        self.assertEqual(overlap["rows_to_drop"], len(legacy) - len(retained))
+        def identity(row):
+            return (row.get("auction_date"), _normalize_plate(row.get("single_line") or row.get("double_line")),
+                    row.get("amount_hkd"), row.get("result_status"), row.get("date_precision"), row.get("year_range"))
+        source_counts = Counter(identity(row) for row in legacy)
+        retained_counts = Counter(identity(row) for row in retained)
+        self.assertFalse(retained_counts - source_counts)
+        omitted = source_counts - retained_counts
+        reported = set(overlap["keys"]) | set(overlap["exact_keys"])
         for row in legacy:
+            if identity(row) not in omitted:
+                continue
+            fields = [_normalize_plate(row.get("single_line") or row.get("double_line")), row.get("amount_hkd")]
             if row.get("date_precision") == "day":
-                key = json.dumps(
-                    [_normalize_plate(row.get("single_line") or row.get("double_line")), row.get("amount_hkd"), row.get("auction_date")],
-                    ensure_ascii=False,
-                    separators=(",", ":"),
-                )
-                if key in nonlegacy_exact_keys:
-                    legacy_rows_to_drop += 1
-                    legacy_overlap_exact_keys.add(key)
-            else:
-                key = json.dumps([_normalize_plate(row.get("single_line") or row.get("double_line")), row.get("amount_hkd")], ensure_ascii=False, separators=(",", ":"))
-                if key in nonlegacy_coarse_keys:
-                    legacy_rows_to_drop += 1
-                    legacy_overlap_keys.add(key)
-
-        self.assertEqual(overlap["rows_to_drop"], legacy_rows_to_drop)
-        self.assertEqual(set(overlap["keys"]), legacy_overlap_keys)
-        self.assertEqual(set(overlap["exact_keys"]), legacy_overlap_exact_keys)
+                fields.append(row.get("auction_date"))
+            self.assertIn(json.dumps(fields, ensure_ascii=False, separators=(",", ":")), reported)
+        self.assertEqual(len(overlap["keys"]), len(set(overlap["keys"])))
+        self.assertEqual(len(overlap["exact_keys"]), len(set(overlap["exact_keys"])))
 
     def test_search_index_artifacts_are_coherent(self) -> None:
         meta = _load(DATA / "all.search.meta.json")

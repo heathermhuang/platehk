@@ -44,7 +44,12 @@ permissions:
 jobs:
   heal:
     name: Classify and repair updater failure
-    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'failure' }}
+    if: >-
+      ${{ github.ref == 'refs/heads/main' &&
+          (github.event_name != 'workflow_run' ||
+           (github.event.workflow_run.conclusion == 'failure' &&
+            github.event.workflow_run.head_branch == 'main' &&
+            github.event.workflow_run.head_repository.full_name == github.repository)) }}
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:

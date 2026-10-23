@@ -18,7 +18,7 @@ permissions:
 jobs:
   connection_test:
     name: Test custom LLM connection
-    if: ${{ github.event_name == 'workflow_dispatch' }}
+    if: ${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -54,18 +54,32 @@ jobs:
 
   inspect_escalation:
     name: Inspect auto-heal escalation
-    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    if: >-
+      ${{ github.event.workflow_run.conclusion == 'failure' &&
+          github.event.workflow_run.head_branch == 'main' &&
+          github.event.workflow_run.head_repository.full_name == github.repository }}
     runs-on: ubuntu-latest
     permissions:
       actions: read
       contents: read
       issues: read
     outputs:
+      source_sha: ${{ steps.source.outputs.sha }}
       should_run: ${{ steps.plan.outputs.should_run }}
       classification: ${{ steps.plan.outputs.classification }}
       issue_number: ${{ steps.plan.outputs.issue_number }}
       issue_url: ${{ steps.plan.outputs.issue_url }}
     steps:
+      - name: Checkout trusted repair policy
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          persist-credentials: false
+
+      - name: Pin trusted main revision
+        id: source
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
       - name: Download auto-heal evidence
         env:
           GH_TOKEN: ${{ github.token }}
@@ -80,23 +94,11 @@ jobs:
 
       - name: Gate cloud LLM execution
         id: plan
-        run: |
-          python - "$GITHUB_OUTPUT" <<'PY'
-          import json
-          import sys
-          from pathlib import Path
-
-          output = Path(sys.argv[1])
-          plan = json.loads(Path("logs/autoheal/plan.json").read_text(encoding="utf-8"))
-          issue_path = Path("logs/autoheal/issue.json")
-          issue = json.loads(issue_path.read_text(encoding="utf-8")) if issue_path.exists() else {}
-          should_run = plan.get("action") == "escalate_llm_repair" and plan.get("status") == "escalate"
-          with output.open("a", encoding="utf-8") as fh:
-              fh.write(f"should_run={'true' if should_run else 'false'}\n")
-              fh.write(f"classification={plan.get('classification', 'unknown')}\n")
-              fh.write(f"issue_number={issue.get('number', '')}\n")
-              fh.write(f"issue_url={issue.get('url', '')}\n")
-          PY
+        env:
+          REPOSITORY: ${{ github.repository }}
+        run: >-
+          python scripts/cloud_repair_gate.py --evidence logs/autoheal
+          --output "$GITHUB_OUTPUT" --repository "$REPOSITORY"
 
   generate_patch:
     name: Generate repair patch with Codex
@@ -110,10 +112,10 @@ jobs:
     outputs:
       has_patch: ${{ steps.diff.outputs.has_patch }}
     steps:
-      - name: Checkout failing revision without credentials
+      - name: Checkout pinned trusted revision without credentials
         uses: actions/checkout@v6
         with:
-          ref: ${{ github.event.workflow_run.head_sha }}
+          ref: ${{ needs.inspect_escalation.outputs.source_sha }}
           fetch-depth: 0
           persist-credentials: false
 
@@ -211,10 +213,10 @@ jobs:
       actions: read
       contents: read
     steps:
-      - name: Checkout failing revision without credentials
+      - name: Checkout pinned trusted revision without credentials
         uses: actions/checkout@v6
         with:
-          ref: ${{ github.event.workflow_run.head_sha }}
+          ref: ${{ needs.inspect_escalation.outputs.source_sha }}
           fetch-depth: 0
           persist-credentials: false
 
@@ -268,11 +270,15 @@ jobs:
       issues: write
       pull-requests: write
     steps:
-      - name: Checkout failing revision
+      - name: Checkout pinned trusted revision
         uses: actions/checkout@v6
         with:
-          ref: ${{ github.event.workflow_run.head_sha }}
+          ref: ${{ needs.inspect_escalation.outputs.source_sha }}
           fetch-depth: 0
+          persist-credentials: false
+
+      - name: Preserve trusted notification code before applying the patch
+        run: cp scripts/notify_telegram.py "$RUNNER_TEMP/platehk-notify-telegram.py"
 
       - name: Download validated patch
         uses: actions/download-artifact@v4
@@ -294,6 +300,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -m "Draft auto-heal repair for ${CLASSIFICATION}"
+          gh auth setup-git
           git push --set-upstream origin "$branch"
 
           base="${BASE_BRANCH:-main}"
@@ -333,7 +340,7 @@ jobs:
             The PR is draft and was not merged automatically.
           TELEGRAM_LINK: ${{ steps.pr.outputs.url }}
         run: >-
-          python scripts/notify_telegram.py send --optional
+          python -I "$RUNNER_TEMP/platehk-notify-telegram.py" send --optional
           --text-env TELEGRAM_TEXT --link-env TELEGRAM_LINK
           --link-label "Review draft PR"
 

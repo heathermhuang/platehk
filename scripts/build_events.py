@@ -3,13 +3,13 @@ from __future__ import annotations
 
 import json
 import re
-import subprocess
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Optional
 from urllib.parse import quote, unquote, urljoin, urlsplit, urlunsplit
 
 from bs4 import BeautifulSoup
+from trusted_sources import EVENT_HOSTS, read_source, trusted_url
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -49,8 +49,7 @@ def normalize_url(url: str) -> str:
 
 
 def request_html(url: str) -> str:
-    payload = subprocess.check_output(["curl", "-L", "-s", "--fail", normalize_url(url)], timeout=60)
-    return payload.decode("utf-8", errors="replace")
+    return read_source(normalize_url(url), hosts=EVENT_HOSTS).decode("utf-8", errors="replace")
 
 
 def hk_datetime(year: int, month: int, day: int, hour: int = 0, minute: int = 0, second: int = 0) -> datetime:
@@ -118,7 +117,10 @@ def en_date(dt: datetime) -> str:
 def absolute_url(href: str) -> str:
     if (href or "").strip().lower().startswith("javascript:"):
         return ""
-    return normalize_url(urljoin(BASE_URL, href or ""))
+    try:
+        return trusted_url(normalize_url(urljoin(BASE_URL, href or "")), EVENT_HOSTS)
+    except ValueError:
+        return ""
 
 
 def pdf_signature(href: str) -> str:
@@ -246,6 +248,8 @@ def scrape_coming_link_records(soup: BeautifulSoup) -> list[dict[str, Any]]:
             continue
         kind, session_hint = classified
         abs_url = absolute_url(href)
+        if not abs_url:
+            continue
         eauction_range = parse_eauction_noon_range(text) if kind == "tvrm_eauction" else None
         session_parsed = parse_physical_session(text) if kind != "tvrm_eauction" else None
         date_parsed = None

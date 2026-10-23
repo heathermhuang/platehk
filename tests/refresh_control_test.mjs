@@ -7,13 +7,13 @@ import {spawnSync} from 'node:child_process';
 import {writeFileSync} from 'node:fs';
 import {deployObserver,sourceRevision} from '../scripts/deploy_refresh_worker.mjs';
 
-async function run(responses) {
+async function run(responses,{base='https://platehk-refresh.measurable.workers.dev'}={}) {
   const dir=await mkdtemp(join(tmpdir(),'platehk-control-test-'));
   try {
     const hook=join(dir,'hook.mjs'),calls=join(dir,'calls.jsonl'),output=join(dir,'output');
     await writeFile(hook,`import {appendFileSync} from 'node:fs';let responses=${JSON.stringify(responses)};globalThis.fetch=async(url,options)=>{appendFileSync(${JSON.stringify(calls)},JSON.stringify({path:new URL(url).pathname,body:options.body&&JSON.parse(options.body)})+'\\n');const next=responses.shift();if(!next)throw Error('Unexpected request');return Response.json(next.payload,{status:next.status||200});};`);
-    const result=spawnSync(process.execPath,['--import',hook,'scripts/refresh_control.mjs','plan'],{cwd:new URL('../',import.meta.url),env:{...process.env,REFRESH_CONTROL_URL:'https://control.test',REFRESH_CONTROL_TOKEN:'test-fixture',REFRESH_SCOPE:'check',REFRESH_FORCE:'false',REFRESH_RETRY_DELAY_MS:'0',GITHUB_OUTPUT:output},encoding:'utf8',timeout:10000});
-    return {...result,calls:(await readFile(calls,'utf8')).trim().split('\n').map(JSON.parse),output:await readFile(output,'utf8')};
+    const result=spawnSync(process.execPath,['--import',hook,'scripts/refresh_control.mjs','plan'],{cwd:new URL('../',import.meta.url),env:{...process.env,REFRESH_CONTROL_URL:base,REFRESH_CONTROL_TOKEN:'test-fixture',REFRESH_SCOPE:'check',REFRESH_FORCE:'false',REFRESH_RETRY_DELAY_MS:'0',GITHUB_OUTPUT:output},encoding:'utf8',timeout:10000});
+    return {...result,calls:(await readFile(calls,'utf8').catch(()=>'' )).trim().split('\n').filter(Boolean).map(JSON.parse),output:await readFile(output,'utf8').catch(()=>'' )};
   } finally {await rm(dir,{recursive:true,force:true});}
 }
 
@@ -53,7 +53,7 @@ test('an unchanged successful check does not retry',async()=>{
 async function deploymentFixture(check,{stale=false,dirty=false,advanced=false,dataOnly=false,timeout=false,confirm=true,healthy=false,tamper=false,oldFingerprint=false,settleChecks=0}={}) {
   const root=await mkdtemp(join(tmpdir(),'platehk-deploy-test-'));
   try {
-    const files=['refresh-worker/src/index.mjs','refresh-worker/src/probe.mjs','refresh-worker/wrangler.jsonc','scripts/deploy_refresh_worker.mjs','package.json','package-lock.json'];
+    const files=['refresh-worker/migrations/0001_refresh_control.sql','refresh-worker/src/index.mjs','refresh-worker/src/probe.mjs','refresh-worker/wrangler.jsonc','scripts/deploy_refresh_worker.mjs','package.json','package-lock.json'];
     for (const file of files) {await mkdir(join(root,file,'..'),{recursive:true});await writeFile(join(root,file),file);}
     const revision=sourceRevision(root,files),calls=[],pauses=[];
     let current=healthy,remoteCalls=0,healthChecks=0;
@@ -133,6 +133,21 @@ test('the source fingerprint changes for runtime changes but excludes generated 
     await mkdir(join(root,'data'));await writeFile(join(root,'data/events.json'),'new events');
     assert.equal(sourceRevision(root,files),revision);
     await writeFile(join(root,'refresh-worker/src/probe.mjs'),'changed source');
+    assert.notEqual(sourceRevision(root,files),revision);
+  });
+});
+
+
+test('changing the controller destination cannot forward its bearer token', async()=>{
+  for (const base of ['https://evil.test','http://platehk-refresh.measurable.workers.dev','https://platehk-refresh.measurable.workers.dev.evil.test','https://user@platehk-refresh.measurable.workers.dev','https://platehk-refresh.measurable.workers.dev/path']) {
+    const result=await run([{payload:{run:false,outcome:'unchanged'}}],{base});
+    assert.equal(result.status,1);assert.equal(result.calls.length,0);
+    assert.match(result.stderr,/canonical REFRESH_CONTROL_URL/);
+  }
+});
+test('changing a migration changes the observer deployment fingerprint', async()=>{
+  await deploymentFixture(async({root,files,revision})=>{
+    await writeFile(join(root,'refresh-worker/migrations/0001_refresh_control.sql'),'changed migration');
     assert.notEqual(sourceRevision(root,files),revision);
   });
 });

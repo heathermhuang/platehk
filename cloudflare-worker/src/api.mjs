@@ -1116,10 +1116,10 @@ async function handleVisionPlate(request, env) {
     return jsonResponse({ error: "vision_not_configured" }, 503);
   }
 
-  const req = await readJsonBody(request);
   if (!hasBearerToken) {
-    await requireVisionSessionToken(request, env, String(req.vision_token || ""));
+    await requireVisionSessionToken(request, env, request.headers.get("x-vision-token") || "");
   }
+  const req = await readJsonBody(request);
   const imageDataUrl = String(req.image_data_url || "");
   const lang = String(req.lang || "zh") === "en" ? "en" : "zh";
   const m = imageDataUrl.match(/^data:image\/(png|jpeg|jpg|webp);base64,([A-Za-z0-9+/=]+)$/);

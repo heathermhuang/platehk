@@ -51,11 +51,13 @@ Output directory:
 
 ## Worker env and bindings
 
-Required:
-- `OPENAI_API_KEY`
+Required for browser OCR:
+- `APP_SECURITY_TOKEN_SECRET` (generate from at least 32 random bytes; no fallback key)
 
-Recommended:
-- `APP_SECURITY_TOKEN_SECRET`
+Required only for the OpenAI provider:
+- `OPENAI_API_KEY` (native Workers AI uses the `AI` binding)
+
+Optional OAuth configuration:
 - `OAUTH_CLIENTS_JSON`
 - `OAUTH_JWT_PRIVATE_JWK`
 - `OAUTH_JWKS_JSON`
@@ -63,7 +65,7 @@ Recommended:
 Set and verify the required camera OCR secret before deployment:
 
 ```bash
-wrangler secret put OPENAI_API_KEY
+wrangler secret put APP_SECURITY_TOKEN_SECRET
 npm run cf:secrets:check
 ```
 
@@ -116,3 +118,9 @@ npm run cf:deploy
   - canonical search-index and sorted-result-index availability
   - cache behavior
   - OCR token/session enforcement
+
+The secrets check verifies names, not values or incident history. Runtime signing
+fails closed without a dedicated secret of at least 32 bytes. Public JWKS output
+uses an RSA public-field allowlist. Inspect prior deployed JWKS configuration and
+rotate OAuth keys if private RSA components were ever exposed. The repair PR does
+not establish that production credentials were safe before release.

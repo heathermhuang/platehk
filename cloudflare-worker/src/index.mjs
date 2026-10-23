@@ -304,7 +304,11 @@ async function serveAsset(request, env) {
       headers: { "cache-control": "no-store", "x-content-type-options": "nosniff" },
     });
   }
-  if (decodedPathname === "/_market" || decodedPathname.startsWith("/_market/")) {
+  // Reject encoded separators and dot segments before asset routing. Bindings
+  // and local adapters must not interpret a public API path as a private shard.
+  if (/%(?:2f|5c|25)/i.test(url.pathname) || decodedPathname.includes("\\")
+      || decodedPathname.split("/").some((part) => part === "." || part === "..")
+      || decodedPathname === "/_market" || decodedPathname.startsWith("/_market/")) {
     return new Response("Not found", {
       status: 404,
       headers: {
@@ -397,6 +401,10 @@ async function serveAsset(request, env) {
   if (!primaryHost && contentType.includes("text/html")) {
     const rewritten = (localizedHtml ?? await response.text()).replaceAll("https://plate.hk", url.origin);
     const headers = securityHeadersForAsset(request, response, { noindex });
+    if (url.pathname === "/contact.html") {
+      headers.set("cache-control", "private, no-store");
+      headers.set("referrer-policy", "no-referrer");
+    }
     headers.delete("content-length");
     headers.delete("content-encoding");
     headers.delete("etag");
@@ -437,6 +445,9 @@ async function serveAsset(request, env) {
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
+    if (/%(?:2f|5c|25)/i.test(url.pathname)) {
+      return new Response("Not found", { status: 404, headers: { "cache-control": "no-store" } });
+    }
     if (url.hostname === "www.plate.hk" || url.hostname === "pvrm.hk") {
       const redirectUrl = new URL(request.url);
       redirectUrl.hostname = "plate.hk";

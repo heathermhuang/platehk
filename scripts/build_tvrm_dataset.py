@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 import hashlib
+import os
+from trusted_sources import read_source
 import json
 import re
 import subprocess
@@ -85,8 +87,9 @@ def classify_pdf_kind(abs_url: str, around_text: str) -> Optional[str]:
 
 
 def request_bytes(url: str) -> bytes:
-    url = normalize_url(url)
-    return subprocess.check_output(["curl", "-L", "-s", url], timeout=60)
+    if os.environ.get("PLATEHK_VERIFIED_BUILD") == "1" and unquote(urlsplit(url).path).lower().endswith(".pdf"):
+        raise ValueError("SOURCE_PARSE_UNVERIFIED: missing observer-verified PDF input; publication stopped")
+    return read_source(normalize_url(url))
 
 
 def request_head_ok(url: str) -> bool:
@@ -738,9 +741,11 @@ def build_one(
         source_updates[fname] = pdf.pdf_url
         pdf_path = pdf_dir / fname
         if not pdf_path.exists():
+            if os.environ.get("PLATEHK_VERIFIED_BUILD") == "1":
+                raise ValueError("SOURCE_PARSE_UNVERIFIED: missing observer-verified PDF input; publication stopped")
             try:
                 pdf_path.write_bytes(request_bytes(pdf.pdf_url))
-            except (subprocess.CalledProcessError, TimeoutError) as exc:
+            except (subprocess.CalledProcessError, OSError, TimeoutError) as exc:
                 meta.append(
                     {
                         "auction_date": pdf.date_iso,

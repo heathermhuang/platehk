@@ -54,6 +54,11 @@ export class StripeGateway {
     };
   }
 
+  async getRefund(refundId) {
+    const refund = await this.stripe.refunds.retrieve(refundId);
+    return { refundId: refund.id, status: refund.status };
+  }
+
   async refund(paymentIntentId, idempotencyKey) {
     const refund = await this.stripe.refunds.create({
       payment_intent: paymentIntentId,

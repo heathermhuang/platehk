@@ -53,6 +53,7 @@ node --check cloudflare-worker/src/lib.mjs
 node --check cloudflare-worker/src/api.mjs
 node --check cloudflare-worker/src/index.mjs
 node --check assets/camera.js
+node --test tests/security_regression_test.mjs
 node --test tests/camera_frontend_test.mjs
 node --test tests/vision_worker_test.mjs
 node --test tests/agent_registration_test.mjs

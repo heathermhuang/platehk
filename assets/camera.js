@@ -857,13 +857,13 @@
             method: "POST",
             headers: {
               "Content-Type": "application/json",
+              "X-Vision-Token": visionToken,
             },
             cache: "no-store",
             credentials: "same-origin",
             signal: controller.signal,
             body: JSON.stringify({
               lang: currentLang,
-              vision_token: visionToken,
               image_data_url: imageDataUrl,
             }),
           });

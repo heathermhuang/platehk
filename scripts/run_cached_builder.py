@@ -80,10 +80,16 @@ def run_builder(name: str, *, reset: bool = False) -> None:
         return value
 
     PdfParseCache.parse = recorded
+    previous_verified = os.environ.get("PLATEHK_VERIFIED_BUILD")
+    os.environ["PLATEHK_VERIFIED_BUILD"] = "1"
     try:
         runpy.run_path(str(ROOT / 'scripts' / BUILDERS[name]), run_name='__main__')
     finally:
         PdfParseCache.parse = original
+        if previous_verified is None:
+            os.environ.pop("PLATEHK_VERIFIED_BUILD", None)
+        else:
+            os.environ["PLATEHK_VERIFIED_BUILD"] = previous_verified
 
 
 if __name__ == '__main__':

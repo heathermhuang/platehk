@@ -483,11 +483,17 @@ export async function withApiCache(request, ctx, ttlSeconds, fn) {
 }
 
 export async function httpPostJson(env, url, payload, timeoutSeconds = 20) {
+  const destination = new URL(url);
+  if (destination.origin !== "https://api.openai.com" || destination.username || destination.password
+      || destination.pathname !== "/v1/responses" || destination.search || destination.hash) {
+    throw new ApiError("vision_not_configured", 503);
+  }
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort("timeout"), Math.max(5000, timeoutSeconds * 1000));
   try {
     const response = await fetch(url, {
       method: "POST",
+      redirect: "error",
       headers: {
         authorization: `Bearer ${env.OPENAI_API_KEY}`,
         "content-type": "application/json",
@@ -567,11 +573,11 @@ export function getOAuthJwksDocument(env) {
     const parsed = JSON.parse(raw);
     if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.keys)) return { keys: [] };
     return {
-      keys: parsed.keys.filter((key) => key && typeof key === "object").map((key) => ({
-        ...key,
-        key_ops: undefined,
-        d: undefined,
-      })),
+      // OAuth uses RSA. An allowlist also excludes symmetric keys and future
+      // private extensions; never publish an arbitrary secret object.
+      keys: parsed.keys.filter((key) => key?.kty === "RSA" && typeof key.n === "string" && typeof key.e === "string")
+        .map((key) => Object.fromEntries(["kty", "kid", "use", "alg", "n", "e"]
+          .filter((field) => typeof key[field] === "string").map((field) => [field, key[field]]))),
     };
   } catch {
     return { keys: [] };
@@ -617,8 +623,9 @@ export function isOAuthConfigured(env) {
 }
 
 export function getSecuritySigningKey(env) {
-  const seed = String(env.APP_SECURITY_TOKEN_SECRET || env.OPENAI_API_KEY || env.MYSQL_PASSWORD || "platehk-worker");
-  return encoder.encode(cheapHashHex(`${seed}|platehk|vision-session`));
+  const secret = String(env.APP_SECURITY_TOKEN_SECRET || "");
+  if (encoder.encode(secret).length < 32) throw new ApiError("vision_not_configured", 503);
+  return encoder.encode(`${secret}|platehk|vision-session`);
 }
 
 function getOAuthPrivateJwk(env) {

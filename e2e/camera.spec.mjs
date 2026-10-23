@@ -43,6 +43,7 @@ test("camera preview and remote OCR both require separate explicit actions", asy
   await page.route("**/api/vision_plate", async (route) => {
     visionUploads += 1;
     visionBody = route.request().postDataJSON();
+    expect(route.request().headers()["x-vision-token"]).toBe("explicit-action-token");
     await route.fulfill({ json: { plate: "HK88", raw_text: "HK88", confidence: 0.99, is_hong_kong_plate: true } });
   });
   await page.route("**/api/search?**", async (route) => {
@@ -65,7 +66,7 @@ test("camera preview and remote OCR both require separate explicit actions", asy
   await page.locator("#aiScanBtn").click();
   await expect.poll(() => visionUploads).toBe(1);
   expect(sessionRequests).toBe(1);
-  expect(Object.keys(visionBody).sort()).toEqual(["image_data_url", "lang", "vision_token"]);
+  expect(Object.keys(visionBody).sort()).toEqual(["image_data_url", "lang"]);
   expect(visionBody.image_data_url).toBe("data:image/jpeg;base64,dGVzdA==");
   await expect(page.locator("#aiScanBtn")).toBeEnabled();
   await page.locator("#stopBtn").click();
@@ -268,7 +269,7 @@ test('choosing a photo needs no camera permission or upload before explicit scan
     uploads += 1;
     const body = route.request().postDataJSON();
     expect(body.image_data_url).toMatch(/^data:image\/jpeg;base64,/);
-    expect(Object.keys(body).sort()).toEqual(['image_data_url','lang','vision_token']);
+    expect(Object.keys(body).sort()).toEqual(['image_data_url','lang']);
     return route.fulfill({ json: { plate: 'AA88', confidence: .99, is_hong_kong_plate: true } });
   });
   await page.route('**/api/search?**', route => route.fulfill({ json: { total: 0, rows: [] } }));

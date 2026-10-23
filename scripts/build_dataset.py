@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 import hashlib
+import os
+from trusted_sources import read_source
 import json
 import re
 import subprocess
@@ -112,10 +114,9 @@ def detect_session(text: str) -> Optional[str]:
 
 
 def request_bytes(url: str) -> bytes:
-    # Use curl rather than urllib: in some sandboxed environments DNS/networking may
-    # work for curl but not for Python's urlopen.
-    url = normalize_url(url)
-    return subprocess.check_output(["curl", "-L", "-s", url], timeout=60)
+    if os.environ.get("PLATEHK_VERIFIED_BUILD") == "1" and unquote(urlsplit(url).path).lower().endswith(".pdf"):
+        raise ValueError("SOURCE_PARSE_UNVERIFIED: missing observer-verified PDF input; publication stopped")
+    return read_source(normalize_url(url))
 
 def normalize_url(url: str) -> str:
     parts = urlsplit(url)
@@ -698,9 +699,11 @@ def build() -> int:
         fname = local_pdf_name(pdf)
         pdf_path = PDF_DIR / fname
         if not pdf_path.exists():
+            if os.environ.get("PLATEHK_VERIFIED_BUILD") == "1":
+                raise ValueError("SOURCE_PARSE_UNVERIFIED: missing observer-verified PDF input; publication stopped")
             try:
                 pdf_path.write_bytes(request_bytes(pdf.pdf_url))
-            except (subprocess.CalledProcessError, TimeoutError) as exc:
+            except (subprocess.CalledProcessError, OSError, TimeoutError) as exc:
                 print(f"  [{idx}/{len(pdfs)}] 下載失敗: {pdf.pdf_url} ({exc})")
                 meta.append(
                     {

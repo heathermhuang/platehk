@@ -145,3 +145,8 @@ repeat use and a representative first-choice study of buyers and collectors.
 Record the sample, questions, alternatives and observation dates. Rankings,
 feed clicks, deployments and correct source tables cannot alone establish
 market share, preference or AI citation uptake.
+
+Raw plate values remain in local lookup state for rendering and consecutive-query
+deduplication; they are not sent as GA4 event parameters. The page location and
+referrer omit query strings and fragments. This change does not delete historical
+GA4 data or establish the property's retention settings.
