@@ -77,3 +77,12 @@ desktop/mobile projects (84 initially, two corrected contract assertions on reru
 A separate Wrangler `--local` fixture returned 200 for the public asset and 404
 for the private shard and all three encoded-path variants, without exposing its
 synthetic contact value. No remote binding was used for this fixture.
+
+CI also identified existing TOML parser advisories in OpenWA's Effect dependency
+([array tables](https://github.com/advisories/GHSA-4qx8-w7c3-pj3p),
+[dotted paths](https://github.com/advisories/GHSA-9j65-hcg3-gc64),
+[integer literals](https://github.com/advisories/GHSA-9qmh-m7c6-f92p)). A scoped
+override pins TOML 5.0.1 without upgrading OpenWA or Effect. The service's full
+11-test suite and syntax checks pass; service and root npm audits report zero
+vulnerabilities for the installed lockfiles. The affected dependency is present;
+reachability from a public service request was not established by these advisories.
