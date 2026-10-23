@@ -57,7 +57,23 @@ jobs:
           PYTHON_BIN: python
         run: ./scripts/check_site.sh
 
+      - name: Configure bounded browser dependency downloads
+        run: |
+          sudo python3 - <<'PYAPT'
+          from pathlib import Path
+          # The runner's Azure HTTP mirror can stall a large package indefinitely.
+          # Use Ubuntu's HTTPS archive and bound apt's network waits and retries.
+          sources = [Path('/etc/apt/sources.list'), *Path('/etc/apt/sources.list.d').glob('*')]
+          for path in sources:
+              if path.is_file() and path.suffix in ('.list', '.sources'):
+                  text = path.read_text()
+                  path.write_text(text.replace('http://azure.archive.ubuntu.com/ubuntu', 'https://archive.ubuntu.com/ubuntu'))
+          Path('/etc/apt/apt.conf.d/80ci-network-timeouts').write_text(
+              'Acquire::http::Timeout "30";\nAcquire::https::Timeout "30";\nAcquire::Retries "2";\n')
+          PYAPT
+
       - name: Install Chromium and WebKit for browser regression checks
+        timeout-minutes: 10
         run: npx playwright install --with-deps chromium webkit
 
       - name: Verify plate flows and shared design across desktop and mobile browsers
