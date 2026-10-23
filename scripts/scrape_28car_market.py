@@ -19,6 +19,7 @@ import threading
 import time
 import urllib.error
 import urllib.request
+from trusted_sources import MARKET_HOSTS, read_source
 import urllib.robotparser
 from dataclasses import dataclass
 from pathlib import Path
@@ -201,10 +202,8 @@ def fetch_text(url: str, timeout_seconds: float, limiter: PoliteRateLimiter, att
             },
         )
         try:
-            with urllib.request.urlopen(request, timeout=timeout_seconds) as response:
-                if response.status != 200:
-                    raise RuntimeError(f"HTTP {response.status} for {url}")
-                return decode_page(response.read())
+            return decode_page(read_source(url, hosts=MARKET_HOSTS, headers=dict(request.header_items()),
+                                           timeout=timeout_seconds, max_bytes=4 * 1024 * 1024))
         except (OSError, urllib.error.URLError, RuntimeError) as exc:
             last_error = exc
             if attempt < attempts:

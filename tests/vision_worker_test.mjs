@@ -8,14 +8,14 @@ import { Miniflare, convertV4MiniflareOptions } from 'miniflare';
 let sequence = 0;
 async function client(run) {
   const calls = [];
-  const env = { APP_SECURITY_TOKEN_SECRET: 'test-only-signing-secret', VISION_PROVIDER: 'workers_ai', AI: { async run(...args) { calls.push(args); return run(...args); } } };
+  const env = { APP_SECURITY_TOKEN_SECRET: 'fixture-signing-secret-at-least-32-bytes', VISION_PROVIDER: 'workers_ai', AI: { async run(...args) { calls.push(args); return run(...args); } } };
   const headers = { origin: 'https://plate.test', 'user-agent': 'vision-regression', 'cf-connecting-ip': `192.0.2.${++sequence}` };
   const session = await handleApiRequest(new Request('https://plate.test/api/vision_session', { headers }), env, {});
   const { token } = await session.json();
   headers.cookie = session.headers.get('set-cookie').split(';')[0];
   headers['content-type'] = 'application/json';
   return { calls, post: (body = {}, extraHeaders = {}, signal) => handleApiRequest(new Request('https://plate.test/api/vision_plate', {
-    method: 'POST', signal, headers: { ...headers, ...extraHeaders }, body: JSON.stringify({ image_data_url: 'data:image/jpeg;base64,/9j/2Q==', vision_token: token, lang: 'en', ...body }),
+    method: 'POST', signal, headers: { ...headers, 'x-vision-token': body.vision_token ?? token, ...extraHeaders }, body: JSON.stringify({ image_data_url: 'data:image/jpeg;base64,/9j/2Q==', vision_token: token, lang: 'en', ...body }),
   }), env, {}) };
 }
 const result = (value) => ({ choices: [{ message: { content: `\`\`\`json\n${JSON.stringify(value)}\n\`\`\`` } }] });
@@ -74,7 +74,7 @@ test('transient inference failure is bounded to two attempts and sanitized diagn
     assert.deepEqual(await response.json(), { error: 'vision_upstream_error' });
     assert.equal(c.calls.length, 2);
     assert.match(diagnostics.join('\n'), /3007/);
-    assert.doesNotMatch(diagnostics.join('\n'), /private provider details|base64|test-only-signing-secret|fixture-token/);
+    assert.doesNotMatch(diagnostics.join('\n'), /private provider details|base64|fixture-signing-secret-at-least-32-bytes|fixture-token/);
   } finally { console.warn = originalWarn; }
 });
 test('malformed inference output gets one recovery attempt, while valid non-HK output is final', async () => {
@@ -118,10 +118,10 @@ test('unusable model confidence is zero rather than null', async () => {
 
 test('explicit OpenAI deployments retain Responses API compatibility', async () => {
   const original = globalThis.fetch;
-  const env = { APP_SECURITY_TOKEN_SECRET: 'test-only-signing-secret', OPENAI_API_KEY: 'test-only-provider-key' };
+  const env = { APP_SECURITY_TOKEN_SECRET: 'fixture-signing-secret-at-least-32-bytes', OPENAI_API_KEY: 'test-only-provider-key' };
   const headers = { origin: 'https://plate.test', 'user-agent': 'vision-regression', 'cf-connecting-ip': `192.0.2.${++sequence}` };
   const session = await handleApiRequest(new Request('https://plate.test/api/vision_session', { headers }), env, {});
-  const { token } = await session.json(); headers.cookie = session.headers.get('set-cookie').split(';')[0]; headers['content-type'] = 'application/json';
+  const { token } = await session.json(); headers.cookie = session.headers.get('set-cookie').split(';')[0]; headers['content-type'] = 'application/json'; headers['x-vision-token'] = token;
   globalThis.fetch = async (url, init) => {
     assert.equal(url, 'https://api.openai.com/v1/responses'); assert.equal(JSON.parse(init.body).max_output_tokens, 190);
     return Response.json({ output_text: JSON.stringify({ plate: 'AA88', confidence: .9, is_hong_kong_plate: true }) });

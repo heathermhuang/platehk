@@ -78,7 +78,7 @@ test('typing replaces a pending result and emits only the settled visible query'
   assert.deepEqual(a.events().map(event=>event[1]),['page_view']);
   a.advance(1);
   assert.equal(a.events().filter(event=>event[1]==='lookup_complete').length,1);
-  assert.equal(a.events().at(-1)[2].plate,'AA88');
+  assert.equal(a.events().at(-1)[2].plate,undefined);
   assert.equal(a.events().at(-1)[2].measurement_version,'settled_v2');
 });
 

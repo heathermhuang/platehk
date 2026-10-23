@@ -100,7 +100,9 @@ for(const action of ['main_lookup','round_lookup'])test(`real analytics settles 
   expect((await events()).filter(([name])=>name==='lookup_complete')).toHaveLength(0);
   await page.clock.runFor(100);
   const settled=(await events()).filter(([name])=>name==='lookup_complete');
-  expect(settled).toHaveLength(1);expect(settled[0][1].plate).toBe('AA88');
+  expect(settled).toHaveLength(1);expect(settled[0][1].plate).toBeUndefined();
+  expect(settled[0][1]).toMatchObject({action, result_count:1, exact_match:true});
+  expect(JSON.stringify(await events())).not.toContain('AA88');
   expect((await events()).filter(([name])=>name==='lookup_exact_match')).toHaveLength(1);
   expect(await page.evaluate(()=>Array.from(window.dataLayer).find(value=>value[0]==='config')[2].campaign_source)).toBe('threads');
   await query.fill('AB1234');await page.getByRole('button',{name:'Leave query'}).click();

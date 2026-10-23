@@ -43,7 +43,10 @@ function parseArgs(argv) {
 }
 
 function toAssetPath(root, pathname) {
-  const decoded = decodeURIComponent(pathname || "/");
+  let decoded;
+  try { decoded = decodeURIComponent(pathname || "/"); } catch { return null; }
+  if (/%(?:2f|5c|25)/i.test(pathname) || decoded.includes("\\")
+      || decoded.split("/").some((part) => part === "." || part === "..")) return null;
   const rootWithSep = root.endsWith(sep) ? root : `${root}${sep}`;
   const routes = decoded === "/"
     ? ["/index.html"]

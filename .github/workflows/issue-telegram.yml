@@ -30,7 +30,12 @@ permissions:
 jobs:
   notify:
     name: Notify Telegram about repair issue activity
-    if: ${{ github.event_name == 'workflow_dispatch' || startsWith(github.event.issue.title, 'PlateHK auto-heal needs repair:') }}
+    if: >-
+      ${{ github.ref == 'refs/heads/main' &&
+          (github.event_name == 'workflow_dispatch' ||
+           (startsWith(github.event.issue.title, 'PlateHK auto-heal needs repair:') &&
+            (contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association || github.event.issue.author_association) ||
+             github.actor == 'github-actions[bot]'))) }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6

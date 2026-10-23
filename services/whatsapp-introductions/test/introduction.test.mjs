@@ -64,6 +64,7 @@ function harness() {
   const workflow = new IntroductionWorkflow({ store, messaging, payments, config, clock: () => current });
   return {
     workflow,
+    payments,
     store,
     sent,
     groups,
@@ -241,4 +242,42 @@ test("proxy configuration requires an explicit stable endpoint", () => {
   });
   assert.throws(() => parseProxyUrl("http://hk.example"), /host and port/);
   assert.throws(() => parseProxyUrl("ftp://hk.example:21"), /must use/);
+});
+
+
+test("pending refunds are polled by ID and only succeeded refunds close the introduction", async () => {
+  const h = harness();
+  const result = await reachPaidGroup(h);
+  let creates = 0, polls = 0;
+  h.payments.refund = async () => { creates++; return { refundId: "re_pending", status: "pending" }; };
+  h.payments.getRefund = async id => { polls++; assert.equal(id, "re_pending"); return { refundId: id, status: "succeeded" }; };
+  h.advance(25 * 60 * 60 * 1000);
+  await h.workflow.sweep();
+  let state = await h.store.read(value => value);
+  assert.equal(state.introductions[result.introduction.id].status, "refund_pending");
+  assert.notEqual(state.payments[result.payment.id].status, "refunded");
+  assert.equal(state.introductions[result.introduction.id].refundedAt, undefined);
+  assert.equal(h.leaves.length, 0);
+  h.advance(60 * 60 * 1000);
+  await h.workflow.sweep();
+  state = await h.store.read(value => value);
+  assert.equal(creates, 1); assert.equal(polls, 1);
+  assert.equal(state.introductions[result.introduction.id].status, "refunded_closed");
+  assert.equal(state.payments[result.payment.id].status, "refunded");
+});
+
+test("failed, canceled and malformed refund responses never claim a completed refund", async () => {
+  for (const status of ["failed", "canceled", undefined]) {
+    const h = harness();
+    const result = await reachPaidGroup(h);
+    h.payments.refund = async () => ({ refundId: "re_failed", status });
+    h.advance(25 * 60 * 60 * 1000);
+    await h.workflow.sweep();
+    const state = await h.store.read(value => value);
+    assert.equal(state.introductions[result.introduction.id].status, "refund_pending");
+    assert.notEqual(state.payments[result.payment.id].status, "refunded");
+    assert.equal(h.leaves.length, 0);
+    assert.equal(Object.values(state.outbox).find(a => a.type === "refund").status, "dead");
+    assert.equal(h.sent.some(item => item.text.includes("has issued the introduction-fee refund")), false);
+  }
 });

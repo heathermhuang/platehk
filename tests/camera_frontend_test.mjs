@@ -123,7 +123,8 @@ test('photo preview stays local until an explicit scan and resizes without chang
   assert.equal(app.element('ocrCanvas').height, 1080);
   assert.equal(app.requests.filter(r => r.url.includes('vision_plate')).length, 1);
   const body = JSON.parse(app.requests.find(r => r.url.includes('vision_plate')).init.body);
-  assert.deepEqual(Object.keys(body).sort(), ['image_data_url', 'lang', 'vision_token']);
+  assert.deepEqual(Object.keys(body).sort(), ['image_data_url', 'lang']);
+  assert.equal(app.requests.find(r => r.url.includes('vision_plate')).init.headers['X-Vision-Token'], 'fixture-token');
   assert.equal(body.image_data_url, 'data:image/jpeg;base64,dGVzdA==');
   assert.equal(app.element('aiScanBtn').disabled, false);
 });

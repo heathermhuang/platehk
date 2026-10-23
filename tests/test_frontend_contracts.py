@@ -498,10 +498,10 @@ class FrontendContractsTests(unittest.TestCase):
         self.assertIn("cf:secrets:check", package["scripts"])
         self.assertIn("cf:deploy:ci", package["scripts"])
         self.assertIn("cf:secrets:check", package["scripts"]["cf:deploy"])
-        self.assertNotIn("cf:secrets:check", package["scripts"]["cf:deploy:ci"])
-        self.assertIn("OPENAI_API_KEY", wrangler["secrets"]["required"])
-        self.assertIn("OPENAI_API_KEY", script)
-        self.assertIn("wrangler secret put OPENAI_API_KEY", script)
+        self.assertIn("cf:secrets:check", package["scripts"]["cf:deploy:ci"])
+        self.assertIn("APP_SECURITY_TOKEN_SECRET", wrangler["secrets"]["required"])
+        self.assertIn("APP_SECURITY_TOKEN_SECRET", script)
+        self.assertIn("wrangler secret put <NAME>", script)
         self.assertIn("wrangler secret put OPENAI_API_KEY", readme)
 
     def test_public_read_endpoints_are_rate_limited(self) -> None:
@@ -529,7 +529,7 @@ class FrontendContractsTests(unittest.TestCase):
         self.assertIn("readableCameraError(", camera_js)
         self.assertIn("ocrMetaEl.textContent = readableCameraError(err);", camera_js)
         self.assertIn("ensureVisionSessionToken(controller.signal)", camera_js)
-        self.assertIn("vision_token: visionToken", camera_js)
+        self.assertIn('"X-Vision-Token": visionToken', camera_js)
 
     def test_no_legacy_php_runtime_files_remain(self) -> None:
         self.assertFalse(list((ROOT / "api").glob("*.php")))

@@ -41,3 +41,10 @@ npm audit --omit=dev
 ```
 
 Never commit `.env`, proxy credentials, Stripe keys, QR values, browser profiles, or encrypted production state.
+
+Refund actions record completion only after Stripe returns `succeeded` with a refund
+ID. Pending or action-required refunds retain their ID and are polled hourly,
+without creating another refund. Failed, canceled, malformed, or still-unresolved
+refunds after ten attempts become dead outbox actions and make health checks fail
+for operator follow-up. A pending refund does not close the group or send a refund
+completion message. These local transitions do not replace Stripe reconciliation.

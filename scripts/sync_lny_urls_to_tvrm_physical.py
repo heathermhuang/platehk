@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 import re
 from pathlib import Path
+from trusted_sources import trusted_url
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -36,6 +37,9 @@ def main() -> int:
         u = x.get("pdf_url") or ""
         if not u:
             continue
+        trusted_url(u)
+        if not u.lower().endswith(".pdf"):
+            raise ValueError("LNY source must be an official PDF")
         if x.get("is_lny"):
             lny_urls.append(u)
             continue

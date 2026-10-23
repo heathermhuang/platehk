@@ -6,8 +6,8 @@ import {tmpdir} from 'node:os';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 
 const ROOT=fileURLToPath(new URL('../',import.meta.url));
-export const SOURCE_PATHS=['refresh-worker/src','refresh-worker/wrangler.jsonc','scripts/deploy_refresh_worker.mjs','package.json','package-lock.json'];
-const CONTROL_URL='https://platehk-refresh.measurable.workers.dev';
+export const SOURCE_PATHS=['refresh-worker/migrations','refresh-worker/src','refresh-worker/wrangler.jsonc','scripts/deploy_refresh_worker.mjs','package.json','package-lock.json'];
+export const CONTROL_URL='https://platehk-refresh.measurable.workers.dev';
 const REPOSITORY='https://github.com/heathermhuang/platehk.git';
 
 export function sourceRevision(root,files) {

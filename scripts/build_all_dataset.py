@@ -109,7 +109,6 @@ def load_legacy_overlap_lookup() -> tuple[set[str], set[str], int]:
     legacy = load_json(DATA / "tvrm_legacy" / "results.slim.json")
 
     nonlegacy_exact = set()
-    nonlegacy_coarse = set()
     for row in physical + eauction:
         tagged = {**row, "dataset_key": "nonlegacy"}
         nonlegacy_exact.add(
@@ -123,16 +122,9 @@ def load_legacy_overlap_lookup() -> tuple[set[str], set[str], int]:
                 separators=(",", ":"),
             )
         )
-        nonlegacy_coarse.add(
-            json.dumps(
-                [
-                    normalize_plate(tagged.get("single_line") or tagged.get("double_line")),
-                    tagged.get("amount_hkd"),
-                ],
-                ensure_ascii=False,
-                separators=(",", ":"),
-            )
-        )
+    # A year-range record and a dated record with the same price/plate do
+    # not establish the same sale. Retain coarse records rather than silently
+    # suppressing genuine historical resales.
 
     overlap_exact: set[str] = set()
     overlap_coarse: set[str] = set()
@@ -143,9 +135,6 @@ def load_legacy_overlap_lookup() -> tuple[set[str], set[str], int]:
             if key in nonlegacy_exact:
                 overlap_exact.add(key)
                 rows_to_drop += 1
-        elif key in nonlegacy_coarse:
-            overlap_coarse.add(key)
-            rows_to_drop += 1
     return overlap_exact, overlap_coarse, rows_to_drop
 
 

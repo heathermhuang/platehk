@@ -7,6 +7,7 @@ cd "$ROOT_DIR"
 PYTHON_BIN="${PYTHON_BIN:-python3}"
 
 "${PYTHON_BIN}" scripts/scan_repo_secrets.py
+node --test tests/security_regression_test.mjs
 
 if [[ "${CHECK_SECURITY_SKIP_DEPS:-0}" == "1" ]]; then
   echo "Dependency audit skipped (CHECK_SECURITY_SKIP_DEPS=1)."

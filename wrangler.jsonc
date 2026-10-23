@@ -42,7 +42,7 @@
   },
   "secrets": {
     "required": [
-      "OPENAI_API_KEY"
+      "APP_SECURITY_TOKEN_SECRET"
     ]
   }
 }

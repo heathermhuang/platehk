@@ -2,10 +2,12 @@ import fs from 'node:fs/promises';
 import {execFileSync} from 'node:child_process';
 import {boundedRead,officialUrl} from '../refresh-worker/src/probe.mjs';
 
+import {CONTROL_URL} from './deploy_refresh_worker.mjs';
+
 const command = process.argv[2];
-const base = process.env.REFRESH_CONTROL_URL || '';
+const base = process.env.REFRESH_CONTROL_URL || CONTROL_URL;
 const token = process.env.REFRESH_CONTROL_TOKEN || '';
-if (!base.startsWith('https://') || !token) throw new Error('Configure REFRESH_CONTROL_URL and REFRESH_CONTROL_TOKEN');
+if (![CONTROL_URL, `${CONTROL_URL}/`].includes(base) || !token) throw new Error('Configure the canonical REFRESH_CONTROL_URL and REFRESH_CONTROL_TOKEN');
 async function request(path,method='GET',payload) {
   const response = await fetch(new URL(path,base),{method,redirect:'error',signal:AbortSignal.timeout(240000),headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:payload === undefined ? undefined : JSON.stringify(payload)});
   if (!response.ok) {

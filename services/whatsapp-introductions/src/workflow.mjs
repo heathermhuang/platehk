@@ -496,7 +496,9 @@ export class IntroductionWorkflow {
       return this.messaging.createGroup(action.payload);
     }
     if (action.type === "refund") {
-      return this.payments.refund(action.payload.paymentIntentId, action.id);
+      return action.payload.refundId
+        ? this.payments.getRefund(action.payload.refundId)
+        : this.payments.refund(action.payload.paymentIntentId, action.id);
     }
     if (action.type === "leave_group") {
       return this.messaging.leaveGroup(action.payload.groupId);
@@ -509,6 +511,23 @@ export class IntroductionWorkflow {
     await this.store.transact((state) => {
       const current = state.outbox[action.id];
       if (!current) return;
+      if (action.type === "refund") {
+        const introduction = state.introductions[action.payload.introductionId];
+        const payment = state.payments[action.payload.paymentId];
+        if (!introduction || !payment) throw new Error("Refund records missing");
+        const status = String(result?.status || "unknown");
+        const refundId = String(result?.refundId || "");
+        if (refundId) current.payload.refundId = introduction.refundId = refundId;
+        payment.refundStatus = status;
+        if (status !== "succeeded" || !refundId) {
+          const waiting = refundId && ["pending", "requires_action"].includes(status) && current.attempts < 10;
+          current.status = waiting ? "pending" : "dead";
+          current.lastError = `Refund not completed: ${status}`;
+          if (waiting) current.nextAttemptAt = iso(now + 60 * 60 * 1000);
+          else current.failedAt = iso(now);
+          return;
+        }
+      }
       current.status = "done";
       current.completedAt = iso(now);
       delete current.lastError;

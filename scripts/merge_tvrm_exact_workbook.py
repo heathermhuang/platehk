@@ -34,7 +34,7 @@ def normalize_amount(raw) -> int | None:
         return None
     try:
         return int(round(float(text)))
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, OverflowError):
         return None
 
 

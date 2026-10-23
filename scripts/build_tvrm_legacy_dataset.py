@@ -50,7 +50,7 @@ def normalize_amount(raw) -> int | None:
         return None
     try:
         return int(round(float(text)))
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, OverflowError):
         return None
 
 
@@ -102,8 +102,8 @@ def dedupe_issue_rows(rows: list[dict]) -> list[dict]:
     return out
 
 
-def load_exact_overlap_signatures() -> set[str]:
-    signatures: set[str] = set()
+def load_exact_overlap_signatures() -> dict[str, set[int]]:
+    signatures: dict[str, set[int]] = {}
     wb = load_workbook(EXACT_XLSX_PATH, read_only=True, data_only=True)
     try:
         for sheet_name in wb.sheetnames:
@@ -122,7 +122,7 @@ def load_exact_overlap_signatures() -> set[str]:
                     continue
                 amount = normalize_amount(amount_raw)
                 status = result_status(result_raw or "")
-                signatures.add(overlap_signature(plate, amount, status))
+                signatures.setdefault(overlap_signature(plate, amount, status), set()).add(int(auction_date[:4]))
     finally:
         wb.close()
     return signatures
@@ -140,7 +140,7 @@ def remapped_legacy_range(sheet_name: str) -> str | None:
     return f"{start_year}-{end_year}"
 
 
-def load_legacy_rows(exact_signatures: set[str]) -> tuple[dict[str, list[dict]], dict[str, int]]:
+def load_legacy_rows(exact_signatures: dict[str, set[int]]) -> tuple[dict[str, list[dict]], dict[str, int]]:
     by_issue: dict[str, list[dict]] = defaultdict(list)
     stats = {
         "legacy_rows_skipped_due_to_exact_dates_after_2006": 0,
@@ -163,7 +163,10 @@ def load_legacy_rows(exact_signatures: set[str]) -> tuple[dict[str, list[dict]],
             amount = normalize_amount(sheet.cell_value(r, 1))
             result_text = str(sheet.cell_value(r, 2) or "").strip()
             status = result_status(result_text)
-            if overlap_signature(plate, amount, status) in exact_signatures:
+            # A later resale cannot erase a record from an earlier decade.
+            start_year, end_year = map(int, sheet_name.split("-"))
+            exact_years = exact_signatures.get(overlap_signature(plate, amount, status), set())
+            if any(start_year <= year <= end_year for year in exact_years):
                 stats["legacy_rows_skipped_due_to_exact_dates_after_2006"] += 1
                 continue
             stats["legacy_rows_kept_after_cutoff"] += 1
@@ -194,13 +197,13 @@ def build() -> int:
     if not EXACT_XLSX_PATH.exists():
         raise FileNotFoundError(EXACT_XLSX_PATH)
 
+    exact_signatures = load_exact_overlap_signatures()
+    by_issue, stats = load_legacy_rows(exact_signatures)
+
     OUT.mkdir(parents=True, exist_ok=True)
     if ISSUES_DIR.exists():
         shutil.rmtree(ISSUES_DIR)
     ISSUES_DIR.mkdir(parents=True, exist_ok=True)
-
-    exact_signatures = load_exact_overlap_signatures()
-    by_issue, stats = load_legacy_rows(exact_signatures)
 
     all_rows: list[dict] = []
     auctions: list[dict] = []

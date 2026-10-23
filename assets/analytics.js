@@ -16,7 +16,6 @@
     for (const key of ['dataset','action','source_domain','error_kind','issue','result_outcome','match_mode','outcome_filter']) {
       if (/^[a-zA-Z0-9_.-]{1,60}$/.test(String(values[key] || ''))) data[key] = values[key];
     }
-    if (/^[A-HJ-NPR-Z0-9]{1,16}$/.test(values.plate || '')) data.plate = values.plate;
     window.gtag('event',name,data);
   }
   let lastLookup = '';
