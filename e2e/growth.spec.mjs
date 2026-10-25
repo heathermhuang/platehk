@@ -110,3 +110,20 @@ for(const action of ['main_lookup','round_lookup'])test(`real analytics settles 
   await page.clock.runFor(3000);
   expect((await events()).filter(([name])=>name==='lookup_complete')).toHaveLength(2);
 });
+
+test('community badge placement preserves its dependency-free published document', async ({page}) => {
+  const image='https://hk.app/badges/b0f6d265-cb4a-48c0-bbc9-b53b8e339a0a.svg';
+  await page.route(image,route=>route.fulfill({contentType:'image/svg+xml',body:'<svg xmlns="http://www.w3.org/2000/svg" width="214" height="40"><rect width="214" height="40" fill="black"/></svg>'}));
+  const response=await page.goto('/community.html');
+  expect(response.ok()).toBe(true);
+  // The local Worker rewrites canonical site links; compare the publish artifact itself.
+  expect(readFileSync(new URL('../.tmp/cloudflare-public/community.html',import.meta.url),'utf8')).toBe(readFileSync(new URL('../community.html',import.meta.url),'utf8'));
+  await expect(page.locator('script,link[rel="stylesheet"]')).toHaveCount(0);
+  const badge=page.getByRole('link',{name:'View Plate.hk on hk.app',exact:true});
+  await expect(badge).toBeVisible();
+  await expect(badge).toHaveAttribute('href','https://hk.app/b/b0f6d265-cb4a-48c0-bbc9-b53b8e339a0a');
+  await expect(badge.locator('img')).toHaveAttribute('src',image);
+  expect((await badge.boundingBox()).height).toBeGreaterThanOrEqual(44);
+  expect(await badge.locator('img').evaluate(img=>img.complete&&img.naturalWidth===214)).toBe(true);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+});
