@@ -38,6 +38,7 @@ if [[ "$SMOKE" -eq 1 ]]; then
     about.html \
     camera.html \
     mcp.html \
+    community.html \
     plates/index.html \
     plates/directory/index.html \
     plates/88.html \
@@ -68,6 +69,7 @@ else
     api.html \
     audit.html \
     mcp.html \
+    community.html \
     landing.html \
     changelog.html \
     privacy.html \
