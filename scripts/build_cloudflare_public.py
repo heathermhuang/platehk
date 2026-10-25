@@ -38,6 +38,7 @@ ROOT_FILES = [
     "contact.html",
     "agent-claim.html",
     "mcp.html",
+    "community.html",
     "robots.txt",
     "sitemap.xml",
     "llms.txt",
@@ -631,6 +632,9 @@ def main(*, require_market_snapshot: bool = False, allow_stale_market_snapshot: 
         for asset in ("ledger.css", "ux.css", "ux.js", "info-shell.js", "index.browser.css", "index.browser.js", "decision.css", "index.js", "index.state.js", "index.home.js", "index.config.js")
     }
     for page in TARGET.rglob("*.html"):
+        # Keep the standalone badge placement free of injected dependencies.
+        if page == TARGET / "community.html":
+            continue
         content = page.read_text(encoding="utf-8")
         if '/assets/analytics.js?' not in content:
             content = content.replace('</head>', '<script defer src="/assets/analytics.js?v=20260915-01"></script>\n</head>')
