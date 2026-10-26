@@ -1,30 +1,12 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-10-22T13:00:45+00:00",
+  "generated_at": "2026-10-26T07:15:36+00:00",
   "timezone": "Asia/Hong_Kong",
   "source_urls": [
     "https://www.td.gov.hk/en/public_services/vehicle_registration_mark_n/ca/index.html",
     "https://www.td.gov.hk/tc/public_services/vehicle_registration_mark_n/ca/index.html"
   ],
   "events": [
-    {
-      "id": "tvrm_eauction-2026-10-22",
-      "type": "tvrm_eauction",
-      "start_at": "2026-10-22T12:00:00+08:00",
-      "end_at": "2026-10-26T12:00:00+08:00",
-      "date_label_en": "22 October noon to 26 October noon 2026 Please visit the ' E-Auction ' website for more d etails.",
-      "date_label_zh": "2026年10月22日中午至10月26日中午 參與網上拍賣詳情請瀏覽「 拍牌易 」網頁",
-      "source_page_url_en": "https://www.td.gov.hk/en/public_services/vehicle_registration_mark_n/ca/index.html",
-      "source_page_url_zh": "https://www.td.gov.hk/tc/public_services/vehicle_registration_mark_n/ca/index.html",
-      "source_url_en": "https://www.td.gov.hk/en/public_services/vehicle_registration_mark_n/ca/index.html",
-      "source_url_zh": "https://www.td.gov.hk/tc/public_services/vehicle_registration_mark_n/ca/index.html",
-      "action_url_en": "https://e-auction.td.gov.hk/en",
-      "action_url_zh": "https://e-auction.td.gov.hk/tc",
-      "source_text_en": "22 October noon to 26 October noon 2026 Please visit the ' E-Auction ' website for more d etails.",
-      "meta": {
-        "source": "td_coming_auction"
-      }
-    },
     {
       "id": "tvrm_eauction-2026-11-05",
       "type": "tvrm_eauction",
