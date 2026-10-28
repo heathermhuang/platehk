@@ -13,6 +13,7 @@ import argparse
 import concurrent.futures
 import datetime as dt
 import html
+import http.client
 import json
 import re
 import threading
@@ -204,7 +205,7 @@ def fetch_text(url: str, timeout_seconds: float, limiter: PoliteRateLimiter, att
         try:
             return decode_page(read_source(url, hosts=MARKET_HOSTS, headers=dict(request.header_items()),
                                            timeout=timeout_seconds, max_bytes=4 * 1024 * 1024))
-        except (OSError, urllib.error.URLError, RuntimeError) as exc:
+        except (OSError, urllib.error.URLError, RuntimeError, http.client.IncompleteRead) as exc:
             last_error = exc
             if attempt < attempts:
                 time.sleep(min(2 ** (attempt - 1), 4))

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime as dt
+import http.client
 import importlib.util
 import json
 import sys
@@ -38,6 +39,63 @@ def load_page_builder():
 
 
 class MarketSignalTests(unittest.TestCase):
+    def test_fetch_retries_incomplete_response_before_decoding(self) -> None:
+        limiter = mock.Mock()
+        with mock.patch.object(market, "read_source", side_effect=[
+            http.client.IncompleteRead(b"truncated"), b"complete response",
+        ]) as read_source, mock.patch.object(market.time, "sleep") as sleep:
+            result = market.fetch_text(market.page_url(443), 25, limiter)
+
+        self.assertEqual(result, "complete response")
+        self.assertEqual(read_source.call_count, 2)
+        self.assertEqual(limiter.wait.call_count, 2)
+        sleep.assert_called_once_with(1)
+
+    def test_fetch_stops_after_three_incomplete_responses(self) -> None:
+        limiter = mock.Mock()
+        with mock.patch.object(market, "read_source", side_effect=http.client.IncompleteRead(b"partial")) as read_source, \
+                mock.patch.object(market.time, "sleep") as sleep:
+            with self.assertRaisesRegex(RuntimeError, "Unable to fetch.*IncompleteRead"):
+                market.fetch_text(market.page_url(609), 25, limiter)
+
+        self.assertEqual(read_source.call_count, 3)
+        self.assertEqual(limiter.wait.call_count, 3)
+        self.assertEqual(sleep.call_args_list, [mock.call(1), mock.call(2)])
+
+    def test_fetch_does_not_retry_source_policy_rejection(self) -> None:
+        limiter = mock.Mock()
+        with mock.patch.object(market, "read_source", side_effect=ValueError("Untrusted source URL")) as read_source, \
+                mock.patch.object(market.time, "sleep") as sleep:
+            with self.assertRaisesRegex(ValueError, "Untrusted source URL"):
+                market.fetch_text(market.page_url(1), 25, limiter)
+
+        read_source.assert_called_once()
+        sleep.assert_not_called()
+
+    def test_exhausted_incomplete_reads_preserve_previous_snapshot(self) -> None:
+        source = (ROOT / "tests" / "fixtures" / "28car_listing_page.html").read_text(encoding="utf-8")
+        first_page = source.replace("genPage(3, 1)", "genPage(2, 1)").encode("big5hkscs")
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp) / "signals.json"
+            contacts = output.with_name("signals.contacts.json")
+            previous = '{"signals":{}}\n'
+            previous_contacts = '{"contacts":{}}\n'
+            output.write_text(previous, encoding="utf-8")
+            contacts.write_text(previous_contacts, encoding="utf-8")
+            argv = [str(SCRIPT), "--output", str(output), "--max-pages", "0", "--require-complete"]
+            with mock.patch.object(sys, "argv", argv), \
+                    mock.patch.object(market, "assert_robots_allows"), \
+                    mock.patch.object(market.PoliteRateLimiter, "wait"), \
+                    mock.patch.object(market.time, "sleep"), \
+                    mock.patch.object(market, "read_source", side_effect=[
+                        first_page, *[http.client.IncompleteRead(b"partial") for _ in range(3)],
+                    ]) as read_source:
+                with self.assertRaisesRegex(SystemExit, "Complete refresh required.*1 page"):
+                    market.main()
+            self.assertEqual(read_source.call_count, 4)
+            self.assertEqual(output.read_text(encoding="utf-8"), previous)
+            self.assertEqual(contacts.read_text(encoding="utf-8"), previous_contacts)
+
     def test_only_explicit_listing_whatsapp_is_captured(self) -> None:
         cell = lambda text: '<font size="2" color="#B0B0B0"><b>' + text + '</b></font>'
         self.assertEqual(market.parse_advertised_whatsapp(cell('Whatsapp 6111 2222')), '85261112222')
