@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-10-27T13:03:44+00:00",
+  "generated_at": "2026-10-28T06:51:58+00:00",
   "timezone": "Asia/Hong_Kong",
   "source_urls": [
     "https://www.td.gov.hk/en/public_services/vehicle_registration_mark_n/ca/index.html",
@@ -42,6 +42,24 @@
       "meta": {
         "source": "td_coming_auction",
         "session": "morning"
+      }
+    },
+    {
+      "id": "tvrm_physical-2026-11-14",
+      "type": "tvrm_physical",
+      "start_at": "2026-11-14T00:00:00+08:00",
+      "end_at": "2026-11-14T23:59:59+08:00",
+      "date_label_en": "14 November 2026 (Sat) Auction List",
+      "date_label_zh": "2026年11月14日(星期六) ⾞輛登記號碼拍賣名單",
+      "source_page_url_en": "https://www.td.gov.hk/en/public_services/vehicle_registration_mark_n/ca/index.html",
+      "source_page_url_zh": "https://www.td.gov.hk/tc/public_services/vehicle_registration_mark_n/ca/index.html",
+      "source_url_en": "https://www.td.gov.hk/filemanager/en/content_5419/TVRM%20Auction%20Handout%20for%2014.11.2026.Eng.pdf",
+      "source_url_zh": "https://www.td.gov.hk/filemanager/sc/content_5419/TVRM%20Auction%20Handout%20for%2014.11.2026.Chi.pdf",
+      "action_url_en": null,
+      "action_url_zh": null,
+      "source_text_en": "14 November 2026 (Sat) Auction List",
+      "meta": {
+        "source": "td_coming_auction"
       }
     },
     {
