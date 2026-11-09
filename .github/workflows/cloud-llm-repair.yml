@@ -7,6 +7,12 @@ on:
     types:
       - completed
   workflow_dispatch:
+    inputs:
+      mode:
+        description: "Connection check or isolated automatic repair drill"
+        type: choice
+        default: connection
+        options: [connection, repair_drill]
 
 concurrency:
   group: platehk-cloud-llm-repair-${{ github.event.workflow_run.id || github.run_id }}
@@ -18,7 +24,7 @@ permissions:
 jobs:
   connection_test:
     name: Test custom LLM connection
-    if: ${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' }}
+    if: ${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.mode != 'repair_drill' }}
     # Pin after Codex drop-sudo socket ACL verification failed on Ubuntu 26.04.
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -41,11 +47,12 @@ jobs:
           fi
 
       - name: Make one read-only model request
-        uses: openai/codex-action@v1
+        uses: openai/codex-action@bdf19a4a223ec2549a3e2274a0cf61556bc07675 # v1, verified by the repair drill
         with:
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
           responses-api-endpoint: ${{ secrets.OPENAI_RESPONSES_API_ENDPOINT }}
           model: gpt-5.6-sol
+          codex-version: "0.167.0"
           prompt: >-
             Connection test only. Do not inspect or change repository files.
             Reply exactly: PlateHK cloud LLM connection OK
@@ -56,16 +63,18 @@ jobs:
   inspect_escalation:
     name: Inspect auto-heal escalation
     if: >-
-      ${{ github.event.workflow_run.conclusion == 'failure' &&
+      ${{ (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.mode == 'repair_drill') ||
+          (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'failure' &&
           github.event.workflow_run.head_branch == 'main' &&
-          github.event.workflow_run.head_repository.full_name == github.repository }}
-    runs-on: ubuntu-latest
+          github.event.workflow_run.head_repository.full_name == github.repository) }}
+    runs-on: ubuntu-24.04
     permissions:
       actions: read
       contents: read
       issues: read
     outputs:
       source_sha: ${{ steps.source.outputs.sha }}
+      is_drill: ${{ steps.source.outputs.is_drill }}
       should_run: ${{ steps.plan.outputs.should_run }}
       classification: ${{ steps.plan.outputs.classification }}
       issue_number: ${{ steps.plan.outputs.issue_number }}
@@ -79,9 +88,14 @@ jobs:
 
       - name: Pin trusted main revision
         id: source
-        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+        env:
+          IS_DRILL: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'repair_drill' }}
+        run: |
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "is_drill=${IS_DRILL}" >> "$GITHUB_OUTPUT"
 
       - name: Download auto-heal evidence
+        if: steps.source.outputs.is_drill != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           AUTOHEAL_RUN_ID: ${{ github.event.workflow_run.id }}
@@ -92,6 +106,10 @@ jobs:
             --repo "$REPOSITORY" \
             --name "autoheal-evidence-${AUTOHEAL_RUN_ID}" \
             --dir logs/autoheal
+
+      - name: Prepare controlled verification failure
+        if: steps.source.outputs.is_drill == 'true'
+        run: python scripts/autoheal_drill.py prepare --evidence logs/autoheal
 
       - name: Gate cloud LLM execution
         id: plan
@@ -122,6 +140,7 @@ jobs:
           persist-credentials: false
 
       - name: Download auto-heal evidence
+        if: needs.inspect_escalation.outputs.is_drill != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           AUTOHEAL_RUN_ID: ${{ github.event.workflow_run.id }}
@@ -132,6 +151,10 @@ jobs:
             --repo "$REPOSITORY" \
             --name "autoheal-evidence-${AUTOHEAL_RUN_ID}" \
             --dir logs/autoheal
+
+      - name: Reproduce controlled verification failure
+        if: needs.inspect_escalation.outputs.is_drill == 'true'
+        run: python scripts/autoheal_drill.py prepare --evidence logs/autoheal
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -168,12 +191,13 @@ jobs:
 
       - name: Generate minimal repair patch
         id: codex
-        uses: openai/codex-action@v1
+        uses: openai/codex-action@bdf19a4a223ec2549a3e2274a0cf61556bc07675 # v1, verified by the repair drill
         with:
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
           responses-api-endpoint: ${{ secrets.OPENAI_RESPONSES_API_ENDPOINT }}
           model: gpt-5.6-sol
-          prompt-file: .github/codex/prompts/autoheal-repair.md
+          codex-version: "0.167.0"
+          prompt-file: ${{ needs.inspect_escalation.outputs.is_drill == 'true' && '.github/codex/prompts/autoheal-drill.md' || '.github/codex/prompts/autoheal-repair.md' }}
           output-file: logs/autoheal/codex-output.md
           codex-args: '["--ephemeral"]'
           permission-profile: ":workspace"
@@ -182,6 +206,8 @@ jobs:
 
       - name: Serialize patch artifact
         id: diff
+        env:
+          IS_DRILL: ${{ needs.inspect_escalation.outputs.is_drill }}
         run: |
           git add -N .
           git diff --binary HEAD > codex.patch
@@ -190,6 +216,10 @@ jobs:
           else
             echo "has_patch=false" >> "$GITHUB_OUTPUT"
             echo "::warning::Codex completed without producing a patch."
+            if [ "$IS_DRILL" = "true" ]; then
+              echo "::error::Controlled repair drill did not produce a patch."
+              exit 1
+            fi
           fi
 
       - name: Upload Codex output and patch
@@ -209,7 +239,7 @@ jobs:
       - inspect_escalation
       - generate_patch
     if: ${{ needs.generate_patch.outputs.has_patch == 'true' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 120
     permissions:
       actions: read
@@ -228,7 +258,17 @@ jobs:
           name: cloud-llm-repair-${{ github.run_id }}
 
       - name: Apply patch
-        run: git apply --index codex.patch
+        env:
+          IS_DRILL: ${{ needs.inspect_escalation.outputs.is_drill }}
+        run: |
+          if [ "$IS_DRILL" = "true" ]; then
+            python scripts/autoheal_drill.py validate-patch codex.patch
+            cp scripts/autoheal_drill.py "$RUNNER_TEMP/platehk-autoheal-drill.py"
+          fi
+          git apply --index codex.patch
+          if [ "$IS_DRILL" = "true" ]; then
+            python "$RUNNER_TEMP/platehk-autoheal-drill.py" --root "$GITHUB_WORKSPACE" verify-candidate
+          fi
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -265,7 +305,7 @@ jobs:
       - generate_patch
       - validate_patch
     if: ${{ needs.validate_patch.result == 'success' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       actions: read
       contents: write
@@ -282,6 +322,10 @@ jobs:
       - name: Preserve trusted notification code before applying the patch
         run: cp scripts/notify_telegram.py "$RUNNER_TEMP/platehk-notify-telegram.py"
 
+      - name: Preserve trusted drill validator before applying the patch
+        if: needs.inspect_escalation.outputs.is_drill == 'true'
+        run: cp scripts/autoheal_drill.py "$RUNNER_TEMP/platehk-autoheal-drill.py"
+
       - name: Download validated patch
         uses: actions/download-artifact@v4
         with:
@@ -295,22 +339,36 @@ jobs:
           BASE_BRANCH: ${{ github.event.workflow_run.head_branch }}
           CLASSIFICATION: ${{ needs.inspect_escalation.outputs.classification }}
           ISSUE_NUMBER: ${{ needs.inspect_escalation.outputs.issue_number }}
+          IS_DRILL: ${{ needs.inspect_escalation.outputs.is_drill }}
+          SOURCE_SHA: ${{ needs.inspect_escalation.outputs.source_sha }}
         run: |
-          git apply --index codex.patch
+          base="${BASE_BRANCH:-main}"
           branch="codex/autoheal-${AUTOHEAL_RUN_ID}-${GITHUB_RUN_ID}"
+          title="Draft auto-heal repair: ${CLASSIFICATION}"
+          gh auth setup-git
+          if [ "$IS_DRILL" = "true" ]; then
+            python "$RUNNER_TEMP/platehk-autoheal-drill.py" --root "$GITHUB_WORKSPACE" validate-patch codex.patch
+            base="codex/autoheal-drill-base-${GITHUB_RUN_ID}"
+            branch="codex/autoheal-drill-repair-${GITHUB_RUN_ID}"
+            title="Controlled auto-heal drill (do not merge)"
+            git push origin "${SOURCE_SHA}:refs/heads/${base}"
+          fi
+          git apply --index codex.patch
           git switch -c "$branch"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -m "Draft auto-heal repair for ${CLASSIFICATION}"
-          gh auth setup-git
           git push --set-upstream origin "$branch"
 
-          base="${BASE_BRANCH:-main}"
           {
+            if [ "$IS_DRILL" = "true" ]; then
+              echo "Controlled repair drill only. This fixture-only PR must never be merged."
+              echo
+            fi
             echo "Cloud Codex generated this minimal repair after deterministic auto-heal stopped."
             echo
             echo "- Classification: \`${CLASSIFICATION}\`"
-            echo "- Auto-heal run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${AUTOHEAL_RUN_ID}"
+            echo "- Evidence run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${AUTOHEAL_RUN_ID:-$GITHUB_RUN_ID}"
             echo "- Validation: secret scan and \`scripts/check_site.sh\` passed in a separate job without the OpenAI key."
             echo
             echo "This PR is intentionally draft and must be reviewed before merge."
@@ -321,9 +379,23 @@ jobs:
             --base "$base" \
             --head "$branch" \
             --draft \
-            --title "Draft auto-heal repair: ${CLASSIFICATION}" \
+            --title "$title" \
             --body-file pr-body.md)"
           echo "url=${pr_url}" >> "$GITHUB_OUTPUT"
+
+          if [ "$IS_DRILL" = "true" ]; then
+            mkdir -p logs/autoheal
+            gh pr view "$pr_url" --repo "$GITHUB_REPOSITORY" \
+              --json number,url,baseRefName,headRefName,isDraft,state,mergedAt,headRefOid > logs/autoheal/drill-pr.json
+            python "$RUNNER_TEMP/platehk-autoheal-drill.py" --root "$GITHUB_WORKSPACE" verify-pr \
+              --receipt logs/autoheal/drill-pr.json --run-id "$GITHUB_RUN_ID"
+            gh pr close "$pr_url" --repo "$GITHUB_REPOSITORY"
+            gh pr view "$pr_url" --repo "$GITHUB_REPOSITORY" \
+              --json number,url,baseRefName,headRefName,isDraft,state,mergedAt,headRefOid > logs/autoheal/drill-pr.json
+            python "$RUNNER_TEMP/platehk-autoheal-drill.py" --root "$GITHUB_WORKSPACE" verify-pr \
+              --receipt logs/autoheal/drill-pr.json --run-id "$GITHUB_RUN_ID" --closed
+            echo "Controlled automatic repair drill passed: ${pr_url}" >> "$GITHUB_STEP_SUMMARY"
+          fi
 
           if [ -n "$ISSUE_NUMBER" ]; then
             gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" \
@@ -331,6 +403,7 @@ jobs:
           fi
 
       - name: Notify Telegram about draft repair PR
+        if: needs.inspect_escalation.outputs.is_drill != 'true'
         continue-on-error: true
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
@@ -346,6 +419,15 @@ jobs:
           --text-env TELEGRAM_TEXT --link-env TELEGRAM_LINK
           --link-label "Review draft PR"
 
+      - name: Preserve controlled drill receipt
+        if: always() && needs.inspect_escalation.outputs.is_drill == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: autoheal-drill-receipt-${{ github.run_id }}
+          path: logs/autoheal/drill-pr.json
+          if-no-files-found: error
+          retention-days: 14
+
   report_failure:
     name: Report cloud LLM failure
     needs:
@@ -354,12 +436,12 @@ jobs:
       - validate_patch
       - open_draft_pr
     if: >-
-      ${{ always() && needs.inspect_escalation.outputs.should_run == 'true' &&
+      ${{ always() && needs.inspect_escalation.outputs.is_drill != 'true' && needs.inspect_escalation.outputs.should_run == 'true' &&
           (needs.generate_patch.result == 'failure' ||
            needs.generate_patch.outputs.has_patch != 'true' ||
            needs.validate_patch.result == 'failure' ||
            needs.open_draft_pr.result == 'failure') }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       issues: write

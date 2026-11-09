@@ -89,6 +89,43 @@ class AutoHealUpdateTests(unittest.TestCase):
         self.assertEqual(plan["action"], "escalate_llm_repair")
         self.assertTrue(plan["llm_escalation_required"])
 
+    def test_verification_failure_is_not_mislabelled_as_parser_or_retried_for_test_output(self):
+        log = """Run local verification 2026-11-09T13:19:34Z FAIL: test_legacy_overlap_report_matches_source_data (test_generated_data.GeneratedDataTests.test_legacy_overlap_report_matches_source_data)
+Traceback (most recent call last):
+  File "tests/test_generated_data.py", line 49, in test_legacy_overlap_report_matches_source_data
+AssertionError: 1829 != 0
+FAILED (failures=1)
+Network fixture reported HTTP 503
+"""
+        plan = self.classify(log, freshness={"status": "current"})
+        self.assertEqual(plan["classification"], "verification_failure")
+        self.assertEqual(plan["status"], "escalate")
+        self.assertEqual(plan["action"], "escalate_llm_repair")
+        self.assertEqual(plan["commands"], [])
+        self.assertEqual(plan["confidence"], "high")
+
+    def test_generic_python_errors_do_not_claim_source_shape_evidence(self):
+        for log in ["Traceback (most recent call last):\nRuntimeError: unexpected", "ValueError: invalid option",
+                    "AttributeError: missing setting", "json.decoder.JSONDecodeError: invalid local config"]:
+            with self.subTest(log=log):
+                plan = self.classify(log)
+                self.assertEqual(plan["classification"], "unclassified_python_failure")
+                self.assertEqual(plan["action"], "escalate_llm_repair")
+        self.assertEqual(self.classify("ValueError: cannot determine auction date")["classification"],
+                         "unknown_parser_or_source_shape")
+
+    def test_verification_classification_preserves_source_and_credential_holds(self):
+        for marker in ["SOURCE_OBSERVATION_UNAVAILABLE", "SOURCE_PARSE_UNVERIFIED", "Set the CLOUDFLARE_API_TOKEN"]:
+            with self.subTest(marker=marker):
+                plan = self.classify(marker + "\nFAIL: test_check (tests.Check)\nFAILED (failures=1)")
+                self.assertEqual(plan["status"], "blocked")
+                self.assertEqual(plan["action"], "alert_human")
+
+    def test_pytest_verification_failure_escalates_without_blind_retry(self):
+        plan = self.classify("FAILED tests/test_checks.py::test_consistency - AssertionError")
+        self.assertEqual(plan["classification"], "verification_failure")
+        self.assertFalse(plan["deploy_required"])
+
     def test_old_source_alert_requires_verified_newer_unchanged_source_evidence(self) -> None:
         observer = {"last_checked_at":"2026-10-14T01:10:00Z", "last_outcome":"unchanged", "last_error":None,
                     "pending_source_count":0, "lease_until":0, "source_revision":"a"*64,

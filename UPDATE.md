@@ -146,13 +146,15 @@ python scripts/auto_heal_update.py classify \
 以下情況不會自動改 code 或部署：
 
 - Cloudflare / GitHub secrets、權限、token 缺失：`alert_human`
-- shell syntax、parser traceback、TD source shape 未分類變更：`escalate_llm_repair`
+- 測試失敗：`verification_failure`，以 `escalate_llm_repair` 產生 reviewed patch，不因測試輸出的模擬網絡錯誤而盲目重跑
+- 一般 Python exception：`unclassified_python_failure`，不把所有 traceback 都當成 parser/source shape 證據
+- shell syntax 或明確 parser/source shape 錯誤：`escalate_llm_repair`
 
 當 classification 是 `alert_human` 或 `escalate_llm_repair`，workflow 會建立或更新 GitHub Issue，並上傳 `autoheal-evidence-<run_id>` artifact，內容包含 failed log、freshness JSON、repair plan 及 issue metadata。
 
 ### Cloud LLM repair
 
-`.github/workflows/cloud-llm-repair.yml` 只會在 `Auto Heal Data` 失敗後讀取 evidence artifact；只有 plan 同時是 `status=escalate` 及 `action=escalate_llm_repair` 才會在 GitHub-hosted runner 啟動 `openai/codex-action@v1`。一般成功、production drift、可重試網絡錯誤及 credentials/permissions blocker 都不會啟動 LLM。
+`.github/workflows/cloud-llm-repair.yml` 的自動路徑只會在 `Auto Heal Data` 失敗後讀取 evidence artifact；只有 plan 同時是 `status=escalate` 及 `action=escalate_llm_repair` 才會在 GitHub-hosted runner 啟動固定 commit 的 `openai/codex-action`。一般成功、production drift、可重試網絡錯誤及 credentials/permissions blocker 都不會啟動 LLM。手動 connection check 及下述隔離演練是明確選擇的例外。
 
 Cloud LLM 權限分成三個 jobs：
 
@@ -176,7 +178,17 @@ python3 scripts/configure_github_ops_secrets.py
 
 installer 不會在 command line 或輸出顯示 secret value；它只會把已填的欄位透過 `gh secret set` 的 stdin 寫入 `heathermhuang/platehk`。可以分兩次執行：第一次設定 OpenAI endpoint/key 與 replacement Telegram token；完成 Telegram chat discovery 後填入 chat ID，再執行一次。
 
-Workflow push 到 GitHub 後，可在 Actions 手動執行 `Cloud LLM Repair`。手動 dispatch 只會啟動 `Test custom LLM connection`：使用 read-only permission profile 呼叫一次 `gpt-5.6-sol`，不會讀取 failure evidence、修改 repository、開 PR 或部署。日常自動路徑仍然只會在 Auto Heal 明確產生 `escalate_llm_repair` 後使用 LLM。
+Workflow push 到 GitHub 後，可在 Actions 手動執行 `Cloud LLM Repair`。預設 `mode=connection` 只會啟動 `Test custom LLM connection`：使用 read-only permission profile 呼叫一次 `gpt-5.6-sol`，不會讀取 failure evidence、修改 repository、開 PR 或部署。日常自動路徑仍然只會在 Auto Heal 明確產生 `escalate_llm_repair` 後使用 LLM。
+
+`mode=repair_drill` 會把刻意有錯的 `tests/fixtures/autoheal_drill/candidate.py` 送進相同 classifier、Codex generation、獨立 validation 及 draft PR jobs：
+
+```bash
+gh workflow run cloud-llm-repair.yml --ref main -f mode=repair_drill
+```
+
+演練先證明 fixture 失敗及 classification 是 `verification_failure`，再讓模型修復。Validation 只接受該 fixture 的單一文字修改，拒絕 production paths、額外檔案、rename 及 file-mode 變更；除了 fixture contract，仍須通過 secret scan 及完整 `scripts/check_site.sh`。Publisher 只建立以該 run ID 命名的隔離 base/head branches，驗證 PR 是 draft 且未 merged 後關閉，並保存 `autoheal-drill-receipt-<run_id>` artifact 14 天。不更動 `main`、不部署、不送 production incident Telegram 通知。故意有錯的 fixture 不供 production 使用，也不是一般 unittest discovery 的測試。
+
+Cloud repair jobs 固定使用 Ubuntu 24.04、已驗證的 Codex action commit 及 CLI `0.167.0`。變更 runner、action、CLI、model 或 provider 設定後，執行這個演練；只有完整 repair-to-PR 流程成功才視為 repair lane 已驗證。演練需手動執行，不新增定期模型呼叫。
 
 LLM 只應在 `escalate_llm_repair` 後作為 PR 修復助手使用：根據失敗 logs、fixture 和相關 parser code 建 draft PR，並附 regression test。不要讓 LLM 直接每日更新資料、直接 push parser patch 到 `main`、auto-merge，或繞過 `scripts/check_site.sh` / production freshness check。
 
