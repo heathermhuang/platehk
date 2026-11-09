@@ -48,7 +48,9 @@
         "FAIL(?:URE)?: test_[^\\n]+\\(",
         "ERROR: test_[^\\n]+\\(",
         "FAILED \\((?:failures|errors)=",
-        "(?:^|\\s)FAILED tests/[^\\n]+::"
+        "(?:^|\\s)FAILED tests/[^\\n]+::",
+        "not ok [0-9]+ - ",
+        "AssertionError \\[ERR_ASSERTION\\]"
       ]
     },
     {
@@ -125,7 +127,7 @@
     },
     {
       "id": "local_listener_permission",
-      "priority": 50,
+      "priority": 97,
       "status": "repairable",
       "action": "retry_auto_update",
       "confidence": "medium",

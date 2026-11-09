@@ -146,7 +146,7 @@ python scripts/auto_heal_update.py classify \
 以下情況不會自動改 code 或部署：
 
 - Cloudflare / GitHub secrets、權限、token 缺失：`alert_human`
-- 測試失敗：`verification_failure`，以 `escalate_llm_repair` 產生 reviewed patch，不因測試輸出的模擬網絡錯誤而盲目重跑
+- unittest / pytest / Node 測試失敗：`verification_failure`，以 `escalate_llm_repair` 產生 reviewed patch，不因測試輸出的模擬網絡錯誤而盲目重跑；明確的 `listen EPERM` 仍用既有 environment retry
 - 一般 Python exception：`unclassified_python_failure`，不把所有 traceback 都當成 parser/source shape 證據
 - shell syntax 或明確 parser/source shape 錯誤：`escalate_llm_repair`
 

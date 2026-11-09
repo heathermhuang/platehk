@@ -126,6 +126,20 @@ Network fixture reported HTTP 503
         self.assertEqual(plan["classification"], "verification_failure")
         self.assertFalse(plan["deploy_required"])
 
+    def test_node_verification_failures_do_not_become_healthy_noops(self):
+        for log in ["not ok 12 - Worker preserves record counts\nHTTP 503 in an earlier fixture",
+                    "AssertionError [ERR_ASSERTION]: counts differ"]:
+            with self.subTest(log=log):
+                plan = self.classify(log, freshness={"status": "current"})
+                self.assertEqual(plan["classification"], "verification_failure")
+                self.assertEqual(plan["action"], "escalate_llm_repair")
+
+    def test_specific_listener_failure_still_uses_environment_retry(self):
+        plan = self.classify("not ok 1 - local server\nError: listen EPERM: operation not permitted 127.0.0.1")
+        self.assertEqual(plan["classification"], "local_listener_permission")
+        self.assertEqual(plan["action"], "retry_auto_update")
+        self.assertFalse(plan["llm_escalation_required"])
+
     def test_old_source_alert_requires_verified_newer_unchanged_source_evidence(self) -> None:
         observer = {"last_checked_at":"2026-10-14T01:10:00Z", "last_outcome":"unchanged", "last_error":None,
                     "pending_source_count":0, "lease_until":0, "source_revision":"a"*64,
