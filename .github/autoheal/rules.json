@@ -37,6 +37,23 @@
       ]
     },
     {
+      "id": "verification_failure",
+      "priority": 95,
+      "status": "escalate",
+      "action": "escalate_llm_repair",
+      "confidence": "high",
+      "deploy_required": false,
+      "summary": "Repository verification failed; inspect the failing test and produce a reviewed code patch without weakening its assertions.",
+      "patterns": [
+        "FAIL(?:URE)?: test_[^\\n]+\\(",
+        "ERROR: test_[^\\n]+\\(",
+        "FAILED \\((?:failures|errors)=",
+        "(?:^|\\s)FAILED tests/[^\\n]+::",
+        "not ok [0-9]+ - ",
+        "AssertionError \\[ERR_ASSERTION\\]"
+      ]
+    },
+    {
       "id": "workflow_shell_syntax_regression",
       "priority": 90,
       "status": "escalate",
@@ -110,7 +127,7 @@
     },
     {
       "id": "local_listener_permission",
-      "priority": 50,
+      "priority": 97,
       "status": "repairable",
       "action": "retry_auto_update",
       "confidence": "medium",
@@ -130,8 +147,19 @@
       "deploy_required": false,
       "summary": "The updater failed in parser/source-shape code and needs a reviewed code patch with fixtures.",
       "patterns": [
+        "cannot determine auction date"
+      ]
+    },
+    {
+      "id": "unclassified_python_failure",
+      "priority": 5,
+      "status": "escalate",
+      "action": "escalate_llm_repair",
+      "confidence": "low",
+      "deploy_required": false,
+      "summary": "A Python exception occurred, but the evidence does not establish a parser or source-shape failure; inspect the traceback before proposing a reviewed patch.",
+      "patterns": [
         "Traceback \\(most recent call last\\)",
-        "cannot determine auction date",
         "ValueError:",
         "AttributeError:",
         "IndexError:",

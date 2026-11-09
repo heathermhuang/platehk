@@ -21,7 +21,7 @@ class CloudEscalationTests(unittest.TestCase):
         self.assertIn("github.event.workflow_run.conclusion == 'failure'", workflow)
         self.assertIn("scripts/cloud_repair_gate.py", workflow)
         self.assertIn("ref: main", workflow)
-        self.assertIn("openai/codex-action@v1", workflow)
+        self.assertIn("openai/codex-action@bdf19a4a223ec2549a3e2274a0cf61556bc07675", workflow)
         self.assertIn("responses-api-endpoint: ${{ secrets.OPENAI_RESPONSES_API_ENDPOINT }}", workflow)
         self.assertIn("model: gpt-5.6-sol", workflow)
         self.assertIn("allow-bots: true", workflow)
