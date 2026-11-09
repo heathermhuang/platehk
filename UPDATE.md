@@ -190,6 +190,8 @@ gh workflow run cloud-llm-repair.yml --ref main -f mode=repair_drill
 
 Cloud repair jobs 固定使用 Ubuntu 24.04、已驗證的 Codex action commit 及 CLI `0.167.0`。變更 runner、action、CLI、model 或 provider 設定後，執行這個演練；只有完整 repair-to-PR 流程成功才視為 repair lane 已驗證。演練需手動執行，不新增定期模型呼叫。
 
+自動開 PR 需要 repository 的 **Allow GitHub Actions to create and approve pull requests** 設定。GitHub 把 create 和 approve 綁在同一個 switch；須由 owner 明確授權，預設 token permissions 仍保持 read-only，只有通過 validation 的 publisher job 要求 PR write。Workflow 不 approve 或 merge。若只重跑失敗的 publisher job，演練會重用同一 commit / PR，不重新呼叫模型，也不重複開 PR。
+
 LLM 只應在 `escalate_llm_repair` 後作為 PR 修復助手使用：根據失敗 logs、fixture 和相關 parser code 建 draft PR，並附 regression test。不要讓 LLM 直接每日更新資料、直接 push parser patch 到 `main`、auto-merge，或繞過 `scripts/check_site.sh` / production freshness check。
 
 ### Telegram issue notifications

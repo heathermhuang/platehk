@@ -47,7 +47,7 @@ jobs:
           fi
 
       - name: Make one read-only model request
-        uses: openai/codex-action@bdf19a4a223ec2549a3e2274a0cf61556bc07675 # v1, verified by the repair drill
+        uses: openai/codex-action@bdf19a4a223ec2549a3e2274a0cf61556bc07675 # v1, pinned to the verified connection runtime
         with:
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
           responses-api-endpoint: ${{ secrets.OPENAI_RESPONSES_API_ENDPOINT }}
@@ -191,7 +191,7 @@ jobs:
 
       - name: Generate minimal repair patch
         id: codex
-        uses: openai/codex-action@bdf19a4a223ec2549a3e2274a0cf61556bc07675 # v1, verified by the repair drill
+        uses: openai/codex-action@bdf19a4a223ec2549a3e2274a0cf61556bc07675 # v1, pinned to the verified connection runtime
         with:
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
           responses-api-endpoint: ${{ secrets.OPENAI_RESPONSES_API_ENDPOINT }}
@@ -357,7 +357,14 @@ jobs:
           git switch -c "$branch"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "Draft auto-heal repair for ${CLASSIFICATION}"
+          if [ "$IS_DRILL" = "true" ]; then
+            # Re-running only publication must reuse the same commit and PR.
+            drill_date="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" --jq .created_at)"
+            GIT_AUTHOR_DATE="$drill_date" GIT_COMMITTER_DATE="$drill_date" \
+              git commit -m "Draft auto-heal repair for ${CLASSIFICATION}"
+          else
+            git commit -m "Draft auto-heal repair for ${CLASSIFICATION}"
+          fi
           git push --set-upstream origin "$branch"
 
           {
@@ -374,24 +381,34 @@ jobs:
             echo "This PR is intentionally draft and must be reviewed before merge."
           } > pr-body.md
 
-          pr_url="$(gh pr create \
-            --repo "$GITHUB_REPOSITORY" \
-            --base "$base" \
-            --head "$branch" \
-            --draft \
-            --title "$title" \
-            --body-file pr-body.md)"
+          pr_url=""
+          if [ "$IS_DRILL" = "true" ]; then
+            pr_url="$(gh pr list --repo "$GITHUB_REPOSITORY" --base "$base" --head "$branch" \
+              --state all --json url --jq '.[0].url // empty')"
+          fi
+          if [ -z "$pr_url" ]; then
+            pr_url="$(gh pr create \
+              --repo "$GITHUB_REPOSITORY" \
+              --base "$base" \
+              --head "$branch" \
+              --draft \
+              --title "$title" \
+              --body-file pr-body.md)"
+          fi
           echo "url=${pr_url}" >> "$GITHUB_OUTPUT"
 
           if [ "$IS_DRILL" = "true" ]; then
             mkdir -p logs/autoheal
             gh pr view "$pr_url" --repo "$GITHUB_REPOSITORY" \
               --json number,url,baseRefName,headRefName,isDraft,state,mergedAt,headRefOid > logs/autoheal/drill-pr.json
-            python "$RUNNER_TEMP/platehk-autoheal-drill.py" --root "$GITHUB_WORKSPACE" verify-pr \
-              --receipt logs/autoheal/drill-pr.json --run-id "$GITHUB_RUN_ID"
-            gh pr close "$pr_url" --repo "$GITHUB_REPOSITORY"
-            gh pr view "$pr_url" --repo "$GITHUB_REPOSITORY" \
-              --json number,url,baseRefName,headRefName,isDraft,state,mergedAt,headRefOid > logs/autoheal/drill-pr.json
+            state="$(python -c 'import json; print(json.load(open("logs/autoheal/drill-pr.json"))["state"])')"
+            if [ "$state" != "CLOSED" ]; then
+              python "$RUNNER_TEMP/platehk-autoheal-drill.py" --root "$GITHUB_WORKSPACE" verify-pr \
+                --receipt logs/autoheal/drill-pr.json --run-id "$GITHUB_RUN_ID"
+              gh pr close "$pr_url" --repo "$GITHUB_REPOSITORY"
+              gh pr view "$pr_url" --repo "$GITHUB_REPOSITORY" \
+                --json number,url,baseRefName,headRefName,isDraft,state,mergedAt,headRefOid > logs/autoheal/drill-pr.json
+            fi
             python "$RUNNER_TEMP/platehk-autoheal-drill.py" --root "$GITHUB_WORKSPACE" verify-pr \
               --receipt logs/autoheal/drill-pr.json --run-id "$GITHUB_RUN_ID" --closed
             echo "Controlled automatic repair drill passed: ${pr_url}" >> "$GITHUB_STEP_SUMMARY"
@@ -427,6 +444,7 @@ jobs:
           path: logs/autoheal/drill-pr.json
           if-no-files-found: error
           retention-days: 14
+          overwrite: true
 
   report_failure:
     name: Report cloud LLM failure
