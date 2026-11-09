@@ -19,7 +19,8 @@ jobs:
   connection_test:
     name: Test custom LLM connection
     if: ${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' }}
-    runs-on: ubuntu-latest
+    # Pin after Codex drop-sudo socket ACL verification failed on Ubuntu 26.04.
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
       contents: read
@@ -104,7 +105,8 @@ jobs:
     name: Generate repair patch with Codex
     needs: inspect_escalation
     if: ${{ needs.inspect_escalation.outputs.should_run == 'true' }}
-    runs-on: ubuntu-latest
+    # Keep the privilege-drop runtime stable as ubuntu-latest rolls forward.
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     permissions:
       actions: read

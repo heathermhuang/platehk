@@ -5,6 +5,8 @@ import json
 import shutil
 from pathlib import Path
 
+from build_all_dataset import load_legacy_overlap_lookup
+
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "data"
@@ -156,49 +158,27 @@ def build() -> int:
     bigram_rows: dict[str, list[dict]] = {}
     bigram_totals: dict[str, int] = {}
 
-    legacy_overlap_exact_keys: set[str] = set()
-    legacy_overlap_coarse_keys: set[str] = set()
-    legacy_overlap_rows = 0
+    # Share the combined dataset's conservative overlap policy. A plate/price
+    # match cannot establish that a coarse historical record is the same sale.
+    legacy_overlap_exact_keys, legacy_overlap_coarse_keys, legacy_overlap_rows = load_legacy_overlap_lookup()
     overlap_samples: list[dict] = []
     target_prefix2, target_bigrams = targeted_query_tokens()
 
-    physical = load_json(DATA / "tvrm_physical" / "results.slim.json")
-    eauction = load_json(DATA / "tvrm_eauction" / "results.slim.json")
     legacy = load_json(DATA / "tvrm_legacy" / "results.slim.json")
-    nonlegacy_exact_keys = {exact_overlap_key(tag_row("nonlegacy", row)) for row in physical + eauction}
-    nonlegacy_coarse_keys = {coarse_overlap_key(tag_row("nonlegacy", row)) for row in physical + eauction}
 
     for row in legacy:
-        if row.get("date_precision") == "day":
-            key = exact_overlap_key(tag_row("tvrm_legacy", row))
-            if key in nonlegacy_exact_keys:
-                legacy_overlap_exact_keys.add(key)
-                legacy_overlap_rows += 1
-                if len(overlap_samples) < 50:
-                    overlap_samples.append(
-                        {
-                            "single_line": row.get("single_line"),
-                            "amount_hkd": row.get("amount_hkd"),
-                            "auction_date": row.get("auction_date"),
-                            "auction_date_label": row.get("auction_date_label"),
-                            "date_precision": row.get("date_precision"),
-                        }
-                    )
-        else:
-            key = coarse_overlap_key(tag_row("tvrm_legacy", row))
-            if key in nonlegacy_coarse_keys:
-                legacy_overlap_coarse_keys.add(key)
-                legacy_overlap_rows += 1
-                if len(overlap_samples) < 50:
-                    overlap_samples.append(
-                        {
-                            "single_line": row.get("single_line"),
-                            "amount_hkd": row.get("amount_hkd"),
-                            "auction_date": row.get("auction_date"),
-                            "auction_date_label": row.get("auction_date_label"),
-                            "date_precision": row.get("date_precision"),
-                        }
-                    )
+        if len(overlap_samples) < 50 and should_drop_legacy_row(
+            tag_row("tvrm_legacy", row), legacy_overlap_exact_keys, legacy_overlap_coarse_keys
+        ):
+            overlap_samples.append(
+                {
+                    "single_line": row.get("single_line"),
+                    "amount_hkd": row.get("amount_hkd"),
+                    "auction_date": row.get("auction_date"),
+                    "auction_date_label": row.get("auction_date_label"),
+                    "date_precision": row.get("date_precision"),
+                }
+            )
 
     for row in iter_all_rows():
         norm = plate_norm_for_row(row)
