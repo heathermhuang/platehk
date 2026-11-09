@@ -2,4 +2,4 @@
 
 
 def normalize_plate(value: str) -> str:
-    return value.strip()
+    return "".join(value.split()).upper()
