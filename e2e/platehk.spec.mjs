@@ -582,7 +582,7 @@ test.describe("Plate.hk browser journeys", () => {
     await expect(page.locator("[data-market-card] .market-title")).toContainText("may be obtainable");
     await expect(page.locator("[data-market-card]")).not.toContainText("外部放售訊號");
     await expect(page.locator('[data-market-card] a[href*="28car.com"]')).toHaveCount(0);
-    await expect(page.getByRole('link', { name: 'Unlock seller WhatsApp — HK$99' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Unlock seller mobile — HK$99' })).toBeVisible();
     await expect(plate).toHaveCSS("background-color", "rgb(240, 201, 77)");
     await expect(plate).toHaveCSS("color", "rgb(23, 22, 18)");
     const decoration = await plate.evaluate((element) => ({
@@ -597,7 +597,7 @@ test.describe("Plate.hk browser journeys", () => {
     await expect(page.locator("[data-market-card] .market-title")).toContainText("或可洽購");
     await expect(page.locator("[data-market-card]")).not.toContainText("External sale signal");
     await expect(page.locator('[data-market-card] a[href*="28car.com"]')).toHaveCount(0);
-    await expect(page.getByRole('link', { name: '解鎖賣方 WhatsApp — HK$99' })).toBeVisible();
+    await expect(page.getByRole('link', { name: '解鎖賣方手機 — HK$99' })).toBeVisible();
   });
 
   test("shows one external signal while keeping paid actions on eligible matching rows", async ({ page }) => {

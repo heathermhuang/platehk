@@ -10,8 +10,8 @@
     obtainable: "may be obtainable",
     plateLabel: "Plate",
     asking: "Current asking price: ",
-    body: "This listing has no verified seller WhatsApp contact available to unlock.",
-    unlockBody: "Pay HK$99 to unlock this listing’s advertised seller WhatsApp number. Seller replies, availability and transferability are not guaranteed.",
+    body: "This listing has no usable advertised seller mobile number available to unlock.",
+    unlockBody: "Pay HK$99 to unlock this listing’s advertised seller mobile number. WhatsApp availability is unverified. Seller replies, availability and transferability are not guaranteed.",
     unavailable: "Contact unavailable",
     seller: "I am the seller: receive buyer offers",
   } : {
@@ -20,8 +20,8 @@
     obtainable: "或可洽購",
     plateLabel: "車牌",
     asking: "目前叫價：",
-    body: "此刊登暫時沒有已核實、可供解鎖的賣方 WhatsApp 聯絡資料。",
-    unlockBody: "付款 HK$99 解鎖此刊登列明的賣方 WhatsApp 號碼。賣方回覆、可買到或可轉名均無保證。",
+    body: "此刊登暫時沒有可供解鎖的賣方手機號碼。",
+    unlockBody: "付款 HK$99 解鎖此刊登列明的賣方手機號碼。WhatsApp 是否可用未經核實。賣方回覆、可買到或可轉名均無保證。",
     unavailable: "聯絡資料暫未提供",
     seller: "我是賣方：接收買家出價",
   };
@@ -81,7 +81,7 @@
 
       const actions = node("div", "market-actions");
       if (signal.contact_unlock_available === true) {
-        const unlock = node("a", "btn primary whatsapp-action", lang === "en" ? "Unlock seller WhatsApp — HK$99" : "解鎖賣方 WhatsApp — HK$99");
+        const unlock = node("a", "btn primary whatsapp-action", lang === "en" ? "Unlock seller mobile — HK$99" : "解鎖賣方手機 — HK$99");
         unlock.href = `/contact.html?plate=${encodeURIComponent(plate)}&listing_id=${encodeURIComponent(signal.listing_id)}&lang=${lang}`;
         actions.append(unlock);
       }
