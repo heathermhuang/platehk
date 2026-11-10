@@ -20,8 +20,8 @@
     <section class="contact-card" aria-labelledby="title" data-state="checking">
       <div class="contact-heading">
         <p class="contact-eyebrow" id="eyebrow">聯絡賣家</p>
-        <h1 id="title">取得賣家的 WhatsApp</h1>
-        <p id="description">一次付款，取得這則刊登的 WhatsApp 號碼，直接與賣家傾談。</p>
+        <h1 id="title">取得賣家的手機號碼</h1>
+        <p id="description">一次付款，取得這則刊登的賣家手機號碼。WhatsApp 是否可用未經核實。</p>
       </div>
       <div class="contact-listing">
         <div id="plate" class="plate" hidden></div>
@@ -31,19 +31,19 @@
         </div>
       </div>
       <div class="contact-purchase" id="purchase">
-        <div class="contact-price-row"><span id="price-label">WhatsApp 聯絡資料</span><strong>HK$99</strong></div>
+        <div class="contact-price-row"><span id="price-label">賣家手機聯絡資料</span><strong>HK$99</strong></div>
         <p class="contact-caption" id="one-time">一次付款 · 不用登記 · 並非車牌售價</p>
       </div>
       <div class="contact-status" id="status" role="status" aria-live="polite">正在檢查刊登的聯絡資料…</div>
       <div class="contact-number" id="number-panel" hidden>
-        <label for="phone" id="phone-label">賣家 WhatsApp 號碼</label>
+        <label for="phone" id="phone-label">賣家手機號碼</label>
         <input id="phone" readonly inputmode="tel" aria-describedby="copy-status">
         <p class="contact-caption" id="copy-status" role="status" aria-live="polite"></p>
       </div>
       <div class="contact-actions">
         <button id="pay" class="contact-primary" type="button" hidden>繼續付款 — HK$99</button>
         <button id="retry" class="contact-primary" type="button" hidden>重新檢查</button>
-        <a id="whatsapp" class="contact-primary" target="_blank" rel="noopener noreferrer" hidden>在 WhatsApp 聯絡賣家</a>
+        <a id="whatsapp" class="contact-primary" target="_blank" rel="noopener noreferrer" hidden>嘗試透過 WhatsApp 聯絡</a>
         <button id="copy" class="contact-secondary" type="button" hidden>複製號碼</button>
       </div>
       <p id="payment-note" class="contact-caption" hidden>請在 Stripe 安全付款頁填寫你自己的電郵及 WhatsApp 號碼，方便我們在你離開頁面後就這次購買、客服或退款聯絡你。支援信用卡，以及適用裝置上的 Apple Pay 或 Google Pay。</p>

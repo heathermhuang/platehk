@@ -288,8 +288,8 @@ export async function handleContactUnlock(request, env) {
       "metadata[asking_price_hkd]": contact.asking_price_hkd == null ? "" : String(contact.asking_price_hkd),
       "expires_at": String(Math.floor(Date.now() / 1000) + 1800),
       "custom_text[submit][message]": body.lang === "en"
-        ? "Use your own email and WhatsApp number so Plate.hk can contact you about this purchase, support or refunds after you leave. HK$99 unlocks one advertised contact. The 28car listing is free; seller reply, ownership and sale are not guaranteed."
-        : "請填寫你自己的電郵及 WhatsApp 號碼，方便 Plate.hk 在你離開頁面後就這次購買、客服或退款聯絡你。HK$99 可取得一則刊登的聯絡資料。28car 原刊登可免費查看；賣家回覆、擁有權及交易均不保證。",
+        ? "Use your own email and WhatsApp number so Plate.hk can contact you about this purchase, support or refunds after you leave. HK$99 unlocks one advertised seller mobile number. WhatsApp availability is unverified. The 28car listing is free; seller reply, ownership and sale are not guaranteed."
+        : "請填寫你自己的電郵及 WhatsApp 號碼，方便 Plate.hk 在你離開頁面後就這次購買、客服或退款聯絡你。HK$99 可取得一則刊登的賣家手機號碼。WhatsApp 是否可用未經核實。28car 原刊登可免費查看；賣家回覆、擁有權及交易均不保證。",
       success_url: `${url.origin}/contact.html?session_id={CHECKOUT_SESSION_ID}&lang=${body.lang === "en" ? "en" : "zh"}`,
       cancel_url: `${url.origin}/contact.html?plate=${plate}&listing_id=${listingId}&cancelled=1&lang=${body.lang === "en" ? "en" : "zh"}`,
     });

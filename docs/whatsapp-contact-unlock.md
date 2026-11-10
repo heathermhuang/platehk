@@ -1,16 +1,19 @@
-# HK$99 seller WhatsApp contact unlock
+# HK$99 seller mobile contact unlock
 
-A buyer pays HK$99 for one listing's explicitly advertised WhatsApp number. The
+A buyer pays HK$99 for one listing's advertised Hong Kong mobile number. The
 source URL is retained for verification; buyer pages do not link to the 28car
 listing. This purchase does not require Render, OpenWA, a WhatsApp QR session
 or a three-party group.
 
 `scripts/scrape_28car_market.py` parses only the listing contact field and writes
-explicit WhatsApp numbers to `data/market/28car.active.contacts.json`. Plain phone
-numbers, ambiguous multiple numbers and unrelated advertising are excluded.
+advertised HK mobile numbers to `data/market/28car.active.contacts.json`.
+A WhatsApp label is not required; WhatsApp availability is unverified.
+Landlines, ambiguous multiple numbers, email addresses and unrelated advertising
+are excluded.
 The existing minimal market signal schema is unchanged. Both snapshots must
-match; only complete, fresh source records qualify. A source label is evidence
-of advertisement, not proof the account is active or the seller owns the plate.
+match; only complete, fresh source records qualify. An advertised mobile is not
+proof of an active WhatsApp account or plate ownership.
+The private `whatsapp_number` field remains compatible with existing purchases.
 
 The asset builder shards private contacts under `/_market/28car/contacts/`.
 The Worker denies all direct `/_market/` reads. Public market responses contain

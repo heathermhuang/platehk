@@ -96,12 +96,23 @@ class MarketSignalTests(unittest.TestCase):
             self.assertEqual(output.read_text(encoding="utf-8"), previous)
             self.assertEqual(contacts.read_text(encoding="utf-8"), previous_contacts)
 
-    def test_only_explicit_listing_whatsapp_is_captured(self) -> None:
+    def test_advertised_mobile_does_not_require_a_whatsapp_label(self) -> None:
         cell = lambda text: '<font size="2" color="#B0B0B0"><b>' + text + '</b></font>'
         self.assertEqual(market.parse_advertised_whatsapp(cell('Whatsapp 6111 2222')), '85261112222')
         self.assertEqual(market.parse_advertised_whatsapp(cell('WhatsApp: +852 6111-2222')), '85261112222')
-        self.assertIsNone(market.parse_advertised_whatsapp(cell('Seller 61112222')))
-        self.assertIsNone(market.parse_advertised_whatsapp(cell('電話:61112222')))
+        self.assertEqual(market.parse_advertised_whatsapp(cell('Seller 61112222')), '85261112222')
+        self.assertEqual(market.parse_advertised_whatsapp(cell('電話:61112222')), '85261112222')
+        self.assertEqual(market.parse_advertised_whatsapp(cell('陳先生 6111 2222')), '85261112222')
+        self.assertEqual(market.parse_advertised_whatsapp(cell('電話:(+852) 6111-2222')), '85261112222')
+        self.assertEqual(market.parse_advertised_whatsapp(cell('61112222 (WhatsApp)')), '85261112222')
+        self.assertEqual(market.parse_advertised_whatsapp(cell('電話:61112222電郵:seller@example.com')), '85261112222')
+        self.assertIsNone(market.parse_advertised_whatsapp(cell('電郵:seller61112222@example.com')))
+        self.assertIsNone(market.parse_advertised_whatsapp(cell('網站:https://example.com/61112222')))
+        self.assertEqual(market.parse_advertised_whatsapp(cell('<a href="https://wa.me/85261112222">WhatsApp</a>')), '85261112222')
+        self.assertIsNone(market.parse_advertised_whatsapp(cell('電話:+86 6111 2222')))
+        self.assertIsNone(market.parse_advertised_whatsapp(cell('電話:21112222')))
+        self.assertIsNone(market.parse_advertised_whatsapp(cell('電話:161112222')))
+        self.assertIsNone(market.parse_advertised_whatsapp(cell('電話:61112222 或 62223333')))
         self.assertIsNone(market.parse_advertised_whatsapp('<aside>Whatsapp 61112222</aside>'))
         self.assertIsNone(market.parse_advertised_whatsapp(cell('Whatsapp 61112222 / Whatsapp 62223333')))
         self.assertIsNone(market.parse_advertised_whatsapp(cell('Whatsapp 611122223')))
@@ -115,6 +126,19 @@ class MarketSignalTests(unittest.TestCase):
         companion = market.build_contact_payload([signal], payload)
         self.assertEqual(companion['contacts']['n100001']['whatsapp_number'], '85261112222')
         self.assertEqual(companion['scraped_at'], payload['scraped_at'])
+
+    def test_plain_listing_mobile_reaches_only_the_private_companion(self) -> None:
+        source = (ROOT / 'tests' / 'fixtures' / '28car_listing_page.html').read_text(encoding='utf-8')
+        source = source.replace('Example seller phone: 00000000', '陳先生 電話:61112222')
+        source = source.replace('<font size="2"><b>陳先生', '<font size="2" color="#B0B0B0"><b>陳先生')
+        _, signals = market.parse_page(source)
+        self.assertEqual(signals[0].whatsapp_number, '85261112222')
+        now = dt.datetime.now(dt.timezone.utc).replace(microsecond=0)
+        payload = market.build_payload(signals, {}, scraped_at=now, requested_pages=[1],
+                                       successful_pages=[1], failed_pages=[], total_pages=1, stale_hours=72)
+        self.assertNotIn('61112222', json.dumps(payload))
+        contacts = market.build_contact_payload(signals, payload)
+        self.assertEqual(contacts['contacts']['n100001']['whatsapp_number'], '85261112222')
 
     def test_parser_extracts_only_allowlisted_market_signals(self) -> None:
         source = (ROOT / "tests" / "fixtures" / "28car_listing_page.html").read_text(encoding="utf-8")

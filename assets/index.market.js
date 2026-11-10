@@ -17,8 +17,8 @@ window.createPlateMarketFlow = function createPlateMarketFlow({
       kicker: "外部放售訊號",
       titleSuffix: "或可洽購",
       plateLabelText: (plate) => `車牌 ${plate}`,
-      body: "此刊登暫時沒有已核實、可供解鎖的賣方 WhatsApp 聯絡資料。",
-      unlockBody: "付款 HK$99，解鎖這則刊登列明的賣方 WhatsApp 號碼。",
+      body: "此刊登暫時沒有可供解鎖的賣方手機號碼。",
+      unlockBody: "付款 HK$99，解鎖這則刊登列明的賣方手機號碼。WhatsApp 是否可用未經核實。",
       price: "目前叫價",
       priceRange: "目前叫價範圍",
       priceContact: "部分放售須另議價格",
@@ -31,8 +31,8 @@ window.createPlateMarketFlow = function createPlateMarketFlow({
       kicker: "External sale signal",
       titleSuffix: "may be obtainable",
       plateLabelText: (plate) => `Plate ${plate}`,
-      body: "This listing has no verified seller WhatsApp contact available to unlock.",
-      unlockBody: "Pay HK$99 to unlock this listing’s advertised seller WhatsApp number.",
+      body: "This listing has no usable advertised seller mobile number available to unlock.",
+      unlockBody: "Pay HK$99 to unlock this listing’s advertised seller mobile number. WhatsApp availability is unverified.",
       price: "Current asking price",
       priceRange: "Current asking range",
       priceContact: "Some offers require a price enquiry",
@@ -147,7 +147,7 @@ window.createPlateMarketFlow = function createPlateMarketFlow({
         button.className = "icon-btn row-market-btn";
         button.type = "button";
         button.dataset.marketInquire = plate;
-        const actionLabel = getCurrentLang() === "en" ? "Unlock seller WhatsApp — HK$99" : "解鎖賣方 WhatsApp — HK$99";
+        const actionLabel = getCurrentLang() === "en" ? "Unlock seller mobile — HK$99" : "解鎖賣方手機 — HK$99";
         button.title = actionLabel;
         button.setAttribute("aria-label", `${actionLabel}: ${plateLabel}`);
         button.innerHTML = whatsappIcon();
@@ -190,7 +190,7 @@ window.createPlateMarketFlow = function createPlateMarketFlow({
         <p class="market-disclaimer">${escapeHtml(copy.disclaimer)}</p>
       </div>
       <div class="market-actions">
-        ${signal.contact_unlock_available === true ? `<a class="market-inquire-btn" href="/contact.html?plate=${encodeURIComponent(plate)}&listing_id=${encodeURIComponent(signal.listing_id)}&lang=${getCurrentLang() === "en" ? "en" : "zh"}">${whatsappIcon()}<span>${getCurrentLang() === "en" ? "Unlock seller WhatsApp — HK$99" : "解鎖賣方 WhatsApp — HK$99"}</span></a>` : ""}
+        ${signal.contact_unlock_available === true ? `<a class="market-inquire-btn" href="/contact.html?plate=${encodeURIComponent(plate)}&listing_id=${encodeURIComponent(signal.listing_id)}&lang=${getCurrentLang() === "en" ? "en" : "zh"}">${whatsappIcon()}<span>${getCurrentLang() === "en" ? "Unlock seller mobile — HK$99" : "解鎖賣方手機 — HK$99"}</span></a>` : ""}
         ${signal.contact_unlock_available !== true ? `<span class="market-disclaimer" role="status">${escapeHtml(copy.unavailable)}</span>` : ""}
         ${introductionEnabled && sourceUrl ? `<button class="market-seller-btn" type="button" data-market-sell="${escapeHtml(plate)}">${escapeHtml(copy.seller)}</button>` : ""}
       </div>

@@ -29,7 +29,7 @@ for (const eligible of [false,true]) {
       await expect(page.locator('#brokerForm')).toHaveCount(0);
       if (eligible) {
         const plate=url.startsWith('/?') ? '88' : '0J';
-        await expect(card.getByRole('link',{name:'Unlock seller WhatsApp — HK$99'})).toHaveAttribute('href',`/contact.html?plate=${plate}&listing_id=n100001&lang=en`);
+        await expect(card.getByRole('link',{name:'Unlock seller mobile — HK$99'})).toHaveAttribute('href',`/contact.html?plate=${plate}&listing_id=n100001&lang=en`);
       } else {
         await expect(card).toContainText('Contact unavailable');
         await expect(card.getByRole('button',{name:/buyer offer/i})).toHaveCount(0);
@@ -52,6 +52,8 @@ test('HK$99 checkout explains the purchase without an external listing link and 
   await page.route('**/api/contact/checkout', route => { submitted = route.request().postDataJSON(); return route.fulfill({json:{checkout_url:'https://checkout.stripe.com/c/pay/fixture'}}); });
   await page.route('https://checkout.stripe.com/**', route => route.fulfill({body:'Test checkout destination'}));
   await page.goto('/contact.html?plate=TEST8&listing_id=n100001&lang=en');
+  await expect(page.getByRole('heading',{name:'Get the seller’s mobile number'})).toBeVisible();
+  await expect(page.locator('#description')).toContainText('WhatsApp availability is unverified');
   await expect(page.getByRole('button',{name:'Continue to payment — HK$99'})).toBeVisible();
   await expect(page.getByText('Seller’s asking price: HK$88,000')).toBeVisible();
   await expect(page.getByText('One-time payment · No account needed · Not the plate price')).toBeVisible();
@@ -73,10 +75,11 @@ test('paid return reveals contact and restores it without charging again', async
   await page.route('**/api/contact/checkout', () => { throw new Error('Purchased contact must not trigger checkout'); });
   await page.goto('/contact.html?session_id=cs_test_fixture&lang=en');
   await expect(page.getByText('Payment confirmed · Contact unlocked')).toBeVisible();
-  await expect(page.getByRole('link',{name:'Contact seller on WhatsApp'})).toHaveAttribute('href', `${contact.whatsapp_url}?text=${encodeURIComponent('Hi, I’m interested in plate TEST8. Is it still available?')}`);
+  await expect(page.getByRole('link',{name:'Try WhatsApp'})).toHaveAttribute('href', `${contact.whatsapp_url}?text=${encodeURIComponent('Hi, I’m interested in plate TEST8. Is it still available?')}`);
   await expect(page).not.toHaveURL(/session_id/);
   await expect(page.getByRole('button',{name:'Continue to payment — HK$99'})).toBeHidden();
   await expect(page.locator('#phone')).toHaveValue('+852 6111 2222');
+  await expect(page.locator('#phone-label')).toHaveText('Seller’s mobile number');
   await expect(page.locator('a[href*="28car.com"]')).toHaveCount(0);
   await expect(page.getByRole('heading',{name:'Your seller contact is ready'})).toBeVisible();
   await checkAccessibility(page);
@@ -97,7 +100,7 @@ test('payment pending allows retry and never exposes a number', async ({page}) =
   await page.route('**/api/contact/reveal', route => { attempts++; return route.fulfill(attempts === 1 ? {status:409,json:{error:'payment_pending'}} : {json:contact}); });
   await page.goto('/contact.html?session_id=cs_test_fixture&lang=en');
   await expect(page.getByText('Payment isn’t confirmed yet.',{exact:false})).toBeVisible();
-  await expect(page.getByRole('link',{name:'Contact seller on WhatsApp'})).toBeHidden();
+  await expect(page.getByRole('link',{name:'Try WhatsApp'})).toBeHidden();
   await page.getByRole('button',{name:'Check again'}).click();
   await expect(page.getByText('Payment confirmed · Contact unlocked')).toBeVisible();
 });

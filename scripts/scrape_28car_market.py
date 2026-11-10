@@ -4,7 +4,7 @@
 The signal output deliberately excludes seller names, phone numbers, comments, photos,
 descriptions, view counts, and other free-form listing content. It is intended for
 server-side exact-plate lookups, not for publishing a browsable copy of 28car.
-Explicitly advertised WhatsApp numbers are saved separately in a private companion file.
+Advertised seller mobile numbers are saved separately in a private companion file.
 """
 
 from __future__ import annotations
@@ -117,7 +117,11 @@ def parse_price(value: str) -> tuple[str, int | None]:
 
 
 def parse_advertised_whatsapp(block: str) -> str | None:
-    """Read only the listing contact cell, never adverts or arbitrary phone text."""
+    """Read one advertised HK mobile from the contact cell; WhatsApp is unverified.
+
+    Keep the existing private contact field/API compatible with previous purchases.
+    Never infer a number from adverts, email addresses or an ambiguous contact cell.
+    """
     contact_cells = re.findall(
         r'<font\b[^>]*color=[\'"]#B0B0B0[\'"][^>]*>(.*?)</font>',
         block, re.IGNORECASE | re.DOTALL,
@@ -125,8 +129,12 @@ def parse_advertised_whatsapp(block: str) -> str | None:
     numbers: set[str] = set()
     for cell in contact_cells:
         text = clean_text(cell)
+        text = re.sub(r'[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+', '', text)
+        text = re.sub(r'https?://\S+', '', text, flags=re.IGNORECASE)
+        # A foreign country code must not turn into a local number after stripping it.
+        text = re.sub(r'\+(?!852)[\d ()-]+', '', text)
         for match in re.finditer(
-            r'whats\s*app\s*[:：]?\s*((?:\+?852[ -]?)?[456789]\d{3}[ -]?\d{4})(?!\d)',
+            r'(?<![\dA-Za-z+])((?:\+?852[ -]?|\(\+?852\)[ -]?)?[456789]\d{3}[ -]?\d{4})(?![\dA-Za-z])',
             text, re.IGNORECASE,
         ):
             digits = re.sub(r'\D', '', match.group(1))
