@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -57,6 +58,12 @@ class AutohealDrillTests(unittest.TestCase):
             patch = root / "candidate.patch"
             patch.write_bytes(subprocess.check_output(["git", "diff", "--binary"], cwd=root))
             candidate.write_text(BROKEN)
+            # Reproduce the stale index metadata left when the rewrite crosses
+            # a timestamp second. Restore through Git before --index checks
+            # both the worktree and index, as the real workflow requires.
+            stat = candidate.stat()
+            os.utime(candidate, ns=(stat.st_atime_ns, stat.st_mtime_ns + 2_000_000_000))
+            subprocess.run(["git", "restore", "--worktree", "--", drill.CANDIDATE], cwd=root, check=True)
             drill.validate_patch(root, patch)
             subprocess.run(["git", "apply", "--index", str(patch)], cwd=root, check=True)
             self.assertTrue(drill.check_candidate(candidate)[0])
@@ -66,8 +73,8 @@ class AutohealDrillTests(unittest.TestCase):
             (root / "production.py").write_text("modified\n")
             patch = root / "unsafe.patch"
             patch.write_bytes(subprocess.check_output(["git", "diff"], cwd=root))
-            candidate.write_text(BROKEN)
-            (root / "production.py").write_text("untouched\n")
+            subprocess.run(["git", "restore", "--worktree", "--", drill.CANDIDATE, "production.py"],
+                           cwd=root, check=True)
             with self.assertRaisesRegex(ValueError, "only the candidate"):
                 drill.validate_patch(root, patch)
 
@@ -80,14 +87,18 @@ class AutohealDrillTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "file modes"):
                 drill.validate_patch(root, patch)
 
-    def test_patch_validator_checks_the_committed_index_not_transient_worktree_state(self):
+    def test_patch_validator_rejects_a_dirty_candidate_without_changing_it(self):
         with tempfile.TemporaryDirectory() as directory:
             root, candidate = self.make_repo(directory)
             candidate.write_text(FIXED)
             patch = root / "candidate.patch"
             patch.write_bytes(subprocess.check_output(["git", "diff", "--binary"], cwd=root))
             candidate.write_text("transient worktree contents\n")
-            drill.validate_patch(root, patch)
+            with self.assertRaises(subprocess.CalledProcessError):
+                drill.validate_patch(root, patch)
+            self.assertEqual(candidate.read_text(), "transient worktree contents\n")
+            self.assertEqual(subprocess.check_output(["git", "show", ":" + drill.CANDIDATE], cwd=root),
+                             BROKEN.encode())
 
     def test_drill_pr_cannot_target_main_or_be_merged_or_escape_its_run(self):
         receipt = {"baseRefName": "codex/autoheal-drill-base-123", "headRefName": "codex/autoheal-drill-repair-123",
