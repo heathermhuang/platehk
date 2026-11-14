@@ -2,7 +2,6 @@ window.createPlateIndexShareModal = function createPlateIndexShareModal({
   t,
   normalizePlate,
   formatAuctionDate,
-  formatPriceText,
   getCurrentLang,
   getCurrentDataset,
   shareModalEl,
@@ -424,7 +423,7 @@ window.createPlateIndexShareModal = function createPlateIndexShareModal({
     ctx.font = `700 ${enTitleFit.fontSize}px ${POSTER_UI_FONT}`;
     ctx.fillText(enTitleFit.text, headerX + 122, headerY + 78);
 
-    const priceText = formatPriceText(row);
+    const priceText = window.PlateAuctionOutcomes.amount(row);
     const priceW = 306;
     const priceH = 106;
     const priceX = headerX + headerW - priceW;
@@ -432,7 +431,7 @@ window.createPlateIndexShareModal = function createPlateIndexShareModal({
     drawGlassPanel(ctx, priceX, priceY, priceW, priceH, 4, { from: POSTER.accentSoft, stroke: POSTER.lineStrong });
     ctx.fillStyle = POSTER.muted;
     ctx.font = `800 18px ${POSTER_UI_FONT}`;
-    ctx.fillText("成交價 Price", priceX + 22, priceY + 30);
+    ctx.fillText("金額 Amount", priceX + 22, priceY + 25);
     ctx.fillStyle = POSTER.ink;
     const priceFit = fitPosterSingleLine(ctx, priceText, priceW - 44, {
       maxFont: 38,
@@ -440,7 +439,13 @@ window.createPlateIndexShareModal = function createPlateIndexShareModal({
       family: POSTER_MONO_FONT,
     });
     ctx.font = `800 ${priceFit.fontSize}px ${POSTER_MONO_FONT}`;
-    ctx.fillText(priceFit.text, priceX + 22, priceY + 74);
+    ctx.fillText(priceFit.text, priceX + 22, priceY + 63);
+    const outcomeFit = fitPosterSingleLine(ctx, window.PlateAuctionOutcomes.label(row, getCurrentLang()), priceW - 44, {
+      maxFont: 16, minFont: 10, family: POSTER_UI_FONT, weight: 700,
+    });
+    ctx.font = `700 ${outcomeFit.fontSize}px ${POSTER_UI_FONT}`;
+    ctx.fillText(outcomeFit.text, priceX + 22, priceY + 89);
+
 
     ctx.strokeStyle = POSTER.lineStrong;
     ctx.lineWidth = 2;

@@ -35,8 +35,8 @@ test('Worker exact mode and full-width query preserve exact results; Q gives an 
 });
 test('comparables stay in the same dataset and shape, exclude null and duplicate plate observations',()=>{
  const target={single_line:'AA88',dataset_key:'tvrm_physical'};
- const candidate={single_line:'BB88',dataset_key:'tvrm_physical',amount_hkd:20000,auction_date:'2025-01-01'};
- const out=comparableRows(target,[candidate,{...candidate,auction_date:'2026-01-01'},{...candidate,single_line:'CC88',dataset_key:'pvrm'},{...candidate,single_line:'B888'},{...candidate,single_line:'DD88',amount_hkd:null},{...candidate,single_line:'EE88',year_range:'1990-1999'}],'88');
+ const candidate={single_line:'BB88',result_status:'sold',dataset_key:'tvrm_physical',amount_hkd:20000,auction_date:'2025-01-01'};
+ const out=comparableRows(target,[candidate,{...candidate,auction_date:'2026-01-01'},{...candidate,single_line:'CC88',dataset_key:'pvrm'},{...candidate,single_line:'B888'},{...candidate,single_line:'DD88',amount_hkd:null},{...candidate,single_line:'EE88',year_range:'1990-1999'},{...candidate,single_line:'FF88',result_status:'assigned_special_fee'},{...candidate,single_line:'GG88',result_status:'unknown'},{...candidate,single_line:'HH88',result_status:undefined}],'88');
  assert.equal(out.length,1);assert.equal(out[0].auction_date,'2026-01-01');assert.equal(out[0].match_text,'88');
 });
 test('traditional-pattern comparison uses complete number, prefix tier and distinct recent sales',()=>{
@@ -67,6 +67,21 @@ test('traditional-pattern comparison uses complete number, prefix tier and disti
  assert.equal(expanded.window,'all_exact_dates');
  assert.equal(expanded.sample_size,6);
  assert.equal(traditionalPatternComparableCohort('HK168',rows),null);
+});
+test('a personalized allocation does not fall through into a traditional-pattern comparison',async()=>{
+ const localMeta={...meta,result_states:[['assigned_special_fee','Special-fee allocation (no bidder)']]};
+ const allocationEnv={ASSETS:{async fetch(request){
+  const path=new URL(request.url).pathname;
+  if(path.endsWith('/search-index/meta.json'))return Response.json(localMeta);
+  if(path.includes('/search-index/'))return Response.json({rows:[[0,'AA88',null,5000,0]]});
+  if(path.includes('overlap'))return Response.json({keys:[],exact_keys:[]});
+  return new Response('not found',{status:404});
+ }}};
+ const response=await worker.fetch(new Request('https://allocation-tests.invalid/api/comparables?q=AA88'),allocationEnv,{waitUntil(){}});
+ assert.equal(response.status,200);
+ const payload=await response.json();
+ assert.equal(payload.reason,'no_confirmed_sale_history');
+ assert.deepEqual(payload.rows,[]);
 });
 test('calendar downloads use UTC, stable UID, escaped text, UTF-8 folding and one-day reminder',()=>{
  const event={id:'eauction-2026-09-17',start_at:'2026-09-17T12:00:00+08:00',end_at:'2026-09-21T12:00:00+08:00'};

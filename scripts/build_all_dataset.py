@@ -7,6 +7,9 @@ from collections import defaultdict
 from datetime import date
 from pathlib import Path
 
+from auction_outcomes import enrich_sources
+from build_auction_result_pages import load_rounds
+
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "data"
@@ -228,7 +231,9 @@ def build_plate_summaries(rows: list[dict]) -> list[dict]:
                 "first_auction_date": row_date,
                 "last_auction_date": row_date,
                 "highest_amount_hkd": amount_value,
+                "highest_result_status": row.get("result_status", "unknown"),
                 "latest_amount_hkd": amount_value,
+                "latest_result_status": row.get("result_status", "unknown"),
                 "latest_dataset_key": str(row.get("dataset_key") or ""),
                 "latest_auction_key": str(row.get("auction_key") or ""),
             }
@@ -241,12 +246,14 @@ def build_plate_summaries(rows: list[dict]) -> list[dict]:
         if row_date and (not summary["last_auction_date"] or row_date > summary["last_auction_date"]):
             summary["last_auction_date"] = row_date
             summary["latest_amount_hkd"] = amount_value
+            summary["latest_result_status"] = row.get("result_status", "unknown")
             summary["latest_dataset_key"] = str(row.get("dataset_key") or "")
             summary["latest_auction_key"] = str(row.get("auction_key") or "")
         if amount_value is not None and (
             summary["highest_amount_hkd"] is None or amount_value > summary["highest_amount_hkd"]
         ):
             summary["highest_amount_hkd"] = amount_value
+            summary["highest_result_status"] = row.get("result_status", "unknown")
             summary["plate_display"] = display
 
     out = []
@@ -263,6 +270,7 @@ def build_plate_summaries(rows: list[dict]) -> list[dict]:
 
 
 def build() -> int:
+    enrich_sources(DATA, load_rounds())
     OUT.mkdir(parents=True, exist_ok=True)
     if ISSUES_DIR.exists():
         shutil.rmtree(ISSUES_DIR)

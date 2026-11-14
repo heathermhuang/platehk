@@ -33,23 +33,12 @@ window.createPlateIndexPresenters = function createPlateIndexPresenters({
   }
 
   function formatPrice(row) {
-    if (row.amount_hkd === null || row.amount_hkd === undefined) {
-      return `<span class="price na">${t("unresolved")}</span>`;
-    }
-    const amount = `HK$${Number(row.amount_hkd).toLocaleString("en-HK")}`;
-    if (row.result_status === "assigned_special_fee") {
-      return `<span class="price-value">${amount}</span> <span class="badge">${escapeHtml(t("resultAssignedSpecialFee"))}</span>`;
-    }
-    return `<span class="price-value">${amount}</span>`;
+    const outcomes = window.PlateAuctionOutcomes;
+    return `<span class="price-value">${escapeHtml(outcomes.amount(row))}</span> <span class="badge">${escapeHtml(outcomes.label(row, getCurrentLang()))}</span>`;
   }
 
   function formatPriceText(row) {
-    if (row.amount_hkd === null || row.amount_hkd === undefined) return t("unresolved");
-    const amount = `HK$${Number(row.amount_hkd).toLocaleString("en-HK")}`;
-    if (row.result_status === "assigned_special_fee") {
-      return `${amount} (${t("resultAssignedSpecialFee")})`;
-    }
-    return amount;
+    return window.PlateAuctionOutcomes.format(row, getCurrentLang());
   }
 
   function updateIssueTotal(selectedIssue) {

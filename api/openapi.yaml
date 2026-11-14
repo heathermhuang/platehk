@@ -344,7 +344,7 @@ paths:
                   rows:
                     type: array
                     items:
-                      type: object
+                      $ref: "#/components/schemas/AuctionRecord"
         "400":
           description: Invalid dataset, sort, or paging value
         "429":
@@ -354,7 +354,7 @@ paths:
   /api/comparables:
     get:
       summary: Source-linked comparable historical auction sales for a plate
-      description: Two-letter traditional-pattern marks use other marks with the same complete number and prefix tier, even when the queried mark has no recorded sale. This structural group does not establish the official ordinary or special category. The cohort uses each other plate's latest positive-price event, preferring the last three years when at least five distinct plates qualify; coarse year ranges, unsold events, HK/XX, PVRM, and the queried mark are excluded. Returns sample size, date range, and historical P25/median/P75 only with at least five qualifying plates. Other marks retain bounded same-dataset structural examples. This is not a current valuation, legal classification, owner lookup or listing.
+      description: Two-letter traditional-pattern marks use other marks with the same complete number and prefix tier, even when the queried mark has no recorded sale. This structural group does not establish the official ordinary or special category. The cohort uses each other plate's latest confirmed auction sale, preferring the last three years when at least five distinct plates qualify; coarse year ranges, special-fee allocations, unknown outcomes, unsold events, HK/XX, PVRM, and the queried mark are excluded. Returns sample size, date range, and historical P25/median/P75 only with at least five qualifying plates. Other marks retain bounded same-dataset structural examples. This is not a current valuation, legal classification, owner lookup or listing.
       parameters:
         - in: query
           name: q
@@ -513,7 +513,7 @@ paths:
                   rows:
                     type: array
                     items:
-                      type: object
+                      $ref: "#/components/schemas/AuctionRecord"
         "400":
           description: Invalid dataset, query, filter, sort, or paging value
         "429":
@@ -678,6 +678,20 @@ components:
       scheme: bearer
       bearerFormat: JWT
   schemas:
+    AuctionRecord:
+      type: object
+      required: [result_status, result_text]
+      description: Historical published amounts with explicit outcomes. A positive amount alone does not establish an auction sale. Unknown outcomes are excluded from comparable-sale statistics. Unsold amounts are null, never zero.
+      properties:
+        result_status:
+          type: string
+          enum: [sold, assigned_special_fee, unsold, unknown]
+        result_text:
+          type: string
+          description: English outcome label; clients should localize result_status.
+        amount_hkd:
+          type: integer
+          nullable: true
     ResultChunk:
       type: object
       required: [file, count, start, end]

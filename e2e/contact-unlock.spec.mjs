@@ -45,6 +45,14 @@ for (const eligible of [false,true]) {
     }
   });
 }
+test('a static placeholder stays hidden without a fresh exact signal',async({page})=>{
+  await page.route('**/api/market_signal?*',route=>route.fulfill({json:{availability_detected:false,plate:'0J'}}));
+  await page.goto('/plates/0J.html?lang=en');
+  await expect(page.locator('[data-market-card]')).toHaveCount(1);
+  await expect(page.locator('[data-market-card]')).toBeHidden();
+  await expect(page.locator('[data-market-card] a')).toHaveCount(0);
+});
+
 test('HK$99 checkout explains the purchase without an external listing link and opens Stripe', async ({page},testInfo) => {
   await sources(page);
   await page.route('**/api/contact/availability', route => { expect(route.request().method()).toBe('POST'); return route.fulfill({ json: preview }); });

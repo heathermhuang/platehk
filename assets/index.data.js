@@ -639,6 +639,7 @@ window.createPlateIndexDataFlow = function createPlateIndexDataFlow({
       issue_count: Number(payload.issue_count || 0),
       issues: Array.isArray(payload.issues) ? payload.issues : [],
       top_amount_hkd: payload.top_amount_hkd == null ? null : Number(payload.top_amount_hkd),
+      top_result_status: payload.top_result_status || "unknown",
     };
     auctionsByDate = buildAuctionsByDateMap(payload.issues || []);
   }

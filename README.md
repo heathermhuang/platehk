@@ -234,6 +234,18 @@ The historical workbook sources remain in-repo because they are still part of th
 - `data/TVRM auction result (1973-2026).xls`
 - `data/TVRM auction result (2006-2026).xlsx`
 
+## Auction outcomes
+
+Every published record carries `result_status`: `sold`, `assigned_special_fee`,
+`unsold`, or `unknown`, plus an English `result_text`. Search, camera, plate pages,
+shortlists and posters show bilingual outcome labels. An amount alone never
+establishes a sale; unsold amounts are null. Comparisons use confirmed sales only.
+The canonical build retains PDF amount markers and workbook dispositions, merges
+verified handout outcomes by dataset/date/mark, and restores omitted unsold marks
+only for those verified rounds. Older unreviewed outcomes remain explicit unknowns.
+The audit page distinguishes format checks, indexed coverage and fully verified
+handouts. See [the outcome contract](docs/AUCTION_OUTCOMES.md).
+
 ## Data Source and Verification
 
 Plate.hk is built from Hong Kong Transport Department publications and bundled legacy workbook sources.

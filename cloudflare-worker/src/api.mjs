@@ -171,7 +171,7 @@ function inflateCompleteSearchIndexRow(compact, meta) {
     source_format: rowMeta[9] || null,
     source_type: rowMeta[10] || null,
     source_sheet: rowMeta[11] || null,
-    result_status: resultState[0] || null,
+    result_status: resultState[0] || "unknown",
     result_text: resultState[1] || null,
   };
 }
@@ -386,6 +386,7 @@ async function loadStaticIssuesPayload(env, request, dataset) {
     total_rows: Number(manifest?.total_rows || 0),
     issue_count: Number(manifest?.issue_count || 0),
     top_amount_hkd: topAmount,
+    top_result_status: preset?.[0]?.result_status || "unknown",
     issues: issues.map((issue) => {
       const auctionMeta = auctionMap.get(issueLookupKey(dataset, issue)) || null;
       return {
@@ -749,12 +750,12 @@ async function handleComparables(request, env, ctx) {
   return withApiCache(request, ctx, 600, async () => {
     const exact = await searchCompleteIndex(env, request, "all", query, "date_desc", "exact", 1, 200);
     if (!exact) throw new ApiError("search_index_unavailable", 503);
-    const target = exact.rows.find(row => row.amount_hkd != null && Number(row.amount_hkd) > 0);
+    const target = exact.rows.find(row => row.result_status === "sold" && row.amount_hkd != null && Number(row.amount_hkd) > 0);
     const traditionalPattern = /^([A-Z]{2})(\d{1,4})$/.exec(query);
     const useTraditionalPatternCohort = traditionalPattern
       && !["HK", "XX"].includes(traditionalPattern[1])
-      && target?.dataset_key !== "pvrm";
-    if (!target && !useTraditionalPatternCohort) return jsonResponse({ query, rows: [], reason: "no_priced_history", total_history: exact.total });
+      && !exact.rows.some(row => row.dataset_key === "pvrm");
+    if (!target && !useTraditionalPatternCohort) return jsonResponse({ query, rows: [], reason: "no_confirmed_sale_history", total_history: exact.total });
     const digits = query.match(/\d+$/)?.[0] || "";
     const token = digits.length >= 2 ? digits.slice(-2) : query[0];
     const candidates = await loadCompleteSearchIndexRows(env, request, useTraditionalPatternCohort ? digits : token);
@@ -769,7 +770,7 @@ async function handleComparables(request, env, ctx) {
       }, request, env));
     }
     return jsonResponse(await addDetailPaths({ query, target, match_text: token, total_history: exact.total, page, page_size: pageSize,
-      method: "Latest dated positive-price observation per other plate, same source dataset and letter/digit shape, sharing the displayed fragment. Structural examples, not a valuation or legal classification.",
+      method: "Latest dated confirmed auction sale per other plate, same source dataset and letter/digit shape, sharing the displayed fragment. Structural examples, not a valuation or legal classification.",
       rows: page === 1 ? comparableRows(target, deduped, token, pageSize) : [] }, request, env));
   });
 }

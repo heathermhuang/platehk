@@ -68,14 +68,14 @@ def body_for(page):
    out+=link(url,'官方詳情','Official details')+f' <button type="button" data-calendar="{html.escape(event["id"],quote=True)}">'+bilingual('加入日曆','Add to calendar','span')+'</button></section>'
   return out+'<p id="calendarStatus" role="status"></p>'+link('/?sort=date_desc','最新拍賣結果','Latest auction results')
  if page=='discover':
-  return r'''<p data-lang-only="zh">先輸入預算或選擇號碼模式，查看歷史拍賣成交。這不是現時估價或可供購買的車牌清單。</p><p data-lang-only="en" hidden>Start with a budget or number pattern to explore historical auction sales. These are not current valuations or available stock.</p>
+  return r'''<p data-lang-only="zh">先輸入預算或選擇號碼模式，查看歷史公布金額及結果。金額可能包括特別費用或未核實結果；請核對標示。這不是現時估價或可供購買的車牌清單。</p><p data-lang-only="en" hidden>Start with a budget or number pattern to explore published historical amounts and outcomes. Amounts can include special fees or unverified outcomes; check the labels. These are not current valuations or available stock.</p>
 <div class="decision-actions" aria-label="Budget examples"><button type="button" data-budget="5000">HK$5,000</button><button type="button" data-budget="20000">HK$20,000</button><button type="button" data-budget="100000">HK$100,000</button></div>
 <form id="discoveryFilters"><div class="decision-filters ux-basic-filters">
-<label><span data-lang-only="zh">最高歷史成交價 HKD</span><span data-lang-only="en" hidden>Maximum historical price HKD</span><input name="max_amount" type="number" min="0" max="1000000000" step="1" inputmode="numeric" placeholder="20000"></label>
+<label><span data-lang-only="zh">最高歷史公布金額 HKD</span><span data-lang-only="en" hidden>Maximum published amount HKD</span><input name="max_amount" type="number" min="0" max="1000000000" step="1" inputmode="numeric" placeholder="20000"></label>
 <label><span data-lang-only="zh">數字模式</span><span data-lang-only="en" hidden>Number pattern</span><select name="pattern"><option value="" data-copy-zh="任何模式" data-copy-en="Any pattern">任何模式</option><option value="repeated" data-copy-zh="重複數字（888）" data-copy-en="Repeated digits (888)">重複數字（888）</option><option value="palindrome" data-copy-zh="回文（1221）" data-copy-en="Palindrome (1221)">回文（1221）</option></select></label>
 <label for="decisionQuery"><span data-lang-only="zh">車牌片段（選填）</span><span data-lang-only="en" hidden>Plate fragment (optional)</span><input id="decisionQuery" name="q" maxlength="16" autocomplete="off" placeholder="AA88" aria-describedby="queryHelp"></label></div>
 <details class="ux-more-filters"><summary><span data-lang-only="zh">更多篩選</span><span data-lang-only="en" hidden>More filters</span></summary><div class="decision-filters">
-<label><span data-lang-only="zh">最低歷史成交價 HKD</span><span data-lang-only="en" hidden>Minimum historical price HKD</span><input name="min_amount" type="number" min="0" max="1000000000" step="1"></label>
+<label><span data-lang-only="zh">最低歷史公布金額 HKD</span><span data-lang-only="en" hidden>Minimum published amount HKD</span><input name="min_amount" type="number" min="0" max="1000000000" step="1"></label>
 <label><span data-lang-only="zh">字首</span><span data-lang-only="en" hidden>Prefix</span><input name="prefix" maxlength="8"></label><label><span data-lang-only="zh">尾數</span><span data-lang-only="en" hidden>Suffix</span><input name="suffix" maxlength="8"></label>
 <label><span data-lang-only="zh">數字個數</span><span data-lang-only="en" hidden>Number of digits</span><input name="digits" type="number" min="0" max="8" step="1"></label>
 <label><span data-lang-only="zh">日期由（不含粗略年份）</span><span data-lang-only="en" hidden>Date from (excludes coarse years)</span><input name="from" type="date"></label><label><span data-lang-only="zh">日期至</span><span data-lang-only="en" hidden>Date to</span><input name="to" type="date"></label>
@@ -93,12 +93,12 @@ def render(page):
  <title>{zh} | Plate.hk</title><meta name="description" content="{desc}">{robots}
  <link rel="canonical" href="https://plate.hk/{page}.html">
  <link rel="alternate" hreflang="zh-HK" href="https://plate.hk/{page}.html"><link rel="alternate" hreflang="en" href="https://plate.hk/{page}.html?lang=en">
- <link rel="stylesheet" href="/assets/ledger.css?v=20260915-01"><link rel="stylesheet" href="/assets/decision.css?v=20260915-01">
+ <link rel="stylesheet" href="/assets/ledger.css?v=20260915-01"><link rel="stylesheet" href="/assets/decision.css?v=20261114-01">
  <script defer src="/assets/analytics.js?v=20260915-01"></script><link rel="stylesheet" href="/assets/ux.css?v=20260928-01"><script defer src="/assets/ux.js?v=20260928-01"></script></head>
  <body data-info-page="{page}" data-decision-page="{page}" data-title-zh="{zh} | Plate.hk" data-title-en="{en} | Plate.hk"><div data-info-shell-header></div><main id="main-content" class="decision-main">{bilingual(zh,en,'h1')}
  <nav class="decision-actions" aria-label="Decision tools">{link('/prices.html','價格資料說明','Price guide')} {link('/availability.html','官方可用號碼及申請','Official availability and applications')}</nav>
  {body_for(page)}<p id="decisionNotice" role="status"></p></main><div data-info-shell-footer></div>
- <script src="/assets/info-locale.js?v=20260825-01"></script><script src="/assets/info-shell.js?v=20260928-01"></script><script type="module" src="/assets/decision.js?v=20260928-01"></script></body></html>'''
+ <script src="/assets/info-locale.js?v=20260825-01"></script><script src="/assets/info-shell.js?v=20260928-01"></script><script type="module" src="/assets/decision.js?v=20261114-01"></script></body></html>'''
 
 def build(target=ROOT):
  for page in PAGES:(target/f'{page}.html').write_text(render(page),encoding='utf-8')

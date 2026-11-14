@@ -76,7 +76,7 @@ window.createPlateIndexHomeViews = function createPlateIndexHomeViews(deps) {
       facts.push({ k: t("factVisibleRows"), v: Number(manifest.total_rows || 0).toLocaleString() });
       facts.push({ k: t("factIssueRanges"), v: Number(manifest.issue_count || 0).toLocaleString() });
       const top = manifest.top_amount_hkd != null
-        ? `HK$${Number(manifest.top_amount_hkd).toLocaleString("en-HK")}`
+        ? window.PlateAuctionOutcomes.format({amount_hkd: manifest.top_amount_hkd, result_status: manifest.top_result_status}, getCurrentLang())
         : "";
       facts.push({ k: t("factTopPrice"), v: top });
       return facts;
@@ -85,7 +85,7 @@ window.createPlateIndexHomeViews = function createPlateIndexHomeViews(deps) {
       facts.push({ k: t("factVisibleRows"), v: Number(manifest.total_rows || 0).toLocaleString() });
       facts.push({ k: t("factIssueRanges"), v: Number(manifest.issue_count || 0).toLocaleString() });
       const top = manifest.top_amount_hkd != null
-        ? `HK$${Number(manifest.top_amount_hkd).toLocaleString("en-HK")}`
+        ? window.PlateAuctionOutcomes.format({amount_hkd: manifest.top_amount_hkd, result_status: manifest.top_result_status}, getCurrentLang())
         : "";
       facts.push({ k: t("factTopPrice"), v: top });
     }

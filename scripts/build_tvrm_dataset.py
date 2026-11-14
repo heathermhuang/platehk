@@ -450,6 +450,7 @@ def parse_physical_pdf_rows(pdf_path: Path, source: AuctionPdf) -> list[dict]:
                                         "single_line": single,
                                         "double_line": None,
                                         "amount_hkd": amt,
+                                        "amount_raw": c,
                                         "pdf_url": source.pdf_url,
                                         "page": page_no,
                                     }
@@ -589,6 +590,7 @@ def parse_eauction_pdf_rows(pdf_path: Path, source: AuctionPdf) -> tuple[list[di
                 "single_line": f"{prefix} {number}",
                 "double_line": None,
                 "amount_hkd": amt,
+                "amount_raw": raw_amount,
                 "pdf_url": source.pdf_url,
                 "page": None,
             }

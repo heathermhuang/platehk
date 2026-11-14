@@ -10,6 +10,12 @@ from collections import Counter
 from datetime import date
 from pathlib import Path
 from urllib.parse import urlencode, urlparse
+try:
+    from auction_outcomes import LABELS as OUTCOME_LABELS
+except ModuleNotFoundError as error:
+    if error.name != "auction_outcomes":
+        raise
+    from scripts.auction_outcomes import LABELS as OUTCOME_LABELS
 
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG = ROOT / 'config' / 'auction_result_pages.json'
@@ -20,11 +26,7 @@ LABELS = {
     'tvrm_physical': ('傳統車牌實體拍賣', 'Traditional physical auction'),
     'tvrm_eauction': ('拍牌易網上拍賣', 'Online auction'),
 }
-STATUS = {
-    'sold': ('拍賣售出', 'Auction sale'),
-    'special_fee': ('特別費用分配（無人競投）', 'Special-fee allocation (no bidder)'),
-    'unsold': ('未售出（U/S）', 'Unsold (U/S)'),
-}
+STATUS = {key: OUTCOME_LABELS['assigned_special_fee' if key == 'special_fee' else key] for key in ('sold', 'special_fee', 'unsold')}
 
 
 def load_rounds() -> list[dict]:
@@ -229,8 +231,8 @@ def render_round(r: dict, lang: str) -> str:
     rows_html = []
     for row in sorted(r['rows'], key=lambda row: re.sub(r'\s+', '', row['mark'])):
         query = urlencode({'d': r['dataset'], 'issue': r['start_date'], 'q': re.sub(r'\s+', '', row['mark']), **({'lang': 'en'} if lang == 'en' else {})})
-        # The historical search index omits unsold rows. Keep those on this complete handout table.
-        search = '' if row['status'] == 'unsold' else ' · ' + link('/?' + query, choose('搜尋紀錄', 'Search record', lang))
+        # Verified unsold rows are also preserved in the canonical search index.
+        search = ' · ' + link('/?' + query, choose('搜尋紀錄', 'Search record', lang))
         footnote = ' *' if row['special_mark'] else ''
         source_link = link(r['source_url'] + f"#page={row['page']}", choose(f"官方 PDF 第 {row['page']} 頁", f"Official PDF p. {row['page']}", lang))
         rows_html.append(f'<tr id="{anchor(row)}" data-status="{row["status"]}"><th scope="row">{html.escape(row["mark"])}{footnote}</th><td>{STATUS[row["status"]][lang == "en"]}</td><td>{money(row["amount_hkd"])}</td><td>{source_link}{search}</td></tr>')
@@ -244,7 +246,7 @@ def render_round(r: dict, lang: str) -> str:
     online = ''
     if r['dataset'] == 'tvrm_eauction':
         online = '<p>' + choose(f'本場涵蓋 {date_label(r, lang)}。搜尋索引以 {r["start_date"]}（開始日）為期數鍵，不代表各號碼的成交日或付款日。', f'This round covers {date_label(r, lang)}. The search index uses {r["start_date"]}, the opening date, as its issue key; it is not an individual mark’s sale or payment date.', lang) + '</p>'
-    limits = choose('這是歷史官方結果，不是現時估值、車主資料或可用／放售狀態。一般搜尋索引未保留所有結果標示，未售出號碼亦可能不在搜尋結果內；核對本表及完整手冊。如有差異，以運輸署原始文件為準。', 'These are historical official results, not current valuations, owner records or availability/listing status. The general search index does not retain every disposition and may omit unsold marks; check this table and the complete handout. The original Transport Department document prevails if anything differs.', lang)
+    limits = choose('這是歷史官方結果，不是現時估值、車主資料或可用／放售狀態。一般搜尋保留本目錄已核對的結果標示；其他歷史資料可能未核實或未收錄未售出號碼。請核對完整手冊。如有差異，以運輸署原始文件為準。', 'These are historical official results, not current valuations, owner records or availability/listing status. The general index preserves outcomes from these verified rounds. Other historical outcomes may be unverified and other unsold marks may be absent; check the complete handout. The original Transport Department document prevails if anything differs.', lang)
     reconciliation = choose(f"拍賣售出金額合計 {money(sale_total)} ＋ 特別費用 {money(fee_total)} ＝ 官方公布款項 {money(r['official_proceeds_hkd'])}。", f"Auction-sale subtotal {money(sale_total)} + special fees {money(fee_total)} = official published proceeds {money(r['official_proceeds_hkd'])}.", lang)
     siblings = ' '.join(link(public_path(other, lang), title(other, lang)) for other in load_rounds() if other['id'] != r['id'])
     headings = [choose('號碼', 'Mark', lang), choose('本場結果', 'Round outcome', lang), choose('金額（港元）', 'Amount (HKD)', lang), choose('來源與查詢', 'Source and lookup', lang)]

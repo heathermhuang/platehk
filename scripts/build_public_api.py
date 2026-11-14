@@ -62,6 +62,7 @@ def build() -> int:
             "All data comes from Transport Department published PDFs and official workbook exports. If any discrepancy is found, the official published results shall prevail.",
             "This API is a static Open Data API. Download complete datasets through each dataset's results_chunks_manifest; every listed chunk is a JSON array.",
             "For full-text search, use the issue shards and build your own index, or use an external query service.",
+            "Every record has result_status: sold, assigned_special_fee, unsold, or unknown. Positive amounts do not establish sales; unsold amounts are null. Comparables include confirmed sales only.",
         ],
     }
 

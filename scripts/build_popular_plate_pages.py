@@ -7,6 +7,12 @@ import re
 from collections import defaultdict
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
+try:
+    from auction_outcomes import amount_with_outcome
+except ModuleNotFoundError as error:
+    if error.name != "auction_outcomes":
+        raise
+    from scripts.auction_outcomes import amount_with_outcome
 from urllib.parse import urlparse
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -171,8 +177,9 @@ def load_active_market_signals() -> dict:
 
 
 def market_signal_html(plate_norm: str) -> str:
-    offers = load_active_market_signals().get(plate_norm) or []
-    if not offers:
+    # This empty container is not a sale signal. Recheck the exact-plate API
+    # on every view, including pages rebuilt without the private snapshot.
+    if not re.fullmatch(r"[A-HJ-NPR-Z0-9]{1,16}", plate_norm):
         return ""
     return (
         f'      <section class="market-card" data-market-card data-plate="{html.escape(plate_norm, quote=True)}" '
@@ -391,7 +398,7 @@ def summary_sentence(entry: dict) -> str:
     dataset_names = "、".join(DATASETS[key]["label_zh"] for key in entry["dataset_keys"])
     return (
         f"{plate} 車牌目前收錄 {entry['count']} 筆公開拍賣紀錄，"
-        f"最高成交 {money(top.get('amount_hkd'))}，"
+        f"最高收錄金額 {amount_with_outcome(top)}，"
         f"最早紀錄為 {date_label(first_row)}，最近紀錄為 {date_label(latest_row)}。"
         f" 涵蓋來源包括 {dataset_names or 'Plate.hk'}。"
     )
@@ -405,7 +412,7 @@ def summary_sentence_en(entry: dict) -> str:
     dataset_names = ", ".join(DATASETS[key]["label_en"] for key in entry["dataset_keys"])
     return (
         f"Plate.hk indexes {entry['count']} historical public-auction record(s) for {plate}. "
-        f"The highest result is {money_en(top.get('amount_hkd'))}; "
+        f"The highest result is {amount_with_outcome(top, 'en')}; "
         f"the first indexed record is {date_label_en(first_row)} and the latest is {date_label_en(latest_row)}. "
         f"Sources include {dataset_names or 'Plate.hk'}."
     )
@@ -414,7 +421,8 @@ def summary_sentence_en(entry: dict) -> str:
 def answer_summary_html(entry: dict) -> str:
     plate = html.escape(entry["plate_display"])
     top = entry["top_row"]
-    top_price = html.escape(money(top.get("amount_hkd")))
+    top_price = html.escape(amount_with_outcome(top))
+    top_price_en = html.escape(amount_with_outcome(top, "en"))
     top_date = html.escape(date_label(top))
     top_date_en = html.escape(date_label_en(top))
     latest_date = html.escape(date_label(entry["latest_row"]))
@@ -425,12 +433,12 @@ def answer_summary_html(entry: dict) -> str:
               <div class="answer-item">
                 <h3 {copy_attrs(f'{plate} 有哪些香港公開拍賣紀錄？', f'What public auction records exist for Hong Kong plate {plate}?')}>{plate} 有哪些香港公開拍賣紀錄？</h3>
                 <p data-lang-only="zh">Plate.hk 目前收錄 <strong>{entry['count']}</strong> 筆 {plate} 歷史公開拍賣紀錄；最高一筆是 <strong>{top_price}</strong>，日期為 <strong>{top_date}</strong>。這是獨立搜尋索引，不是政府網站；請用表內的運輸署來源核對。 {top_source}</p>
-                <p data-lang-only="en" hidden>Plate.hk indexes <strong>{entry['count']}</strong> historical public-auction record(s) for {plate}. The highest result is <strong>{top_price}</strong> on <strong>{top_date_en}</strong>. This is an independent index, not a government website; verify it against the linked Transport Department source. {top_source}</p>
+                <p data-lang-only="en" hidden>Plate.hk indexes <strong>{entry['count']}</strong> historical public-auction record(s) for {plate}. The highest result is <strong>{top_price_en}</strong> on <strong>{top_date_en}</strong>. This is an independent index, not a government website; verify it against the linked Transport Department source. {top_source}</p>
               </div>
               <div class="answer-item">
-                <h3 {copy_attrs(f'{plate} 車牌最高成交價是多少？', 'What is the highest recorded auction price?')}>{plate} 車牌最高成交價是多少？</h3>
-                <p data-lang-only="zh">Plate.hk 收錄的最高公開拍賣成交紀錄是 <strong>{top_price}</strong>，日期為 <strong>{top_date}</strong>。 {top_source}</p>
-                <p data-lang-only="en" hidden>The highest public-auction result indexed by Plate.hk is <strong>{top_price}</strong> on <strong>{top_date_en}</strong>. {top_source}</p>
+                <h3 {copy_attrs(f'{plate} 車牌最高收錄金額是多少？', 'What is the highest indexed auction amount?')}>{plate} 車牌最高收錄金額是多少？</h3>
+                <p data-lang-only="zh">Plate.hk 收錄的最高公開拍賣收錄金額是 <strong>{top_price}</strong>，日期為 <strong>{top_date}</strong>。 {top_source}</p>
+                <p data-lang-only="en" hidden>The highest public-auction result indexed by Plate.hk is <strong>{top_price_en}</strong> on <strong>{top_date_en}</strong>. {top_source}</p>
               </div>
               <div class="answer-item">
                 <h3 {copy_attrs('有多少筆紀錄？', 'How many records are included?')}>有多少筆紀錄？</h3>
@@ -466,8 +474,8 @@ def render_page(entries_by_norm: dict[str, dict], entry: dict, related: list[dic
     top = entry["top_row"]
     first_row = entry["first_row"]
     latest_row = entry["latest_row"]
-    highest_price = money(top.get("amount_hkd"))
-    highest_price_en = money_en(top.get("amount_hkd"))
+    highest_price = amount_with_outcome(top)
+    highest_price_en = amount_with_outcome(top, 'en')
     highest_date = date_label(top)
     highest_date_en = date_label_en(top)
     first_date = date_label(first_row)
@@ -484,7 +492,7 @@ def render_page(entries_by_norm: dict[str, dict], entry: dict, related: list[dic
         <tr>
           <td data-label-zh="日期" data-label-en="Date"><span data-lang-only="zh">{html.escape(date_label(row))}</span><span data-lang-only="en" hidden>{html.escape(date_label_en(row))}</span></td>
           <td data-label-zh="分類" data-label-en="Dataset"><span data-lang-only="zh">{html.escape(DATASETS[row['dataset_key']]['label_zh'])}</span><span data-lang-only="en" hidden>{html.escape(DATASETS[row['dataset_key']]['label_en'])}</span></td>
-          <td data-label-zh="成交價" data-label-en="Price"><span data-lang-only="zh">{html.escape(money(row.get('amount_hkd')))}</span><span data-lang-only="en" hidden>{html.escape(money_en(row.get('amount_hkd')))}</span></td>
+          <td data-label-zh="金額及結果" data-label-en="Amount and outcome"><span data-lang-only="zh">{html.escape(amount_with_outcome(row))}</span><span data-lang-only="en" hidden>{html.escape(amount_with_outcome(row, 'en'))}</span></td>
           <td data-label-zh="來源" data-label-en="Source">{source_link_html(row)}<br><a data-preserve-lang href="../?q={plate_norm}" {copy_attrs('完整站內紀錄', 'Full search')}>完整站內紀錄</a></td>
         </tr>
         """
@@ -541,7 +549,7 @@ def render_page(entries_by_norm: dict[str, dict], entry: dict, related: list[dic
         "license": DATASET_LICENSE_URL,
         "dateModified": modified_at,
         "spatialCoverage": {"@type": "Place", "name": "Hong Kong"},
-        "variableMeasured": ["auction date", "vehicle registration mark", "sale price in HKD", "auction dataset"],
+        "variableMeasured": ["auction date", "vehicle registration mark", "published amount in HKD", "auction outcome", "auction dataset"],
         "inLanguage": ["zh-HK", "en"],
     }
     if temporal_coverage:
@@ -582,7 +590,7 @@ def render_page(entries_by_norm: dict[str, dict], entry: dict, related: list[dic
                             "@type": "Answer",
                             "text": (
                                 f"Plate.hk indexes {entry['count']} historical public-auction record(s) for {plate}. "
-                                f"The highest indexed result is {highest_price} on {highest_date}. "
+                                f"The highest indexed result is {highest_price_en} on {highest_date_en}. "
                                 "Verify each material claim against the linked Hong Kong Transport Department source."
                             ),
                         },
@@ -714,7 +722,7 @@ def render_page(entries_by_norm: dict[str, dict], entry: dict, related: list[dic
           <a class="btn primary" data-preserve-lang href="../?q={plate_norm}" {copy_attrs('在 Plate.hk 搜尋', 'Search on Plate.hk')}>在 Plate.hk 搜尋</a>
         </div>
         <div class="meta">
-          <div class="metric"><div class="k" {copy_attrs('最高成交', 'Top Sale')}>最高成交</div><div class="v"><span data-lang-only="zh">{html.escape(highest_price)}</span><span data-lang-only="en" hidden>{html.escape(highest_price_en)}</span></div></div>
+          <div class="metric"><div class="k" {copy_attrs('最高收錄金額', 'Top indexed amount')}>最高收錄金額</div><div class="v"><span data-lang-only="zh">{html.escape(highest_price)}</span><span data-lang-only="en" hidden>{html.escape(highest_price_en)}</span></div></div>
           <div class="metric"><div class="k" {copy_attrs('紀錄數', 'Records')}>紀錄數</div><div class="v">{entry['count']}</div></div>
           <div class="metric"><div class="k" {copy_attrs('首次紀錄', 'First Seen')}>首次紀錄</div><div class="v"><span data-lang-only="zh">{html.escape(first_date)}</span><span data-lang-only="en" hidden>{html.escape(first_date_en)}</span></div></div>
           <div class="metric"><div class="k" {copy_attrs('最近紀錄', 'Latest Seen')}>最近紀錄</div><div class="v"><span data-lang-only="zh">{html.escape(latest_date)}</span><span data-lang-only="en" hidden>{html.escape(latest_date_en)}</span></div></div>
@@ -724,12 +732,12 @@ def render_page(entries_by_norm: dict[str, dict], entry: dict, related: list[dic
 {market_section}      <div class="grid">
         <div class="stack">
           <div class="card">
-            <h2 {copy_attrs('成交紀錄', 'Auction Records')}>成交紀錄</h2>
-            <div class="lede" data-lang-only="zh">最高成交出現在 {html.escape(highest_date)}。以下列出目前最重要的歷史紀錄，並可直接回站內搜尋完整結果。</div>
+            <h2 {copy_attrs('拍賣紀錄', 'Auction Records')}>拍賣紀錄</h2>
+            <div class="lede" data-lang-only="zh">最高收錄金額出現在 {html.escape(highest_date)}。以下列出目前最重要的歷史紀錄，並可直接回站內搜尋完整結果。</div>
             <div class="lede" data-lang-only="en" hidden>The highest result was recorded on {html.escape(highest_date_en)}. The table lists the most relevant historical records with direct source and full-search links.</div>
             <table class="responsive-table">
               <thead>
-                <tr><th {copy_attrs('日期', 'Date')}>日期</th><th {copy_attrs('分類', 'Dataset')}>分類</th><th {copy_attrs('成交價', 'Price')}>成交價</th><th {copy_attrs('來源', 'Source')}>來源</th></tr>
+                <tr><th {copy_attrs('日期', 'Date')}>日期</th><th {copy_attrs('分類', 'Dataset')}>分類</th><th {copy_attrs('金額及結果', 'Amount and outcome')}>金額及結果</th><th {copy_attrs('來源', 'Source')}>來源</th></tr>
               </thead>
               <tbody>{rows_html}</tbody>
             </table>
@@ -756,8 +764,8 @@ def render_page(entries_by_norm: dict[str, dict], entry: dict, related: list[dic
       </div>
 {market_script}    </main>
     {decision_panel}
-    <link rel="stylesheet" href="/assets/decision.css?v=20260915-01">
-    <script type="module" src="/assets/decision.js?v=20260928-01"></script>
+    <link rel="stylesheet" href="/assets/decision.css?v=20261114-01">
+    <script type="module" src="/assets/decision.js?v=20261114-01"></script>
     <script defer src="/assets/analytics.js?v=20260915-01"></script>
     <div data-info-shell-footer></div>
     <script src="../assets/info-locale.js?v={INFO_LOCALE_VERSION}"></script>
@@ -772,7 +780,7 @@ def render_index(entries: list[dict]) -> str:
         f"""\
         <a class="card" data-popular-card data-preserve-lang href="./{item['plate_norm']}.html">
           <div class="plate">{html.escape(item['plate_display'])}</div>
-          <div class="price"><span data-lang-only="zh">{html.escape(money(item['top_row'].get('amount_hkd')))}</span><span data-lang-only="en" hidden>{html.escape(money_en(item['top_row'].get('amount_hkd')))}</span></div>
+          <div class="price"><span data-lang-only="zh">{html.escape(amount_with_outcome(item['top_row']))}</span><span data-lang-only="en" hidden>{html.escape(amount_with_outcome(item['top_row'], 'en'))}</span></div>
           <div class="meta" {copy_attrs(f"{item['count']} 筆紀錄 · {classify_plate(item['plate_norm'])[0]}", f"{item['count']} records · {classify_plate(item['plate_norm'])[1]}")}>{item['count']} 筆紀錄 · {html.escape(classify_plate(item['plate_norm'])[0])}</div>
         </a>"""
         for item in entries[:INDEX_LINKS]
@@ -911,8 +919,8 @@ def render_directory(entries: list[dict]) -> str:
         links = "".join(
             f'<li><a data-preserve-lang href="../{entry["plate_norm"]}.html">'
             f'{html.escape(entry["plate_display"])}</a> '
-            f'<span data-lang-only="zh">{html.escape(money(entry["top_row"].get("amount_hkd")))} · {entry["count"]} 筆紀錄</span>'
-            f'<span data-lang-only="en" hidden>{html.escape(money_en(entry["top_row"].get("amount_hkd")))} · {entry["count"]} records</span></li>'
+            f'<span data-lang-only="zh">{html.escape(amount_with_outcome(entry["top_row"]))} · {entry["count"]} 筆紀錄</span>'
+            f'<span data-lang-only="en" hidden>{html.escape(amount_with_outcome(entry['top_row'], 'en'))} · {entry["count"]} records</span></li>'
             for entry in selected
         )
         sections.append(
@@ -998,7 +1006,7 @@ def render_about() -> str:
         "license": DATASET_LICENSE_URL,
         "dateModified": TODAY,
         "spatialCoverage": {"@type": "Place", "name": "Hong Kong"},
-        "variableMeasured": ["auction date", "vehicle registration mark", "sale price in HKD", "auction type", "source document"],
+        "variableMeasured": ["auction date", "vehicle registration mark", "published amount in HKD", "auction outcome", "auction type", "source document"],
         "measurementTechnique": "Source-document extraction, normalized search indexing, cross-dataset overlap checks, and automated integrity auditing.",
         "isBasedOn": [
             TD_URL,
@@ -1358,6 +1366,7 @@ def build():
                 "plate_display": entry["plate_display"],
                 "href": f"/plates/{filename}",
                 "top_amount_hkd": entry["top_row"].get("amount_hkd"),
+                "top_result_status": entry["top_row"].get("result_status", "unknown"),
                 "record_count": entry["count"],
                 "first_seen": date_label(entry["first_row"]),
                 "latest_seen": date_label(entry["latest_row"]),
