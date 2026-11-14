@@ -267,13 +267,15 @@ class MarketSignalTests(unittest.TestCase):
             payload["signals"]["NEW8"][0]["last_seen_at"] = market.isoformat(now - dt.timedelta(hours=73))
             signal_path.write_text(json.dumps(payload), encoding="utf-8")
             builder._MARKET_SIGNALS = None
-            self.assertEqual(builder.market_signal_html("NEW8"), "")
+            self.assertEqual(builder.market_signal_html("NEW8"), html)
+            self.assertIn("hidden", html)
 
             payload["signals"]["NEW8"][0]["last_seen_at"] = market.isoformat(now)
             payload["signals"]["NEW8"][0]["source_url"] = "https://example.test/listing"
             signal_path.write_text(json.dumps(payload), encoding="utf-8")
             builder._MARKET_SIGNALS = None
-            self.assertEqual(builder.market_signal_html("NEW8"), "")
+            self.assertEqual(builder.market_signal_html("NEW8"), html)
+            self.assertIn("hidden", html)
 
 
 class MarketPaginationTests(unittest.TestCase):

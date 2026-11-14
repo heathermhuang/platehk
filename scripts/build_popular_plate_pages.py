@@ -177,8 +177,9 @@ def load_active_market_signals() -> dict:
 
 
 def market_signal_html(plate_norm: str) -> str:
-    offers = load_active_market_signals().get(plate_norm) or []
-    if not offers:
+    # This empty container is not a sale signal. Recheck the exact-plate API
+    # on every view, including pages rebuilt without the private snapshot.
+    if not re.fullmatch(r"[A-HJ-NPR-Z0-9]{1,16}", plate_norm):
         return ""
     return (
         f'      <section class="market-card" data-market-card data-plate="{html.escape(plate_norm, quote=True)}" '
