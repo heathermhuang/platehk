@@ -1,4 +1,5 @@
-import { normalize, validQuery, parseFilters, filterKeys, calendarEvent } from './decision-core.mjs';
+import './auction-outcomes.js';
+import { normalize, validQuery, parseFilters, filterKeys, calendarEvent } from './decision-core.mjs?v=20261114-01';
 const lang = new URLSearchParams(location.search).get('lang') === 'en' ? 'en' : 'zh';
 const text = (zh,en) => lang === 'en' ? en : zh;
 const track = (name,data) => window.PlateAnalytics?.track(name,data);
@@ -14,7 +15,7 @@ function sourceUrl(row) {
   return null;
 }
 const plateOf = row => normalize(row.single_line || (row.double_line || []).join(''));
-const priceOf = row => row.amount_hkd == null ? (row.result_text || text('沒有成交價','No sale price')) : 'HK$'+Number(row.amount_hkd).toLocaleString('en-HK');
+const priceOf = row => window.PlateAuctionOutcomes.format(row, lang);
 const datasetName = key => ({pvrm:'PVRM',tvrm_physical:text('TVRM 實體拍賣','TVRM physical'),tvrm_eauction:text('拍牌易','E-auction'),tvrm_legacy:'TVRM 1973–2006'})[key] || key;
 const storageKey='platehk.shortlist.v1';
 let saved=[];let comparisonVersion=0;
@@ -121,6 +122,7 @@ async function loadComparables(plate,host) {
     ? text('只比較完整相同數字、同字首級別的兩字母傳統形式車牌；每個其他車牌只取最近一次有價成交。這是結構比較，不代表官方分類、現時估價或放售證明。','Only two-letter traditional-pattern marks with the same full number and prefix tier are compared, using each other plate’s latest priced sale. This structural comparison is not an official classification, current valuation or listing.')
     : text('按相同資料集、字母／數字結構及號碼片段選取，按日期排序。並非估價、可轉讓性判斷或放售證明。','Selected by source dataset, letter/digit structure and a shared fragment, ordered by date. Not a valuation, transferability judgment or evidence of a current listing.')));
   if(traditionalPattern&&result.sample_size){
+   if(result.window!=='recent_three_years')content.prepend(make('p',text('只有較早的歷史樣本。以下數字不代表現時價格；請先核對成交日期。','Only older historical samples are available. These figures do not establish today’s price; check the sale dates first.'),'comparison-age-warning'));
    content.append(make('p',text(`${result.sample_size} 個獨立比較車牌 · ${result.date_from} 至 ${result.date_to} · ${result.window==='recent_three_years'?'近三年':'較早歷史樣本，並非現時估價'}`,`${result.sample_size} distinct comparable plates · ${result.date_from} to ${result.date_to} · ${result.window==='recent_three_years'?'last three years':'older historical sample, not a current valuation'}`),'comparison-window'));
    if(result.statistics){const stats=make('div',null,'comparison-stats');for(const [key,zh,en] of [['p25','較低四分位','Lower quartile'],['median','中位數','Median'],['p75','較高四分位','Upper quartile']]){const card=make('div');card.append(make('strong',text(zh,en)),make('p','HK$'+Number(result.statistics[key]).toLocaleString('en-HK')));stats.append(card);}content.append(stats);content.append(make('p',text('四分位標示樣本中較低及較高的 25% 分界；中位數把成交價分成兩半。','Quartiles mark the lower and upper 25% boundaries; the median divides the sample into two halves.'),'decision-note'));}
    else content.append(make('p',text('樣本不足五個，只列出個別成交，不提供價格區間。','Fewer than five qualifying plates; individual sales are shown without a price range.')));
@@ -172,7 +174,7 @@ document.querySelector('#compareSelected')?.addEventListener('click',async()=>{
  const version=++comparisonVersion;host.replaceChildren(make('p',text('讀取比較中…','Loading comparison…')));
  const records=await Promise.allSettled(plates.map(q=>getJson('/api/search?'+new URLSearchParams({dataset:'all',q,mode:'exact',sort:'date_desc',page_size:'1'}))));if(version!==comparisonVersion)return;
  host.replaceChildren(make('h2',text('最近一次歷史拍賣結果（不是現時估價）','Latest historical auction results (not current valuations)')));
- const wrap=make('div',null,'table-wrap');const table=make('table',null,'comparison-table');const head=make('tr');for(const value of [text('車牌','Plate'),text('歷史成交','Historical sale'),text('日期','Date'),text('資料集','Dataset'),text('來源','Source')]){const th=make('th',value);th.scope='col';head.append(th);}const thead=make('thead');thead.append(head);table.append(thead);const tbody=make('tbody');
+ const wrap=make('div',null,'table-wrap');const table=make('table',null,'comparison-table');const head=make('tr');for(const value of [text('車牌','Plate'),text('歷史金額及結果','Historical amount and outcome'),text('日期','Date'),text('資料集','Dataset'),text('來源','Source')]){const th=make('th',value);th.scope='col';head.append(th);}const thead=make('thead');thead.append(head);table.append(thead);const tbody=make('tbody');
  records.forEach((record,i)=>{const tr=make('tr');tr.append(add(make('th'),link(plates[i],detailHref(plates[i]))));const row=record.status==='fulfilled'?record.value.rows?.[0]:null;if(row){for(const value of [priceOf(row),row.year_range||row.auction_date,datasetName(row.dataset_key)])tr.append(make('td',value));const cell=make('td');const source=sourceUrl(row);cell.append(source?link(text('核對來源','Check source'),source):make('span',text('未提供','Unavailable')));tr.append(cell);}else{const cell=make('td',record.status==='rejected'?text('未能讀取，請重試比較。','Could not load; retry comparison.'):text('沒有收錄紀錄，不代表未分配。','No indexed record; this does not establish availability.'));cell.colSpan=4;tr.append(cell);}tbody.append(tr);});table.append(tbody);wrap.append(table);host.append(wrap);refreshSaveButtons();track('compare_view',{result_count:plates.length});
 });
 addEventListener('storage',event=>{if(event.key===storageKey){readSaved();renderShortlist();refreshSaveButtons();}});

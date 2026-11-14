@@ -85,8 +85,8 @@ class AuctionResultPageTests(unittest.TestCase):
                     self.assertEqual(tr['data-status'], row['status'])
                     self.assertEqual(tr.select('td')[1].get_text(), pages.money(row['amount_hkd']))
                     self.assertEqual(tr.select_one('a')['href'], r['source_url'] + f"#page={row['page']}")
-                    if row['status'] == 'unsold':
-                        self.assertEqual(len(tr.select('a')), 1)
+                    self.assertEqual(len(tr.select('a')), 2)
+                    self.assertIn('q=' + row['mark'].replace(' ', ''), tr.select('a')[1]['href'])
                 for a in doc.select('.auction-top a'):
                     self.assertEqual(doc.select_one(a['href'])['data-status'], 'sold')
 

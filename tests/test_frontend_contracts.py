@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import re
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 
@@ -143,7 +144,7 @@ class FrontendContractsTests(unittest.TestCase):
             "scripts/build_popular_plate_pages.py",
         ):
             self.assertIn(favicon_ref, (ROOT / path).read_text(encoding="utf-8"), path)
-        self.assertIn("pvrm-static-v164", (ROOT / "sw.js").read_text(encoding="utf-8"))
+        self.assertIn("pvrm-static-v165", (ROOT / "sw.js").read_text(encoding="utf-8"))
 
     def test_camera_prototype_page_and_links_exist(self) -> None:
         camera = (ROOT / "camera.html").read_text(encoding="utf-8")
@@ -351,7 +352,7 @@ class FrontendContractsTests(unittest.TestCase):
         for script_path in required_scripts:
             self.assertIn(f"'{script_path}'", service_worker, script_path)
         for shell_asset in [
-            "./assets/audit.js?v=20260825-01",
+            "./assets/audit.js?v=20261114-01",
             "./assets/api-page.js?v=20260827-02",
             "./assets/changelog.js?v=20260827-02",
             "./assets/info-locale.js?v=20260825-01",
@@ -443,17 +444,17 @@ class FrontendContractsTests(unittest.TestCase):
         self.assertIn(".info-lang-toggle button", ledger_css)
         self.assertIn("./assets/ledger.css?v=20260812-11", index_html)
 
-        generated_market_pages = []
-        for page_path in (ROOT / "plates").glob("*.html"):
-            if " " in page_path.name:
-                continue
-            page_html = page_path.read_text(encoding="utf-8")
-            if "data-market-card" in page_html:
-                generated_market_pages.append(page_path)
-                self.assertIn(".market-card .plate {", page_html, page_path.name)
-                self.assertNotIn(".market-plate::before", page_html, page_path.name)
-                self.assertNotIn("background:#fff; color:#111", page_html, page_path.name)
-        self.assertGreater(len(generated_market_pages), 0)
+        # The public checkout excludes the private snapshot. Exercise an actual
+        # generated card with a deterministic positive signal instead of depending
+        # on whichever live offers happened to exist at the last build.
+        from scripts import build_popular_plate_pages as pages
+        entry = pages.build_plate_data()[0]
+        with patch.object(pages, "load_active_market_signals", return_value={entry["plate_norm"]: [{}]}):
+            page_html = pages.render_page({entry["plate_norm"]: entry}, entry, [])
+        self.assertIn("data-market-card", page_html)
+        self.assertIn(".market-card .plate {", page_html)
+        self.assertNotIn(".market-plate::before", page_html)
+        self.assertNotIn("background:#fff; color:#111", page_html)
 
     def test_camera_vision_ignores_non_hong_kong_plate_formats(self) -> None:
         camera_js = (ROOT / "assets" / "camera.js").read_text(encoding="utf-8")
@@ -659,7 +660,7 @@ class FrontendContractsTests(unittest.TestCase):
         self.assertIn('<table class="responsive-table">', plate_html)
         self.assertIn('<td data-label-zh="日期" data-label-en="Date">', plate_html)
         self.assertIn('<td data-label-zh="分類" data-label-en="Dataset">', plate_html)
-        self.assertIn('data-label-zh="成交價" data-label-en="Price"', plate_html)
+        self.assertIn('data-label-zh="金額及結果" data-label-en="Amount and outcome"', plate_html)
         self.assertIn('<td data-label-zh="來源" data-label-en="Source">', plate_html)
         self.assertIn(".grid > *, .stack, .card { min-width:0; }", plate_html)
         self.assertNotIn("If users search", plate_html)
@@ -672,7 +673,7 @@ class FrontendContractsTests(unittest.TestCase):
                 self.assertIn('<table class="responsive-table">', generated_plate_html)
                 self.assertIn('<td data-label-zh="日期" data-label-en="Date">', generated_plate_html)
                 self.assertIn('<td data-label-zh="分類" data-label-en="Dataset">', generated_plate_html)
-                self.assertIn('data-label-zh="成交價" data-label-en="Price"', generated_plate_html)
+                self.assertIn('data-label-zh="金額及結果" data-label-en="Amount and outcome"', generated_plate_html)
                 self.assertIn('<td data-label-zh="來源" data-label-en="Source">', generated_plate_html)
                 self.assertIn(".grid > *, .stack, .card { min-width:0; }", generated_plate_html)
         plate_ld = json.loads(

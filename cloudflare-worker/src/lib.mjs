@@ -268,7 +268,7 @@ export function mapStaticRow(row, datasetKey, auctionMeta = null) {
     source_format: row?.source_format || auctionMeta?.source_format || null,
     source_type: row?.source_type || auctionMeta?.source_type || null,
     source_sheet: row?.source_sheet || auctionMeta?.source_sheet || null,
-    result_status: row?.result_status || null,
+    result_status: row?.result_status || "unknown",
     result_text: row?.result_text || null,
   };
 }
@@ -474,7 +474,9 @@ export async function buildPagedDateDescRows(env, requestUrl, dataset, page, pag
 export async function withApiCache(request, ctx, ttlSeconds, fn) {
   if (!ttlSeconds) return fn();
   const cache = caches.default;
-  const cacheRequest = new Request(request.url, { method: "GET" });
+  const cacheUrl = new URL(request.url);
+  cacheUrl.searchParams.set("_outcome_schema", "20261114");
+  const cacheRequest = new Request(cacheUrl, { method: "GET" });
   const cached = await cache.match(cacheRequest);
   if (cached) return cached;
   const response = await fn();

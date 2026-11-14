@@ -67,7 +67,7 @@
           resultsOpenPdf: "原始來源",
           resultDate: "拍賣日期",
           resultDataset: "分類",
-          resultAmount: "成交價",
+          resultAmount: "金額及結果",
           resultUnknown: "未能自動解析",
           resultLegacyRange: "1973-2006 年分段",
           cameraPermissionHelp: "開始相機或選擇車牌照片。亦可在下方直接輸入車牌。",
@@ -156,7 +156,7 @@
           resultsOpenPdf: "Source file",
           resultDate: "Auction date",
           resultDataset: "Dataset",
-          resultAmount: "Amount",
+          resultAmount: "Amount and outcome",
           resultUnknown: "Unparsed",
           resultLegacyRange: "1973-2006 range",
           cameraPermissionHelp: "Start the camera or choose a plate photo. You can also enter the plate below.",
@@ -694,12 +694,12 @@
               <article class="result-row">
                 <div class="result-head">
                   <div class="plate">${escapeHtml(plateText(row))}</div>
-                  <div class="amount">${escapeHtml(formatAmount(row.amount_hkd))}</div>
+                  <div class="amount">${escapeHtml(window.PlateAuctionOutcomes.format(row, currentLang))}</div>
                 </div>
                 <div class="result-meta">
                   ${escapeHtml(t("resultDate"))}: ${escapeHtml(formatDate(row))}<br />
                   ${escapeHtml(t("resultDataset"))}: ${escapeHtml(datasetLabel(row.dataset_key))}<br />
-                  ${escapeHtml(t("resultAmount"))}: ${escapeHtml(formatAmount(row.amount_hkd))}
+                  ${escapeHtml(t("resultAmount"))}: ${escapeHtml(window.PlateAuctionOutcomes.format(row, currentLang))}
                 </div>
                 <div class="result-actions">
                   <a href="${searchHref}">${escapeHtml(t("resultsOpenFull"))}</a>

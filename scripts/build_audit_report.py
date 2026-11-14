@@ -4,6 +4,14 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import dataclass
+from collections import Counter
+try:
+    from auction_outcomes import status
+except ModuleNotFoundError as error:
+    if error.name != "auction_outcomes":
+        raise
+    from scripts.auction_outcomes import status
+from build_auction_result_pages import load_rounds
 from datetime import date
 from pathlib import Path
 from typing import Optional
@@ -184,7 +192,7 @@ def build() -> int:
             joined = "".join(dl)
             if _compact_plate(sl) != _compact_plate(joined):
                 bad_double_mismatch += 1
-        if r.get("amount_hkd") is None:
+        if r.get("amount_hkd") is None and status(r) != "unsold":
             null_amount_rows += 1
 
     validation["pvrm"] = {
@@ -306,7 +314,7 @@ def build() -> int:
             sl = r.get("single_line") or ""
             if not _tvrm_plate_ok(sl):
                 bad_plate += 1
-            if r.get("amount_hkd") is None:
+            if r.get("amount_hkd") is None and status(r) != "unsold":
                 null_amount_rows += 1
         validation[key] = {
             "rows_total": len(rows),
@@ -328,8 +336,20 @@ def build() -> int:
     audit_tvrm_dataset("tvrm_eauction", DATA / "tvrm_eauction")
     audit_tvrm_dataset("tvrm_legacy", DATA / "tvrm_legacy")
 
+    rounds = load_rounds()
+    coverage = {}
+    for key, base in [("pvrm", DATA), ("tvrm_physical", DATA / "tvrm_physical"),
+                      ("tvrm_eauction", DATA / "tvrm_eauction"), ("tvrm_legacy", DATA / "tvrm_legacy")]:
+        rows = _read_json(base / "results.slim.json")
+        verified = [r for r in rounds if r["dataset"] == key]
+        coverage[key] = {"outcomes": dict(Counter(status(row) for row in rows)),
+                         "latest_indexed_round": max((row["auction_date"] for row in rows), default=None),
+                         "verified_complete_rounds": len(verified),
+                         "latest_complete_round": max((r["start_date"] for r in verified), default=None)}
+
     out = {
         "generated_at": today,
+        "outcome_coverage": coverage,
         "summary": summary,
         "validation": validation,
         "files": files,

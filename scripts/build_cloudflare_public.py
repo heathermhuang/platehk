@@ -629,7 +629,7 @@ def main(*, require_market_snapshot: bool = False, allow_stale_market_snapshot: 
     # Fingerprint their actual bytes so every published page receives the same version.
     design_versions = {
         asset: hashlib.sha256((TARGET / "assets" / asset).read_bytes()).hexdigest()[:12]
-        for asset in ("ledger.css", "ux.css", "ux.js", "info-shell.js", "index.browser.css", "index.browser.js", "decision.css", "index.js", "index.state.js", "index.home.js", "index.config.js")
+        for asset in ("ledger.css", "ux.css", "ux.js", "info-shell.js", "index.browser.css", "index.browser.js", "decision.css", "index.js", "index.state.js", "index.home.js", "index.config.js", "index.data.js", "index.present.js", "index.share.js", "decision.js", "auction-outcomes.js", "camera.js", "audit.js")
     }
     for page in TARGET.rglob("*.html"):
         # Keep the standalone badge placement free of injected dependencies.

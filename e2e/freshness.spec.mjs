@@ -28,12 +28,12 @@ test("dataset freshness is rendered from each API payload", async ({ page }) => 
 
   await page.goto("/?lang=en&dataset=all");
   await expect.poll(() => pageErrors).toEqual([]);
-  await expect(page.locator("#updatedAt")).toHaveText("Last updated: 12 Aug 2026");
+  await expect(page.locator("#updatedAt")).toHaveText("Index built: 12 Aug 2026");
 
   const filters = page.locator('.record-filters');
   if (!await filters.evaluate(el => el.open)) await filters.locator('summary').click();
   await page.locator("#dataset").selectOption("pvrm");
-  await expect(page.locator("#updatedAt")).toHaveText("Last updated: 23 Jul 2026");
+  await expect(page.locator("#updatedAt")).toHaveText("Index built: 23 Jul 2026");
 });
 
 test("invalid API freshness never falls back to the viewer clock", async ({ page }) => {

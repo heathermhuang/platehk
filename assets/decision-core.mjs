@@ -67,6 +67,7 @@ export function comparableRows(target, rows, token, limit = 8) {
   for(const row of rows) {
     const plate=normalize(row.single_line || (row.double_line || []).join(''));
     if(plate===targetPlate || row.dataset_key!==target.dataset_key || shape(plate)!==shape(targetPlate))continue;
+    if(row.result_status!=='sold')continue;
     if(row.amount_hkd==null || !Number.isFinite(Number(row.amount_hkd)) || Number(row.amount_hkd)<=0)continue;
     if(row.year_range || row.date_precision==='year_range' || !row.auction_date)continue;
     if(!plate.includes(token))continue;
@@ -94,7 +95,7 @@ export function traditionalPatternComparableCohort(query, rows, limit = 8, refer
     if (!candidate || plate === target || candidate[2] !== number) continue;
     if (['HK', 'XX'].includes(candidate[1]) || (candidate[1][0] === candidate[1][1]) !== repeatedPrefix) continue;
     if (row.year_range || row.date_precision === 'year_range' || !/^\d{4}-\d{2}-\d{2}$/.test(row.auction_date || '')) continue;
-    if (row.result_status && row.result_status !== 'sold') continue;
+    if (row.result_status !== 'sold') continue;
     const amount = Number(row.amount_hkd);
     if (!Number.isFinite(amount) || amount <= 0 || !(row.pdf_url || row.source_url)) continue;
     const previous = latestByPlate.get(plate);

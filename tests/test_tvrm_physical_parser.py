@@ -19,6 +19,23 @@ class PhysicalAuctionParserTests(unittest.TestCase):
             "TVRMs%20Auction%20Result%20Handout%2012%20Sept%202026_CH.pdf",
         )
 
+    def test_special_fee_tokens_are_retained_for_outcome_classification(self):
+        page = MagicMock()
+        page.extract_tables.return_value = [[["AB", "123", "@1,000"]]]
+        document = MagicMock()
+        document.pages = [page]
+        with patch.object(builder.pdfplumber, "open") as open_pdf, \
+                patch.object(builder, "extract_total_sale_proceeds", return_value=None):
+            open_pdf.return_value.__enter__.return_value = document
+            rows = builder.parse_physical_pdf_rows(Path("test.pdf"), self.source())
+        self.assertEqual(rows[0]["amount_raw"], "@1,000")
+        self.assertEqual(rows[0]["amount_hkd"], 1000)
+        online_page = MagicMock()
+        online_page.get_textpage.return_value.get_text_range.return_value = "AB 123 @1,000 CD 456 5,000"
+        with patch.object(builder.pdfium, "PdfDocument", return_value=[online_page]):
+            online, _ = builder.parse_eauction_pdf_rows(Path("test.pdf"), self.source())
+        self.assertEqual([r["amount_raw"] for r in online], ["@1,000", "5,000"])
+
     def test_official_september_handout_includes_numeric_mark_and_reconciles(self):
         pdf = ROOT / "data/tvrm_physical/pdfs/2026-09-12_1e3cc10d5e.pdf"
         rows = builder.parse_physical_pdf_rows(pdf, self.source())

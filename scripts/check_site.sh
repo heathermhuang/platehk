@@ -9,6 +9,7 @@ export PYTHONPYCACHEPREFIX="${PYTHONPYCACHEPREFIX:-${TMPDIR:-/tmp}/pvrm-pycache}
 
 "${PYTHON_BIN}" -m py_compile \
   scripts/build_auction_result_pages.py \
+  scripts/auction_outcomes.py \
   scripts/build_traffic_scorecard.py \
   scripts/verify_auction_result_sources.py \
   scripts/build_all_search_index.py \
@@ -61,6 +62,7 @@ node --check scripts/check_agent_registration.mjs
 node --check assets/analytics.js
 node --check assets/growth.js
 node --check assets/decision.js
+node --check assets/auction-outcomes.js
 node --check assets/index.data.js
 node --check assets/ux.js
 node --check assets/index.market.js

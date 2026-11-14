@@ -20,3 +20,10 @@
 .decision-comparables .table-wrap { overflow:auto; }
 .decision-main .table-wrap { max-width:100%; overflow-x:auto; }
 @media(max-width:640px){.decision-main{padding:20px 16px 48px}.decision-filters,.decision-results{grid-template-columns:1fr}.decision-form input{width:100%;box-sizing:border-box}}
+
+.comparison-age-warning {
+  padding: 1rem;
+  border-inline-start: 4px solid #866b13;
+  background: #f5edcf;
+  font-weight: 700;
+}
