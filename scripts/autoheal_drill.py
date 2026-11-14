@@ -64,7 +64,7 @@ def validate_patch(root: Path, patch: Path) -> None:
     if (len(entries) != 1 or len(entries[0]) != 3 or entries[0][2] != CANDIDATE.encode()
             or not all(count.isdigit() for count in entries[0][:2])):
         raise ValueError("Drill patch must modify only the candidate fixture")
-    subprocess.run(["git", "apply", "--check", "--index", "-"], input=content, cwd=root,
+    subprocess.run(["git", "apply", "--check", "--cached", "-"], input=content, cwd=root,
                    check=True, capture_output=True)
 
 
