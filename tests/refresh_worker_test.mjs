@@ -6,7 +6,7 @@ import worker,{recordObservation,claim,combineObservation} from '../refresh-work
 import {observe,digest,officialUrl,boundedRead,sourceFetch,discoveryCandidates,INDEXES,resultKind} from '../refresh-worker/src/probe.mjs';
 
 // Miniflare 5 requires the complete source graph, even through its v4 converter.
-const refreshModules=['index.mjs','probe.mjs'].map(name=>({type:'ESModule',path:new URL(`../refresh-worker/src/${name}`,import.meta.url).pathname}));
+const refreshModules=['index.mjs','probe.mjs','eauction.mjs'].map(name=>({type:'ESModule',path:new URL(`../refresh-worker/src/${name}`,import.meta.url).pathname}));
 
 const pvrm='https://www.td.gov.hk/filemanager/tc/content_4806/pvrm_result_20261003_chi.pdf';
 const physical='https://www.td.gov.hk/filemanager/tc/content_4804/tvrm_auction_result_20261003_chi.pdf';
@@ -420,4 +420,23 @@ test('revamped TD indexes distinguish datasets and observe dates in adjacent tab
   assert(first.updates.some(x=>x.kind==='physical' && x.date==='2026-10-03'));
   const second=await observe({sources:Object.fromEntries(first.updates.map(x=>[x.url,x])),index_urls:first.index_urls,index_entries:first.index_entries,calendar_digest:first.calendar_digest},{fetcher:makeFetcher('11 October 2026'),now:new Date('2026-10-09T07:00:00Z')});
   assert.equal(second.calendar_changed,true);
+});
+
+test('configured E-Auction coverage requires a fresh authenticated collection receipt',async()=>{
+  const mf=new Miniflare(convertV4MiniflareOptions({modules:refreshModules,compatibilityDate:'2026-10-05',compatibilityFlags:['nodejs_compat'],d1Databases:{DB:'eauction-coverage'},r2Buckets:{STORE:'eauction-coverage'}}));
+  const originalFetch=globalThis.fetch;
+  try {
+    const DB=await mf.getD1Database('DB'),STORE=await mf.getR2Bucket('STORE');await migrate(DB);
+    const {published}=await baseline();await STORE.put('published.json',JSON.stringify(published));
+    const env={DB,STORE,CONTROL_TOKEN:'fixture-control',PRODUCTION_URL:'https://production.test',EAUCTION_ENABLED:'true'};
+    globalThis.fetch=async(url,options)=>url==='https://production.test/data/events.json' ? Response.json({events:[]}) : upstream()(url,options);
+    const missing=await claim(env);assert.equal(missing.run,false);assert.equal(missing.outcome,'source_unavailable');
+    const item={url:'https://e-auction.td.gov.hk/en/auctions/history?result=78&date=2026-11-05',id:78,kind:'eauction',date:'2026-11-05',end_date:'2026-11-09',sha256:'a'.repeat(64),content_sha256:'b'.repeat(64)};
+    const put=payload=>worker.fetch(new Request('https://refresh.test/v1/eauction',{method:'PUT',headers:{Authorization:'Bearer fixture-control'},body:JSON.stringify(payload)}),env);
+    assert.equal((await put({checked_at:new Date().toISOString(),sources:[{...item,url:'https://evil.test/a'}]})).status,400);
+    assert.equal((await put({checked_at:new Date().toISOString(),sources:[item]})).status,200);
+    const ready=await claim(env);assert.equal(ready.run,true);assert.equal(ready.scope,'official');
+    const probe=await (await STORE.get(`probes/${ready.probe_id}.json`)).json();
+    assert(probe.updates.some(source=>source.url===item.url && source.sha256===item.sha256));
+  } finally {globalThis.fetch=originalFetch;await mf.dispose();}
 });

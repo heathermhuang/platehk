@@ -1188,6 +1188,10 @@ function composeAuctionKey(datasetKey, auctionDate) {
         updatedAtEl.textContent = lastUpdatedLabel
           ? `${t("updatePrefix")}${lastUpdatedLabel}`
           : t("updateUnavailable");
+        const latestAuction = manifest.issues?.map(issue => String(issue.auction_date || "")).filter(value => /^20\d{2}-\d{2}-\d{2}$/.test(value)).sort().at(-1);
+        if (latestAuction && currentDataset !== "tvrm_legacy") {
+          updatedAtEl.textContent = `${t("latestIndexedAuction")}${latestAuction} · ${updatedAtEl.textContent}`;
+        }
         renderSearchHistory();
         buildDatasetOptions();
         buildSortOptions();

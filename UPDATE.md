@@ -248,3 +248,38 @@ npm run cf:deploy:ci
 - `/api/vision_session`
 - `/api/vision_plate` 的 POST-only / token / rate-limit 行為
 - 首頁搜尋、期數深連結、相機頁與 `audit.html`
+
+
+## E-Auction result coverage
+
+The public E-Auction platform publishes its latest three result handouts at
+`https://e-auction.td.gov.hk/en/auctions/history`. These downloads are separate
+from the TD filemanager PDF indexes. `Auto Update Data` now collects all listed
+rounds before planning, using the site's public download action and normal queue.
+No login, browser profile, or model is required. The action reference is read from
+the current official page bundle; an unknown page/action contract stops the job.
+
+The collector retains exact PDF bytes and SHA-256 hashes. Downloads regenerate
+encrypted PDF bytes, so `eauction_pdf.py` also fingerprints the exact extracted
+text consumed by the parser. Text changes trigger corrections; a different PDF
+wrapper alone does not trigger a rebuild. The parser checks the PDF's round date
+and reconciles every parsed amount to official total proceeds before publication.
+
+A fresh authenticated collection receipt is required by the observer when
+`EAUCTION_ENABLED=true`. Missing, invalid, or older-than-eight-hour receipts hold
+publication as `SOURCE_OBSERVATION_UNAVAILABLE`, which enters the existing
+operator issue/Telegram alert path. A successful unchanged PDF check cannot mask
+missing platform coverage. The six-hour schedule refreshes this receipt; hourly
+PDF observations reuse it without repeated platform downloads.
+
+Canonical references such as
+`https://e-auction.td.gov.hk/en/auctions/history?result=78&date=2026-11-05`
+identify the round on the official result page. The platform ignores those query
+parameters in its UI; users select the corresponding date to download the PDF.
+Records retain this official reference in `source_url`; `pdf_url` points to an
+exact archived copy at `/auction-sources/eauction/<result-id>.pdf`. These copies
+are published from the verified PDF inventory, retaining the original byte hash.
+The result metadata retains the official reference used by the import catalog.
+This identifies the indexed source, not a claim that every historical round has
+been independently verified. The website displays the latest indexed auction
+date separately from its index-build date.

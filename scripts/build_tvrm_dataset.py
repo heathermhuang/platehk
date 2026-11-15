@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import hashlib
 import os
-from trusted_sources import read_source
+from trusted_sources import read_source, eauction_reference, eauction_pdf_url
 import json
 import re
 import subprocess
@@ -89,6 +89,8 @@ def classify_pdf_kind(abs_url: str, around_text: str) -> Optional[str]:
 def request_bytes(url: str) -> bytes:
     if os.environ.get("PLATEHK_VERIFIED_BUILD") == "1" and unquote(urlsplit(url).path).lower().endswith(".pdf"):
         raise ValueError("SOURCE_PARSE_UNVERIFIED: missing observer-verified PDF input; publication stopped")
+    if eauction_reference(url):
+        raise ValueError("SOURCE_PARSE_UNVERIFIED: E-Auction handout requires the verified collection receipt")
     return read_source(normalize_url(url))
 
 
@@ -105,6 +107,8 @@ def request_head_ok(url: str) -> bool:
 
 
 def extract_date_from_href(href: str) -> Optional[str]:
+    reference=eauction_reference(href)
+    if reference: return reference["date"]
     m = FILENAME_DATE_RE.search(href)
     if not m:
         decoded = unquote(href or "")
@@ -244,7 +248,7 @@ def load_urls_file(path: Path) -> list[str]:
     out: list[str] = []
     for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
         u = normalize_space(line)
-        if not u or ".pdf" not in u.lower():
+        if not u or (".pdf" not in u.lower() and not eauction_reference(u)):
             continue
         out.append(normalize_url(u))
     # keep order while deduping
@@ -261,6 +265,7 @@ def build_pdf_entries_from_urls(kind: str, urls: list[str]) -> list[AuctionPdf]:
 
 
 def discover_physical_standard_pdfs(start: date, end: date) -> list[AuctionPdf]:
+    if os.environ.get("PLATEHK_VERIFIED_BUILD") == "1": return []
     # The most stable naming pattern observed on TD filemanager:
     # /filemanager/tc/content_4804/tvrm_auction_result_YYYYMMDD_chi.pdf
     out: list[AuctionPdf] = []
@@ -295,6 +300,7 @@ MONTH_EN = [
 
 
 def discover_eauction_by_thursdays(start: date, end: date) -> list[AuctionPdf]:
+    if os.environ.get("PLATEHK_VERIFIED_BUILD") == "1": return []
     # Many e-auction result PDFs are named like:
     # E-Auction Result Handout 5-9 February 2026.Chin.pdf
     # e-auction runs Thu -> Mon (5 days) in most cases.
@@ -499,7 +505,7 @@ def parse_lny_mixed_rows_for_tvrm(pdf_path: Path, source: AuctionPdf) -> list[di
 
 
 E_TEXT_RE = re.compile(
-    r"\b([A-Z]{1,2})\s+(\d{1,4})\s+(@?\d{1,3}(?:,\d{3})*|\d{1,9})\b"
+    r"\b([A-Z]{1,2})\s+(\d{1,4})\s+(@?\d{1,3}(?:,\d{3})*|\d{1,9}|U/S)\b"
 )
 
 
@@ -582,7 +588,7 @@ def parse_eauction_pdf_rows(pdf_path: Path, source: AuctionPdf) -> tuple[list[di
     for m in E_TEXT_RE.finditer(text):
         prefix, number, raw_amount = m.group(1), m.group(2), m.group(3)
         amt = parse_amount_hkd(raw_amount)
-        if amt is None:
+        if amt is None and not UNSOLD_RE.fullmatch(raw_amount):
             continue
         rows.append(
             {
@@ -595,6 +601,10 @@ def parse_eauction_pdf_rows(pdf_path: Path, source: AuctionPdf) -> tuple[list[di
                 "page": None,
             }
         )
+    if eauction_reference(source.pdf_url):
+        for row in rows:
+            row.update(pdf_url=eauction_pdf_url(source.pdf_url), source_url=source.pdf_url,
+                       source_format="pdf", source_type="eauction_platform")
     # Dedup within PDF (text extraction can sometimes repeat)
     uniq = {}
     for r in rows:
@@ -677,6 +687,11 @@ def parse_tvrm_document(kind: str, pdf_path: Path, pdf: AuctionPdf, lny_url_set:
         rows, date_label = parse_eauction_pdf_rows(pdf_path, pdf)
         date_label = date_label or pdf.date_label_zh
     total_proceeds = extract_total_sale_proceeds(pdf_path)
+    if eauction_reference(pdf.pdf_url):
+        if extract_start_date_from_zh_range(date_label or '') != pdf.date_iso:
+            raise ValueError('SOURCE_PARSE_UNVERIFIED: E-Auction PDF dates differ from the published round')
+        if not rows or total_proceeds is None or sum(row['amount_hkd'] or 0 for row in rows) != total_proceeds:
+            raise ValueError('SOURCE_PARSE_UNVERIFIED: E-Auction rows do not reconcile to official proceeds')
     if kind == "physical":
         # If we corrected the date from PDF content, reflect it in metadata.
         auction_date = source.date_iso

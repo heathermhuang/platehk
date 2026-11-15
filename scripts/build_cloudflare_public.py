@@ -318,6 +318,24 @@ def load_complete_search_index_rows() -> list[dict]:
     return rows
 
 
+def copy_eauction_source_pdfs() -> None:
+    from trusted_sources import eauction_reference
+    inventory=ROOT / 'data/tvrm_eauction/sources.tsv'
+    if not inventory.exists():
+        return
+    for line in inventory.read_text().splitlines():
+        if '\t' not in line: continue
+        name,url=line.split('\t',1)
+        reference=eauction_reference(url)
+        if not reference: continue
+        if Path(name).name!=name:
+            raise ValueError('Invalid E-Auction PDF inventory filename')
+        source=inventory.parent/'pdfs'/name
+        with source.open('rb') as stream:
+            if stream.read(5)!=b'%PDF-': raise ValueError('Invalid archived E-Auction PDF')
+        copy_path(source,TARGET / 'auction-sources/eauction' / f"{reference['id']}.pdf")
+
+
 def copy_public_data_files() -> None:
     data_root = ROOT / "data"
     target_data = TARGET / "data"
@@ -608,6 +626,7 @@ def main(*, require_market_snapshot: bool = False, allow_stale_market_snapshot: 
     copy_plate_pages()
 
     copy_public_data_files()
+    copy_eauction_source_pdfs()
     copy_private_market_signals(required=require_market_snapshot, allow_stale=allow_stale_market_snapshot)
 
     for rel in SPECIAL_ROOT_DIRS:

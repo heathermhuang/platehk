@@ -47,6 +47,9 @@ bash -n scripts/check_security.sh
 "${PYTHON_BIN}" scripts/build_cloudflare_public.py >/dev/null
 node --check refresh-worker/src/index.mjs
 node --check refresh-worker/src/probe.mjs
+node --check refresh-worker/src/eauction.mjs
+node --check scripts/eauction_source.mjs
+node --test tests/eauction_source_test.mjs
 node --check scripts/refresh_control.mjs
 node --test tests/refresh_worker_test.mjs
 node --test tests/refresh_control_test.mjs

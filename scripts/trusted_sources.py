@@ -2,11 +2,33 @@
 from __future__ import annotations
 
 import urllib.request
-from urllib.parse import urlsplit
+from urllib.parse import urlsplit, parse_qs
+import re
+from datetime import date
 
 TD_HOSTS = frozenset({'www.td.gov.hk'})
 EVENT_HOSTS = TD_HOSTS | {'www.gov.hk', 'e-auction.td.gov.hk'}
 MARKET_HOSTS = frozenset({'m.28car.com'})
+
+
+def eauction_reference(url: str) -> dict | None:
+    parts=urlsplit(url)
+    query=parse_qs(parts.query,keep_blank_values=True)
+    if (parts.scheme!='https' or parts.netloc!='e-auction.td.gov.hk' or parts.path!='/en/auctions/history' or parts.fragment
+        or set(query)!={'result','date'} or any(len(value)!=1 for value in query.values())
+        or not re.fullmatch(r'[1-9]\d{0,8}',query.get('result',[''])[0])):
+        return None
+    day=query['date'][0]
+    try:
+        if date.fromisoformat(day).isoformat()!=day: return None
+    except ValueError: return None
+    if url!=f"https://e-auction.td.gov.hk/en/auctions/history?result={query['result'][0]}&date={day}": return None
+    return {'id':int(query['result'][0]),'date':day}
+
+
+def eauction_pdf_url(url: str) -> str | None:
+    reference=eauction_reference(url)
+    return f"https://plate.hk/auction-sources/eauction/{reference['id']}.pdf" if reference else None
 
 
 def trusted_url(url: str, hosts=TD_HOSTS) -> str:

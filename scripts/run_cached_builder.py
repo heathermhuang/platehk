@@ -10,6 +10,7 @@ import sys
 from pathlib import Path
 
 from pdf_parse_cache import PdfParseCache
+from trusted_sources import eauction_reference, eauction_pdf_url
 
 ROOT = Path(__file__).resolve().parents[1]
 RECEIPTS = ROOT / '.tmp/parse-receipts.jsonl'
@@ -47,7 +48,7 @@ def capture_result(cache: PdfParseCache, path: Path, context: dict, value: dict,
               'url': context.get('pdf_url'), 'sha256': sha256,
               'kind': kind, 'parser_version': cache.version, 'context': context,
               'expected_nonempty': expected_nonempty,
-              'schema_valid': kind in ('pvrm', 'physical', 'eauction') and valid_bundle(value, kind) and all(row['pdf_url'] == context.get('pdf_url') for row in value['rows']),
+              'schema_valid': kind in ('pvrm', 'physical', 'eauction') and valid_bundle(value, kind) and all(row['pdf_url'] == context.get('pdf_url') or (eauction_reference(context.get('pdf_url') or '') and row.get('source_url') == context['pdf_url'] and row['pdf_url'] == eauction_pdf_url(context['pdf_url'])) for row in value['rows']),
               'row_count': len(value.get('rows', [])) if isinstance(value, dict) and isinstance(value.get('rows'), list) else 0}
     output.parent.mkdir(parents=True, exist_ok=True)
     with output.open('a', encoding='utf-8') as stream:
@@ -64,7 +65,7 @@ def run_builder(name: str, *, reset: bool = False) -> None:
         if rows.exists():
             for row in json.loads(rows.read_text()):
                 if row.get('source_type') != 'xlsx_exact_dates':
-                    prior[(kind, row.get('pdf_url'))] = True
+                    prior[(kind, row.get('source_url') if row.get('source_type') == 'eauction_platform' else row.get('pdf_url'))] = True
     if reset:
         RECEIPTS.parent.mkdir(parents=True, exist_ok=True)
         RECEIPTS.write_text('')
