@@ -294,3 +294,9 @@ Missing, disabled, stale, malformed or failed evidence produces an operator hold
 matching generated JSON alone cannot clear it. The observer deployment health
 check also requires `eauction_enabled=true`, restoring the checked-in collector
 configuration when a matching code fingerprint has a disabled binding.
+
+The audit also compares each currently listed E-Auction content fingerprint with
+the acknowledged publication catalogue. A cancelled collector with an empty
+pending queue therefore cannot hide an unpublished round. Collection requests a
+fresh observation after posting platform evidence, avoiding reuse of an hourly
+observation that raced with that post.

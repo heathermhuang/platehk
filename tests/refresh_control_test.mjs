@@ -7,12 +7,12 @@ import {spawnSync} from 'node:child_process';
 import {writeFileSync} from 'node:fs';
 import {deployObserver,sourceRevision} from '../scripts/deploy_refresh_worker.mjs';
 
-async function run(responses,{base='https://platehk-refresh.measurable.workers.dev'}={}) {
+async function run(responses,{base='https://platehk-refresh.measurable.workers.dev',fresh=false}={}) {
   const dir=await mkdtemp(join(tmpdir(),'platehk-control-test-'));
   try {
     const hook=join(dir,'hook.mjs'),calls=join(dir,'calls.jsonl'),output=join(dir,'output');
     await writeFile(hook,`import {appendFileSync} from 'node:fs';let responses=${JSON.stringify(responses)};globalThis.fetch=async(url,options)=>{appendFileSync(${JSON.stringify(calls)},JSON.stringify({path:new URL(url).pathname,body:options.body&&JSON.parse(options.body)})+'\\n');const next=responses.shift();if(!next)throw Error('Unexpected request');return Response.json(next.payload,{status:next.status||200});};`);
-    const result=spawnSync(process.execPath,['--import',hook,'scripts/refresh_control.mjs','plan'],{cwd:new URL('../',import.meta.url),env:{...process.env,REFRESH_CONTROL_URL:base,REFRESH_CONTROL_TOKEN:'test-fixture',REFRESH_SCOPE:'check',REFRESH_FORCE:'false',REFRESH_RETRY_DELAY_MS:'0',GITHUB_OUTPUT:output},encoding:'utf8',timeout:10000});
+    const result=spawnSync(process.execPath,['--import',hook,'scripts/refresh_control.mjs','plan'],{cwd:new URL('../',import.meta.url),env:{...process.env,REFRESH_CONTROL_URL:base,REFRESH_CONTROL_TOKEN:'test-fixture',REFRESH_SCOPE:'check',REFRESH_FRESH_OBSERVATION:fresh ? 'true':'false',REFRESH_FORCE:'false',REFRESH_RETRY_DELAY_MS:'0',GITHUB_OUTPUT:output},encoding:'utf8',timeout:10000});
     return {...result,calls:(await readFile(calls,'utf8').catch(()=>'' )).trim().split('\n').filter(Boolean).map(JSON.parse),output:await readFile(output,'utf8').catch(()=>'' )};
   } finally {await rm(dir,{recursive:true,force:true});}
 }
@@ -158,4 +158,10 @@ test('a matching fingerprint cannot hide a disabled E-Auction collector',async()
     assert.equal((await deployObserver(options)).deployed,true);
     assert(calls.some(call=>call.command===process.execPath && call.args.includes('--no-bundle')));
   },{healthy:true,coverageDisabled:true});
+});
+
+
+test('collection requests a fresh observation after posting platform evidence',async()=>{
+  const result=await run([{payload:{run:false,outcome:'unchanged',source_error_count:0}}],{fresh:true});
+  assert.equal(result.status,0);assert.equal(result.calls[0].body.refresh,true);assert.equal(result.calls[0].body.force,false);
 });

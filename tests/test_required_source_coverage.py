@@ -12,7 +12,7 @@ class RequiredSourceCoverageTests(unittest.TestCase):
         self.rules=json.loads((ROOT/'.github/autoheal/rules.json').read_text())
         self.observer={'source_revision':'a'*64,'pending_source_count':0,'lease_until':0,
           'source_observation':{'source_revision':'a'*64,'checked_at':self.now.isoformat(),'source_error_count':0},
-          'eauction_observation':{'enabled':True,'checked_at':self.now.isoformat(),'sources_observed':3}}
+          'eauction_observation':{'enabled':True,'checked_at':self.now.isoformat(),'sources_observed':3,'unpublished_sources':0}}
     def classify(self,observer,*,verified=True,log=''):
         return heal.classify(log,{'status':'current'},self.rules,observer=observer,
           observer_verified=verified,now=self.now,require_source_coverage=True)
@@ -34,7 +34,7 @@ class RequiredSourceCoverageTests(unittest.TestCase):
           lambda o:o['source_observation'].update(checked_at=(self.now-timedelta(hours=2)).isoformat()),
           lambda o:o['source_observation'].update(checked_at=(self.now+timedelta(hours=1)).isoformat()),
           lambda o:o.pop('source_observation'),lambda o:o.pop('pending_source_count'),
-          lambda o:o.update(lease_until='unknown')]
+          lambda o:o.update(lease_until='unknown'),lambda o:o['eauction_observation'].pop('unpublished_sources')]
         for index,mutate in enumerate(mutations):
             with self.subTest(case=index):
                 observer=copy.deepcopy(self.observer);mutate(observer);result=self.classify(observer)
@@ -59,3 +59,9 @@ class RequiredSourceCoverageTests(unittest.TestCase):
               '--observer-verified','true','--require-source-coverage','--output',str(path/'plan.json')],
               check=True,capture_output=True,text=True)
             self.assertEqual(json.loads((path/'plan.json').read_text())['action'],'alert_human')
+
+    def test_cancelled_collection_without_a_pending_queue_cannot_hide_unpublished_rounds(self):
+        self.observer['eauction_observation']['unpublished_sources']=1
+        result=self.classify(self.observer)
+        self.assertEqual(result['classification'],'source_publication_pending')
+        self.assertEqual(result['action'],'alert_human')

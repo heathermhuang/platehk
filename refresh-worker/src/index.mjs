@@ -145,9 +145,9 @@ export default {
     if (!await authorized(request,env)) return json({error:'not_found'},404);
     try {
       if (url.pathname === '/v1/status' && request.method === 'GET') {
-        const control=await state(env),observed=await stored(env,'observed.json'),eauction=await stored(env,'eauction-observed.json');
+        const control=await state(env),observed=await stored(env,'observed.json'),eauction=await stored(env,'eauction-observed.json'),published=await stored(env,'published.json');
         return json({...control,pending_source_count:(await env.DB.prepare('SELECT COUNT(*) AS count FROM refresh_pending_sources').first()).count,
-          source_revision:SOURCE_REVISION,eauction_observation:{enabled:env.EAUCTION_ENABLED==='true',checked_at:eauction?.checked_at || null,sources_observed:eauction?.sources?.length || 0},source_observation:observed ? {source_revision:observed.observer_source_revision,checked_at:observed.checked_at,source_error_count:observed.source_errors?.length ?? null} : null});
+          source_revision:SOURCE_REVISION,eauction_observation:{enabled:env.EAUCTION_ENABLED==='true',checked_at:eauction?.checked_at || null,sources_observed:eauction?.sources?.length || 0,unpublished_sources:(eauction?.sources || []).filter(item=>published?.sources?.[item.url]?.content_sha256!==item.content_sha256).length},source_observation:observed ? {source_revision:observed.observer_source_revision,checked_at:observed.checked_at,source_error_count:observed.source_errors?.length ?? null} : null});
       }
       if (url.pathname === '/v1/eauction' && request.method === 'PUT') {
         const payload=await body(request,32768), checked=Date.parse(payload.checked_at);

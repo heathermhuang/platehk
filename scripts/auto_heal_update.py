@@ -153,6 +153,8 @@ def source_coverage_problem(observer: dict[str, Any] | None, verified: bool, now
         return 'Required E-Auction collection is disabled or its evidence is missing.'
     if type(coverage.get('sources_observed')) is not int or not 1<=coverage['sources_observed']<=12:
         return 'E-Auction coverage has no valid complete collection receipt.'
+    if type(coverage.get('unpublished_sources')) is not int or not 0<=coverage['unpublished_sources']<=coverage['sources_observed']:
+        return 'The latest collected E-Auction results have no verified publication coverage.'
     observation=observer.get('source_observation')
     revision=observer.get('source_revision')
     if (not isinstance(observation,dict) or not re.fullmatch(r'[a-f0-9]{64}',str(revision or ''))
@@ -226,7 +228,12 @@ def classify(log_text: str, freshness: dict[str, Any] | None, rules_config: dict
             matched_rules=matched_rules,
         )
 
-    if observer_verified and isinstance(observer,dict) and int(observer.get('pending_source_count') or 0)>0:
+    pending=0
+    if observer_verified and isinstance(observer,dict):
+        pending=int(observer.get('pending_source_count') or 0)
+        if isinstance(coverage,dict):
+            pending=max(pending,int(coverage.get('unpublished_sources') or 0))
+    if pending>0:
         active=int(observer.get('lease_until') or 0)>(now or datetime.now(timezone.utc)).timestamp()
         return make_plan(classification='source_publication_in_progress' if active else 'source_publication_pending',
             status='noop' if active else 'blocked',action='no_op' if active else 'alert_human',
