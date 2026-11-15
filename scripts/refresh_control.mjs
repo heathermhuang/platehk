@@ -34,7 +34,7 @@ if (command === 'plan') {
         const probe=await request(`/v1/probe?id=${selectedProbe}`);
         if (probe.scope!==scope) throw new Error('Probe scope does not match workflow input');
         decision={run:true,scope:probe.scope,probe_id:selectedProbe,source_error_count:probe.source_errors?.length || 0};
-      } else decision=await request('/v1/claim','POST',{scope,force,refresh:attempt>0});
+      } else decision=await request('/v1/claim','POST',{scope,force,refresh:attempt>0 || process.env.REFRESH_FRESH_OBSERVATION==='true'});
     } catch (error) {
       if (error.message==='Probe scope does not match workflow input') throw error;
       decision={run:false,outcome:'source_unavailable',source_error_count:1,control_error:error.message};

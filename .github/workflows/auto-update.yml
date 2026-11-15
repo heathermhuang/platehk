@@ -100,6 +100,7 @@ jobs:
         env:
           REFRESH_CONTROL_TOKEN: ${{ secrets.REFRESH_CONTROL_TOKEN }}
           REFRESH_SCOPE: ${{ inputs.scope || 'check' }}
+          REFRESH_FRESH_OBSERVATION: ${{ inputs.scope != 'market' }}
           REFRESH_FORCE: ${{ inputs.force || false }}
           REFRESH_MODE: ${{ inputs.mode || 'incremental' }}
           REFRESH_PROBE_ID: ${{ inputs.probe_id || '' }}

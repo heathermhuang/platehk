@@ -7,12 +7,12 @@ import {spawnSync} from 'node:child_process';
 import {writeFileSync} from 'node:fs';
 import {deployObserver,sourceRevision} from '../scripts/deploy_refresh_worker.mjs';
 
-async function run(responses,{base='https://platehk-refresh.measurable.workers.dev'}={}) {
+async function run(responses,{base='https://platehk-refresh.measurable.workers.dev',fresh=false}={}) {
   const dir=await mkdtemp(join(tmpdir(),'platehk-control-test-'));
   try {
     const hook=join(dir,'hook.mjs'),calls=join(dir,'calls.jsonl'),output=join(dir,'output');
     await writeFile(hook,`import {appendFileSync} from 'node:fs';let responses=${JSON.stringify(responses)};globalThis.fetch=async(url,options)=>{appendFileSync(${JSON.stringify(calls)},JSON.stringify({path:new URL(url).pathname,body:options.body&&JSON.parse(options.body)})+'\\n');const next=responses.shift();if(!next)throw Error('Unexpected request');return Response.json(next.payload,{status:next.status||200});};`);
-    const result=spawnSync(process.execPath,['--import',hook,'scripts/refresh_control.mjs','plan'],{cwd:new URL('../',import.meta.url),env:{...process.env,REFRESH_CONTROL_URL:base,REFRESH_CONTROL_TOKEN:'test-fixture',REFRESH_SCOPE:'check',REFRESH_FORCE:'false',REFRESH_RETRY_DELAY_MS:'0',GITHUB_OUTPUT:output},encoding:'utf8',timeout:10000});
+    const result=spawnSync(process.execPath,['--import',hook,'scripts/refresh_control.mjs','plan'],{cwd:new URL('../',import.meta.url),env:{...process.env,REFRESH_CONTROL_URL:base,REFRESH_CONTROL_TOKEN:'test-fixture',REFRESH_SCOPE:'check',REFRESH_FRESH_OBSERVATION:fresh ? 'true':'false',REFRESH_FORCE:'false',REFRESH_RETRY_DELAY_MS:'0',GITHUB_OUTPUT:output},encoding:'utf8',timeout:10000});
     return {...result,calls:(await readFile(calls,'utf8').catch(()=>'' )).trim().split('\n').filter(Boolean).map(JSON.parse),output:await readFile(output,'utf8').catch(()=>'' )};
   } finally {await rm(dir,{recursive:true,force:true});}
 }
@@ -50,13 +50,13 @@ test('an unchanged successful check does not retry',async()=>{
   assert.equal(result.status,0);assert.equal(result.calls.length,1);
 });
 
-async function deploymentFixture(check,{stale=false,dirty=false,advanced=false,dataOnly=false,timeout=false,confirm=true,healthy=false,tamper=false,oldFingerprint=false,settleChecks=0}={}) {
+async function deploymentFixture(check,{stale=false,dirty=false,advanced=false,dataOnly=false,timeout=false,confirm=true,healthy=false,tamper=false,oldFingerprint=false,settleChecks=0,coverageDisabled=false}={}) {
   const root=await mkdtemp(join(tmpdir(),'platehk-deploy-test-'));
   try {
     const files=['refresh-worker/migrations/0001_refresh_control.sql','refresh-worker/src/index.mjs','refresh-worker/src/probe.mjs','refresh-worker/wrangler.jsonc','scripts/deploy_refresh_worker.mjs','package.json','package-lock.json'];
     for (const file of files) {await mkdir(join(root,file,'..'),{recursive:true});await writeFile(join(root,file),file);}
     const revision=sourceRevision(root,files),calls=[],pauses=[];
-    let current=healthy,remoteCalls=0,healthChecks=0;
+    let current=healthy,coverageEnabled=!coverageDisabled,remoteCalls=0,healthChecks=0;
     const run=(command,args)=>{
       calls.push({command,args});
       if (command==='git') {
@@ -68,10 +68,10 @@ async function deploymentFixture(check,{stale=false,dirty=false,advanced=false,d
       }
       if (command===process.execPath && args.includes('--dry-run')) {
         if (tamper) writeFileSync(join(root,'refresh-worker/src/probe.mjs'),'changed during bundling');
-      } else if (command===process.execPath) {current=confirm;if(timeout)throw Error('Cloudflare activation timed out');}
+      } else if (command===process.execPath) {current=confirm;coverageEnabled=true;if(timeout)throw Error('Cloudflare activation timed out');}
       return '';
     };
-    const fetcher=async()=>Response.json({ok:true,service:'platehk-refresh',observer_enabled:true,dispatch_enabled:false,...(current && ++healthChecks>settleChecks ? {source_revision:revision}:oldFingerprint ? {source_revision:'0'.repeat(64)}:{})});
+    const fetcher=async()=>Response.json({ok:true,service:'platehk-refresh',observer_enabled:true,eauction_enabled:coverageEnabled,dispatch_enabled:false,...(current && ++healthChecks>settleChecks ? {source_revision:revision}:oldFingerprint ? {source_revision:'0'.repeat(64)}:{})});
     await check({root,files,revision,calls,pauses,options:{root,ensure:true,run,fetcher,pause:async(ms)=>pauses.push(ms)}});
   } finally {await rm(root,{recursive:true,force:true});}
 }
@@ -150,4 +150,18 @@ test('changing a migration changes the observer deployment fingerprint', async()
     await writeFile(join(root,'refresh-worker/migrations/0001_refresh_control.sql'),'changed migration');
     assert.notEqual(sourceRevision(root,files),revision);
   });
+});
+
+
+test('a matching fingerprint cannot hide a disabled E-Auction collector',async()=>{
+  await deploymentFixture(async({options,calls})=>{
+    assert.equal((await deployObserver(options)).deployed,true);
+    assert(calls.some(call=>call.command===process.execPath && call.args.includes('--no-bundle')));
+  },{healthy:true,coverageDisabled:true});
+});
+
+
+test('collection requests a fresh observation after posting platform evidence',async()=>{
+  const result=await run([{payload:{run:false,outcome:'unchanged',source_error_count:0}}],{fresh:true});
+  assert.equal(result.status,0);assert.equal(result.calls[0].body.refresh,true);assert.equal(result.calls[0].body.force,false);
 });

@@ -35,8 +35,8 @@ export async function deployObserver({root=ROOT,ensure=false,run,fetcher=fetch,p
       lastHealth={http_status:response.status};
       if (!response.ok) return false;
       const value=await response.json();
-      lastHealth={http_status:response.status,revision_match:value.source_revision===revision,service_match:value.service==='platehk-refresh',observer_enabled:value.observer_enabled===true,dispatch_enabled:value.dispatch_enabled===true};
-      return value.ok===true && value.service==='platehk-refresh' && value.observer_enabled===true && value.dispatch_enabled===false && value.source_revision===revision;
+      lastHealth={http_status:response.status,revision_match:value.source_revision===revision,service_match:value.service==='platehk-refresh',observer_enabled:value.observer_enabled===true,eauction_enabled:value.eauction_enabled===true,dispatch_enabled:value.dispatch_enabled===true};
+      return value.ok===true && value.service==='platehk-refresh' && value.observer_enabled===true && value.eauction_enabled===true && value.dispatch_enabled===false && value.source_revision===revision;
     } catch (error) {lastHealth={error:error.name};return false;}
   };
   if (ensure && await health()) return {deployed:false,source_revision:revision};

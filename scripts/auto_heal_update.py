@@ -145,9 +145,44 @@ def source_recovered(observer: dict[str, Any] | None, verified: bool, failed_at:
         return False
 
 
+def source_coverage_problem(observer: dict[str, Any] | None, verified: bool, now: datetime) -> str | None:
+    if not verified or not isinstance(observer, dict):
+        return 'The current source observer could not be verified.'
+    coverage=observer.get('eauction_observation')
+    if not isinstance(coverage,dict) or coverage.get('enabled') is not True:
+        return 'Required E-Auction collection is disabled or its evidence is missing.'
+    if type(coverage.get('sources_observed')) is not int or not 1<=coverage['sources_observed']<=12:
+        return 'E-Auction coverage has no valid complete collection receipt.'
+    if type(coverage.get('unpublished_sources')) is not int or not 0<=coverage['unpublished_sources']<=coverage['sources_observed']:
+        return 'The latest collected E-Auction results have no verified publication coverage.'
+    observation=observer.get('source_observation')
+    revision=observer.get('source_revision')
+    if (not isinstance(observation,dict) or not re.fullmatch(r'[a-f0-9]{64}',str(revision or ''))
+        or observation.get('source_revision')!=revision):
+        return 'The source observation is missing or belongs to another observer version.'
+    try:
+        age=(now-datetime.fromisoformat(str(observation.get('checked_at') or '').replace('Z','+00:00'))).total_seconds()
+    except (ValueError,TypeError):
+        age=float('inf')
+    if not -600<=age<=90*60:
+        return 'The hourly official-source observation is missing, stale or future-dated.'
+    if type(observation.get('source_error_count')) is not int or observation['source_error_count']!=0:
+        return 'One or more official sources could not be verified.'
+    if (type(observer.get('pending_source_count')) is not int or observer['pending_source_count']<0
+        or type(observer.get('lease_until')) is not int or observer['lease_until']<0):
+        return 'Pending source-publication state could not be verified.'
+    return None
+
+
 def classify(log_text: str, freshness: dict[str, Any] | None, rules_config: dict[str, Any], *,
              observer: dict[str, Any] | None = None, observer_verified: bool = False,
-             failed_run_updated_at: str | None = None, now: datetime | None = None) -> dict[str, Any]:
+             failed_run_updated_at: str | None = None, now: datetime | None = None,
+             require_source_coverage: bool = False) -> dict[str, Any]:
+    if require_source_coverage:
+        problem=source_coverage_problem(observer,observer_verified,now or datetime.now(timezone.utc))
+        if problem:
+            return make_plan(classification='source_coverage_unverified',status='blocked',action='alert_human',
+                confidence='high',deploy_required=False,reason=problem+' Matching generated files cannot establish current data coverage.')
     coverage=observer.get('eauction_observation') if isinstance(observer,dict) else None
     if observer_verified and isinstance(coverage,dict) and coverage.get('enabled') is True:
         try:
@@ -193,7 +228,12 @@ def classify(log_text: str, freshness: dict[str, Any] | None, rules_config: dict
             matched_rules=matched_rules,
         )
 
-    if observer_verified and isinstance(observer,dict) and int(observer.get('pending_source_count') or 0)>0:
+    pending=0
+    if observer_verified and isinstance(observer,dict):
+        pending=int(observer.get('pending_source_count') or 0)
+        if isinstance(coverage,dict):
+            pending=max(pending,int(coverage.get('unpublished_sources') or 0))
+    if pending>0:
         active=int(observer.get('lease_until') or 0)>(now or datetime.now(timezone.utc)).timestamp()
         return make_plan(classification='source_publication_in_progress' if active else 'source_publication_pending',
             status='noop' if active else 'blocked',action='no_op' if active else 'alert_human',
@@ -268,6 +308,7 @@ def parse_args() -> argparse.Namespace:
     classify_parser.add_argument("--freshness-json", help="Optional check_production_freshness.py --json output.")
     classify_parser.add_argument("--output", default=str(DEFAULT_OUTPUT), help="Path to write the repair plan JSON.")
     classify_parser.add_argument("--github-output", help="Optional GITHUB_OUTPUT path for workflow step outputs.")
+    classify_parser.add_argument("--require-source-coverage", action="store_true", help="Require current complete source evidence before a healthy production classification.")
     classify_parser.add_argument("--observer-json", help="Optional authenticated current-observer status receipt.")
     classify_parser.add_argument("--observer-verified", choices=["true", "false"], default="false")
     classify_parser.add_argument("--failed-run-updated-at", help="Completion/update timestamp of the failed upstream run.")
@@ -294,7 +335,8 @@ def main() -> int:
         except (OSError, ValueError):
             pass  # Missing or incomplete evidence cannot establish recovery.
     plan = classify(log_text, freshness, rules_config, observer=observer,
-        observer_verified=args.observer_verified == "true", failed_run_updated_at=args.failed_run_updated_at)
+        observer_verified=args.observer_verified == "true", failed_run_updated_at=args.failed_run_updated_at,
+        require_source_coverage=args.require_source_coverage)
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(plan, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")

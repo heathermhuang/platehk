@@ -124,6 +124,7 @@ jobs:
             --freshness-json logs/autoheal/freshness.json \
             --observer-json logs/autoheal/control-status.json \
             --observer-verified "$OBSERVER_VERIFIED" \
+            --require-source-coverage \
             --failed-run-updated-at "$FAILED_RUN_UPDATED_AT" \
             --output logs/autoheal/plan.json \
             --github-output "$GITHUB_OUTPUT"
