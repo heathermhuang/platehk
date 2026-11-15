@@ -87,3 +87,20 @@ class EauctionFullRecoveryTests(unittest.TestCase):
             self.assertEqual(fee['amount_raw'],'@1,000')
             self.assertEqual(fee['source_url'],URL)
             self.assertEqual(fee['pdf_url'],'https://plate.hk/auction-sources/eauction/78.pdf')
+
+
+class PendingPublicationCoverageTests(unittest.TestCase):
+    def test_a_fresh_source_check_cannot_hide_results_awaiting_publication(self):
+        from datetime import datetime,timezone
+        import auto_heal_update as heal
+        now=datetime(2026,11,15,12,tzinfo=timezone.utc)
+        rules=json.loads((ROOT/'.github/autoheal/rules.json').read_text())
+        observer={'pending_source_count':3,'lease_until':0,
+                  'eauction_observation':{'enabled':True,'checked_at':now.isoformat(),'sources_observed':3}}
+        plan=heal.classify('',{'status':'current'},rules,observer=observer,observer_verified=True,now=now)
+        self.assertEqual(plan['classification'],'source_publication_pending')
+        self.assertEqual(plan['action'],'alert_human')
+        observer['lease_until']=int(now.timestamp())+3600
+        plan=heal.classify('',{'status':'current'},rules,observer=observer,observer_verified=True,now=now)
+        self.assertEqual(plan['classification'],'source_publication_in_progress')
+        self.assertEqual(plan['action'],'no_op')

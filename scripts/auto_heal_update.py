@@ -159,6 +159,12 @@ def classify(log_text: str, freshness: dict[str, Any] | None, rules_config: dict
             return make_plan(classification='eauction_coverage_overdue',status='blocked',action='alert_human',
                 confidence='high',deploy_required=False,
                 reason='E-Auction coverage has no recent complete public-source receipt; matching generated files cannot establish current source coverage.')
+    if observer_verified and isinstance(observer,dict) and int(observer.get('pending_source_count') or 0)>0:
+        active=int(observer.get('lease_until') or 0)>(now or datetime.now(timezone.utc)).timestamp()
+        return make_plan(classification='source_publication_in_progress' if active else 'source_publication_pending',
+            status='noop' if active else 'blocked',action='no_op' if active else 'alert_human',
+            confidence='high',deploy_required=False,
+            reason='New or corrected official results are awaiting a verified publication acknowledgement; matching generated files do not establish current source coverage.')
     matched_rules: list[dict[str, Any]] = []
     rules = sorted(rules_config.get("rules") or [], key=lambda item: int(item.get("priority", 0)), reverse=True)
 
