@@ -104,3 +104,13 @@ class PendingPublicationCoverageTests(unittest.TestCase):
         plan=heal.classify('',{'status':'current'},rules,observer=observer,observer_verified=True,now=now)
         self.assertEqual(plan['classification'],'source_publication_in_progress')
         self.assertEqual(plan['action'],'no_op')
+
+    def test_publication_in_progress_never_masks_source_credentials_or_test_failures(self):
+        from datetime import datetime,timezone
+        import auto_heal_update as heal
+        now=datetime(2026,11,15,12,tzinfo=timezone.utc)
+        observer={'pending_source_count':3,'lease_until':int(now.timestamp())+3600}
+        rules=json.loads((ROOT/'.github/autoheal/rules.json').read_text())
+        for failure in ['SOURCE_PARSE_UNVERIFIED','Set the CLOUDFLARE_API_TOKEN','FAIL: test_platform (test_module.Platform)']:
+            plan=heal.classify(failure,{'status':'current'},rules,observer=observer,observer_verified=True,now=now)
+            self.assertNotEqual(plan['action'],'no_op')
