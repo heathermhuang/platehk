@@ -10,6 +10,7 @@
   "triggers": {"crons": ["17 * * * *"]},
   "vars": {
     "OBSERVER_ENABLED": "true",
+    "EAUCTION_ENABLED": "true",
     "DISPATCH_ENABLED": "false",
     "GITHUB_REPOSITORY": "heathermhuang/platehk",
     "PRODUCTION_URL": "https://plate.hk"

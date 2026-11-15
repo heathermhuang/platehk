@@ -45,3 +45,16 @@ test("invalid API freshness never falls back to the viewer clock", async ({ page
   await expect.poll(() => pageErrors).toEqual([]);
   await expect(page.locator("#updatedAt")).toHaveText("Dataset update unavailable");
 });
+
+
+test("latest indexed auction stays visible even when the index was built recently", async ({ page }) => {
+  await installDataApiRoutes(page, { tvrm_eauction: "2026-11-15" });
+  await page.route("**/api/issues?**", async route => {
+    await route.fulfill({ json: {
+      generated_at: "2026-11-15", total_rows: 220, issue_count: 1,
+      issues: [{ auction_date: "2026-09-17", count: 220 }],
+    } });
+  });
+  await page.goto("/?lang=en&dataset=tvrm_eauction");
+  await expect(page.locator("#updatedAt")).toHaveText("Latest indexed auction: 2026-09-17 · Index built: 15 Nov 2026");
+});

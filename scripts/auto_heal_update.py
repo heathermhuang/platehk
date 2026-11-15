@@ -148,6 +148,17 @@ def source_recovered(observer: dict[str, Any] | None, verified: bool, failed_at:
 def classify(log_text: str, freshness: dict[str, Any] | None, rules_config: dict[str, Any], *,
              observer: dict[str, Any] | None = None, observer_verified: bool = False,
              failed_run_updated_at: str | None = None, now: datetime | None = None) -> dict[str, Any]:
+    coverage=observer.get('eauction_observation') if isinstance(observer,dict) else None
+    if observer_verified and isinstance(coverage,dict) and coverage.get('enabled') is True:
+        try:
+            checked=datetime.fromisoformat(str(coverage.get('checked_at') or '').replace('Z','+00:00'))
+            age=((now or datetime.now(timezone.utc))-checked).total_seconds()
+        except (ValueError,TypeError):
+            age=float('inf')
+        if age>8*3600 or age< -600 or not coverage.get('sources_observed'):
+            return make_plan(classification='eauction_coverage_overdue',status='blocked',action='alert_human',
+                confidence='high',deploy_required=False,
+                reason='E-Auction coverage has no recent complete public-source receipt; matching generated files cannot establish current source coverage.')
     matched_rules: list[dict[str, Any]] = []
     rules = sorted(rules_config.get("rules") or [], key=lambda item: int(item.get("priority", 0)), reverse=True)
 
@@ -182,6 +193,12 @@ def classify(log_text: str, freshness: dict[str, Any] | None, rules_config: dict
             matched_rules=matched_rules,
         )
 
+    if observer_verified and isinstance(observer,dict) and int(observer.get('pending_source_count') or 0)>0:
+        active=int(observer.get('lease_until') or 0)>(now or datetime.now(timezone.utc)).timestamp()
+        return make_plan(classification='source_publication_in_progress' if active else 'source_publication_pending',
+            status='noop' if active else 'blocked',action='no_op' if active else 'alert_human',
+            confidence='high',deploy_required=False,
+            reason='New or corrected official results are awaiting a verified publication acknowledgement; matching generated files do not establish current source coverage.')
     freshness_plan = classify_freshness(freshness)
     if freshness_plan:
         return make_plan(matched_rules=matched_rules, **freshness_plan)

@@ -1,3 +1,4 @@
+import {resultReference,HISTORY_URL} from './eauction.mjs';
 // The same bounded source observer is exercised by Node tests and the Cron Worker.
 const TD = 'https://www.td.gov.hk';
 export const INDEXES = [
@@ -15,6 +16,8 @@ export async function digest(value) {
 }
 export function officialUrl(value) {
   try {
+    const reference=resultReference(value);
+    if (reference) return reference;
     const url = new URL(value, TD);
     if (url.protocol !== 'https:' || url.hostname !== 'www.td.gov.hk' || url.port || url.username || url.password || url.search || url.hash) return null;
     url.pathname = url.pathname.split('/').map(part => encodeURIComponent(decodeURIComponent(part)).replace(/[!'()*]/g, c => `%${c.charCodeAt(0).toString(16).toUpperCase()}`)).join('/');
@@ -35,6 +38,7 @@ export function anchors(html) {
     }).filter(item => item[0]);
 }
 export function resultKind(url, index = '') {
+  if (resultReference(url)) return 'eauction';
   const decoded = decodeURIComponent(url);
   if (!/\.pdf$/i.test(decoded) || /Notes|重要事項|須知|\bmaps?\b|路線|指示圖/i.test(decoded)) return null;
   if (/E-Auction.*Result|Online_Auction_Result_NSRM/i.test(decoded)) return 'eauction';
@@ -43,6 +47,8 @@ export function resultKind(url, index = '') {
   return null;
 }
 export function dateFromUrl(url) {
+  const reference=resultReference(url);
+  if (reference) return new URL(reference).searchParams.get('date');
   const value = decodeURIComponent(url);
   const numeric = /(20\d{2})(\d{2})(\d{2})/.exec(value);
   if (numeric) return `${numeric[1]}-${numeric[2]}-${numeric[3]}`;
@@ -120,7 +126,7 @@ function calendarDateTable(content) {
   });
 }
 const indexFailure=(code,url)=>Object.assign(new Error(code),{source_url:url});
-export async function observe(published = {}, {fetcher = fetch, now = new Date(), cursor = 0, priority = []} = {}) {
+export async function observe(published = {}, {fetcher = fetch, now = new Date(), cursor = 0, priority = [], eauction} = {}) {
   const known = published.sources || {};
   const results = new Map(); const calendar = []; const indexEntries=[];
   for (const [i, url] of INDEXES.entries()) {
@@ -141,6 +147,20 @@ export async function observe(published = {}, {fetcher = fetch, now = new Date()
       calendar.push(...relevant.map(item => [url,...item]));
       // Calendar tables also list online windows without a per-window PDF link.
       if (content) calendar.push([url,text(content[1])]);
+    }
+  }
+  const platform = new Map();
+  const platformErrors=[];
+  if (eauction !== undefined) {
+    const checked=Date.parse(eauction?.checked_at);
+    if (!Number.isFinite(checked) || checked<now.getTime()-8*3600000 || checked>now.getTime()+600000 || !Array.isArray(eauction?.sources) || !eauction.sources.length) {
+      platformErrors.push({url:HISTORY_URL,error:'eauction_observation_overdue'});
+    } else for (const item of eauction.sources) {
+      const url=resultReference(item.url);
+      if (!url || item.kind!=='eauction' || item.date!==dateFromUrl(url) || !/^[a-f0-9]{64}$/.test(item.sha256) || !/^[a-f0-9]{64}$/.test(item.content_sha256 || '')) {
+        platformErrors.push({url:HISTORY_URL,error:'eauction_observation_invalid'});break;
+      }
+      platform.set(url,item);results.set(url,item);indexEntries.push([url,`${item.date} - ${item.end_date}`]);
     }
   }
   const indexUrls = [...results.keys()].sort();
@@ -177,6 +197,18 @@ export async function observe(published = {}, {fetcher = fetch, now = new Date()
   const updates = [], observedHashes={},observations=[],retiredSources=[];
   for (const item of selected) {
     try {
+      // These bytes were fetched by the trusted collection job using curl's
+      // normal public queue session. Never reinterpret the history page as PDF.
+      if (resultReference(item.url)) {
+        const current=platform.get(item.url);
+        if (!current) continue; // Older rounds leave the rolling three-round list.
+        const sha256=known[item.url]?.content_sha256===current.content_sha256 ? known[item.url].sha256 : current.sha256;
+        observedHashes[item.url]=sha256;
+        const observation={...item,sha256,content_sha256:current.content_sha256,baseline_sha256:known[item.url]?.sha256 || null,observed_at:eauction.checked_at};
+        observations.push(observation);
+        if (sha256!==known[item.url]?.sha256) updates.push(observation);
+        continue;
+      }
       const response = await sourceFetch(item.url,fetcher);
       // Published inputs outlive TD's result links. Preserve their parsed data
       // when TD removes an unlinked PDF; a currently linked result must stay live.
@@ -201,5 +233,5 @@ export async function observe(published = {}, {fetcher = fetch, now = new Date()
   const indexesChanged = JSON.stringify(indexUrls) !== JSON.stringify(published.index_urls || []) || JSON.stringify(indexEntries) !== JSON.stringify(published.index_entries || []);
   const calendarDigest = await digest(JSON.stringify({links:calendar.sort((a,b)=>JSON.stringify(a).localeCompare(JSON.stringify(b))),month:new Date(now.getTime()+8*3600000).toISOString().slice(0,7)}));
   const auctionChanged = !published.sources || indexesChanged || updates.length > 0;
-  return {index_urls:indexUrls,index_entries:indexEntries,updates,observed_hashes:observedHashes,observations,retired_sources:retiredSources,source_errors:[...errors.values()],calendar_digest:calendarDigest,auction_changed:auctionChanged,calendar_changed:calendarDigest !== published.calendar_digest,digest:await digest(JSON.stringify({indexEntries,updates,calendarDigest})),checked_at:now.toISOString(),sources_observed:selected.length};
+  return {index_urls:indexUrls,index_entries:indexEntries,updates,observed_hashes:observedHashes,observations,retired_sources:retiredSources,source_errors:[...errors.values(),...platformErrors],calendar_digest:calendarDigest,auction_changed:auctionChanged,calendar_changed:calendarDigest !== published.calendar_digest,digest:await digest(JSON.stringify({indexEntries,updates,calendarDigest})),checked_at:now.toISOString(),sources_observed:selected.length};
 }

@@ -247,7 +247,7 @@ Network fixture reported HTTP 503
         self.assertIn("npm run cf:deploy:official", workflow)
         self.assertIn("node scripts/refresh_control.mjs restore-market", workflow)
         self.assertNotIn("python scripts/scrape_28car_market.py", workflow)
-        evidence = workflow.index("name: Inspect current observer after a source failure")
+        evidence = workflow.index("name: Inspect current observer and E-Auction coverage")
         classify = workflow.index("name: Classify repair plan")
         alert = workflow.index("name: Open human repair issue")
         self.assertLess(evidence, classify)

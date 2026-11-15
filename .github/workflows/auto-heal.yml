@@ -99,19 +99,18 @@ jobs:
           echo "freshness_status=${freshness_status}" >> logs/autoheal/evidence.env
           cat logs/autoheal/freshness.json
 
-      - name: Inspect current observer after a source failure
+      - name: Inspect current observer and E-Auction coverage
         id: source_recovery
-        if: ${{ github.event_name == 'workflow_run' }}
         continue-on-error: true
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           REFRESH_CONTROL_TOKEN: ${{ secrets.REFRESH_CONTROL_TOKEN }}
         run: |
-          if ! grep -q 'SOURCE_OBSERVATION_UNAVAILABLE' logs/autoheal/failed.log; then
-            exit 0
+          if ! node scripts/deploy_refresh_worker.mjs --ensure-current \
+            || ! node scripts/refresh_control.mjs status > logs/autoheal/control-status.json; then
+            echo "SOURCE_OBSERVATION_UNAVAILABLE: independent source-coverage audit could not verify the observer." >> logs/autoheal/failed.log
+            exit 1
           fi
-          node scripts/deploy_refresh_worker.mjs --ensure-current
-          node scripts/refresh_control.mjs status > logs/autoheal/control-status.json
           echo "verified=true" >> "$GITHUB_OUTPUT"
 
       - name: Classify repair plan

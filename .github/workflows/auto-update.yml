@@ -78,6 +78,23 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: node scripts/deploy_refresh_worker.mjs --ensure-current
 
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Install bounded E-Auction PDF reader
+        if: inputs.scope != 'market'
+        run: python -m pip install pypdfium2==5.15.2
+
+      - name: Check published E-Auction results before planning
+        if: inputs.scope != 'market'
+        env:
+          REFRESH_CONTROL_TOKEN: ${{ secrets.REFRESH_CONTROL_TOKEN }}
+        run: node scripts/eauction_source.mjs observe
+
       - name: Plan refresh before installing dependencies
         id: plan
         env:
@@ -89,15 +106,6 @@ jobs:
         run: |
           test "$GITHUB_REF" = refs/heads/main
           node scripts/refresh_control.mjs plan
-
-      - name: Set up Python
-        if: steps.plan.outputs.run == 'true'
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.12"
-          cache: pip
-          cache-dependency-path: requirements.txt
-
 
       - name: Install Python dependencies
         if: steps.plan.outputs.run == 'true'

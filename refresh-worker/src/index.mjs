@@ -1,3 +1,4 @@
+import {resultReference} from './eauction.mjs';
 import {timingSafeEqual} from 'node:crypto';
 import {observe,boundedRead,officialUrl,digest} from './probe.mjs';
 
@@ -14,11 +15,17 @@ async function stored(env,key) { const object = await env.STORE.get(key); return
 async function body(request,limit=2*1024*1024) { return JSON.parse(new TextDecoder().decode(await boundedRead(request,limit))); }
 function scopeFor(probe) { return probe.auction_changed ? 'official' : probe.calendar_changed || probe.events_expired ? 'events' : 'check'; }
 const observationFresh = (record,revision) => record?.observer_source_revision === SOURCE_REVISION && record?.published_revision === revision && Date.parse(record.checked_at) >= Date.now()-90*60*1000 && Date.parse(record.checked_at) <= Date.now()+600000;
-const sourceRevision = published => digest(JSON.stringify({sources:published.sources && Object.fromEntries(Object.entries(published.sources).map(([url,item])=>[url,{kind:item.kind,date:item.date,sha256:item.sha256,consumers:item.consumers}])),index_urls:published.index_urls,index_entries:published.index_entries}));
+const sourceRevision = published => digest(JSON.stringify({sources:published.sources && Object.fromEntries(Object.entries(published.sources).map(([url,item])=>[url,{kind:item.kind,date:item.date,sha256:item.sha256,consumers:item.consumers,content_sha256:item.content_sha256}])),index_urls:published.index_urls,index_entries:published.index_entries}));
 export function combineObservation(probe,previous,published,revision) {
   const updates=new Map((previous?.updates || []).filter(item=>item.sha256!==published.sources?.[item.url]?.sha256 && (!Object.hasOwn(item,'baseline_sha256') || item.baseline_sha256===(published.sources?.[item.url]?.sha256 || null))).map(item=>[item.url,item]));
   for (const [url,hash] of Object.entries(probe.observed_hashes || {})) if (hash===published.sources?.[url]?.sha256) updates.delete(url);
   for (const item of probe.updates) if (item.sha256 !== published.sources?.[item.url]?.sha256) updates.set(item.url,item);
+  // D1 pending rows intentionally store byte hashes only. Keep the matching
+  // current collection's content fingerprint on the publication receipt.
+  for (const item of probe.observations || []) {
+    const pending=updates.get(item.url);
+    if (pending && pending.sha256===item.sha256 && item.content_sha256) updates.set(item.url,{...pending,content_sha256:item.content_sha256});
+  }
   const indexesChanged=probe.index_urls ? JSON.stringify(probe.index_urls)!==JSON.stringify(published.index_urls || []) || JSON.stringify(probe.index_entries)!==JSON.stringify(published.index_entries || []) : probe.auction_changed;
   return {...probe,updates:[...updates.values()],auction_changed:!published.sources || indexesChanged || updates.size>0,calendar_changed:probe.calendar_digest!==published.calendar_digest,published_revision:revision};
 }
@@ -42,7 +49,7 @@ export async function recordObservation(env,options={}) {
   const revision=await sourceRevision(published);
   const previous=await stored(env,'observed.json');
   const pending=await pendingSources(env,previous,published);
-  const probe=await observe(published,{cursor:control.cursor,priority:[...pending,...(previous?.source_errors || [])],...options});
+  const probe=await observe(published,{cursor:control.cursor,priority:[...pending,...(previous?.source_errors || [])],eauction:env.EAUCTION_ENABLED==='true' ? await stored(env,'eauction-observed.json') : undefined,...options});
   const current=await stored(env,'published.json') || {};
   await persistObservations(env,probe,current);
   // Retain corrections found by earlier archive rotations until a real publication acknowledges them.
@@ -61,7 +68,7 @@ export async function claim(env,{scope='check',force=false,refresh=false}={}) {
   const pending=scope==='market' ? [] : await pendingSources(env,cached,published);
   const revision=await sourceRevision(published);
   const fresh=scope!=='market' && !(scope==='check' && !force && !refresh && observationFresh(cached,revision));
-  const observed=scope==='market' ? {updates:[],index_urls:published.index_urls || [],calendar_digest:published.calendar_digest,checked_at:new Date().toISOString(),source_errors:[]} : fresh ? await observe(published,{cursor:control.cursor,priority:[...pending,...(cached?.source_errors || [])]}) : cached;
+  const observed=scope==='market' ? {updates:[],index_urls:published.index_urls || [],calendar_digest:published.calendar_digest,checked_at:new Date().toISOString(),source_errors:[]} : fresh ? await observe(published,{cursor:control.cursor,priority:[...pending,...(cached?.source_errors || [])],eauction:env.EAUCTION_ENABLED==='true' ? await stored(env,'eauction-observed.json') : undefined}) : cached;
   if (fresh) await persistObservations(env,observed,published);
   const probe={...(scope==='market' ? observed : combineObservation({...observed,updates:[],observed_hashes:{}},{updates:await pendingSources(env)},published,revision)),observer_source_revision:SOURCE_REVISION};
   if (fresh) await env.STORE.put('observed.json',JSON.stringify(probe));
@@ -107,7 +114,7 @@ async function acknowledge(env,payload) {
   if (probe.scope === 'official') {
     if (!payload.sources || !Object.keys(payload.sources).length) return json({error:'source_catalog_required'},400);
     for (const [url,item] of Object.entries(payload.sources)) if (!officialUrl(url) || !/^[a-f0-9]{64}$/.test(item.sha256 || '') || !['pvrm','physical','eauction'].includes(item.kind) || (item.consumers && (!Array.isArray(item.consumers) || item.consumers.some(kind=>!['pvrm','physical','eauction'].includes(kind))))) return json({error:'invalid_source_catalog'},400);
-    for (const update of probe.updates) if (payload.sources[update.url]?.sha256 !== update.sha256) return json({error:'source_hash_mismatch'},409);
+    for (const update of probe.updates) if (payload.sources[update.url]?.sha256 !== update.sha256 || (resultReference(update.url) && payload.sources[update.url]?.content_sha256 !== update.content_sha256)) return json({error:'source_hash_mismatch'},409);
     for (const update of probe.updates) {
       const item=payload.sources[update.url],kinds=new Set([update.kind,...(item.consumers || [])]);
       if ([...kinds].some(kind=>!Number.isSafeInteger(item.parsed?.[kind]) || item.parsed[kind]<=0)) return json({error:'source_parse_unverified'},409);
@@ -138,9 +145,22 @@ export default {
     if (!await authorized(request,env)) return json({error:'not_found'},404);
     try {
       if (url.pathname === '/v1/status' && request.method === 'GET') {
-        const control=await state(env),observed=await stored(env,'observed.json');
+        const control=await state(env),observed=await stored(env,'observed.json'),eauction=await stored(env,'eauction-observed.json');
         return json({...control,pending_source_count:(await env.DB.prepare('SELECT COUNT(*) AS count FROM refresh_pending_sources').first()).count,
-          source_revision:SOURCE_REVISION,source_observation:observed ? {source_revision:observed.observer_source_revision,checked_at:observed.checked_at,source_error_count:observed.source_errors?.length ?? null} : null});
+          source_revision:SOURCE_REVISION,eauction_observation:{enabled:env.EAUCTION_ENABLED==='true',checked_at:eauction?.checked_at || null,sources_observed:eauction?.sources?.length || 0},source_observation:observed ? {source_revision:observed.observer_source_revision,checked_at:observed.checked_at,source_error_count:observed.source_errors?.length ?? null} : null});
+      }
+      if (url.pathname === '/v1/eauction' && request.method === 'PUT') {
+        const payload=await body(request,32768), checked=Date.parse(payload.checked_at);
+        if (!Number.isFinite(checked) || checked<Date.now()-3600000 || checked>Date.now()+600000 || !Array.isArray(payload.sources) || !payload.sources.length || payload.sources.length>12
+          || new Set(payload.sources.map(item=>item.url)).size!==payload.sources.length
+          || payload.sources.some(item=>!resultReference(item.url) || item.kind!=='eauction' || item.date!==new URL(item.url).searchParams.get('date') || !/^[a-f0-9]{64}$/.test(item.sha256 || '') || !/^[a-f0-9]{64}$/.test(item.content_sha256 || ''))) return json({error:'invalid_eauction_observation'},400);
+        const previous=await stored(env,'eauction-observed.json');
+        if (Date.parse(previous?.checked_at)>checked) return json({error:'stale_eauction_observation'},409);
+        await env.STORE.put('eauction-observed.json',JSON.stringify(payload));
+        // Force collection to incorporate this receipt even when PDF observation
+        // is cached. Old records must not overwrite a newer hourly observation.
+        await env.STORE.delete('observed.json');
+        return json({stored:true,sources_observed:payload.sources.length});
       }
       if (url.pathname === '/v1/claim' && request.method === 'POST') return json(await claim(env,await body(request,8192)));
       if (url.pathname === '/v1/probe' && request.method === 'GET') {

@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 from typing import Optional
+from trusted_sources import eauction_reference, eauction_pdf_url
 from urllib.parse import unquote
 
 import pdfplumber
@@ -673,6 +674,14 @@ def build_dataset(base_dir: Path, kind: str) -> int:
         if kind == "physical":
             force_lny = bool(pvrm_url_to_is_lny.get(pdf_url)) if pdf_url else False
             rows = parse_physical_rows(p, pdf_url, force_lny=force_lny)
+        elif eauction_reference(pdf_url):
+            # Full recovery must use the same verified platform parser as the
+            # incremental path, retaining dates, proceeds and allocation markers.
+            from build_tvrm_dataset import AuctionPdf, parse_tvrm_document
+            if eauction_reference(pdf_url)['date'] != date_iso:
+                raise ValueError('SOURCE_PARSE_UNVERIFIED: E-Auction inventory date differs from its official reference')
+            source=AuctionPdf('eauction',date_iso,date_label or '',pdf_url)
+            rows=parse_tvrm_document('eauction',p,source,None,None)['rows']
         else:
             rows = parse_eauction_rows(p)
 
@@ -713,11 +722,12 @@ def build_dataset(base_dir: Path, kind: str) -> int:
         for r in row_items:
             all_rows.append(
                 {
+                    **(r if eauction_reference(canonical_pdf) else {}),
                     "auction_date": date_iso,
                     "single_line": r["single_line"],
                     "double_line": None,
                     "amount_hkd": r["amount_hkd"],
-                    "pdf_url": canonical_pdf,
+                    "pdf_url": eauction_pdf_url(canonical_pdf) or canonical_pdf,
                 }
             )
 

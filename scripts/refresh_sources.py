@@ -12,6 +12,8 @@ from urllib.parse import urlsplit
 import build_dataset
 import build_tvrm_dataset
 from pdf_parse_cache import parser_version
+from trusted_sources import eauction_reference
+from eauction_pdf import content_digest
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -39,7 +41,7 @@ def pdf_inventory(root: Path = ROOT) -> dict[str, dict]:
                             names[url] = name
         metadata_by_url = {item.get('pdf_url'):item for item in metadata}
         for url,name in names.items():
-            if urlsplit(url).hostname != 'www.td.gov.hk' or not url.startswith('https://'):
+            if (urlsplit(url).hostname != 'www.td.gov.hk' or not url.startswith('https://')) and not eauction_reference(url):
                 continue
             item = metadata_by_url.get(url,{})
             path = base / 'pdfs' / name
@@ -60,7 +62,8 @@ def apply_updates(probe: dict, root: Path = ROOT) -> int:
     for item in probe.get('updates', []):
         url = item['url']
         parts = urlsplit(url)
-        if parts.scheme != 'https' or parts.hostname != 'www.td.gov.hk' or parts.port or parts.username or parts.password or parts.query or parts.fragment or not parts.path.startswith('/filemanager/'):
+        reference=eauction_reference(url)
+        if not reference and (parts.scheme != 'https' or parts.hostname != 'www.td.gov.hk' or parts.port or parts.username or parts.password or parts.query or parts.fragment or not parts.path.startswith('/filemanager/')):
             raise ValueError('Untrusted PDF update URL')
         kind = item['kind']
         if url in inventory:
@@ -73,7 +76,12 @@ def apply_updates(probe: dict, root: Path = ROOT) -> int:
             paths = [root / f'data/tvrm_{"physical" if kind == "physical" else "eauction"}/pdfs' / name]
         else:
             raise ValueError('Invalid PDF update kind')
-        raw = subprocess.check_output(['curl','--fail','--silent','--show-error','--max-time','60','--proto','=https',url],timeout=65)
+        if reference:
+            if kind!='eauction' or item['date']!=reference['date']:
+                raise ValueError('Untrusted E-Auction round identity')
+            raw=(root / '.tmp/eauction-pdfs' / f"{reference['id']}.pdf").read_bytes()
+        else:
+            raw = subprocess.check_output(['curl','--fail','--silent','--show-error','--max-time','60','--proto','=https',url],timeout=65)
         if not raw.startswith(b'%PDF-') or hashlib.sha256(raw).hexdigest() != item['sha256']:
             raise ValueError('Observed PDF hash no longer matches source; retain previous input')
         for path in paths:
@@ -81,6 +89,10 @@ def apply_updates(probe: dict, root: Path = ROOT) -> int:
             temporary = path.with_suffix('.download')
             temporary.write_bytes(raw)
             temporary.replace(path)
+        if reference:
+            inventory_file=root / 'data/tvrm_eauction/urls.all.txt'
+            urls=inventory_file.read_text().splitlines() if inventory_file.exists() else []
+            if url not in urls: inventory_file.write_text('\n'.join([*urls,url])+'\n')
         updated += 1
     return updated
 
@@ -92,6 +104,7 @@ def catalog(root: Path = ROOT) -> dict:
         if len(hashes) != 1:
             raise ValueError(f'Conflicting parsed PDF copies for {url}')
         output[url] = {'kind':item['kind'],'date':item['date'],'sha256':hashes.pop(),'consumers':sorted(item['consumers'])}
+        if eauction_reference(url): output[url]['content_sha256']=content_digest(item['paths'][0])
     return output
 
 
