@@ -20,6 +20,12 @@ export function combineObservation(probe,previous,published,revision) {
   const updates=new Map((previous?.updates || []).filter(item=>item.sha256!==published.sources?.[item.url]?.sha256 && (!Object.hasOwn(item,'baseline_sha256') || item.baseline_sha256===(published.sources?.[item.url]?.sha256 || null))).map(item=>[item.url,item]));
   for (const [url,hash] of Object.entries(probe.observed_hashes || {})) if (hash===published.sources?.[url]?.sha256) updates.delete(url);
   for (const item of probe.updates) if (item.sha256 !== published.sources?.[item.url]?.sha256) updates.set(item.url,item);
+  // D1 pending rows intentionally store byte hashes only. Keep the matching
+  // current collection's content fingerprint on the publication receipt.
+  for (const item of probe.observations || []) {
+    const pending=updates.get(item.url);
+    if (pending && pending.sha256===item.sha256 && item.content_sha256) updates.set(item.url,{...pending,content_sha256:item.content_sha256});
+  }
   const indexesChanged=probe.index_urls ? JSON.stringify(probe.index_urls)!==JSON.stringify(published.index_urls || []) || JSON.stringify(probe.index_entries)!==JSON.stringify(published.index_entries || []) : probe.auction_changed;
   return {...probe,updates:[...updates.values()],auction_changed:!published.sources || indexesChanged || updates.size>0,calendar_changed:probe.calendar_digest!==published.calendar_digest,published_revision:revision};
 }

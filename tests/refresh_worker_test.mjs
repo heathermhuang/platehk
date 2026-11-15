@@ -437,6 +437,11 @@ test('configured E-Auction coverage requires a fresh authenticated collection re
     assert.equal((await put({checked_at:new Date().toISOString(),sources:[item]})).status,200);
     const ready=await claim(env);assert.equal(ready.run,true);assert.equal(ready.scope,'official');
     const probe=await (await STORE.get(`probes/${ready.probe_id}.json`)).json();
-    assert(probe.updates.some(source=>source.url===item.url && source.sha256===item.sha256));
+    assert(probe.updates.some(source=>source.url===item.url && source.sha256===item.sha256 && source.content_sha256===item.content_sha256));
+    const sources={...published.sources,[item.url]:{...item,consumers:['eauction'],parsed:{eauction:220}}};
+    const ack=await worker.fetch(new Request('https://refresh.test/v1/ack',{method:'POST',headers:{Authorization:'Bearer fixture-control'},body:JSON.stringify({probe_id:ready.probe_id,run_id:'123',commit_sha:'a'.repeat(40),sources})}),env);
+    assert.equal(ack.status,200);assert.deepEqual(await ack.json(),{published:true});
+    const followup=await claim(env);assert.equal(followup.run,false);assert.equal(followup.outcome,'unchanged');
+
   } finally {globalThis.fetch=originalFetch;await mf.dispose();}
 });
