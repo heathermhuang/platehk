@@ -171,7 +171,9 @@ test('private control and snapshot routes require authentication',async()=>{
     assert.equal(response.status,404);
   }
   const health=await worker.fetch(new Request('https://test.invalid/health'),{DISPATCH_ENABLED:'false'});
-  assert.deepEqual(await health.json(),{ok:true,service:'platehk-refresh',observer_enabled:false,dispatch_enabled:false,source_revision:'unversioned'});
+  assert.deepEqual(await health.json(),{ok:true,service:'platehk-refresh',observer_enabled:false,eauction_enabled:false,dispatch_enabled:false,source_revision:'unversioned'});
+  const enabled=await worker.fetch(new Request('https://test.invalid/health'),{EAUCTION_ENABLED:'true'});
+  assert.equal((await enabled.json()).eauction_enabled,true);
 });
 
 test('unrelated publications retain corrections; acknowledgement, supersession and reversions clear them',()=>{

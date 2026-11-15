@@ -141,7 +141,7 @@ function validMarket(payload) {
 export default {
   async fetch(request,env) {
     const url = new URL(request.url);
-    if (url.pathname === '/health' && request.method === 'GET') return json({ok:true,service:'platehk-refresh',observer_enabled:env.OBSERVER_ENABLED === 'true',dispatch_enabled:env.DISPATCH_ENABLED === 'true',source_revision:SOURCE_REVISION});
+    if (url.pathname === '/health' && request.method === 'GET') return json({ok:true,service:'platehk-refresh',observer_enabled:env.OBSERVER_ENABLED === 'true',eauction_enabled:env.EAUCTION_ENABLED === 'true',dispatch_enabled:env.DISPATCH_ENABLED === 'true',source_revision:SOURCE_REVISION});
     if (!await authorized(request,env)) return json({error:'not_found'},404);
     try {
       if (url.pathname === '/v1/status' && request.method === 'GET') {

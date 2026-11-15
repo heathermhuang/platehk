@@ -283,3 +283,14 @@ The result metadata retains the official reference used by the import catalog.
 This identifies the indexed source, not a claim that every historical round has
 been independently verified. The website displays the latest indexed auction
 date separately from its index-build date.
+
+
+The independent audit invokes `auto_heal_update.py classify` with
+`--require-source-coverage`. A production-current result requires a verified
+observer, enabled E-Auction collection, a current-version official-source
+observation within 90 minutes with exactly zero source errors, a complete
+E-Auction receipt within eight hours, and verified pending-publication state.
+Missing, disabled, stale, malformed or failed evidence produces an operator hold;
+matching generated JSON alone cannot clear it. The observer deployment health
+check also requires `eauction_enabled=true`, restoring the checked-in collector
+configuration when a matching code fingerprint has a disabled binding.
