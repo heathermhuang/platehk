@@ -68,3 +68,22 @@ class EauctionCoverageAlertTests(unittest.TestCase):
             with patch.object(publish,'ROOT',root),patch.object(publish,'TARGET',root/'public'):
                 publish.copy_eauction_source_pdfs()
             self.assertEqual((root/'public/auction-sources/eauction/78.pdf').read_bytes(),raw)
+
+
+class EauctionFullRecoveryTests(unittest.TestCase):
+    def test_full_recovery_keeps_the_verified_platform_source_and_fee_marker(self):
+        import shutil
+        import parse_tvrm_pdfs as full
+        original=ROOT/'data/tvrm_eauction/pdfs'/builder.local_pdf_name('2026-11-05',URL)
+        with tempfile.TemporaryDirectory() as directory:
+            base=Path(directory);(base/'pdfs').mkdir()
+            shutil.copyfile(original,base/'pdfs'/original.name)
+            (base/'sources.tsv').write_text(original.name+'\t'+URL+'\n')
+            self.assertEqual(full.build_dataset(base,'eauction'),0)
+            rows=json.loads((base/'results.slim.json').read_text())
+            self.assertEqual(len(rows),220)
+            self.assertEqual(sum(row['amount_hkd'] or 0 for row in rows),1566000)
+            fee=next(row for row in rows if row['single_line']=='KP 2734')
+            self.assertEqual(fee['amount_raw'],'@1,000')
+            self.assertEqual(fee['source_url'],URL)
+            self.assertEqual(fee['pdf_url'],'https://plate.hk/auction-sources/eauction/78.pdf')
