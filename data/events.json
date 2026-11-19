@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-11-16T07:06:25+00:00",
+  "generated_at": "2026-11-19T06:51:12+00:00",
   "timezone": "Asia/Hong_Kong",
   "source_urls": [
     "https://www.td.gov.hk/en/public_services/vehicle_registration_mark_n/ca/index.html",
@@ -41,6 +41,44 @@
       "source_text_en": "3 December noon to 7 December noon 2026",
       "meta": {
         "source": "td_coming_auction"
+      }
+    },
+    {
+      "id": "pvrm_physical-2026-12-05-morning",
+      "type": "pvrm_physical",
+      "start_at": "2026-12-05T00:00:00+08:00",
+      "end_at": "2026-12-05T12:59:59+08:00",
+      "date_label_en": "5 December 2026 (Sat) Auction List (morning)",
+      "date_label_zh": "2026年12月5日(星期六) ⾞輛登記號碼拍賣名單 (上午)",
+      "source_page_url_en": "https://www.td.gov.hk/en/public_services/vehicle_registration_mark_n/ca/index.html",
+      "source_page_url_zh": "https://www.td.gov.hk/tc/public_services/vehicle_registration_mark_n/ca/index.html",
+      "source_url_en": "https://www.td.gov.hk/filemanager/en/content_5419/PVRM%20Auction%20Handout%20for%205.12.2026.Eng.pdf",
+      "source_url_zh": "https://www.td.gov.hk/filemanager/tc/content_5419/PVRM%20Auction%20Handout%20for%205.12.2026.Chin.pdf",
+      "action_url_en": null,
+      "action_url_zh": null,
+      "source_text_en": "5 December 2026 (Sat) Auction List (morning)",
+      "meta": {
+        "source": "td_coming_auction",
+        "session": "morning"
+      }
+    },
+    {
+      "id": "tvrm_physical-2026-12-05-afternoon",
+      "type": "tvrm_physical",
+      "start_at": "2026-12-05T12:00:00+08:00",
+      "end_at": "2026-12-05T23:59:59+08:00",
+      "date_label_en": "5 December 2026 (Sat) Auction List (afternoon)",
+      "date_label_zh": "2026年12月5日(星期六) ⾞輛登記號碼拍賣名單 (下午)",
+      "source_page_url_en": "https://www.td.gov.hk/en/public_services/vehicle_registration_mark_n/ca/index.html",
+      "source_page_url_zh": "https://www.td.gov.hk/tc/public_services/vehicle_registration_mark_n/ca/index.html",
+      "source_url_en": "https://www.td.gov.hk/filemanager/en/content_5419/TVRM%20Auction%20Handout%20for%205.12.2026.Eng.pdf",
+      "source_url_zh": "https://www.td.gov.hk/filemanager/tc/content_5419/TVRM%20Auction%20Handout%20for%205.12.2026.Chin.pdf",
+      "action_url_en": null,
+      "action_url_zh": null,
+      "source_text_en": "5 December 2026 (Sat) Auction List (afternoon)",
+      "meta": {
+        "source": "td_coming_auction",
+        "session": "afternoon"
       }
     },
     {
