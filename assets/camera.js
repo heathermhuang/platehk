@@ -229,6 +229,7 @@
       const resultsHintEl = document.getElementById("resultsHint");
       const videoEl = document.getElementById("video");
       const cameraEmptyEl = document.getElementById("cameraEmpty");
+      const cameraShellEl = document.getElementById("cameraShell");
       const canvasEl = document.getElementById("ocrCanvas");
       const photoInputEl = document.getElementById("photoInput");
       const choosePhotoEl = document.getElementById("choosePhoto");
@@ -511,6 +512,7 @@
 
       function updateSourceUi() {
         const busy = scanRunning || cameraStarting || photoLoading;
+        if (cameraShellEl) cameraShellEl.hidden = !(cameraStarting || photoLoading || mediaStream || photoImage);
         startBtnEl.disabled = busy || Boolean(mediaStream);
         stopBtnEl.disabled = busy || !mediaStream;
         choosePhotoEl.disabled = busy;

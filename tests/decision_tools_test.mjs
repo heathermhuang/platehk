@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import { readFileSync } from 'node:fs';
-import { normalize, validQuery, parseFilters, matchesFilters, comparableRows, traditionalPatternComparableCohort, calendarEvent } from '../assets/decision-core.mjs';
+import { normalize, validQuery, parseFilters, matchesFilters, comparableRows, traditionalPatternComparableCohort, calendarEvent, calendarTiming } from '../assets/decision-core.mjs';
 import { normalizeSearchQuery, normalizeQuery } from '../cloudflare-worker/src/lib.mjs';
 import worker from '../cloudflare-worker/src/index.mjs';
 globalThis.caches = { default: { async match(){return undefined;}, async put(){} } };
@@ -90,6 +90,22 @@ test('calendar downloads use UTC, stable UID, escaped text, UTF-8 folding and on
  assert.ok(ics.split('\r\n').every(line=>Buffer.byteLength(line,'utf8')<=75));assert.ok(!ics.includes('\nInjected'));
  assert.throws(()=>calendarEvent({...event,end_at:event.start_at},'Auction','https://www.td.gov.hk/'));
 });
+test('calendar alarms respect the remaining time and expected windows', () => {
+ const event = {id:'ordinary-auction', type:'tvrm_eauction', start_at:'2026-11-19T12:00:00+08:00', end_at:'2026-11-23T12:00:00+08:00'};
+ const active = new Date('2026-11-22T07:37:00Z');
+ const late = new Date('2026-11-23T03:01:00Z');
+ assert.deepEqual(calendarTiming(event, active), {state:'open', reminderAt:Date.parse('2026-11-23T03:00:00Z')});
+ assert.match(calendarEvent(event, 'Auction', 'https://www.td.gov.hk/', active), /TRIGGER;VALUE=DATE-TIME:20261123T030000Z/);
+ assert.doesNotMatch(calendarEvent(event, 'Auction', 'https://www.td.gov.hk/', late), /VALARM/);
+ assert.deepEqual(calendarTiming(event, new Date(event.end_at)), {state:'ended'});
+ const physical = {...event, type:'tvrm_physical'};
+ assert.deepEqual(calendarTiming(physical, active), {state:'scheduled', reminderAt:null});
+ assert.doesNotMatch(calendarEvent(physical, 'Physical auction', 'https://www.td.gov.hk/', active), /VALARM/);
+ const expected = {...event, meta:{source:'computed_recurring_window_from_td_main_page'}};
+ assert.deepEqual(calendarTiming(expected, active), {state:'expected'});
+ assert.doesNotMatch(calendarEvent(expected, 'Application window', 'https://www.td.gov.hk/', active), /VALARM/);
+});
+
 test('analytics honors non-production/DNT and only emits allowlisted parameters',()=>{
  const code=readFileSync(new URL('../assets/analytics.js',import.meta.url),'utf8');
  const run=(hostname,dnt)=>{const context={location:{hostname,origin:`https://${hostname}`,pathname:'/'},navigator:{doNotTrack:dnt},localStorage:{getItem:()=>null},document:{referrer:'https://example.test/?private=secret',head:{appendChild(){}},createElement:()=>({}),addEventListener(){}},URL,URLSearchParams,Date,Set};context.window=context;vm.runInNewContext(code,context);return context;};

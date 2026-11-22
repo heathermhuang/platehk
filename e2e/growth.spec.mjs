@@ -14,6 +14,10 @@ test('a cached analytics module without the new methods cannot interrupt lookup'
 
 test('homepage keeps lookup focused with verified rounds in their own archive', async ({page}) => {
   await page.goto('/?lang=en');
+  const lookup = page.getByRole('navigation', { name: 'Plate lookup options' });
+  await expect(lookup.getByRole('link', { name: 'Exact history' })).toHaveAttribute('href', '/prices.html?lang=en');
+  await expect(lookup.getByRole('link', { name: 'Browse by budget' })).toHaveAttribute('href', '/discover.html?lang=en');
+  await expect(lookup.getByRole('link', { name: 'Official availability', exact: true })).toBeVisible();
   await page.locator('.site-more > summary').click();
   await expect(page.getByRole('link', {name:'Historical prices', exact:true})).toBeVisible();
   await expect(page.getByRole('link', {name:'Official availability and applications', exact:true})).toBeVisible();

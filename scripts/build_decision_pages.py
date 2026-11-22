@@ -56,20 +56,27 @@ def body_for(page):
  if page=='auctions':
   events=json.loads((ROOT/'data/events.json').read_text()).get('events',[])
   titles={'pvrm_registration':('自訂車牌申請窗口','PVRM application window'),'tvrm_eauction':('拍牌易網上拍賣','Online ordinary-mark auction'),'tvrm_physical':('傳統車牌實體拍賣','Traditional-mark physical auction'),'pvrm_physical':('自訂車牌實體拍賣','Personalized-mark physical auction')}
-  out=bilingual('官方申請、網上及實體拍賣日程。日曆檔案含提前一天的提醒；下載後不會自動更新，請再次核對官方公告。','Official application, online and physical auction dates. Calendar downloads include a one-day reminder; downloaded events do not update automatically. Recheck official notices.')
+  out=bilingual('日程以香港時間顯示。下載的日曆不會自動更新；請核對官方公告。','Dates use Hong Kong time. Downloaded calendars do not update automatically. Recheck the official notice.')
   out+='<section class="decision-event">'+bilingual('已核對的完整拍賣結果','Verified complete auction results','h2')
   out+=bilingual('查閱完整號碼表、拍賣售出、特別費用分配及未售出標示，並核對運輸署手冊。','Read complete mark tables with auction sales, special-fee allocations and unsold labels, checked against Transport Department handouts.')
   out+='<p data-lang-only="zh"><a href="/auction-results/index.html">拍賣結果目錄</a></p><p data-lang-only="en" hidden><a href="/auction-results/en/index.html">Auction results archive</a></p></section>'
   for event in events:
    zh,en=titles.get(event['type'],('官方活動','Official event'))
    url=event.get('action_url_en') or event.get('source_url_en') or ''
-   out+='<section class="decision-event">'+bilingual(zh,en,'h2')+bilingual(html.escape(event.get('date_label_zh','')),html.escape(event.get('date_label_en','')))
-   if event.get('meta',{}).get('source')=='computed_recurring_window_from_td_main_page':out+=bilingual('按一般申請月份整理，並非個別活動開放確認。','Based on the usual application months; not confirmation of an individual opening.')
-   out+=link(url,'官方詳情','Official details')+f' <button type="button" data-calendar="{html.escape(event["id"],quote=True)}">'+bilingual('加入日曆','Add to calendar','span')+'</button></section>'
+   estimated = event.get('meta',{}).get('source') == 'computed_recurring_window_from_td_main_page'
+   start, end, kind = (html.escape(event[key], quote=True) for key in ('start_at', 'end_at', 'type'))
+   out+=f'<section class="decision-event" data-calendar-start="{start}" data-calendar-end="{end}" data-calendar-type="{kind}" data-calendar-estimated="{str(estimated).lower()}">'+bilingual(zh,en,'h2')
+   out+='<p class="calendar-event-state" hidden></p>'+bilingual(html.escape(event.get('date_label_zh','')),html.escape(event.get('date_label_en','')))
+   if estimated:out+=bilingual('按一般申請月份整理，並非個別活動開放確認。','Based on the usual application months; not confirmation of an individual opening.')
+   out+=link(url,'官方詳情','Official details')+f' <button type="button" data-calendar="{html.escape(event["id"],quote=True)}">'+bilingual('加入日曆','Add to calendar','span')+'</button><p class="calendar-reminder decision-note" hidden></p></section>'
   return out+'<p id="calendarStatus" role="status"></p>'+link('/?sort=date_desc','最新拍賣結果','Latest auction results')
  if page=='discover':
-  return r'''<p data-lang-only="zh">先輸入預算或選擇號碼模式，查看歷史公布金額及結果。金額可能包括特別費用或未核實結果；請核對標示。這不是現時估價或可供購買的車牌清單。</p><p data-lang-only="en" hidden>Start with a budget or number pattern to explore published historical amounts and outcomes. Amounts can include special fees or unverified outcomes; check the labels. These are not current valuations or available stock.</p>
-<div class="decision-actions" aria-label="Budget examples"><button type="button" data-budget="5000">HK$5,000</button><button type="button" data-budget="20000">HK$20,000</button><button type="button" data-budget="100000">HK$100,000</button></div>
+  return r'''<p class="decision-note" data-lang-only="zh">按預算查閱歷史拍賣金額及結果。</p><p class="decision-note" data-lang-only="en" hidden>Browse historical auction amounts and outcomes by budget.</p>
+<div class="decision-actions" role="group" aria-label="預算例子" data-label-zh="預算例子" data-label-en="Budget examples"><button type="button" data-budget="5000">HK$5,000</button><button type="button" data-budget="20000">HK$20,000</button><button type="button" data-budget="100000">HK$100,000</button></div>
+<div id="discoveryFeedback" class="discovery-feedback">
+  <p id="discoveryStatus" role="status"></p>
+  <a id="discoveryJump" href="#decisionResults" hidden><span data-lang-only="zh">查看結果</span><span data-lang-only="en" hidden>View results</span></a>
+</div>
 <form id="discoveryFilters"><div class="decision-filters ux-basic-filters">
 <label><span data-lang-only="zh">最高歷史公布金額 HKD</span><span data-lang-only="en" hidden>Maximum published amount HKD</span><input name="max_amount" type="number" min="0" max="1000000000" step="1" inputmode="numeric" placeholder="20000"></label>
 <label><span data-lang-only="zh">數字模式</span><span data-lang-only="en" hidden>Number pattern</span><select name="pattern"><option value="" data-copy-zh="任何模式" data-copy-en="Any pattern">任何模式</option><option value="repeated" data-copy-zh="重複數字（888）" data-copy-en="Repeated digits (888)">重複數字（888）</option><option value="palindrome" data-copy-zh="回文（1221）" data-copy-en="Palindrome (1221)">回文（1221）</option></select></label>
@@ -81,7 +88,10 @@ def body_for(page):
 <label><span data-lang-only="zh">日期由（不含粗略年份）</span><span data-lang-only="en" hidden>Date from (excludes coarse years)</span><input name="from" type="date"></label><label><span data-lang-only="zh">日期至</span><span data-lang-only="en" hidden>Date to</span><input name="to" type="date"></label>
 <label><span data-lang-only="zh">資料集</span><span data-lang-only="en" hidden>Dataset</span><select name="dataset"><option value="all" data-copy-zh="全部資料集" data-copy-en="All datasets">全部資料集</option><option value="pvrm">PVRM</option><option value="tvrm_physical" data-copy-zh="TVRM 實體拍賣" data-copy-en="TVRM physical">TVRM 實體拍賣</option><option value="tvrm_eauction" data-copy-zh="拍牌易" data-copy-en="E-auction">拍牌易</option><option value="tvrm_legacy">1973–2006</option></select></label>
 </div></details><div class="decision-actions"><button type="submit"><span data-lang-only="zh">套用篩選</span><span data-lang-only="en" hidden>Apply filters</span></button><button type="reset"><span data-lang-only="zh">清除篩選</span><span data-lang-only="en" hidden>Reset filters</span></button></div></form>
-<p id="queryHelp" role="status" aria-live="polite"></p><div id="decisionResults" aria-live="polite"></div><div class="decision-actions"><button id="decisionPrev" hidden>上一頁 / Previous</button><button id="decisionNext" hidden>下一頁 / Next</button></div>'''
+<p id="queryHelp"></p>
+<p class="decision-note" data-lang-only="zh">金額可能包括特別費用或未核實結果；請核對標示。歷史金額不代表現時估價或可用狀態。</p>
+<p class="decision-note" data-lang-only="en" hidden>Amounts may include special fees or unverified outcomes. Check the labels. Historical amounts do not establish current value or availability.</p>
+<div id="decisionResults" tabindex="-1"></div><div class="decision-actions"><button id="decisionPrev" hidden>上一頁 / Previous</button><button id="decisionNext" hidden>下一頁 / Next</button></div>'''
  if page=='plate':return query_form()+'<div id="plateHistory" aria-live="polite"></div><div id="plateComparables" aria-live="polite"></div>'
  return bilingual('清單只儲存在這個瀏覽器，最多 50 個車牌。可選最多 4 個作比較。清除瀏覽器資料亦會清除清單。','Your shortlist stays in this browser, with up to 50 plates. Select up to four to compare. Clearing browser data also removes the shortlist.')+'<div id="shortlistItems"></div><button id="compareSelected" type="button" disabled data-copy-zh="比較所選" data-copy-en="Compare selected">比較所選</button><div id="shortlistComparison" aria-live="polite"></div>'
 

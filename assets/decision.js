@@ -1,5 +1,5 @@
 import './auction-outcomes.js';
-import { normalize, validQuery, parseFilters, filterKeys, calendarEvent } from './decision-core.mjs?v=20261114-01';
+import { normalize, validQuery, parseFilters, filterKeys, calendarEvent, calendarTiming } from './decision-core.mjs?v=20261122-01';
 const lang = new URLSearchParams(location.search).get('lang') === 'en' ? 'en' : 'zh';
 const text = (zh,en) => lang === 'en' ? en : zh;
 const track = (name,data) => window.PlateAnalytics?.track(name,data);
@@ -22,9 +22,12 @@ let saved=[];let comparisonVersion=0;
 function readSaved() { try { const value=JSON.parse(localStorage.getItem(storageKey)||'[]');saved=Array.isArray(value)?[...new Set(value.filter(v=>typeof v==='string'&&validQuery(v)).map(normalize))].slice(0,50):[]; }catch{} }
 readSaved();
 function refreshSaveButtons(){ for(const button of document.querySelectorAll('[data-save-plate]')){const has=saved.includes(button.dataset.savePlate);button.textContent=has?text('移除收藏','Remove saved'):text('收藏車牌','Save plate');button.setAttribute('aria-pressed',String(has));} }
+const shortlistButtons = () => [...document.querySelectorAll('#shortlistItems [data-save-plate]')];
+
 function toggleSave(plate) {
   if(!validQuery(plate))return;
   const exists=saved.includes(plate);
+  const focusedIndex = shortlistButtons().indexOf(document.activeElement);
   if(!exists&&saved.length>=50){notice(text('清單最多可儲存 50 個車牌。','Your shortlist can hold 50 plates.'));return;}
   saved=exists?saved.filter(p=>p!==plate):[...saved,plate];
   let persistent=true;try{localStorage.setItem(storageKey,JSON.stringify(saved));}catch{persistent=false;}
@@ -32,8 +35,17 @@ function toggleSave(plate) {
   track(exists?'shortlist_remove':'shortlist_save',{plate});refreshSaveButtons();renderShortlist();comparisonVersion++;document.querySelector('#shortlistComparison')?.replaceChildren();
   if (exists) {
     const undo=make('button',text('復原移除','Undo removal'));undo.type='button';
-    undo.addEventListener('click',()=>{if(!saved.includes(plate))toggleSave(plate);});
+    undo.addEventListener('click', () => {
+      if (saved.includes(plate)) return;
+      toggleSave(plate);
+      shortlistButtons().find(button => button.dataset.savePlate === plate)?.focus();
+    });
     document.querySelector('#decisionNotice')?.append(' ',undo);
+    if (focusedIndex >= 0) {
+      const remaining = shortlistButtons();
+      (remaining[Math.min(focusedIndex, remaining.length - 1)] ||
+        document.querySelector('#shortlistItems a'))?.focus();
+    }
   }
 }
 function saveButton(plate){const b=make('button');b.type='button';b.dataset.savePlate=plate;b.addEventListener('click',()=>toggleSave(plate));return b;}
@@ -67,38 +79,78 @@ for(const form of document.querySelectorAll('[data-query-form]')) {
 }
 let discoveryVersion=0, discoveryController;
 const filtersForm=document.querySelector('#discoveryFilters');
+function discoveryFeedback(message, hasResults = false) {
+ const status = document.querySelector('#discoveryStatus');
+ const jump = document.querySelector('#discoveryJump');
+ if (status) status.textContent = message;
+ if (jump) jump.hidden = !hasResults;
+}
 if(filtersForm) {
+ const examples = document.querySelector('[data-label-en="Budget examples"]');
+ if (examples) examples.setAttribute('aria-label', examples.dataset[lang === 'en' ? 'labelEn' : 'labelZh']);
+ document.querySelector('#discoveryJump')?.addEventListener('click', () => {
+   document.querySelector('#decisionResults')?.focus({ preventScroll: true });
+ });
  const params=new URLSearchParams(location.search);
  document.querySelector('#decisionQuery').value=params.get('q')||'';
  for(const key of [...filterKeys,'dataset']){const control=filtersForm.elements.namedItem(key);if(control&&params.has(key))control.value=params.get(key);}
  filtersForm.addEventListener('submit',event=>{event.preventDefault();loadDiscovery(1);});
- filtersForm.addEventListener('reset',()=>{discoveryController?.abort();discoveryVersion++;document.querySelector('#decisionResults').replaceChildren();document.querySelector('#queryHelp').textContent='';document.querySelector('#decisionPrev').hidden=document.querySelector('#decisionNext').hidden=true;history.replaceState({},'',`?lang=${lang}`);});
+ filtersForm.addEventListener('reset',()=>{discoveryController?.abort();discoveryVersion++;document.querySelector('#decisionResults').replaceChildren();document.querySelector('#queryHelp').textContent='';discoveryFeedback('');document.querySelector('#decisionPrev').hidden=document.querySelector('#decisionNext').hidden=true;history.replaceState({},'',`?lang=${lang}`);});
  for(const button of document.querySelectorAll('[data-budget]'))button.addEventListener('click',()=>{filtersForm.elements.namedItem('max_amount').value=button.dataset.budget;loadDiscovery(1);});
  if(params.get('q')||filterKeys.some(key=>params.get(key)))loadDiscovery(Math.max(1,Number(params.get('page'))||1));
 }
 async function loadDiscovery(page=1) {
  const host=document.querySelector('#decisionResults');const q=normalize(document.querySelector('#decisionQuery').value);
  const version=++discoveryVersion;discoveryController?.abort();host.replaceChildren();document.querySelector('#decisionPrev').hidden=document.querySelector('#decisionNext').hidden=true;
- if(q&&!validQuery(q)){document.querySelector('#queryHelp').textContent=text('請核對車牌片段；不接受 Q。','Check the plate fragment; Q is not allowed.');return;}
+ const help = document.querySelector('#queryHelp');
+ help.textContent = '';
+ discoveryFeedback('');
+ if(q&&!validQuery(q)){
+  const message = text('請核對車牌片段；不接受 Q。','Check the plate fragment; Q is not allowed.');
+  help.textContent = message;
+  discoveryFeedback(message);
+  return;
+ }
  const params=new URLSearchParams(new FormData(filtersForm));params.set('q',q);params.set('dataset',params.get('dataset')||'all');params.set('page',String(page));params.set('page_size','24');params.set('sort','date_desc');
- try{parseFilters(params);}catch{host.replaceChildren(make('p',text('請核對價錢、日期、字首及尾數範圍。','Check the price, date, prefix and suffix filters.')));return;}
- if(!q&&!filterKeys.some(key=>params.get(key))){document.querySelector('#queryHelp').textContent=text('輸入預算、選擇模式，或輸入車牌片段。','Set a budget, choose a pattern, or enter a plate fragment.');return;}
- document.querySelector('#queryHelp').textContent='';
+ try{parseFilters(params);}catch{
+  const message=text('請核對價錢、日期、字首及尾數範圍。','Check the price, date, prefix and suffix filters.');
+  host.replaceChildren(make('p',message));
+  discoveryFeedback(message);
+  return;
+ }
+ if(!q&&!filterKeys.some(key=>params.get(key))){
+  const message=text('輸入預算、選擇模式，或輸入車牌片段。','Set a budget, choose a pattern, or enter a plate fragment.');
+  help.textContent = message;
+  discoveryFeedback(message);
+  return;
+ }
  discoveryController=new AbortController();const started=performance.now();
  document.querySelector('#decisionPrev').hidden=document.querySelector('#decisionNext').hidden=true;
- host.replaceChildren(make('p',text('搜尋中…','Searching…')));
+ const loading = text('搜尋歷史紀錄中…','Searching historical records…');
+ discoveryFeedback(loading);
+ host.replaceChildren(make('p', loading));
  const state=new URLSearchParams(params);for(const [key,value] of [...state])if(!value)state.delete(key);state.delete('page_size');state.delete('sort');state.set('lang',lang);history.replaceState({},'',`?${state}`);
  try{
   const result=await getJson(`/api/search?${params}`,discoveryController.signal);if(version!==discoveryVersion)return;
   if(!Array.isArray(result.rows)||!Number.isFinite(result.total))throw new Error('invalid_response');
-  host.replaceChildren(make('h2',text(`${result.total.toLocaleString()} 筆歷史紀錄 · 第 ${page} 頁`,`${result.total.toLocaleString()} historical records · page ${page}`)));
+  const count = result.total.toLocaleString(lang === 'en' ? 'en-HK' : 'zh-HK');
+  const maximum = params.get('max_amount');
+  const amount = maximum === '' || maximum === null ? '' : 'HK$' + Number(maximum).toLocaleString('en-HK');
+  const resultLabel = text(`${count} 筆歷史紀錄`, `${count} historical record${result.total === 1 ? '' : 's'}`);
+  discoveryFeedback(amount ? text(`${resultLabel} · 最高 ${amount}`, `${resultLabel} up to ${amount}`) : resultLabel, true);
+  host.replaceChildren(make('h2', text(`${resultLabel} · 第 ${page} 頁`, `${resultLabel} · page ${page}`)));
   const applied=[...params].filter(([key,value])=>value&&(filterKeys.includes(key)||key==='q')).map(([key,value])=>`${text(({q:'片段',max_amount:'最高價',min_amount:'最低價',prefix:'字首',suffix:'尾數',digits:'數字個數',pattern:'模式',from:'日期由',to:'日期至'})[key],({q:'Fragment',max_amount:'Maximum HKD',min_amount:'Minimum HKD',prefix:'Prefix',suffix:'Suffix',digits:'Digits',pattern:'Pattern',from:'From',to:'To'})[key])}: ${value}`);
   host.append(make('p',applied.join(' · '),'decision-note'));
   if(!result.rows.length)host.append(make('p',text('沒有歷史紀錄符合目前篩選。請擴大預算或清除篩選；結果不代表現時可用狀態。','No historical records match these filters. Widen the budget or reset filters; results do not establish current availability.')));
   const list=make('div',null,'decision-results');result.rows.forEach(row=>list.append(rowCard(row)));host.append(list);refreshSaveButtons();
   const prev=document.querySelector('#decisionPrev'),next=document.querySelector('#decisionNext');prev.textContent=text('上一頁','Previous');next.textContent=text('下一頁','Next');prev.hidden=page<=1;next.hidden=page*24>=result.total;prev.onclick=()=>loadDiscovery(page-1);next.onclick=()=>loadDiscovery(page+1);
   track('discovery_search',{plate:q,action:params.get('pattern')||'any_pattern',result_count:result.total,duration_ms:performance.now()-started,dataset:params.get('dataset'),page_number:page});
- }catch(error){if(error.name==='AbortError'||version!==discoveryVersion)return;requestError(host,()=>loadDiscovery(page));track('search_error',{error_kind:'discovery_failed'});}
+ }catch(error){
+  if(error.name==='AbortError'||version!==discoveryVersion)return;
+  discoveryFeedback(text('未能讀取歷史紀錄，請重試。','Could not load historical records. Try again.'), true);
+  requestError(host,()=>loadDiscovery(page));
+  track('search_error',{error_kind:'discovery_failed'});
+ }
 }
 async function loadHistory(plate,host,page=1){
  const started=performance.now();
@@ -178,12 +230,67 @@ document.querySelector('#compareSelected')?.addEventListener('click',async()=>{
  records.forEach((record,i)=>{const tr=make('tr');tr.append(add(make('th'),link(plates[i],detailHref(plates[i]))));const row=record.status==='fulfilled'?record.value.rows?.[0]:null;if(row){for(const value of [priceOf(row),row.year_range||row.auction_date,datasetName(row.dataset_key)])tr.append(make('td',value));const cell=make('td');const source=sourceUrl(row);cell.append(source?link(text('核對來源','Check source'),source):make('span',text('未提供','Unavailable')));tr.append(cell);}else{const cell=make('td',record.status==='rejected'?text('未能讀取，請重試比較。','Could not load; retry comparison.'):text('沒有收錄紀錄，不代表未分配。','No indexed record; this does not establish availability.'));cell.colSpan=4;tr.append(cell);}tbody.append(tr);});table.append(tbody);wrap.append(table);host.append(wrap);refreshSaveButtons();track('compare_view',{result_count:plates.length});
 });
 addEventListener('storage',event=>{if(event.key===storageKey){readSaved();renderShortlist();refreshSaveButtons();}});
-for(const button of document.querySelectorAll('[data-calendar]'))button.addEventListener('click',async()=>{
+function updateCalendarCard(button, event, stamp = new Date()) {
+ const card = button.closest('[data-calendar-start]');
+ const timing = calendarTiming(event, stamp);
+ button.hidden = timing.state === 'ended';
+ if (!card) return timing;
+ const state = card.querySelector('.calendar-event-state');
+ const reminder = card.querySelector('.calendar-reminder');
+ const states = {
+  open: text('現正進行', 'Open now'),
+  upcoming: text('即將舉行', 'Upcoming'),
+  scheduled: text('本日場次', 'Scheduled session'),
+  expected: text('預計窗口', 'Expected window'),
+  ended: text('已結束', 'Ended'),
+ };
+ state.hidden = false;
+ state.textContent = states[timing.state];
+ card.dataset.calendarState = timing.state;
+ if (timing.state === 'open') {
+  const close = new Intl.DateTimeFormat(lang === 'en' ? 'en-HK' : 'zh-HK', {
+   dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Hong_Kong',
+  }).format(new Date(event.end_at));
+  state.textContent += text(` · ${close} 截止（香港時間）`, ` · Closes ${close} HKT`);
+ }
+ const hasClosingReminder = timing.state === 'open' && timing.reminderAt !== null;
+ const label = button.querySelector(`[data-lang-only=${lang}]`);
+ if (label) label.textContent = hasClosingReminder
+  ? text('加入截止提醒', 'Add closing reminder')
+  : text('加入日曆', 'Add to calendar');
+ reminder.hidden = timing.state === 'ended';
+ reminder.textContent = hasClosingReminder
+  ? text('截止前一小時提醒。', 'Reminder one hour before closing.')
+  : timing.reminderAt
+   ? text('日曆所列時間前一天提醒。', 'Reminder one day before the calendar entry.')
+   : text('日曆檔案不含提醒。', 'Calendar file without a reminder.');
+ return timing;
+}
+
+for(const button of document.querySelectorAll('[data-calendar]')) {
+ const card = button.closest('[data-calendar-start]');
+ if (card) updateCalendarCard(button, {
+  start_at: card.dataset.calendarStart,
+  end_at: card.dataset.calendarEnd,
+  type: card.dataset.calendarType,
+  estimated: card.dataset.calendarEstimated === 'true',
+ });
+ button.addEventListener('click',async()=>{
  button.disabled=true;const status=document.querySelector('#calendarStatus');
  try{const data=await getJson('/data/events.json');const event=data.events?.find(item=>item.id===button.dataset.calendar);if(!event)throw new Error('event_changed');
  const source=event[`action_url_${lang}`]||event[`source_url_${lang}`]||'';const sourceParsed=new URL(source);if(sourceParsed.protocol!=='https:'||!['td.gov.hk','www.td.gov.hk','e-auction.td.gov.hk'].includes(sourceParsed.hostname))throw new Error('invalid_source');
  const title=button.closest('section').querySelector(`[data-lang-only=${lang}]`)?.textContent||'Plate.hk auction';
- const blob=new Blob([calendarEvent(event,title,source)],{type:'text/calendar;charset=utf-8'});const url=URL.createObjectURL(blob);const a=link('',url);a.download='platehk-auction.ics';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
- status.textContent=text('日曆已下載。請在日曆程式確認提醒；此檔案不會自動更新。','Calendar downloaded. Confirm the reminder in your calendar app; this file does not update automatically.');track('calendar_save',{action:event.type});
+ const stamp=new Date();
+ const timing=updateCalendarCard(button,event,stamp);
+ if(timing.state==='ended'){
+  status.textContent=text('活動已結束。請查閱官方詳情。','This event has ended. Check the official details.');
+  return;
+ }
+ const blob=new Blob([calendarEvent(event,title,source,stamp)],{type:'text/calendar;charset=utf-8'});const url=URL.createObjectURL(blob);const a=link('',url);a.download='platehk-auction.ics';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+ status.textContent=timing.reminderAt
+  ? text('日曆已下載。請在日曆程式確認提醒；此檔案不會自動更新。','Calendar downloaded. Confirm the reminder in your calendar app; this file does not update automatically.')
+  : text('日曆已下載，未設定提醒；此檔案不會自動更新。','Calendar downloaded without a reminder; this file does not update automatically.');
+ track('calendar_save',{action:event.type});
  }catch{status.textContent=text('日程可能已更新或未能讀取，請重新載入並核對官方頁面。','The schedule may have changed or failed to load. Reload and check the official page.');}finally{button.disabled=false;}
-});
+ });
+}
