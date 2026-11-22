@@ -7,7 +7,7 @@ The public search remains the default entry point. The decision tools add:
   repeated/palindrome, historical-price and precise-date filters.
 - `/plate.html?q=AA88`: paginated exact history and dated structural comparisons.
 - `/shortlist.html`: up to 50 browser-local saved plates and comparison of up to four.
-- `/auctions.html`: official-source calendar snapshots with downloadable one-day reminders.
+- `/auctions.html`: official-source calendar snapshots with reminders when sufficient time remains.
 - `/availability.html`: routes to official availability, application and transfer guidance.
 
 `assets/decision-core.mjs` owns deterministic filter, comparison and calendar rules.
@@ -27,6 +27,8 @@ The build regenerates the decision pages from `data/events.json` and adds the sh
 analytics entry point to public HTML. Existing generated plate pages also load the
 comparison and save controls. Calendar files are snapshots, not ongoing subscriptions;
 recurring application windows are explicitly distinguished from confirmed events.
+Upcoming confirmed entries can include a one-day reminder. Open online auctions use
+a reminder one hour before their published closing time when that time is still ahead.
 
 ## Measurement
 

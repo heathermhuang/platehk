@@ -220,7 +220,7 @@ def render_round(r: dict, lang: str) -> str:
         f"The handout lists {len(r['rows'])} marks: {counts['sold']} auction sales, {counts['special_fee']} special-fee allocations and {counts['unsold']} unsold marks.", lang)
     highest = choose(f"最高拍賣成交為 {top['mark']}，{money(top['amount_hkd'])}。", f"The highest auction sale is {top['mark']} at {money(top['amount_hkd'])}.", lang) if top else choose('本場沒有拍賣售出紀錄。', 'There are no auction sales in this round.', lang)
     description = summary + ' ' + highest + choose('附完整官方來源表；不是現時估值。', ' Full source-linked table; not a current valuation.', lang)
-    source = link(r['source_url'], choose('運輸署完整結果 PDF', 'Complete Transport Department result PDF', lang))
+    source = link(r['source_url'], choose('運輸署 PDF', 'Official PDF', lang))
     metrics = ''.join(f'<div><dt>{label}</dt><dd>{value}</dd></div>' for label, value in [
         (choose('拍賣售出', 'Auction sales', lang), counts['sold']),
         (choose('特別費用分配', 'Special-fee allocations', lang), counts['special_fee']),
@@ -250,13 +250,13 @@ def render_round(r: dict, lang: str) -> str:
     reconciliation = choose(f"拍賣售出金額合計 {money(sale_total)} ＋ 特別費用 {money(fee_total)} ＝ 官方公布款項 {money(r['official_proceeds_hkd'])}。", f"Auction-sale subtotal {money(sale_total)} + special fees {money(fee_total)} = official published proceeds {money(r['official_proceeds_hkd'])}.", lang)
     siblings = ' '.join(link(public_path(other, lang), title(other, lang)) for other in load_rounds() if other['id'] != r['id'])
     headings = [choose('號碼', 'Mark', lang), choose('本場結果', 'Round outcome', lang), choose('金額（港元）', 'Amount (HKD)', lang), choose('來源與查詢', 'Source and lookup', lang)]
-    body = f'''<p class="auction-summary">{summary} {highest}</p>
+    body = f'''<nav class="lookup-shortcuts round-navigation" aria-label="{choose('本場拍賣導覽', 'Round navigation', lang)}">{link('#complete-results', choose('完整結果', 'Complete results', lang))}{link('#round-summary', choose('本場摘要', 'Round summary', lang))}{source}</nav>
 <p>{choose('拍賣日期', 'Auction dates', lang)}: <time datetime="{r['start_date']}">{date_label(r, lang)}</time> · {choose('來源核對日期', 'Source verified', lang)}: <time datetime="{r['verified_on']}">{r['verified_on']}</time></p>
-<p>{source}</p><dl class="auction-metrics">{metrics}</dl>
-<section aria-labelledby="top-sales"><h2 id="top-sales">{choose('最高五筆拍賣成交', 'Five highest auction sales', lang)}</h2><ol class="auction-top">{top_items}</ol></section>
-<section aria-labelledby="read-results"><h2 id="read-results">{choose('如何理解本場結果？', 'How to read this round', lang)}</h2><p>{interpretation}</p><p>{reconciliation}</p>{online}<p>{limits}</p></section>
 <section aria-labelledby="complete-results"><h2 id="complete-results">{choose('完整結果', 'Complete results', lang)} ({len(r['rows'])})</h2><p>{choose('按號碼排序；下方「在本場找車牌」會搜尋本場全部號碼。金額破折號代表未售出，並非零元成交。', 'Sorted by mark. Find a plate in this round searches all marks, across every page. A dash means unsold, not a zero-price sale.', lang)}</p><noscript><p>{choose('未啟用 JavaScript 時，全部號碼會顯示於下方，可使用瀏覽器尋找功能。', 'With JavaScript disabled, all marks appear below and you can use your browser’s find function.', lang)}</p></noscript>
 <div class="auction-table-wrap"><table><caption>{html.escape(title(r, lang))} — {choose('完整官方手冊紀錄', 'complete handout records', lang)}</caption><thead><tr>{''.join(f'<th scope="col">{h}</th>' for h in headings)}</tr></thead><tbody>{''.join(rows_html)}</tbody></table></div></section>
+<section aria-labelledby="round-summary"><h2 id="round-summary">{choose('本場摘要', 'Round summary', lang)}</h2><p class="auction-summary">{summary} {highest}</p><dl class="auction-metrics">{metrics}</dl></section>
+<section aria-labelledby="top-sales"><h2 id="top-sales">{choose('最高五筆拍賣成交', 'Five highest auction sales', lang)}</h2><ol class="auction-top">{top_items}</ol></section>
+<section aria-labelledby="read-results"><h2 id="read-results">{choose('如何理解本場結果？', 'How to read this round', lang)}</h2><p>{interpretation}</p><p>{reconciliation}</p>{online}<p>{limits}</p></section>
 <section><h2>{choose('其他已核對拍賣場次', 'Other verified rounds', lang)}</h2><div class="auction-related">{siblings}</div><p>{link(public_path(lang=lang), choose('返回結果目錄', 'Back to results archive', lang))}</p></section>'''
     return shell(r, lang, title(r, lang), description, body, [])
 

@@ -9,8 +9,14 @@ test('budget-only discovery applies the full-set constraint without a required f
   await expect(page.getByText('More filters',{exact:true})).toBeVisible();
   await page.locator('input[name=max_amount]').fill('20000');await page.getByRole('button',{name:'Apply filters',exact:true}).click();
   await expect(page.locator('#decisionResults h2')).toContainText('historical records');
+  await expect(page.locator('#discoveryStatus')).toContainText('historical records up to HK$20,000');
   expect(await page.locator('#decisionResults .decision-result').count()).toBeGreaterThan(0);
+  await page.getByRole('link', { name: 'View results' }).click();
+  await expect(page.locator('#decisionResults')).toBeFocused();
+  await expect(page.locator('#decisionResults h2')).toBeInViewport();
   await page.getByRole('button',{name:'Reset filters',exact:true}).click();await expect(page.locator('#decisionResults')).toBeEmpty();
+  await expect(page.locator('#discoveryStatus')).toBeEmpty();
+  await expect(page.locator('#discoveryJump')).toBeHidden();
 });
 
 test('partial matching is the default, exact matching is explicit and sale signals lead the results',async({page})=>{
@@ -27,13 +33,21 @@ test('zero-selection comparison is disabled and removal can be undone',async({pa
   await page.goto('/shortlist.html?lang=en');await expect(page.locator('#compareSelected')).toBeDisabled();
   await page.goto('/plate.html?q=AA88&lang=en');await page.locator('#plateHistory button[data-save-plate]').first().click();
   await page.goto('/shortlist.html?lang=en');await page.getByRole('checkbox',{name:'Compare AA88',exact:true}).check();await expect(page.locator('#compareSelected')).toBeEnabled();
-  await page.locator('#shortlistItems button[data-save-plate]').click();await expect(page.locator('#compareSelected')).toBeDisabled();
-  await page.getByRole('button',{name:'Undo removal',exact:true}).click();await expect(page.getByRole('checkbox',{name:'Compare AA88',exact:true})).toBeVisible();
+  await page.locator('#shortlistItems button[data-save-plate]').press('Enter');
+  await expect(page.locator('#compareSelected')).toBeDisabled();
+  await expect(page.getByRole('link', { name: 'Find a plate', exact: true })).toBeFocused();
+  await page.getByRole('button',{name:'Undo removal',exact:true}).press('Enter');
+  await expect(page.getByRole('checkbox',{name:'Compare AA88',exact:true})).toBeVisible();
+  await expect(page.locator('#shortlistItems [data-save-plate="AA88"]')).toBeFocused();
 });
 
 test('round filters retain complete source rows and find sold versus unsold marks',async({page})=>{
   await page.goto('/auction-results/en/tvrm_physical-2026-09-12.html');
   await expect(page.locator('tbody tr')).toHaveCount(220);
+  const roundNav = page.getByRole('navigation', { name: 'Round navigation' });
+  await expect(roundNav.getByRole('link', { name: /Official PDF/ })).toHaveAttribute('href', /^https:\/\/www\.td\.gov\.hk\//);
+  await roundNav.getByRole('link', { name: 'Complete results', exact: true }).click();
+  await expect(page).toHaveURL(/#complete-results$/);
   await page.getByRole('searchbox',{name:'Find a plate in this round',exact:true}).fill('1314');
   await expect(page.locator('tbody tr:visible')).toHaveCount(1);await expect(page.locator('tbody tr:visible')).toContainText('HK$310,000');
   await page.getByRole('searchbox',{name:'Find a plate in this round',exact:true}).fill('');

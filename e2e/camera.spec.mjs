@@ -184,6 +184,8 @@ test("mobile camera results retain exact search and source actions", async ({ pa
   });
 
   await page.goto("/camera.html?lang=en");
+  await expect(page.locator('#cameraShell')).toBeHidden();
+  await expect(page.locator('#manualSearchBtn')).toBeInViewport();
   await page.locator("#manualInput").fill("HK 88");
   await expect(page.locator("#openSearchLink")).toHaveAttribute("href", /q=HK88/);
   await page.locator("#manualSearchBtn").click();

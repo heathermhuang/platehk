@@ -16,6 +16,33 @@
     more.append(menu);nav.append(more);
   }
   primaryNavigation();
+
+  function lookupShortcuts() {
+    const page = document.body.dataset.decisionPage;
+    if (!document.body.classList.contains('data-browser') &&
+        !['prices', 'plate', 'discover', 'availability'].includes(page)) return;
+    const existing = document.querySelector('.search-task-links, .decision-actions[aria-label="Decision tools"], .lookup-shortcuts');
+    if (!existing) return;
+    const nav = make('nav', null, 'lookup-shortcuts');
+    nav.setAttribute('aria-label', text('車牌查詢方式', 'Plate lookup options'));
+    for (const [key, path, zh, en] of [
+      ['prices', '/prices.html', '查歷史成交', 'Exact history'],
+      ['discover', '/discover.html', '按預算找牌', 'Browse by budget'],
+      ['availability', '/availability.html', '官方可用號碼', 'Official availability'],
+    ]) {
+      const anchor = link(text(zh, en), href(path));
+      if (page === key || (key === 'prices' && page === 'plate')) {
+        anchor.setAttribute('aria-current', page === 'plate' ? 'location' : 'page');
+      }
+      nav.append(anchor);
+    }
+    existing.replaceWith(nav);
+  }
+
+  lookupShortcuts();
+  new MutationObserver(lookupShortcuts).observe(document.documentElement, {
+    attributes: true, attributeFilter: ['lang'],
+  });
   document.addEventListener('keydown',event=>{if(event.key==='Escape')for(const menu of document.querySelectorAll('.site-more[open]')){menu.open=false;menu.querySelector('summary').focus();}});
   document.addEventListener('pointerdown',event=>{for(const menu of document.querySelectorAll('.site-more[open]'))if(!menu.contains(event.target))menu.open=false;});
   for(const button of document.querySelectorAll('#langZh,#langEn,#langZhBtn,#langEnBtn'))button.addEventListener('click',()=>setTimeout(primaryNavigation,0));
@@ -41,7 +68,11 @@
     const outcome=row=>/未售出|unsold|U\/S/i.test(row.cells[1]?.textContent)?'unsold':/特別費用|special/i.test(row.cells[1]?.textContent)?'fee':'sold';
     function render(){const term=normalized(query.value);const matches=rows.filter(row=>normalized(row.cells[0]?.textContent).includes(term)&&(!status.value||outcome(row)===status.value));const pages=Math.max(1,Math.ceil(matches.length/25));page=Math.min(page,pages);const visible=new Set(matches.slice((page-1)*25,page*25));for(const row of rows)row.hidden=!visible.has(row);count.textContent=text(`${matches.length} / ${rows.length} 個號碼 · 第 ${page}/${pages} 頁`,`${matches.length} of ${rows.length} marks · page ${page}/${pages}`);previous.disabled=page===1;next.disabled=page===pages;}
     for(const control of [query,status])control.addEventListener('input',()=>{page=1;render();const term=normalized(query.value);const matches=rows.filter(row=>normalized(row.cells[0]?.textContent).includes(term)&&(!status.value||outcome(row)===status.value));window.PlateAnalytics?.lookup?.({plate:term,result_count:matches.length,exact_match:matches.some(row=>normalized(row.cells[0]?.textContent).replace(/\*$/,'')===term),dataset:document.body.dataset.auctionDataset,issue:document.body.dataset.auctionStart,action:'round_lookup',page_number:1,match_mode:'contains',outcome_filter:status.value||'all'});});previous.onclick=()=>{page--;render();};next.onclick=()=>{page++;render();};render();const revealHash=()=>{let id;try{id=decodeURIComponent(location.hash.slice(1));}catch{return;}const target=rows.find(row=>row.id===id);if(!target)return;query.value='';status.value='';page=Math.floor(rows.indexOf(target)/25)+1;render();target.scrollIntoView({block:'center'});};addEventListener('hashchange',revealHash);revealHash();
-    const jump=link(text('跳至完整結果','Jump to complete results'),'#complete-results');jump.className='ux-jump';document.querySelector('.auction-summary')?.after(jump);
+    if (!document.querySelector('.round-navigation')) {
+      const jump = link(text('跳至完整結果', 'Jump to complete results'), '#complete-results');
+      jump.className = 'ux-jump';
+      document.querySelector('.auction-summary')?.after(jump);
+    }
   }
   for(const table of document.querySelectorAll('.auction-table-wrap table'))tableBrowser(table);
   const rounds=document.querySelector('.auction-rounds');if(rounds){const label=make('label',text('拍賣類型','Auction type'));label.className='ux-browser';const select=make('select');for(const [value,zh,en] of [['','全部已核對場次','All verified rounds'],['pvrm','自訂車牌','Personalized'],['tvrm_physical','傳統實體拍賣','Traditional physical'],['tvrm_eauction','拍牌易','Online']]){const option=make('option',text(zh,en));option.value=value;select.append(option);}label.append(select);rounds.before(label);select.onchange=()=>{for(const round of rounds.children)round.hidden=Boolean(select.value)&&!round.querySelector('a').getAttribute('href').includes('/'+select.value+'-');};}
@@ -99,7 +130,6 @@
   for(const nav of document.querySelectorAll('.decision-actions'))for(const anchor of nav.querySelectorAll('a'))if(new URL(anchor.href).pathname===location.pathname)anchor.remove();
   for(const heading of document.querySelectorAll('.decision-event [data-lang-only]'))if(!heading.children.length)heading.textContent=heading.textContent.replace(/\s*\(\d+\s*KB\)\s*,?/gi,'');
   const calendar=document.querySelector('body[data-decision-page="auctions"] main');if(calendar){const upcoming=[...calendar.querySelectorAll('.decision-event')];const archive=calendar.querySelector('.auction-results-link');if(archive&&upcoming.length)calendar.append(archive);}
-  if(calendar){const events=[...calendar.querySelectorAll('section:has([data-calendar])')].filter(section=>!section.querySelector('[data-calendar]').dataset.calendar.startsWith('pvrm_registration')).sort((a,b)=>a.querySelector('[data-calendar]').dataset.calendar.match(/\d{4}-\d{2}-\d{2}/)[0].localeCompare(b.querySelector('[data-calendar]').dataset.calendar.match(/\d{4}-\d{2}-\d{2}/)[0]));const anchor=calendar.querySelector('h1:not([hidden])');if(anchor)for(const event of events.reverse())anchor.after(event);}
 
   const manual=document.querySelector('#manualInput');if(manual){const label=document.querySelector('#manualLabel')||make('label',text('修正或輸入車牌號碼','Correct or enter the plate number'));label.htmlFor='manualInput';label.className='ux-manual-label';if(!label.isConnected)manual.before(label);manual.setAttribute('aria-label',label.textContent);const privacy=link(text('影像與私隱說明','Image processing and privacy'),href('/privacy.html#camera-uploads'));privacy.className='ux-camera-privacy';manual.closest('section,article,div')?.append(privacy);}
 })();

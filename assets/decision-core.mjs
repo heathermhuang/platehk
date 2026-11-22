@@ -53,9 +53,32 @@ export function matchesFilters(row, f) {
 }
 const escapeIcs = value => String(value || '').replace(/\\/g, '\\\\').replace(/\r?\n/g, '\\n').replace(/;/g, '\\;').replace(/,/g, '\\,');
 const utc = value => { const d = new Date(value); if (!Number.isFinite(d.getTime())) throw new Error('Invalid event date'); return d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z'); };
+const HOUR = 60 * 60 * 1000;
+
+export function calendarTiming(event, stamp = new Date()) {
+  const start = Date.parse(event.start_at);
+  const end = Date.parse(event.end_at);
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) throw new Error('Invalid event range');
+  if (end <= stamp) return { state: 'ended' };
+  const estimated = event.estimated || event.meta?.source === 'computed_recurring_window_from_td_main_page';
+  if (estimated) return { state: 'expected' };
+  const active = start <= stamp;
+  // Physical-session bounds describe the day or session, not a published closing time.
+  const state = active ? (event.type === 'tvrm_eauction' ? 'open' : 'scheduled') : 'upcoming';
+  const reminderAt = active ? (state === 'open' ? end - HOUR : null) : start - 24 * HOUR;
+  return { state, reminderAt: reminderAt !== null && reminderAt > stamp ? reminderAt : null };
+}
+
 export function calendarEvent(event, title, source, stamp = new Date()) {
-  if (new Date(event.end_at) <= new Date(event.start_at)) throw new Error('Invalid event range');
-  const lines = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Plate.hk//Auction calendar//EN','CALSCALE:GREGORIAN','BEGIN:VEVENT',`UID:${escapeIcs(event.id)}@plate.hk`,`DTSTAMP:${utc(stamp)}`,`DTSTART:${utc(event.start_at)}`,`DTEND:${utc(event.end_at)}`,`SUMMARY:${escapeIcs(title)}`,`DESCRIPTION:${escapeIcs('Check the official source before applying or bidding. This is a saved snapshot, not a live subscription. ' + source)}`,`URL:${escapeIcs(source)}`,'BEGIN:VALARM','TRIGGER:-P1D','ACTION:DISPLAY','DESCRIPTION:Check the official auction details','END:VALARM','END:VEVENT','END:VCALENDAR'];
+  const timing = calendarTiming(event, stamp);
+  const lines = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Plate.hk//Auction calendar//EN','CALSCALE:GREGORIAN','BEGIN:VEVENT',`UID:${escapeIcs(event.id)}@plate.hk`,`DTSTAMP:${utc(stamp)}`,`DTSTART:${utc(event.start_at)}`,`DTEND:${utc(event.end_at)}`,`SUMMARY:${escapeIcs(title)}`,`DESCRIPTION:${escapeIcs('Check the official source before applying or bidding. This is a saved snapshot, not a live subscription. ' + source)}`,`URL:${escapeIcs(source)}`];
+  if (timing.reminderAt) {
+    const trigger = timing.state === 'open'
+      ? `TRIGGER;VALUE=DATE-TIME:${utc(timing.reminderAt)}`
+      : 'TRIGGER:-P1D';
+    lines.push('BEGIN:VALARM', trigger, 'ACTION:DISPLAY', 'DESCRIPTION:Check the official auction details', 'END:VALARM');
+  }
+  lines.push('END:VEVENT', 'END:VCALENDAR');
   // Fold by UTF-8 byte count, as required by RFC 5545.
   return lines.map(line => { let out='', size=0; for (const c of line) { const n=new TextEncoder().encode(c).length; if(size+n>73){out+='\r\n ';size=1;} out+=c;size+=n;} return out; }).join('\r\n')+'\r\n';
 }

@@ -2177,7 +2177,7 @@
 
   <link rel="stylesheet" href="/assets/ux.css?v=20260928-01"><script defer src="/assets/ux.js?v=20260928-01"></script>
   <link rel="stylesheet" href="/assets/growth.css?v=20260929-01"><script defer src="/assets/growth.js?v=20260929-01"></script>
-<link rel="stylesheet" href="/assets/index.browser.css?v=20261002-01">
+<link rel="stylesheet" href="/assets/index.browser.css?v=20261122-01">
 <script defer src="/assets/index.browser.js?v=20261010-01"></script>
 </head>
   <body class="data-browser">
@@ -2207,6 +2207,7 @@
       <main id="main-content">
       <nav class="search-task-links" aria-label="Lookup options">
         <a href="/prices.html" data-growth-lang="zh">查歷史成交價</a><a href="/prices.html?lang=en" data-growth-lang="en">Historical prices</a>
+        <a href="/discover.html" data-growth-lang="zh">按預算找牌</a><a href="/discover.html?lang=en" data-growth-lang="en">Browse by budget</a>
         <a href="/auction-results/index.html" data-growth-lang="zh">查已核對拍賣結果</a><a href="/auction-results/en/index.html" data-growth-lang="en">Verified auction results</a>
         <a href="/availability.html" data-growth-lang="zh">官方可用號碼及申請</a><a href="/availability.html?lang=en" data-growth-lang="en">Official availability and applications</a>
       </nav>
@@ -2219,7 +2220,9 @@
           <div class="controls-primary">
             <div class="control-group query">
               <label class="control-label" id="queryLabel" for="q">車牌搜尋</label>
-              <input id="q" type="search" placeholder="輸入車牌，例如 L1BERTY" />
+              <div class="query-field">
+                <input id="q" type="search" placeholder="例如 HK 8788" />
+              </div>
             </div>
             <div class="control-actions">
               <button id="reset">清除條件</button>
@@ -2285,6 +2288,9 @@
           </thead>
           <tbody id="rows"></tbody>
         </table>
+        <div class="record-placeholder" aria-hidden="true">
+          <span></span><span></span><span></span><span></span><span></span>
+        </div>
       </div>
 
       </section>
@@ -2326,7 +2332,7 @@
       </div>
     </div>
     <script src="./assets/auction-outcomes.js?v=20261114-01"></script>
-    <script src="./assets/index.config.js?v=20261115-01"></script>
+    <script src="./assets/index.config.js?v=20261122-01"></script>
     <script src="./assets/index.home.js?v=20261114-01"></script>
     <script src="./assets/index.offline-data.js?v=20260426-01"></script>
     <script src="./assets/index.data.js?v=20261114-01"></script>

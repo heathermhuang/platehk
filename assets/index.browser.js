@@ -83,8 +83,6 @@
       anchor('收藏', 'Shortlist', '/shortlist.html'),
       more,
     );
-    const legacy = document.querySelector('.search-task-links');
-    if (legacy) legacy.hidden = true;
     filterDescription();
     sortHeaders();
   }

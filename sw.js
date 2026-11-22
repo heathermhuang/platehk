@@ -1,6 +1,6 @@
 const CACHE_NAME = 'pvrm-static-v166';
 const ASSETS = [
-  './assets/index.browser.css?v=20261002-01',
+  './assets/index.browser.css?v=20261122-01',
   './assets/index.browser.js?v=20261002-01',
   './assets/audit.js?v=20261114-01',
   './assets/camera.js?v=20261114-01',
@@ -17,7 +17,7 @@ const ASSETS = [
   './assets/index.data.js?v=20261114-01',
   './assets/index.offline-data.js?v=20260426-01',
   './assets/index.home.js?v=20261114-01',
-  './assets/index.config.js?v=20261115-01',
+  './assets/index.config.js?v=20261122-01',
   './assets/ux.css?v=20260928-01',
   './assets/ux.js?v=20260928-01',
   './',
@@ -37,7 +37,7 @@ const ASSETS = [
   './shortlist.html',
   './plate.html',
   './assets/decision.js?v=20261114-01',
-  './assets/decision-core.mjs?v=20261114-01',
+  './assets/decision-core.mjs?v=20261122-01',
   './assets/auction-outcomes.js',
   './assets/auction-outcomes.js?v=20261114-01',
   './assets/decision.css?v=20261114-01',

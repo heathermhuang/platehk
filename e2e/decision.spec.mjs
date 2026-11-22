@@ -96,15 +96,28 @@ test('shortlist survives navigation and compares two exact histories', async ({ 
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 });
 
-test('official calendar downloads a valid event with a one-day reminder', async ({ page }) => {
-  await page.goto('/auctions.html?lang=en');
-  const download=page.waitForEvent('download');
-  await page.getByRole('button',{name:'Add to calendar',exact:true}).first().click();
-  const event=await download;
-  expect(event.suggestedFilename()).toBe('platehk-auction.ics');
-  const contents=await readFile(await event.path(),'utf8');
-  expect(contents).toContain('BEGIN:VEVENT\r\n');
-  expect(contents).toContain('TRIGGER:-P1D');
-  expect(contents).toContain('@plate.hk');
-  await expect(page.locator('#calendarStatus')).toContainText('does not update automatically');
+test('the calendar distinguishes upcoming and open rounds and downloads the right alarm', async ({ page, request }) => {
+  const { events } = await (await request.get('/data/events.json')).json();
+  const round = events.find(event => event.type === 'tvrm_eauction');
+  const start = Date.parse(round.start_at);
+  const end = Date.parse(round.end_at);
+  for (const [now, stage, label, trigger] of [
+    [start - 2 * 86400000, 'Upcoming', 'Add to calendar', 'TRIGGER:-P1D'],
+    [start + 3600000, 'Open now', 'Add closing reminder',
+      'TRIGGER;VALUE=DATE-TIME:' + new Date(end - 3600000).toISOString().replace(/[-:]/g, '').replace('.000Z', 'Z')],
+  ]) {
+    await page.clock.setFixedTime(now);
+    await page.goto('/auctions.html?lang=en');
+    const button = page.locator(`[data-calendar="${round.id}"]`);
+    const card = button.locator('..');
+    await expect(card.locator('.calendar-event-state')).toContainText(stage);
+    await expect(button).toHaveAccessibleName(label);
+    const [download] = await Promise.all([page.waitForEvent('download'), button.click()]);
+    expect(download.suggestedFilename()).toBe('platehk-auction.ics');
+    const contents = await readFile(await download.path(), 'utf8');
+    expect(contents).toContain('BEGIN:VEVENT\r\n');
+    expect(contents).toContain(trigger);
+    expect(contents).toContain('@plate.hk');
+    await expect(page.locator('#calendarStatus')).toContainText('does not update automatically');
+  }
 });

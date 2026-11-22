@@ -27,3 +27,27 @@
   background: #f5edcf;
   font-weight: 700;
 }
+
+.discovery-feedback {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  margin-block: 8px 12px;
+  padding: 8px 10px;
+  border-radius: 5px;
+  background: var(--info-bg);
+}
+.discovery-feedback:has(#discoveryStatus:empty) {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+}
+.discovery-feedback p { margin: 0; color: var(--ink); font-weight: 650; }
+.discovery-feedback a { display: inline-flex; align-items: center; min-height: 44px; font-size: 13px; }
+.discovery-feedback [hidden], .decision-event [hidden] { display: none !important; }
+#decisionResults { scroll-margin-top: 12px; }
+#decisionResults:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+.calendar-event-state { font-weight: 650; }
+.decision-event[data-calendar-state="open"] .calendar-event-state { color: var(--accent); }
+.decision-event .calendar-reminder { margin-block: 6px 0; }
