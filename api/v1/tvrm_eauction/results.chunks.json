@@ -1,1 +1,1 @@
-{"schema_version":1,"format":"json-array-chunks","dataset":"tvrm_eauction","total_rows":7419,"chunk_rows":7419,"chunks":[{"file":"results.slim.json","count":7419,"start":0,"end":7418}],"sort_indexes":{}}
+{"schema_version":1,"format":"json-array-chunks","dataset":"tvrm_eauction","total_rows":7639,"chunk_rows":7639,"chunks":[{"file":"results.slim.json","count":7639,"start":0,"end":7638}],"sort_indexes":{}}
