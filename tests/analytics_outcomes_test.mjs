@@ -4,15 +4,17 @@ import vm from 'node:vm';
 import {readFileSync} from 'node:fs';
 
 const code=readFileSync(new URL('../assets/analytics.js',import.meta.url),'utf8');
-function analytics({host='plate.hk',dnt='0',gpc=false,optOut=false,search=''}={}) {
-  const handlers={};
+function analytics({host='plate.hk',dnt='0',gpc=false,optOut=false,search='',path='/',webdriver=false}={}) {
+  const handlers={},scripts=[],aeoEvents=[];
   let now=0,nextTimer=0;const timers=new Map();
-  const context={location:{hostname:host,origin:`https://${host}`,pathname:'/',search},navigator:{doNotTrack:dnt,globalPrivacyControl:gpc},localStorage:{getItem:()=>optOut?'off':null},
-    document:{referrer:'https://example.test/from?private=secret',head:{appendChild(){}},createElement:()=>({}),addEventListener(name,fn){(handlers[name]??=[]).push(fn);}},URL,URLSearchParams,Date,Set,
+  const context={location:{hostname:host,origin:`https://${host}`,pathname:path,search},navigator:{doNotTrack:dnt,globalPrivacyControl:gpc,webdriver},localStorage:{getItem:()=>optOut?'off':null},
+    document:{referrer:'https://example.test/from?private=secret',head:{appendChild(script){scripts.push(script);}},createElement:()=>({dataset:{}}),addEventListener(name,fn){(handlers[name]??=[]).push(fn);}},URL,URLSearchParams,Date,Set,
     setTimeout(fn,delay){const id=++nextTimer;timers.set(id,{fn,at:now+delay});return id;},clearTimeout(id){timers.delete(id);}};
   context.window=context;vm.runInNewContext(code,context);
   const advance=ms=>{const end=now+ms;for(;;){const next=[...timers].sort((a,b)=>a[1].at-b[1].at)[0];if(!next||next[1].at>end)break;timers.delete(next[0]);now=next[1].at;next[1].fn();}now=end;};
-  return {api:context.PlateAnalytics,events:()=>Array.from(context.dataLayer||[]).filter(item=>item[0]==='event'),config:()=>Array.from(context.dataLayer||[]).find(item=>item[0]==='config')?.[2],handlers,advance};
+  const aeoScript=()=>scripts.find(script=>script.src==='https://aeo.io/script.js');
+  const loadAeo=()=>{context.umami={track:name=>aeoEvents.push(name)};aeoScript().onload();};
+  return {aeoScript,aeoEvents,loadAeo,cleanAeo:context.plateAeoBeforeSend,api:context.PlateAnalytics,events:()=>Array.from(context.dataLayer||[]).filter(item=>item[0]==='event'),config:()=>Array.from(context.dataLayer||[]).find(item=>item[0]==='config')?.[2],handlers,advance};
 }
 const lookup={plate:'AA88',result_count:2,exact_match:true,action:'main_lookup',dataset:'all',page_number:1};
 
@@ -112,4 +114,30 @@ test('history navigation is immediate and lookup errors cancel a pending success
   assert.equal(a.events().at(-1)[1],'lookup_exact_match');
   const b=analytics();b.api.lookup(lookup);b.api.lookupError({...lookup,error_kind:'request_failed'});b.advance(3000);
   assert.equal(b.events().some(event=>event[1]==='lookup_success'),false);
+});
+
+
+test('AEO measures only page sections and settled exact-match events with privacy controls',()=>{
+  for(const options of [{host:'localhost'},{dnt:'1'},{gpc:true},{optOut:true}]) {
+    assert.equal(analytics(options).aeoScript(),undefined);
+  }
+  const a=analytics({path:'/plates/AA88',search:'?q=private',webdriver:true});
+  assert.equal(a.aeoScript().dataset.domains,'plate.hk,www.plate.hk');
+  const raw={website:'public-website-id',hostname:'plate.hk',title:'AA88',
+    url:'https://plate.hk/plates/AA88?q=private#secret',referrer:'https://chatgpt.com/c/private?token=secret',
+    id:'private-id',data:{plate:'AA88'}};
+  const cleaned=a.cleanAeo('event',raw);
+  assert.equal(cleaned.url,'https://plate.hk/plates');
+  assert.equal(cleaned.referrer,'https://chatgpt.com/');
+  assert.equal(cleaned.tag,'aeo_operator_qualification');
+  assert.doesNotMatch(JSON.stringify(cleaned),/AA88|secret|private/);
+  assert.equal(a.cleanAeo('identify',raw),null);
+  assert.equal(a.cleanAeo('event',{...raw,name:'search_complete'}),null);
+  a.api.lookup(lookup);
+  a.advance(1500);
+  a.loadAeo();
+  assert.deepEqual(a.aeoEvents,['lookup_exact_match']);
+  a.api.lookup({...lookup,plate:'AB1234',exact_match:false});
+  a.advance(1500);
+  assert.deepEqual(a.aeoEvents,['lookup_exact_match']);
 });

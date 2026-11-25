@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import json
 import random
@@ -454,7 +455,8 @@ class WorkflowTests(unittest.TestCase):
         published_home = (publish / "index.html").read_text(encoding="utf-8")
         analytics_asset = re.search(r'(/assets/analytics\.js\?v=[^"\s]+)', published_home).group(1)
         self.assertIn(analytics_asset, sw)
-        self.assertIn("20261004-01", analytics_asset)
+        analytics_version = hashlib.sha256((publish / "assets" / "analytics.js").read_bytes()).hexdigest()[:12]
+        self.assertEqual(analytics_asset, f"/assets/analytics.js?v={analytics_version}")
         self.assertFalse(list((publish / "plates").glob("* [0-9].html")))
         self.assertFalse((publish / "data" / "results.json").exists())
         self.assertFalse((publish / "data" / "pdfs").exists())
