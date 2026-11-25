@@ -657,14 +657,14 @@ def main(*, require_market_snapshot: bool = False, allow_stale_market_snapshot: 
         content = page.read_text(encoding="utf-8")
         if '/assets/analytics.js?' not in content:
             content = content.replace('</head>', '<script defer src="/assets/analytics.js?v=20260915-01"></script>\n</head>')
-        content = re.sub(r'(/assets/(?:analytics|decision|index\.data|ux)\.js\?v=)[^"\s>]+', r'\g<1>20261004-01', content)
+        content = re.sub(r'(/assets/(?:decision|index\.data|ux)\.js\?v=)[^"\s>]+', r'\g<1>20261004-01', content)
         for asset, version in design_versions.items():
             content = re.sub(r'(/assets/' + re.escape(asset) + r'\?v=)[^"\s>]+', lambda match: match[1] + version, content)
         page.write_text(content, encoding="utf-8")
     sw_path = TARGET / "sw.js"
     if sw_path.exists():
         source = sw_path.read_text(encoding="utf-8")
-        source = re.sub(r'(/assets/(?:analytics|decision|index\.data|ux)\.js\?v=)[^\'"\s>]+', r'\g<1>20261004-01', source)
+        source = re.sub(r'(/assets/(?:decision|index\.data|ux)\.js\?v=)[^\'"\s>]+', r'\g<1>20261004-01', source)
         for asset, version in design_versions.items():
             source = re.sub(r'(/assets/' + re.escape(asset) + r'\?v=)[^\'"\s>]+', lambda match: match[1] + version, source)
         sw_path.write_text(source, encoding="utf-8")
