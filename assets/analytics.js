@@ -6,6 +6,10 @@
   let enabled = production && !dnt;
   try { if (localStorage.getItem('platehk.analytics') === 'off') enabled = false; } catch {}
   const cleanLocation = location.origin + location.pathname;
+  const aeoGoal = 'lookup_exact_match';
+  const aeoSections = new Set(['landing','camera','compare','plates','auction','auctions','results','privacy','terms','about']);
+  let aeoTracker;
+  let pendingAeoMatches = 0;
   function track(name, values = {}) {
     if (!enabled || !allowed.has(name)) return;
     const data = {page_location:cleanLocation,measurement_version:'settled_v2'};
@@ -17,6 +21,10 @@
       if (/^[a-zA-Z0-9_.-]{1,60}$/.test(String(values[key] || ''))) data[key] = values[key];
     }
     window.gtag('event',name,data);
+    if (name === aeoGoal) {
+      if (aeoTracker) aeoTracker.track(aeoGoal);
+      else pendingAeoMatches = Math.min(pendingAeoMatches + 1, 10);
+    }
   }
   let lastLookup = '';
   let pendingLookup = null;
@@ -83,6 +91,39 @@
   const script=document.createElement('script');
   script.async=true;script.src='https://www.googletagmanager.com/gtag/js?id=G-8N8TVEGQHM';
   document.head.appendChild(script);
+  window.plateAeoBeforeSend = (type, payload) => {
+    if (type !== 'event' || !payload || (payload.name && payload.name !== aeoGoal)) return null;
+    const {website, hostname, screen, language, name} = payload;
+    const section = location.pathname.split('/')[1]?.replace(/\.html$/, '');
+    const url = location.origin + (aeoSections.has(section) ? '/' + section : '/');
+    let referrer;
+    try {
+      const source = new URL(payload.referrer);
+      if (['https:','http:'].includes(source.protocol) && source.origin !== location.origin) {
+        referrer = source.origin + '/';
+      }
+    } catch {}
+    return {website, hostname, screen, language, name, url, referrer,
+      tag: navigator.webdriver === true ? 'aeo_operator_qualification' : 'platehk_first_party'};
+  };
+  const aeoScript = document.createElement('script');
+  aeoScript.async = true;
+  aeoScript.src = 'https://aeo.io/script.js';
+  Object.assign(aeoScript.dataset, {
+    websiteId:'2d30dec6-92ea-4376-bfc3-0f464a503731',
+    domains:'plate.hk,www.plate.hk',
+    beforeSend:'plateAeoBeforeSend',
+    doNotTrack:'true',
+    excludeSearch:'true',
+    excludeHash:'true',
+  });
+  aeoScript.onload = () => {
+    if (typeof window.umami?.track !== 'function') return;
+    aeoTracker = window.umami;
+    for (let index = 0; index < pendingAeoMatches; index++) aeoTracker.track(aeoGoal);
+    pendingAeoMatches = 0;
+  };
+  document.head.appendChild(aeoScript);
   document.addEventListener('input', event => {
     if (event.target.matches?.('#q,#dataset,#issue,#matchMode,.ux-browser input,.ux-browser select')) {
       cancelPendingLookup();
